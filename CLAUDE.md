@@ -48,8 +48,9 @@ utils → renderer/scene → voxel batch (`Batch`: összeolvasztott dobozok egy 
 ## Játékállapotok
 
 - `mode`: `loading → title → intro → play`. Az intro egy `async` jelenet (`runIntro`), Enterrel/Kihagyással átugorható (`finishIntro` determinisztikus végállapotot állít be).
-- `pstate` (Petike): `free | toDrink | drinking | riding`. Interakció: **E** (`usePressed`), a `interactions()` dönti el, mi elérhető, és írja a `#prompt`-ot.
+- `pstate` (Petike): `free | toDrink | drinking | riding | toFountain | ftnDrink | caught | chased | atMom`. Interakció: **E** (`usePressed`), a `interactions()` dönti el, mi elérhető, és írja a `#prompt`-ot.
 - `petyaMode` (apa): `bench | standing | leaving | follow | return | seat`. Az `updateDad()` mozgatja (`navTarget()` a pálya kapuján és a pad mögül is kivezet) és beszélteti: `worryLine()` (rollerezés), `coachLine()` (foci – sosem elégedett, `lastKick` alapján), `GRUMBLE`, `GOAL_GRUMBLE`, `ANGI_DEFEND`.
+- Szökőkút-ivás (tilos!): a szökőkút pereménél **E** → `startFountain()`. Az apa felpattan és odafut (`ftnStand → ftnRun`), leszidja (`ftnScold`), majd visszakergeti Petikét Angihoz (`ftnChase → ftnWait → seat`); közben Petike nem irányítható (`caught`, `chased`: robotpilóta `autoRun()`-nal, `FTN_WAY` a pálya ÉNy-i sarkánál), a végén családi szópárbaj. A párbeszédeket a `runSeq()`/`tickSeq()` mini-ütemező játssza le (a `W()`/`until()` játék közben nem használható, mert az intro átugrása után a `cs.skip` igaz marad). Szövegek: `FTN_SHOUT`, `FTN_RUN`, `FTN_SIP`, `FTN_SCOLD`, `FTN_EXCUSE`, `FTN_CHASE`.
 - Rollerezés: `updateRiding()` – kormányzás a kamera-relatív irány felé max. 2.4 rad/s, gyorsítás Shift, fék Szóköz; `mountScooter()`/`dismountScooter()` cseréli a rigeket (rolleres ↔ focista ruha) és a roller ütközőjét (`rollerCol`).
 
 ## Voxel objektumok (`src/voxels.js`)
@@ -68,7 +69,7 @@ utils → renderer/scene → voxel batch (`Batch`: összeolvasztott dobozok egy 
 
 ## Tesztelés / hibakeresés
 
-- `window.__game` debug-objektum: `petike()`, `petya()`, `angi()`, `ball`, `roller`, `mode`, `pstate`, `petyaMode`, `skipIntro()`, `use()`, `setZoom(z)`, `camTarget`.
+- `window.__game` debug-objektum: `petike()`, `petya()`, `angi()`, `ball`, `roller`, `mode`, `pstate`, `petyaMode`, `skipIntro()`, `use()`, `setZoom(z)`, `camTarget`, `ftn`, `tick(mp)` (kézi léptetés – rejtett fülön is fut, ahol a `requestAnimationFrame` áll; az intro átugrásához a tickek között `await` kell).
 - `?speed=4` URL-paraméter: gyorsított idő (1–8) a nyitójelenet teszteléséhez.
 - Headless teszthez (Playwright) WebGL: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`.
 - Módosítás után érdemes: nyitójelenet végigfut-e hibátlanul (`mode === 'play'`), és képernyőkép a releváns helyről.

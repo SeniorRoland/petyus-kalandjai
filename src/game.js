@@ -928,6 +928,7 @@ let charge = 0, charging = false, kickPower = 0, kickDone = false;
 function updatePlayer(dt) {
   if (pstate === 'riding') return updateRiding(dt);
   if (pstate === 'toDrink' || pstate === 'drinking') return updateDrinking(dt);
+  if (FTN_STATES.includes(pstate)) return updateFountainDrink(dt);
   if (interactions()) return;
   const a = petike;
   let ix = 0, iy = 0;
@@ -1308,7 +1309,7 @@ function finishIntro() {
 
 // ---------------------------------------------------------------- play activities: drinking fountain, scooter, worried dad
 const DRINK = { x: 28.3, z: -12.9, stand: [28.3, -12.36] };
-let pstate = 'free';            // free | toDrink | drinking | riding
+let pstate = 'free';            // free | toDrink | drinking | riding | toFountain | ftnDrink | caught | chased | atMom
 let usePressed = false, drinkT = 0, gulpT = 0, rollerCol = null, lastKick = null;
 function setPrompt(txt) {
   const el = $('prompt'); if (el.textContent !== txt) el.textContent = txt;
@@ -1319,12 +1320,14 @@ function setPrompt(txt) {
 function interactions() {
   const p = petike.pos;
   const dDrink = Math.hypot(p.x - DRINK.x, p.z - DRINK.z), dRoll = Math.hypot(p.x - roller.pos.x, p.z - roller.pos.z);
-  const canDrink = dDrink < 1.6, canRide = dRoll < 1.5 && !roller.rider;
-  setPrompt(canDrink ? 'E – inni az ivókútból' : canRide ? 'E – felszállni a rollerre' : '');
+  const dFtn = Math.hypot(p.x - FOUNTAIN.x, p.z - FOUNTAIN.z);
+  const canDrink = dDrink < 1.6, canRide = dRoll < 1.5 && !roller.rider, canFtn = dFtn < FOUNTAIN.r + 1.0;
+  setPrompt(canDrink ? 'E – inni az ivókútból' : canRide ? 'E – felszállni a rollerre' : canFtn ? 'E – inni a szökőkútból' : '');
   if (!usePressed) return false;
   usePressed = false;
   if (canDrink) { startDrink(); return true; }
   if (canRide) { mountScooter(); return true; }
+  if (canFtn) { startFountain(); return true; }
   return false;
 }
 
@@ -1351,6 +1354,138 @@ function updateDrinking(dt) {
     if (petyaMode === 'bench' && rand() < 0.8) setTimeout(() => { say(petya, pick(['Ne igyál annyit, megfájdul a hasad!', 'Csak kortyolgasd, ne vedeld!', 'Ivás után ne rohanj rögtön!', 'Megint iszol? Most ittál!']), 2.6); petya.point = 1.2; }, 900);
   }
   a.sync();
+}
+
+// ---------- drinking from the FOUNTAIN (forbidden!) → dad runs over, lectures, chases Petike back to Angi
+// pstate: toFountain → ftnDrink → caught → chased → atMom → free;  petyaMode: ftnStand → ftnRun → ftnScold → ftnChase → ftnWait → seat
+const FTN_WAY = [22.6, -11.6];                       // round the pitch fence's north-west corner
+const ftnMom = () => [SEAT.angi[0], -11.15];         // in front of Angi on the family bench
+const ftn = { spot: null, t: 0, lineT: 0, count: 0, seq: null, stuckT: 0, ghostT: 0, lastP: new V3(), path: null };
+// tiny sequencer: [[delay, fn, untilFn?], …] – each step waits `delay` seconds (and until `untilFn()` is true), then runs fn
+function runSeq(steps) { ftn.seq = { steps, i: 0, t: 0 }; }
+function tickSeq(dt) {
+  const s = ftn.seq; if (!s) return;
+  s.t += dt; const st = s.steps[s.i];
+  if (!st) { ftn.seq = null; return; }
+  if (s.t >= st[0] && (!st[2] || st[2]())) { s.i++; s.t = 0; st[1](); }
+}
+const FTN_SHOUT = ['PETIKEEE!!! Abból NE igyál!!', 'Állj! Az nem ivókút, az SZÖKŐKÚT!', 'Jaj ne… ne… NEEE! Petike!!'];
+const FTN_SHOUT_AGAIN = ['MÁR MEGINT?!', 'Ezt nem hiszem el! MEGINT?!', 'Hányszor mondjam még?!'];
+const FTN_RUN = ['A térdem… de most nem érdekel!', 'Köpd ki! KÖPD KI!', 'Tegye le mindenki, aki ezt látja!', 'Mindjárt ott vagyok!!'];
+const FTN_SIP = ['Hmm… kicsit galambos íze van.', 'Ez pezsgőbb, mint az ivókút!', 'Glugy… van benne egy pénzérme!', 'Ez a legjobb víz a parkban!', 'Csak egy kortyot… meg még egyet…'];
+const FTN_SCOLD = ['Tudod te, hány galamb fürdött ebben ma?!', 'Ebbe a fél város beledobta az aprópénzét!', 'Ez nem ivóvíz! Ez DÍSZVÍZ! DÍSZ-VÍZ!', 'Ha elrontod a gyomrod, ki visz orvoshoz? ÉN!', 'Láttam egy kutyát, aki ebből ivott. Az is megbánta!', 'Az ivókút ott van! Tíz méterre! TÍZ!'];
+const FTN_EXCUSE = ['De ez szebb ivókút…', 'De szökőkút-íze van!', 'A galambok is ebből isznak…', 'Csak megkóstoltam!'];
+const FTN_CHASE = ['Futás anyához! És ne nézz vissza!', 'Majd otthon megbeszéljük!', 'Ezt elmondom a nagymamának!', 'Kiköpni! … Mindegy, már késő.', 'Az ivókút! Az IVÓKÚT a barátod!', 'Gyerünk, gyerünk, anyához!'];
+function startFountain() {
+  pstate = 'toFountain'; pvel.set(0, 0, 0); charging = false; petike.kickT = -1; setPrompt(''); $('charge').style.display = 'none';
+  const dx = petike.pos.x - FOUNTAIN.x, dz = petike.pos.z - FOUNTAIN.z, d = Math.hypot(dx, dz) || 1;
+  ftn.spot = [FOUNTAIN.x + dx / d * (FOUNTAIN.r + 0.3), FOUNTAIN.z + dz / d * (FOUNTAIN.r + 0.3)];
+  ftn.t = 0; ftn.lineT = 1.6; ftn.seq = null; ftn.count++;
+  dadFountainAlarm();
+}
+function dadFountainAlarm() {
+  const p = petya; p.path = null; p.sitTarget = 0; p.cheer = 0;
+  petyaMode = 'ftnStand'; dad.talkT = 99; dad.lineT = 2.2;
+  say(p, ftn.count > 1 ? pick(FTN_SHOUT_AGAIN) : pick(FTN_SHOUT), 2.4); p.point = 1.5;
+  setTimeout(() => { if (petyaMode.startsWith('ftn')) say(angi, pick(['Jaj, Petya, ne kiabálj…', 'Ó, csak egy kortyot ivott!', 'Petya, a szíved!']), 2.2); }, 1600);
+}
+// autopilot run for Petike along ftn.path (collides; ghosts through if stuck)
+function autoRun(a, speed, dt) {
+  if (!ftn.path || !ftn.path.length) return true;
+  const t = ftn.path[0], dx = t[0] - a.pos.x, dz = t[1] - a.pos.z, d = Math.hypot(dx, dz);
+  if (d < 0.12) { ftn.path.shift(); return !ftn.path.length; }
+  const st = Math.min(d, speed * dt); a.pos.x += dx / d * st; a.pos.z += dz / d * st;
+  if (ftn.ghostT > 0) ftn.ghostT -= dt; else collide(a.pos, 0.26, 0, null);
+  ftn.stuckT += dt;
+  if (ftn.stuckT > 0.8) { if (a.pos.distanceTo(ftn.lastP) < 0.4) ftn.ghostT = 0.7; ftn.lastP.copy(a.pos); ftn.stuckT = 0; }
+  a.targetHeading = Math.atan2(dx, dz); a.heading = dampAngle(a.heading, a.targetHeading, 12, dt);
+  a.animate(dt, true, speed); return false;
+}
+function updateFountainDrink(dt) {
+  const a = petike, r = a.rig;
+  kickPressed = kickReleased = false; usePressed = false;
+  ftn.t += dt;
+  if (pstate === 'toFountain') {
+    const dx = ftn.spot[0] - a.pos.x, dz = ftn.spot[1] - a.pos.z, d = Math.hypot(dx, dz);
+    if (d > 0.05) { const st = Math.min(d, 2.4 * dt); a.pos.x += dx / d * st; a.pos.z += dz / d * st; a.targetHeading = Math.atan2(dx, dz); a.heading = dampAngle(a.heading, a.targetHeading, 12, dt); a.animate(dt, true, 2.4); }
+    else { pstate = 'ftnDrink'; drinkT = 0; gulpT = 0.5; }
+  } else if (pstate === 'ftnDrink') {
+    // leans over the rim and slurps straight from the basin, blissfully unaware
+    drinkT += dt; a.heading = dampAngle(a.heading, Math.atan2(FOUNTAIN.x - a.pos.x, FOUNTAIN.z - a.pos.z), 10, dt); a.animate(dt, false, 0);
+    const k = Math.min(1, drinkT * 2.5);
+    r.inner.rotation.x = 0.85 * k; r.sh[0].rotation.x = -1.2 * k; r.sh[1].rotation.x = -1.2 * k; r.sh[0].rotation.z = -0.35 * k; r.sh[1].rotation.z = 0.35 * k;
+    if (drinkT > 0.4) {
+      const fx = Math.sin(a.heading), fz = Math.cos(a.heading);
+      if (rand() < 0.5) spawnFx(new V3(a.pos.x + fx * 0.55, 0.5, a.pos.z + fz * 0.55), new V3(R(-0.4, 0.4), R(0.6, 1.2), R(-0.4, 0.4)), pick([0x8fd8ff, 0xc9efff, 0x5ec2f2]), 0.05, 0.4, 6);
+      gulpT -= dt; if (gulpT <= 0) { gulpT = 0.36; tone('sine', 230, 120, 0.09, 0.12); }
+      ftn.lineT -= dt; if (ftn.lineT <= 0) { ftn.lineT = R(2.6, 3.4); say(a, pick(FTN_SIP), 2.2); }
+    }
+  } else if (pstate === 'caught') {
+    // straightens up, turns to dad – no escape
+    a.heading = dampAngle(a.heading, Math.atan2(petya.pos.x - a.pos.x, petya.pos.z - a.pos.z), 8, dt); a.animate(dt, false, 0);
+  } else if (pstate === 'chased') {
+    if (autoRun(a, 4.0, dt)) {
+      pstate = 'atMom'; a.targetHeading = Math.PI;
+      say(a, pick(['Anyaaa! Apa megint kiabál!', 'Anya, ments meg!', 'Anyaaa! Apa üldöz!']), 2.4);
+    }
+  } else if (pstate === 'atMom') {
+    a.heading = dampAngle(a.heading, Math.PI, 8, dt); a.animate(dt, false, 0);
+  }
+  a.pos.x = clamp(a.pos.x, GX0 + 1, GX1 - 1); a.pos.z = clamp(a.pos.z, GZ0 + 1, GZ1 - 1);
+  a.sync();
+}
+function updateDadFountain(dt) {
+  const p = petya, a = petike;
+  dad.lineT -= dt;
+  if (petyaMode === 'ftnStand') { if (p.sit < 0.05) petyaMode = 'ftnRun'; return; }
+  if (petyaMode === 'ftnRun') {
+    // run to Petike, round the pitch fence if needed (stand on his bench-side)
+    const fx = Math.sin(a.heading), fz = Math.cos(a.heading);
+    const goal = [a.pos.x - fx * 1.1 + 0.4, a.pos.z - fz * 1.1 - 0.4];
+    const t = p.pos.x > FTN_WAY[0] + 0.6 ? FTN_WAY : goal;
+    p.path = [new V3(t[0], 0, t[1])]; p.speed = 4.6; p.keepHeading = false;
+    if (dad.lineT <= 0) { dad.lineT = R(2.6, 3.4); say(p, pick(FTN_RUN), 2.2); }
+    if (Math.hypot(p.pos.x - goal[0], p.pos.z - goal[1]) < 0.3 && pstate === 'ftnDrink') {
+      p.path = null; petyaMode = 'ftnScold'; pstate = 'caught'; petike.rig.inner.rotation.x = 0;
+      const s1 = pick(FTN_SCOLD); let s2 = pick(FTN_SCOLD); while (s2 === s1) s2 = pick(FTN_SCOLD);
+      runSeq([
+        [0.0, () => { say(a, 'Upsz.', 1.4); }],
+        [0.9, () => { say(p, s1, 2.6); p.point = 2.6; }],
+        [2.7, () => { say(a, pick(FTN_EXCUSE), 2.0); }],
+        [2.1, () => { say(p, s2, 2.6); p.point = 2.6; }],
+        [2.7, () => { say(p, 'Indulás vissza anyához! Futás!', 2.2); p.point = 2.2; pstate = 'chased'; ftn.path = [FTN_WAY, ftnMom()]; ftn.stuckT = 0; ftn.ghostT = 0; ftn.lastP.copy(a.pos); petyaMode = 'ftnChase'; dad.lineT = 2.4; }],
+      ]);
+    }
+    return;
+  }
+  if (petyaMode === 'ftnScold') { p.targetHeading = Math.atan2(a.pos.x - p.pos.x, a.pos.z - p.pos.z); return; }
+  if (petyaMode === 'ftnChase') {
+    // trot after him, lecturing, then stop at his own spot in front of the bench
+    const home = petyaFront(), dh = Math.hypot(p.pos.x - home[0], p.pos.z - home[1]);
+    if (pstate === 'atMom') {
+      if (dh < 0.25) {
+        p.path = null; petyaMode = 'ftnWait'; p.targetHeading = Math.atan2(a.pos.x - p.pos.x, a.pos.z - p.pos.z);
+        const v = rand() < 0.5;
+        runSeq([
+          [0.3, () => { say(p, 'Angi, a szökőkútból ivott! A SZÖKŐKÚTBÓL!', 2.6); p.point = 2.4; }],
+          [2.6, () => { say(angi, v ? 'Petya, te is ittál belőle kilencvenkettőben. Láttalak.' : 'Kicsim, legközelebb az ivókútból, jó? Apa kedvéért.', 2.8); }],
+          [2.8, () => { say(p, v ? 'Az más volt! Akkor még… tisztább volt!' : 'Az ivókútból! Ami OTT van! Látod? OTT!', 2.6); p.point = 2.2; }],
+          [2.7, () => { say(a, 'Akkor most ihatok az ivókútból?', 2.2); }],
+          [2.2, () => { say(p, 'IGEN!', 1.6); say(angi, 'IGEN!', 1.6); p.cheer = 0.5; }],
+          [1.6, () => { pstate = 'free'; petyaMode = 'seat'; dad.seatPhase = 0; dad.seatT = 0.6; dad.talkT = R(5, 7); p.targetHeading = 0; }],
+        ]);
+        return;
+      }
+    }
+    const t = pstate === 'atMom' ? navTarget(p.pos, home) : (() => { const fx = Math.sin(a.heading), fz = Math.cos(a.heading); return [a.pos.x - fx * 1.8, a.pos.z - fz * 1.8]; })();
+    const tt = pstate !== 'atMom' && p.pos.x < FTN_WAY[0] - 0.3 && a.pos.x > FTN_WAY[0] - 0.3 ? FTN_WAY : t;
+    const d = Math.hypot(p.pos.x - tt[0], p.pos.z - tt[1]);
+    if (d > 0.15) { p.path = [new V3(tt[0], 0, tt[1])]; p.speed = pstate === 'atMom' ? 2.4 : clamp(2.6 + (d - 1) * 1.2, 2.6, 4.4); p.keepHeading = false; }
+    else { p.path = null; p.targetHeading = Math.atan2(a.pos.x - p.pos.x, a.pos.z - p.pos.z); }
+    if (dad.lineT <= 0 && pstate === 'chased') { dad.lineT = R(2.2, 3.0); say(p, pick(FTN_CHASE), 2.2); p.point = 1.2; }
+    return;
+  }
+  if (petyaMode === 'ftnWait') p.targetHeading = Math.atan2(a.pos.x - p.pos.x, a.pos.z - p.pos.z);
 }
 
 // ---------- scooter
@@ -1434,8 +1569,11 @@ function dadStartFollow() {
 }
 function dadReturn() { petyaMode = 'return'; dad.talkT = 1.6; }
 function dadAlarm() { if (dad.alarmT > clockT) return; dad.alarmT = clockT + 2; say(petya, pick(['Jaj! Megütötted magad?!', 'Mondtam, hogy vigyázz!', 'Nekimentél! Na tessék!']), 2.2); petya.point = 1.2; dad.talkT = 3; }
+const FTN_STATES = ['toFountain', 'ftnDrink', 'caught', 'chased', 'atMom'];
 function updateDad(dt) {
   const p = petya;
+  tickSeq(dt);
+  if (petyaMode.startsWith('ftn')) return updateDadFountain(dt);
   if (petyaMode === 'standing') { if (p.sit < 0.05) { p.walkTo([petyaFront()], 1.4); petyaMode = 'leaving'; } }
   else if (petyaMode === 'leaving') { if (!p.path) petyaMode = pstate === 'riding' ? 'follow' : 'return'; }
   else if (petyaMode === 'follow') {
@@ -1550,7 +1688,7 @@ function step(dt) {
     petya.update(dt); angi.update(dt);
     if (mode === 'play') updatePlayer(dt); else petike.update(dt);
     if ((roller.rider || roller.path) && pstate !== 'riding') rollerRide(dt);
-    if (mode === 'play') { updateDad(dt); if (petyaMode === 'follow' || petyaMode === 'return') { collide(petya.pos, 0.3, 0, null); petya.sync(); } }
+    if (mode === 'play') { updateDad(dt); if (['follow', 'return', 'ftnRun', 'ftnChase'].includes(petyaMode)) { collide(petya.pos, 0.3, 0, null); petya.sync(); } }
     updateBall(dt);
     usePressed = false;
   }
@@ -1596,6 +1734,8 @@ async function boot() {
   const btn = $('startBtn'); btn.disabled = false; btn.textContent = 'Indítás ▶';
   btn.onclick = () => { initAudio(); $('overlay').classList.add('hide'); runIntro(); };
   requestAnimationFrame(frame);
-  window.__game = { THREE, scene, camera, renderer, petike: () => petike, petya: () => petya, angi: () => angi, ball, roller, keys, skipIntro, get mode() { return mode; }, get pstate() { return pstate; }, get petyaMode() { return petyaMode; }, use: () => { usePressed = true; }, roller, setZoom: (z) => { zoomOverride = z; viewSizeTarget = z; viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { kickPressed = true; setTimeout(() => { kickReleased = true; }, p); } };
+  window.__game = { THREE, scene, camera, renderer, petike: () => petike, petya: () => petya, angi: () => angi, ball, roller, keys, skipIntro, get mode() { return mode; }, get pstate() { return pstate; }, get petyaMode() { return petyaMode; }, use: () => { usePressed = true; }, roller, setZoom: (z) => { zoomOverride = z; viewSizeTarget = z; viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { kickPressed = true; setTimeout(() => { kickReleased = true; }, p); },
+    // manual stepping (works even when the tab is hidden and rAF is paused): __game.tick(seconds)
+    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) step(dt); renderer.render(scene, camera); }, ftn };
 }
 boot();
