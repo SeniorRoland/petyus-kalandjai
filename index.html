@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Petike a parkban</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --ink:#2b2d42; --accent:#ff7a3d; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; overflow:hidden; background:#9fd6f0; font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif; user-select:none; -webkit-user-select:none; }
+  #app canvas { display:block; touch-action:none; }
+
+  #overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:linear-gradient(160deg,#8fd3ff 0%,#bfe9a8 100%); z-index:50; transition:opacity .6s; }
+  #overlay.hide { opacity:0; pointer-events:none; }
+  #overlay h1 { font-size:clamp(34px,7vw,72px); margin:0 0 6px; color:#fff; letter-spacing:2px;
+    text-shadow:0 4px 0 #3a7d44, 0 8px 18px rgba(0,0,0,.25); }
+  #overlay p { color:#24543a; font-size:18px; margin:4px 0 22px; }
+  #startBtn { font:inherit; font-size:24px; font-weight:bold; padding:14px 40px; border:0; border-radius:14px; cursor:pointer;
+    background:var(--accent); color:#fff; box-shadow:0 6px 0 #b8501f; transition:transform .1s; }
+  #startBtn:active { transform:translateY(4px); box-shadow:0 2px 0 #b8501f; }
+  #startBtn:disabled { background:#aaa; box-shadow:0 6px 0 #777; cursor:wait; }
+  #loadbar { width:260px; height:10px; background:rgba(255,255,255,.5); border-radius:6px; margin-bottom:20px; overflow:hidden; }
+  #loadbar div { height:100%; width:0; background:#3a7d44; transition:width .2s; }
+  #designLink { margin-top:18px; color:#24543a; font-size:14px; }
+  #err { color:#a00; max-width:560px; text-align:center; margin-top:16px; font-size:15px; }
+
+  #hud { position:fixed; left:14px; top:12px; z-index:10; color:#fff; font-weight:bold; font-size:22px;
+    text-shadow:0 2px 0 rgba(0,0,0,.35); display:none; }
+  #hud .chip { background:rgba(43,45,66,.55); padding:6px 14px; border-radius:12px; display:inline-block; }
+  #help { position:fixed; left:14px; bottom:12px; z-index:10; color:#fff; background:rgba(43,45,66,.6);
+    padding:10px 14px; border-radius:12px; font-size:14px; line-height:1.55; display:none; max-width:430px; }
+  #help b { color:#ffd166; }
+  #topright { position:fixed; right:12px; top:12px; z-index:10; display:flex; gap:8px; }
+  .btn { font:inherit; font-weight:bold; font-size:15px; border:0; border-radius:10px; padding:8px 14px; cursor:pointer;
+    background:rgba(43,45,66,.65); color:#fff; }
+  .btn:hover { background:rgba(43,45,66,.85); }
+  #skipBtn { display:none; }
+
+  #charge { position:fixed; left:50%; bottom:34px; transform:translateX(-50%); width:220px; height:16px; z-index:10;
+    background:rgba(43,45,66,.55); border-radius:9px; padding:3px; display:none; }
+  #charge div { height:100%; width:0; border-radius:6px; background:linear-gradient(90deg,#7ddc5a,#ffd166,#ff5c3d); }
+
+  #big { position:fixed; left:0; right:0; top:28%; text-align:center; z-index:20; pointer-events:none;
+    font-size:clamp(60px,12vw,140px); font-weight:900; color:#ffd166; letter-spacing:4px;
+    text-shadow:0 6px 0 #c2410c, 0 12px 30px rgba(0,0,0,.35); opacity:0; transform:scale(.4); transition:opacity .25s, transform .35s cubic-bezier(.2,1.6,.4,1); }
+  #big.show { opacity:1; transform:scale(1); }
+
+  #prompt { position:fixed; left:50%; bottom:64px; transform:translateX(-50%); z-index:14; background:rgba(255,255,255,.92); color:var(--ink);
+    border:2px solid var(--ink); border-radius:10px; padding:6px 14px; font-weight:bold; font-size:16px; display:none; pointer-events:none; }
+  #useBtn { position:fixed; right:150px; bottom:120px; width:76px; height:76px; border-radius:50%; z-index:11; border:0; background:rgba(58,125,68,.9); color:#fff; font-weight:bold; font-size:13px; display:none; }
+  #toast { position:fixed; left:50%; top:16px; transform:translateX(-50%); z-index:15; background:rgba(43,45,66,.75); color:#fff;
+    padding:10px 18px; border-radius:12px; font-size:16px; opacity:0; transition:opacity .4s; pointer-events:none; text-align:center; }
+  #toast.show { opacity:1; }
+
+  #bubbles { position:fixed; inset:0; pointer-events:none; z-index:12; }
+  .bubble { position:absolute; transform:translate(-50%,-100%); background:#fff; color:var(--ink); padding:7px 12px;
+    border-radius:12px; font-size:15px; max-width:240px; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.15);
+    border:2px solid var(--ink); white-space:normal; animation:pop .25s ease-out; }
+  .bubble:after { content:""; position:absolute; left:50%; bottom:-10px; margin-left:-8px; border:8px solid transparent;
+    border-top-color:var(--ink); border-bottom:0; }
+  .bubble b { color:#c2410c; display:block; font-size:12px; }
+  @keyframes pop { from { transform:translate(-50%,-80%) scale(.5); opacity:0; } }
+
+  #touch { display:none; }
+  #joy { position:fixed; left:24px; bottom:24px; width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,.18);
+    border:3px solid rgba(255,255,255,.45); z-index:11; }
+  #joyKnob { position:absolute; left:45px; top:45px; width:50px; height:50px; border-radius:50%; background:rgba(255,255,255,.7); }
+  #kickBtn { position:fixed; right:28px; bottom:40px; width:110px; height:110px; border-radius:50%; z-index:11; border:0;
+    background:rgba(255,122,61,.85); color:#fff; font-weight:bold; font-size:18px; box-shadow:0 6px 0 #b8501f; }
+  #runBtn { position:fixed; right:150px; bottom:30px; width:76px; height:76px; border-radius:50%; z-index:11; border:0;
+    background:rgba(43,45,66,.6); color:#fff; font-weight:bold; font-size:14px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="bubbles"></div>
+
+<div id="overlay">
+  <h1>Petike a parkban</h1>
+  <p>Egy vasárnap délután Petyával, Angival és Petikével</p>
+  <div id="loadbar"><div></div></div>
+  <button id="startBtn" disabled>Betöltés…</button>
+  <div id="err"></div>
+  <a id="designLink" href="designterv.html" target="_blank" rel="noopener">Objektumkatalógus (design terv) ↗</a>
+</div>
+
+<div id="hud"><span class="chip">⚽ Gólok: <span id="score">0</span></span></div>
+<div id="topright">
+  <button class="btn" id="skipBtn">Kihagyás ⏭</button>
+  <button class="btn" id="muteBtn">🔊</button>
+</div>
+<div id="help">
+  <b>WASD / nyilak</b> – mozgás &nbsp; <b>Shift</b> – futás<br>
+  <b>Szóköz</b> – rúgás (tartsd nyomva az erősebb, magasabb lövéshez)<br>
+  <b>E</b> – ivókút / roller fel-le &nbsp; <b>R</b> – labda ide<br><b>Görgő</b> – zoom &nbsp; <b>M</b> – hang &nbsp; <b>H</b> – súgó elrejtése
+</div>
+<div id="charge"><div></div></div>
+<div id="big">GÓÓÓL!</div>
+<div id="toast"></div>
+<div id="prompt"></div>
+
+<div id="touch">
+  <div id="joy"><div id="joyKnob"></div></div>
+  <button id="useBtn">HASZNÁL</button>
+  <button id="runBtn">FUTÁS</button>
+  <button id="kickBtn">RÚGÁS</button>
+</div>
+
+<script type="module" src="/src/game.js"></script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Petike objektumkatalógus</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: one-screen specimen catalogue — object list | 3D stage | spec sheet. Graph-paper ground, ink text, park-green accent. */
+  :root {
+    --paper: #f3f5ef; --panel: #ffffff; --ink: #1f2a24; --muted: #5d6b62; --line: #d9dfd5;
+    --accent: #3f8f3a; --accent-2: #ff7a3d; --stage: #e4ece2;
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --paper: #141a17; --panel: #1b231f; --ink: #e6efe8; --muted: #9db0a4; --line: #2c3832; --accent: #7dcf6c; --accent-2: #ff9b66; --stage: #1f2a24; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --paper: #141a17; --panel: #1b231f; --ink: #e6efe8; --muted: #9db0a4; --line: #2c3832; --accent: #7dcf6c; --accent-2: #ff9b66; --stage: #1f2a24; color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--paper); color: var(--ink); font: 15px/1.5 var(--body); display: grid; grid-template-rows: auto 1fr; overflow: hidden;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 24px 24px; background-position: -1px -1px; }
+  header { display: flex; flex-wrap: wrap; align-items: end; gap: 12px 28px; padding: 14px 20px 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { font: 800 24px/1.1 var(--display); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  header .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .tiers { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+  .tier { font: 500 12px var(--mono); padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); white-space: nowrap; }
+  .tier b { color: var(--accent); font-weight: 500; }
+
+  main { display: grid; grid-template-columns: 270px 1fr 330px; min-height: 0; }
+  nav { overflow-y: auto; border-right: 1px solid var(--line); background: var(--panel); padding: 10px 10px 24px; }
+  nav h2 { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 14px 6px 6px; display: flex; justify-content: space-between; }
+  nav button { display: grid; grid-template-columns: 52px 1fr; gap: 10px; align-items: center; width: 100%; text-align: left; border: 1px solid transparent;
+    background: none; color: inherit; font: inherit; padding: 5px 6px; border-radius: 8px; cursor: pointer; }
+  nav button:hover { background: var(--paper); }
+  nav button[aria-current="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
+  nav button:focus-visible, .tool:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+  nav .thumb { width: 52px; height: 52px; border-radius: 6px; background: var(--stage); display: block; object-fit: contain; }
+  nav .nm { font-weight: 500; font-size: 14px; line-height: 1.25; }
+  nav .vx { font: 12px var(--mono); color: var(--muted); }
+
+  #stage { position: relative; min-width: 0; min-height: 0; background: var(--stage); }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .toolbar { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .tool { font: 500 13px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 7px 11px; border-radius: 8px; cursor: pointer; }
+  .tool[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .tool:disabled { opacity: .45; cursor: default; }
+  .variant { font: 500 13px var(--mono); align-self: center; padding: 0 6px; color: var(--muted); }
+  .hint { position: absolute; top: 12px; left: 12px; font: 12px var(--mono); color: var(--muted); background: color-mix(in srgb, var(--panel) 80%, transparent); padding: 4px 8px; border-radius: 6px; }
+
+  aside { overflow-y: auto; border-left: 1px solid var(--line); background: var(--panel); padding: 18px 20px 28px; display: grid; gap: 18px; align-content: start; }
+  .cat { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
+  aside h2 { font: 800 26px/1.1 var(--display); margin: 2px 0 0; text-wrap: balance; }
+  aside p { margin: 0; max-width: 65ch; }
+  .use { font-size: 13px; color: var(--muted); }
+  .use b { color: var(--ink); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-weight: 500; color: var(--muted); padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); width: 38%; }
+  td { white-space: nowrap; font: 12.5px var(--mono); font-variant-numeric: tabular-nums; padding: 6px 0; border-bottom: 1px solid var(--line); text-align: right; }
+  h3 { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 8px; }
+  .swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .sw { display: grid; gap: 3px; font: 10.5px var(--mono); color: var(--muted); text-align: center; }
+  .sw i { display: block; height: 30px; border-radius: 6px; border: 1px solid var(--line); }
+  .note { font-size: 12.5px; color: var(--muted); border-left: 3px solid var(--accent-2); padding: 4px 0 4px 10px; }
+
+  @media (max-width: 980px) {
+    body { overflow: auto; grid-template-rows: auto auto; }
+    main { grid-template-columns: 1fr; }
+    #stage { height: 60vh; order: 1; }
+    aside { order: 2; border-left: 0; border-top: 1px solid var(--line); }
+    nav { order: 3; border-right: 0; border-top: 1px solid var(--line); max-height: none; }
+    .tiers { margin-left: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Petike a parkban – objektum design terv</h1>
+    <div class="sub">A játékba beépített környezeti elemek és karakterek. Minden objektum a játék <code>voxels.js</code> könyvtárából épül, ugyanúgy, mint a játékban.</div>
+  </div>
+  <div class="tiers" aria-label="Voxel felbontási szintek">
+    <span class="tier"><b>0,05 m</b> utcabútor, kerítés, fű</span>
+    <span class="tier"><b>0,08 m</b> virágágyás</span>
+    <span class="tier"><b>0,10 m</b> bokor, kő, autó, szökőkút</span>
+    <span class="tier"><b>0,15 m</b> fák</span>
+  </div>
+</header>
+<main>
+  <nav id="list" aria-label="Objektumok"></nav>
+  <section id="stage" aria-label="3D nézet">
+    <div class="hint">Húzás: forgatás · Görgő: nagyítás · Jobb gomb: mozgatás</div>
+    <div class="toolbar">
+      <button class="tool" id="prevV" aria-label="Előző változat">◀</button>
+      <span class="variant" id="vLabel">1 / 1</span>
+      <button class="tool" id="nextV" aria-label="Következő változat">▶</button>
+      <button class="tool" id="rot" aria-pressed="true">Forgatás</button>
+      <button class="tool" id="fig" aria-pressed="true">Méretarány (1,8 m alak)</button>
+      <button class="tool" id="grid" aria-pressed="true">1 m rács</button>
+      <button class="tool" id="iso">Játék nézet</button>
+    </div>
+  </section>
+  <aside id="info"></aside>
+</main>
+
+<script type="module" src="/src/designterv.js"></script>
+</body>
+</html>
