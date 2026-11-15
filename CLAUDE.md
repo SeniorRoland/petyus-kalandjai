@@ -6,6 +6,12 @@ Izometrikus, voxel stílusú 3D böngészős játék (Three.js r187 + Vite 8). P
 - Futtatás: `npm install`, majd `npm run dev` (http://localhost:5173). Build: `npm run build` → `dist/`.
 - Objektumkatalógus (design terv): `designterv.html` – ugyanazt a `src/voxels.js`-t használja, mint a játék.
 
+## Git munkafolyamat
+
+- `main`: kiadott/stabil állapot · `develop`: fejlesztési ág, a `main`-ből ágazik.
+- **Minden fejlesztés új feature ágon indul a `develop`-ból:** `git switch develop` → `git switch -c feature/<rövid-név>`, és ott commitolunk. Közvetlenül a `main`-re vagy a `develop`-ra nem commitolunk.
+- A feature ág visszaolvasztása a `develop`-ba (és a `develop` → `main`), valamint a push csak a felhasználó kérésére történik.
+
 ## Fájlok
 
 | Fájl | Tartalom |
