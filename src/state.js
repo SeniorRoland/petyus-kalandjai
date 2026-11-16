@@ -1,8 +1,12 @@
-// Petike a parkban – state: Közös játékállapot (G) és a fő objektumok (labda, roller, listák).
+// Petyus kalandjai – state: Közös játékállapot (G) és a fő objektumok (labda, roller, listák).
 import * as THREE from 'three';
 import { V3 } from './util.js';
 
 // shared, reassigned-from-anywhere game state (was module-level 'let's in game.js)
+// the series: every episode is one day in Petyus' life (the game currently is episode 1)
+export const SERIES = 'Petyus kalandjai';
+export const EPISODE = { n: 1, day: 'Vasárnap', blurb: 'egy délután a parkban Petyával, Angival és Petyussal' };
+
 export const G = {
   clockT: 0,   // util.js
   viewSize: 9,   // scene.js

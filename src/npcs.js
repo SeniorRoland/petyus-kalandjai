@@ -1,4 +1,4 @@
-// Petike a parkban – npcs: Járókelők, állatok, galambok, autók, szökőkút-vízsugár.
+// Petyus kalandjai – npcs: Járókelők, állatok, galambok, autók, szökőkút-vízsugár.
 import * as THREE from 'three';
 import { updateEvtCat, updateFlock } from './activities/cat.js';
 import { Actor, animLegs, makeCat, makeDog, makePigeon, spawnFx } from './actors.js';

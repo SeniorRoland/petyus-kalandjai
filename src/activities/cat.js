@@ -1,4 +1,4 @@
-// Petike a parkban – activities/cat: Tétlenség → magától focizás → macskatámadás → az apa a fára dobja a macskát.
+// Petyus kalandjai – activities/cat: Tétlenség → magától focizás → macskatámadás → az apa a fára dobja a macskát.
 import * as THREE from 'three';
 import { animLegs, spawnFx } from '../actors.js';
 import { noise, sBird, sMeow, soundAt } from '../audio.js';
@@ -13,7 +13,7 @@ import { FENCE, GX0, GX1, GZ0, GZ1, PITCH, TREES, groundH, partMesh, treeTop } f
 import { setPrompt } from './drinking.js';
 import { autoRun, ftn, ftnMom, runSeq } from './fountain.js';
 
-// ---------- idle on the pitch → Petike plays alone → a cat attacks → dad throws the cat onto a tree
+// ---------- idle on the pitch → Petyus plays alone → a cat attacks → dad throws the cat onto a tree
 // pstate: free → autoBall → catScared → catChased → catSafe → catToMom → catAtMom → free
 // petyaMode: bench → catStand → catRun → catCarry → catThrow → catCurse → return → seat
 // cat (an.evt): approach → hiss → chase → held → flying → tree (stays there for good)
@@ -62,7 +62,7 @@ function callCat() {
   for (const an of animals) if (an.type === 'cat' && !an.evt) { const d = an.pos.distanceTo(G.petike.pos); if (d < bd) { bd = d; best = an; } }
   cev.cat = best || false;           // false: no cats left on the ground → just keep playing
   if (!best) return;
-  // it creeps out from under the bushes south of the pitch, close to Petike – cutscene!
+  // it creeps out from under the bushes south of the pitch, close to Petyus – cutscene!
   best.evt = 'sneak'; best.y = 0; best.sneakT = 0;
   best.pos.set(clamp(G.petike.pos.x + R(-3, 3), FENCE.x0 + 2, FENCE.x1 - 2), 0, 12.4); best.heading = Math.PI;
   cineStart(() => best.pos, 4.2);
@@ -129,7 +129,7 @@ export function updateCatPetike(dt) {
       say(a, 'Segítség!!!', 1.6);
       cineEnd(10.5);   // wide shot for the merry-go-round
       runSeq([
-        [3.0, () => { say(G.petya, pick(['Csak egy macska, Petike! Ne fuss el előle!', 'Állj meg és nézz rá szigorúan!']), 2.6); G.petya.point = 1.5; }],
+        [3.0, () => { say(G.petya, pick(['Csak egy macska, Petyus! Ne fuss el előle!', 'Állj meg és nézz rá szigorúan!']), 2.6); G.petya.point = 1.5; }],
         [3.5, () => { say(G.angi, 'Petya! Csinálj már valamit!', 2.4); }],
         [CAT_DAD - 6.5, () => {
           // cutscene: the hero rises from the bench
@@ -222,13 +222,13 @@ export function updateDadCat(dt) {
   }
 }
 function onCatLanded() {
-  // Petike heads to mom (through the pitch gate), dad stays and has a word with the cat
+  // Petyus heads to mom (through the pitch gate), dad stays and has a word with the cat
   const P = G.petike.pos;
   G.pstate = 'catToMom'; ftn.path = inPitch(P.x, P.z) ? [G_IN, G_OUT, ftnMom()] : [ftnMom()]; ftn.stuckT = 0; ftn.ghostT = 0; ftn.lastP.copy(P);
   G.petyaMode = 'catCurse';
   const p = G.petya, cat = cev.cat, top = airFocus(cat.pos.x, cat.y, cat.pos.z);
   cineFocus(() => top, 6.5); cineCap('A fa lakói nem örültek a vendégnek.', 3.0);
-  runSeq([[3.0, () => cineEnd(8.5)]]);   // back to Petike
+  runSeq([[3.0, () => cineEnd(8.5)]]);   // back to Petyus
   runSeq([
     [0.8, () => { say(G.angi, 'PETYA! Az egy cica volt!', 2.2); }],
     [1.8, () => { say(p, 'Most már fáramászó cica!', 2.2); p.point = 2; }],

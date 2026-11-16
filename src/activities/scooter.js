@@ -1,4 +1,4 @@
-// Petike a parkban – activities/scooter: Rollerezés.
+// Petyus kalandjai – activities/scooter: Rollerezés.
 import { poof } from '../actors.js';
 import { sThunk } from '../audio.js';
 import { dadAlarm, dadReturn, dadStartFollow } from '../dad.js';

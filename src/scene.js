@@ -1,4 +1,4 @@
-// Petike a parkban – scene: Renderer, jelenet, ortografikus kamera, fények.
+// Petyus kalandjai – scene: Renderer, jelenet, ortografikus kamera, fények.
 import * as THREE from 'three';
 import { G } from './state.js';
 import { $, V3 } from './util.js';

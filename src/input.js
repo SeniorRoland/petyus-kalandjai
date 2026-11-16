@@ -1,4 +1,4 @@
-// Petike a parkban – input: Billentyűzet, egér, érintéses vezérlők.
+// Petyus kalandjai – input: Billentyűzet, egér, érintéses vezérlők.
 import { JUG, jugPress } from './activities/juggle.js';
 import { ambBed } from './audio.js';
 import { resetBallToPlayer } from './ball.js';

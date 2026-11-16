@@ -1,4 +1,4 @@
-// Petike a parkban – activities/fountain: Ivás a szökőkútból – az apa leszidja és visszakergeti Petikét.
+// Petyus kalandjai – activities/fountain: Ivás a szökőkútból – az apa leszidja és visszakergeti Petyust.
 import { spawnFx } from '../actors.js';
 import { tone } from '../audio.js';
 import { dad, navTarget, petyaFront } from '../dad.js';
@@ -10,13 +10,13 @@ import { $, R, V3, clamp, dampAngle, pick, rand } from '../util.js';
 import { FOUNTAIN, GX0, GX1, GZ0, GZ1, collide } from '../world.js';
 import { setPrompt } from './drinking.js';
 
-// ---------- drinking from the FOUNTAIN (forbidden!) → dad runs over, lectures, chases Petike back to Angi
+// ---------- drinking from the FOUNTAIN (forbidden!) → dad runs over, lectures, chases Petyus back to Angi
 // pstate: toFountain → ftnDrink → caught → chased → atMom → free;  petyaMode: ftnStand → ftnRun → ftnScold → ftnChase → ftnWait → seat
 const FTN_WAY = [22.6, -11.6];                       // round the pitch fence's north-west corner
 export const ftnMom = () => [SEAT.angi[0], -11.15];         // in front of Angi on the family bench
 export const ftn = { spot: null, t: 0, lineT: 0, count: 0, stuckT: 0, ghostT: 0, lastP: new V3(), path: null };
 // tiny sequencer: [[delay, fn, untilFn?], …] – each step waits `delay` seconds (and until `untilFn()` is true), then runs fn.
-// Several sequences may run at once (e.g. dad cursing while Petike talks to mom).
+// Several sequences may run at once (e.g. dad cursing while Petyus talks to mom).
 const seqs = [];
 export function runSeq(steps) { seqs.push({ steps, i: 0, t: 0 }); }
 export function tickSeq(dt) {
@@ -26,7 +26,7 @@ export function tickSeq(dt) {
     if (s.t >= st[0] && (!st[2] || st[2]())) { s.i++; s.t = 0; st[1](); }
   }
 }
-const FTN_SHOUT = ['PETIKEEE!!! Abból NE igyál!!', 'Állj! Az nem ivókút, az SZÖKŐKÚT!', 'Jaj ne… ne… NEEE! Petike!!'];
+const FTN_SHOUT = ['PETYUUUS!!! Abból NE igyál!!', 'Állj! Az nem ivókút, az SZÖKŐKÚT!', 'Jaj ne… ne… NEEE! Petyus!!'];
 const FTN_SHOUT_AGAIN = ['MÁR MEGINT?!', 'Ezt nem hiszem el! MEGINT?!', 'Hányszor mondjam még?!'];
 const FTN_RUN = ['A térdem… de most nem érdekel!', 'Köpd ki! KÖPD KI!', 'Tegye le mindenki, aki ezt látja!', 'Mindjárt ott vagyok!!'];
 const FTN_SIP = ['Hmm… kicsit galambos íze van.', 'Ez pezsgőbb, mint az ivókút!', 'Glugy… van benne egy pénzérme!', 'Ez a legjobb víz a parkban!', 'Csak egy kortyot… meg még egyet…'];
@@ -46,7 +46,7 @@ function dadFountainAlarm() {
   say(p, ftn.count > 1 ? pick(FTN_SHOUT_AGAIN) : pick(FTN_SHOUT), 2.4); p.point = 1.5;
   setTimeout(() => { if (G.petyaMode.startsWith('ftn')) say(G.angi, pick(['Jaj, Petya, ne kiabálj…', 'Ó, csak egy kortyot ivott!', 'Petya, a szíved!']), 2.2); }, 1600);
 }
-// autopilot run for Petike along ftn.path (collides; ghosts through if stuck)
+// autopilot run for Petyus along ftn.path (collides; ghosts through if stuck)
 export function autoRun(a, speed, dt) {
   if (!ftn.path || !ftn.path.length) return true;
   const t = ftn.path[0], dx = t[0] - a.pos.x, dz = t[1] - a.pos.z, d = Math.hypot(dx, dz);
@@ -96,7 +96,7 @@ export function updateDadFountain(dt) {
   dad.lineT -= dt;
   if (G.petyaMode === 'ftnStand') { if (p.sit < 0.05) G.petyaMode = 'ftnRun'; return; }
   if (G.petyaMode === 'ftnRun') {
-    // run to Petike, round the pitch fence if needed (stand on his bench-side)
+    // run to Petyus, round the pitch fence if needed (stand on his bench-side)
     const fx = Math.sin(a.heading), fz = Math.cos(a.heading);
     const goal = [a.pos.x - fx * 1.1 + 0.4, a.pos.z - fz * 1.1 - 0.4];
     const t = p.pos.x > FTN_WAY[0] + 0.6 ? FTN_WAY : goal;

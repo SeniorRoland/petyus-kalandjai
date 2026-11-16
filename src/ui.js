@@ -1,4 +1,4 @@
-// Petike a parkban – ui: Szövegbuborékok, toast, nagy felirat.
+// Petyus kalandjai – ui: Szövegbuborékok, toast, nagy felirat.
 import { camera } from './scene.js';
 import { G } from './state.js';
 import { $, V3, clamp, damp } from './util.js';

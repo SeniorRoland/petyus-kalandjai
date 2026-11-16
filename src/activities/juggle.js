@@ -1,4 +1,4 @@
-// Petike a parkban – activities/juggle: Dekázás quick-time eventtel és rekorddal.
+// Petyus kalandjai – activities/juggle: Dekázás quick-time eventtel és rekorddal.
 import { sCheer, sKick, tone } from '../audio.js';
 import { ANGI_DEFEND, dad } from '../dad.js';
 import { isTouch } from '../input.js';

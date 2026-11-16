@@ -1,4 +1,4 @@
-// Petike a parkban – audio: WebAudio szintetizált hangok, térhangzás (soundAt), park-alapzaj.
+// Petyus kalandjai – audio: WebAudio szintetizált hangok, térhangzás (soundAt), park-alapzaj.
 import { camTarget } from './scene.js';
 import { G } from './state.js';
 import { R, clamp, rand } from './util.js';

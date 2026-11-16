@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Petike a parkban</title>
+<title>Petyus kalandjai – 1. rész: Vasárnap</title>
 <link rel="icon" href="data:,">
 <style>
   :root { --ink:#2b2d42; --accent:#ff7a3d; }
@@ -17,6 +17,9 @@
   #overlay h1 { font-size:clamp(34px,7vw,72px); margin:0 0 6px; color:#fff; letter-spacing:2px;
     text-shadow:0 4px 0 #3a7d44, 0 8px 18px rgba(0,0,0,.25); }
   #overlay p { color:#24543a; font-size:18px; margin:4px 0 22px; }
+  #overlay p.episode { margin:0 0 2px; font-family:'Bangers', Impact, sans-serif; font-size:clamp(20px,3vw,30px); letter-spacing:2px; color:#1d4a32; }
+  #overlay p.episode b { color:#c2410c; font-weight:400; }
+  #overlay #epBlurb { margin-top:0; }
   #startBtn { font:inherit; font-size:24px; font-weight:bold; padding:14px 40px; border:0; border-radius:14px; cursor:pointer;
     background:var(--accent); color:#fff; box-shadow:0 6px 0 #b8501f; transition:transform .1s; }
   #startBtn:active { transform:translateY(4px); box-shadow:0 2px 0 #b8501f; }
@@ -140,8 +143,9 @@
 <svg id="tails" xmlns="http://www.w3.org/2000/svg"></svg>
 
 <div id="overlay">
-  <h1>Petike a parkban</h1>
-  <p>Egy vasárnap délután Petyával, Angival és Petikével</p>
+  <h1>Petyus kalandjai</h1>
+  <p class="episode"><span id="epNum">1. rész:</span> <b id="epDay">Vasárnap</b></p>
+  <p id="epBlurb">egy délután a parkban Petyával, Angival és Petyussal</p>
   <div id="loadbar"><div></div></div>
   <button id="startBtn" disabled>Betöltés…</button>
   <div id="err"></div>

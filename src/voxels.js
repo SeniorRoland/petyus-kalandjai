@@ -1,5 +1,5 @@
 // =====================================================================
-//  Petike a parkban – voxel objektumkönyvtár
+//  Petyus kalandjai – voxel objektumkönyvtár
 //  Minden beépített környezeti elem itt van definiálva. A játék (world.js)
 //  és a design terv (designterv.html) ugyanezt a modult használja.
 // =====================================================================
@@ -343,7 +343,7 @@ export const CATALOG = [
   { id: 'lamp', name: 'Kandeláber', cat: 'Utcabútor', variants: 1, build: lamp, collider: { r: 0.15, h: 4 }, desc: 'Lépcsős talp, díszgyűrűs oszlop, üvegezett lámpaház tetővel és csúcsdísszel. 3,6 m magas.', use: 'Sétányok, utca' },
   { id: 'picnic', name: 'Piknikasztal', cat: 'Utcabútor', variants: 2, build: picnicTable, collider: { hx: 0.9, hz: 0.7, h: 0.8 }, desc: 'Asztallap két rögzített paddal és X-lábakkal.', use: 'Park nyugati része' },
   { id: 'bikerack', name: 'Kerékpártámasz', cat: 'Utcabútor', variants: 1, build: bikeRack, collider: { hx: 1.0, hz: 0.08, h: 0.8 }, desc: 'Négy fordított U alakú acél kengyel közös talpon.', use: 'Pálya bejárata' },
-  { id: 'drink', name: 'Ivókút', cat: 'Utcabútor', variants: 1, build: drinkFountain, collider: { r: 0.25, h: 1.1 }, desc: 'Kő oszlop medencével és réz csappal. Ide jár inni Petike.', use: 'Pálya kapuja mellett' },
+  { id: 'drink', name: 'Ivókút', cat: 'Utcabútor', variants: 1, build: drinkFountain, collider: { r: 0.25, h: 1.1 }, desc: 'Kő oszlop medencével és réz csappal. Ide jár inni Petyus.', use: 'Pálya kapuja mellett' },
   { id: 'hydrant', name: 'Tűzcsap', cat: 'Utcabútor', variants: 1, build: hydrant, collider: { r: 0.18, h: 0.8 }, desc: 'Piros föld feletti tűzcsap oldalsó csonkokkal.', use: 'Járda' },
   { id: 'fountain', name: 'Szökőkút', cat: 'Park', variants: 1, build: fountain, collider: { r: 2.65, h: 0.65 }, water: [{ r: 2.2, y: 0.42 }, { r: 0.75, y: 1.5 }, { r: 0.35, y: 2.12 }], desc: 'Kőtömbös medence csempézett aljjal, kétszintes tál, középső kifolyó. A víz külön, áttetsző réteg.', use: 'Park közepe' },
   { id: 'rock', name: 'Kő', cat: 'Park', variants: 4, build: rock, collider: { r: 0.4, h: 0.4 }, desc: 'Szabálytalan szikla, a tetején mohával.', use: 'Park, szökőkút környéke' },

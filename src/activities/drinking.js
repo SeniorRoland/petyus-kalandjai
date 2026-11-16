@@ -1,4 +1,4 @@
-// Petike a parkban – activities/drinking: Interakciók (E) és az ivókút.
+// Petyus kalandjai – activities/drinking: Interakciók (E) és az ivókút.
 import { spawnFx } from '../actors.js';
 import { tone } from '../audio.js';
 import { isTouch } from '../input.js';

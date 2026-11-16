@@ -1,4 +1,4 @@
-// Petike a parkban – roller: A roller modellje és a rajta álló Petike pózai.
+// Petyus kalandjai – roller: A roller modellje és a rajta álló Petyus pózai.
 import { resetPose } from './rigs.js';
 import { roller } from './state.js';
 import { angDiff, clamp, damp, dampAngle } from './util.js';
@@ -7,7 +7,7 @@ import { groundH } from './world.js';
 // ---------------------------------------------------------------- roller (scooter)
 // rider stances: legacy = original petike_roller.glb (has a 0.12 rad yaw baked in), skinned = rigged T-pose model
 const RIDE_LEGACY = { x: 0.06, z: 0.16, ry: -0.12, lean: 0.15, front: -0.14, back: 0.22, sh: -0.9, shz: 0.05 };
-const RIDE_SKINNED = { x: 0.0, z: 0.08, ry: 0, lean: 0.36, front: -0.14, back: 0.22, sh: -0.16, shz: -0.06, elbow: 0.3 };   // fitted so the hands sit on the grips (Petike × 1.14 ≈ 1.5 m: he leans over the kid-size scooter)
+const RIDE_SKINNED = { x: 0.0, z: 0.08, ry: 0, lean: 0.36, front: -0.14, back: 0.22, sh: -0.16, shz: -0.06, elbow: 0.3 };   // fitted so the hands sit on the grips (Petyus × 1.14 ≈ 1.5 m: he leans over the kid-size scooter)
 export function rollerRide(dt) {
   const ro = roller;
   if (ro.scripted) return;   // the prologue drives the scooter itself
