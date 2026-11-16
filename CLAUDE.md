@@ -60,7 +60,7 @@ Izometrikus, voxel stílusú 3D böngészős játék (Three.js r187 + Vite 8). P
   - Kar előre lendítése: `sh.rotation.x < 0`; comb előre: `hip.rotation.x < 0`; térd hajlítása: `knee.rotation.x > 0`.
   - `Actor.sync()` hívja az `apply()`-t; aki közvetlenül pózol (pl. `poseRider`), annak is hívnia kell.
 - Ülés: `sitKnee()` a lábszár hossza (`rig.kneeH`) alapján dönti meg a lábszárat, hogy a talp a földön legyen (a `rig.foot` csont vízszintesen tartja a talpat).
-- `CFG` (skála + régi felosztási küszöbök): Petya 0.93, Angi 0.86, focista Petike 0.70, rolleres Petike 0.95; a roller 0.72.
+- `CFG` (skála + régi felosztási küszöbök): Petya 0.93, Angi 0.86, focista Petike 0.77, rolleres Petike 1.045 (≈ 1,38 m, Petya 1,86 m, Angi 1,75 m); a roller 0.72. Ha Petike méretét változtatod, a rolleren a kéz–kormány illesztést (`RIDE_SKINNED` a `roller.js`-ben) újra kell hangolni.
 - Ha nem skinnelt GLB-t kap, a `rigFromGLTF` a régi módon (voxel-y/x küszöbökkel) bontja végtagokra.
 - **Gyakori hiba:** Blenderből FBX-et menteni `.glb` névvel → a betöltés elhasal. Mindig glTF 2.0 Binary (.glb) export.
 

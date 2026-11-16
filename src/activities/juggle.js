@@ -24,9 +24,9 @@ export function canJuggle() {
 }
 function jugContact(part, out) {
   const a = G.petike, h = a.heading, fx = Math.sin(h), fz = Math.cos(h), lx = Math.cos(h), lz = -Math.sin(h);   // forward, left (+X at heading 0)
-  if (part === 'U') return out.set(a.pos.x + fx * 0.05, 1.45, a.pos.z + fz * 0.05);
+  if (part === 'U') return out.set(a.pos.x + fx * 0.05, a.rig.height + 0.19, a.pos.z + fz * 0.05);   // just above the head
   const s = part === 'L' ? 0.1 : -0.1;
-  return out.set(a.pos.x + fx * 0.28 + lx * s, 0.32, a.pos.z + fz * 0.28 + lz * s);
+  return out.set(a.pos.x + fx * 0.3 + lx * s, 0.35, a.pos.z + fz * 0.3 + lz * s);
 }
 function jugUI(show) {
   $('juggle').style.display = show ? 'block' : 'none';

@@ -13,8 +13,8 @@ function makeRigShell(scale) {
 export const CFG = {
   petya:  { scale: 0.93, hipY: 0.758, kneeY: 0.361, split: 0, armX: [-0.345, 0.345], armY: [0.77, 1.42] },
   angi:   { scale: 0.86, hipY: 0.598, kneeY: 0.281, split: 0, armX: [-0.265, 0.265], armY: [0.95, 1.6] },
-  foci:   { scale: 0.70, hipY: 0.398, kneeY: 0.201, split: 0, armX: [-0.265, 0.265], armY: [0.58, 1.27] },
-  roller: { scale: 0.95, hipY: 0.56, hipPivot: 0.53, kneeY: -1, split: 0.085, armX: [-0.06, 0.22], armY: [0.5, 0.95], perMesh: true },
+  foci:   { scale: 0.77, hipY: 0.398, kneeY: 0.201, split: 0, armX: [-0.265, 0.265], armY: [0.58, 1.27] },
+  roller: { scale: 1.045, hipY: 0.56, hipPivot: 0.53, kneeY: -1, split: 0.085, armX: [-0.06, 0.22], armY: [0.5, 0.95], perMesh: true },
 };
 // Rigged (skinned, T-pose, Mixamo bone names) character → same rig interface as the voxel-split one.
 // hip/knee are the leg bones; sh[] are proxies with the old "hanging arm" meaning, applied on top of a base
