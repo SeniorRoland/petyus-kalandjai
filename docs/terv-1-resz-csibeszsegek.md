@@ -13,12 +13,12 @@ Javasolt sorrend: **1 → 2 → 3**, utána tetszés szerint. Elsőként a köz�
   - Fejléc: összesen **⭐ x / 30** és „y / 10 csibészség”.
 - **Összesítés máshol:** a HUD-on a gólok és a dekázás-rekord mellett ⭐ x/30; a kezdőképernyő augusztusi csempéjén is (pl. „⭐ 7/30”).
 - **Mentés:** a böngészőben (`localStorage`, kulcs pl. `petyus.r1.csibeszsegek`: `{ id: { stars, best, at } }`), mint a dekázás-rekord.
-- **Kód (terv):** új `src/mischief.js`: a csibészségek listája (`id`, `title`, `hint`, `unit`, `stars: [k1, k2, k3]` küszöbök, `higherIsBetter`), `award(id, érték)` → csillagszám, mentés, felirat; a napló felülete (`#journal` panel, képregényes stílus). Minden mini játék a végén csak `award(...)`-ot hív.
+- **Kód (kész):** `src/mischief.js`: a csibészségek listája (`id`, `title`, `hint`, `unit`, `stars: [k1, k2, k3]` küszöbök, `higherIsBetter`), `award(id, érték)` → csillagszám, mentés, felirat; a napló felülete (`#journal` panel, képregényes stílus). Minden mini játék a végén csak `award(...)`-ot hív.
 - **Javaslat:** a már meglévő **szökőkút-ivás** is bekerülhetne 11. csibészségként (★ ivás; ★★ legalább 3 korty, mielőtt apa odaér; ★★★ 5 korty és Angi védelmére kel). Ekkor az összesen ⭐ 33.
 
 | # | Csibészség | ★ | ★★ | ★★★ | Tipp a naplóban (amíg nincs meg) | Állapot |
 |---|---|---|---|---|---|---|
-| 1 | Fordított edzés: Petyus tanítja apát dekázni | apa dekáz | 8 érintés | 15 érintés | „Apa mindig okosabb… vagy mégsem?” | terv |
+| 1 | Fordított edzés: Petyus tanítja apát dekázni | apa dekáz | 8 érintés | 15 érintés | „Apa mindig okosabb… vagy mégsem?” | **kész** |
 | 2 | A szundikáló apa | 3 tárgy a fején | 6 tárgy | 10 tárgy, a tetején a labda | „Ha apa sokáig ül a padon…” | terv |
 | 3 | Galambraj-vezénylés | galamb száll apára | 8 galamb | 15 galamb, 60 mp-en belül | „Angi táskájában van valami morzsás.” | terv |
 | 4 | Vízipisztoly az ivókútból | 1 találat | 8 találat | 12 találat, köztük apa feje | „Az ivókútból nem csak inni lehet.” | terv |
@@ -31,7 +31,9 @@ Javasolt sorrend: **1 → 2 → 3**, utána tetszés szerint. Elsőként a köz�
 
 ---
 
-## 1. Fordított edzés: Petyus tanítja apát dekázni
+## 1. Fordított edzés: Petyus tanítja apát dekázni  ✅ kész
+
+- **Megvalósítás** (`src/activities/coach.js`): Petyus a labdával a padon ülő apához megy → **E – Mutasd te, apa!** → rövid párbeszéd (Angi: „Petya… a derekad.”), apa feláll, 2 m-re a padtól dekázik; a játékos irányítja (ugyanaz a QTE, `jug.who = Petya`, `jug.dad`: ablak 0,13 → 0,075 mp). Petyus közben edzi: apa saját mondatai + új poénok (`KID_COACH`), mérföldkövek 3/5/8/10/15/20/25 érintésnél, Angi aggódik. Leejtés után: Petyus ítélete, apa kifogása, „ÁÚ!! A DEREKAM!”, Angi: „Hozom a Voltarent.”, csillagok (`award('apa-dekaz', n)`), apa bicegve, morogva ül vissza (`dad.limpT`).
 
 - **Játék:** Petya felveszi a kesztyűt: „Majd én megmutatom!” Most a játékos őt irányítja ugyanazzal a gyorsasági (quick-time) játékkal, mint a dekázást, csak sokkal szűkebb időablakkal („apa már nem olyan fürge”).
 - **Poén:** Petyus edzőként Petya saját szövegeivel szól be neki: „Fejet fel, apa!”, „Ez passz volt vagy simogatás?” A végén Petya „meghúzza a derekát”, és sántikálva ül vissza a padra.

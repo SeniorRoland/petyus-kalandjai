@@ -11,6 +11,7 @@ import { keys, touch } from './input.js';
 import { G, ball } from './state.js';
 import { $, R, V3, clamp, damp, dampAngle, lerp, smooth } from './util.js';
 import { GX0, GX1, GZ0, GZ1, PITCH, collide } from './world.js';
+import { updateCoach } from './activities/coach.js';
 
 // ---------------------------------------------------------------- player control
 export const CAM_FWD = new V3(-1, 0, -1).normalize(), CAM_RIGHT = new V3(1, 0, -1).normalize();
@@ -22,6 +23,7 @@ export function updatePlayer(dt) {
   if (FTN_STATES.includes(G.pstate)) return updateFountainDrink(dt);
   if (CAT_STATES.includes(G.pstate)) return updateCatPetike(dt);
   if (G.pstate === 'juggle') return updateJuggle(dt);
+  if (G.pstate === 'coach') return updateCoach(dt);
   if (G.pstate !== 'autoBall' && interactions()) return;
   const a = G.petike;
   let ix = 0, iy = 0;

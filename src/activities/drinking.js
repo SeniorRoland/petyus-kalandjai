@@ -8,6 +8,7 @@ import { say } from '../ui.js';
 import { $, R, V3, dampAngle, pick, rand } from '../util.js';
 import { FOUNTAIN } from '../world.js';
 import { startFountain } from './fountain.js';
+import { canChallengeDad, startDadChallenge } from './coach.js';
 import { canJuggle, startJuggle } from './juggle.js';
 import { mountScooter } from './scooter.js';
 
@@ -26,14 +27,15 @@ export function interactions() {
   const dDrink = Math.hypot(p.x - DRINK.x, p.z - DRINK.z), dRoll = Math.hypot(p.x - roller.pos.x, p.z - roller.pos.z);
   const dFtn = Math.hypot(p.x - FOUNTAIN.x, p.z - FOUNTAIN.z);
   const canDrink = dDrink < 1.6, canRide = dRoll < 1.5 && !roller.rider, canFtn = dFtn < FOUNTAIN.r + 1.0;
-  const canJug = canJuggle();
-  setPrompt(canDrink ? 'E – inni az ivókútból' : canRide ? 'E – felszállni a rollerre' : canFtn ? 'E – inni a szökőkútból' : canJug ? (isTouch ? 'Dekázás' : 'Q – dekázás') : '');
+  const canJug = canJuggle(), canCoach = canChallengeDad();
+  setPrompt(canDrink ? 'E – inni az ivókútból' : canRide ? 'E – felszállni a rollerre' : canFtn ? 'E – inni a szökőkútból' : canCoach ? 'E – Mutasd te, apa!' : canJug ? (isTouch ? 'Dekázás' : 'Q – dekázás') : '');
   if (G.qPressed) { G.qPressed = false; if (canJug) { startJuggle(); return true; } }
   if (!G.usePressed) return false;
   G.usePressed = false;
   if (canDrink) { startDrink(); return true; }
   if (canRide) { mountScooter(); return true; }
   if (canFtn) { startFountain(); return true; }
+  if (canCoach) { startDadChallenge(); return true; }   // 1. csibészség: „Fordított edzés”
   if (canJug && isTouch) { startJuggle(); return true; }   // touch: the use button starts juggling
   return false;
 }

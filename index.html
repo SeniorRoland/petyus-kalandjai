@@ -155,6 +155,37 @@
   #jTouch { display:none; gap:10px; justify-content:center; margin-top:8px; pointer-events:auto; }
   #jTouch button { width:64px; height:64px; border-radius:14px; border:0; font-size:28px; font-weight:900; background:rgba(255,255,255,.9); color:var(--ink); }
 
+  /* mischief stars: the award popup and the journal */
+  #mAward { position:fixed; left:50%; top:15%; z-index:21; pointer-events:none; text-align:center; background:#fffdf3; color:#151515;
+    border:4px solid #151515; border-radius:18px / 14px; box-shadow:6px 6px 0 #151515; padding:8px 26px 10px; opacity:0;
+    transform:translateX(-50%) scale(.6) rotate(-2deg); transition:opacity .3s, transform .4s cubic-bezier(.2,1.6,.4,1); }
+  #mAward.show { opacity:1; transform:translateX(-50%) scale(1) rotate(-2deg); }
+  #mAward .t1 { font-family:'Bangers', Impact, sans-serif; font-size:17px; letter-spacing:1px; color:#c2410c; }
+  #mAward .t2 { font-family:'Bangers', Impact, sans-serif; font-size:clamp(24px,3.4vw,34px); letter-spacing:1px; line-height:1; }
+  #mAward .st { font-size:44px; line-height:1.1; letter-spacing:4px; }
+  #mAward .st span { display:inline-block; color:#d6d6d6; -webkit-text-stroke:2px #151515; paint-order:stroke fill; }
+  #mAward .st span.on { color:#ffc21a; animation:starPop .45s both; animation-delay:var(--d); }
+  @keyframes starPop { from { transform:scale(0) rotate(-50deg); color:#d6d6d6; } 70% { transform:scale(1.45) rotate(8deg); } to { transform:scale(1); } }
+  #mAward .t3 { font-family:'Patrick Hand', cursive; font-size:19px; }
+  #journal { position:fixed; inset:0; z-index:60; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); padding:16px; }
+  #journal.open { display:flex; }
+  #journal .book { position:relative; width:min(580px, 100%); max-height:88vh; overflow:auto; background:#fffdf3; color:#151515; border:4px solid #151515;
+    border-radius:16px / 12px; box-shadow:8px 8px 0 #151515; padding:14px 18px 10px; font-family:'Patrick Hand', cursive; }
+  #journal h2 { margin:0; font-family:'Bangers', Impact, sans-serif; font-weight:400; font-size:32px; letter-spacing:1px; }
+  #jrSub { font-size:16px; color:#555; margin-top:-2px; }
+  #jrSum { font-family:'Bangers', Impact, sans-serif; font-size:20px; letter-spacing:1px; color:#c2410c; margin:6px 0 4px; }
+  #jrClose { position:absolute; top:8px; right:10px; border:3px solid #151515; background:#fff; border-radius:10px; font:inherit; font-size:20px; width:38px; height:38px; cursor:pointer; box-shadow:2px 2px 0 #151515; }
+  .jr { display:flex; align-items:center; gap:10px; padding:4px 2px 5px; border-top:2px dashed #cfc6a8; }
+  .jr .no { font-family:'Bangers', Impact, sans-serif; font-size:18px; width:28px; color:#888; }
+  .jr .tx { flex:1; display:flex; flex-direction:column; line-height:1.1; }
+  .jr .nm { font-family:'Bangers', Impact, sans-serif; font-size:21px; letter-spacing:1px; }
+  .jr .info { font-size:15px; color:#444; }
+  .jr .stars { font-size:24px; letter-spacing:2px; color:#ffc21a; -webkit-text-stroke:1.5px #151515; paint-order:stroke fill; white-space:nowrap; }
+  .jr.todo .nm { color:#999; } .jr.todo .info { color:#777; font-style:italic; } .jr.todo .stars { color:#e4e4e4; }
+  #journalLink { font-family:'Bangers', Impact, sans-serif; font-size:20px; letter-spacing:1px; background:#fffdf3; color:#151515; border:3px solid #151515;
+    border-radius:10px; padding:3px 14px 1px; box-shadow:3px 3px 0 #151515; cursor:pointer; }
+  .ep .stars { display:block; font-family:'Bangers', Impact, sans-serif; font-size:14px; letter-spacing:1px; color:#7a5b00; }
+
   #touch { display:none; }
   #joy { position:fixed; left:24px; bottom:24px; width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,.18);
     border:3px solid rgba(255,255,255,.45); z-index:11; }
@@ -176,15 +207,22 @@
   <p class="tag">12 rész, 12 hónap – Angi, Petyus és Petya kalandjai egész évben</p>
   <div id="loadbar"><div></div></div>
   <div id="episodes" role="list" aria-label="Részek"></div>
+  <button id="journalLink" type="button">📒 Csibészség-napló</button>
   <div id="err"></div>
   <a id="designLink" href="designterv.html" target="_blank" rel="noopener">Objektumkatalógus (design terv) ↗</a>
 </div>
 
-<div id="hud"><span class="chip">⚽ Gólok: <span id="score">0</span></span> <span class="chip">🏅 Dekázás-rekord: <span id="jBest">0</span></span></div>
+<div id="hud"><span class="chip">⚽ Gólok: <span id="score">0</span></span> <span class="chip">🏅 Dekázás-rekord: <span id="jBest">0</span></span> <span class="chip">⭐ <span id="mStars">0</span>/30</span></div>
 <div id="film"><div class="grain"></div><div class="vig"></div></div>
 <div class="cbar" id="cbarT"></div><div class="cbar" id="cbarB"></div><div id="cineCap"></div>
 <div id="filmDip"></div>
 <div id="filmTitle"><div class="big"></div><div class="small"></div></div>
+<div id="mAward"><div class="t1"></div><div class="t2"></div><div class="st"></div><div class="t3"></div></div>
+<div id="journal" role="dialog" aria-label="Csibészség-napló"><div class="book">
+  <button id="jrClose" type="button" aria-label="Bezárás">✕</button>
+  <h2>📒 Csibészség-napló</h2><div id="jrSub">1. rész: Augusztus – Egy nap a parkban</div>
+  <div id="jrSum"></div><div id="jrList"></div>
+</div></div>
 <div id="juggle">
   <div id="jCount">0</div><div id="jLabel">dekázás</div>
   <div id="jKeyWrap"><div id="jRing"></div><div id="jKey">→</div></div>
@@ -193,13 +231,14 @@
 </div>
 <div id="topright">
   <button class="btn" id="skipBtn">Kihagyás ⏭</button>
+  <button class="btn" id="journalBtn" title="Csibészség-napló (N)">📒</button>
   <button class="btn" id="muteBtn">🔊</button>
 </div>
 <div id="help">
   <b>WASD / nyilak</b> – mozgás &nbsp; <b>Shift</b> – futás<br>
   <b>Szóköz</b> – rúgás (tartsd nyomva az erősebb, magasabb lövéshez)<br>
   <b>E</b> – ivókút / roller fel-le &nbsp; <b>R</b> – labda ide<br>
-  <b>Q</b> – dekázás a labda mellett (<b>← → ↑</b>, amikor a kör ráér a gombra)<br><b>Görgő</b> – zoom &nbsp; <b>M</b> – hang &nbsp; <b>H</b> – súgó elrejtése
+  <b>N</b> – csibészség-napló &nbsp; <b>Q</b> – dekázás a labda mellett (<b>← → ↑</b>, amikor a kör ráér a gombra)<br><b>Görgő</b> – zoom &nbsp; <b>M</b> – hang &nbsp; <b>H</b> – súgó elrejtése
 </div>
 <div id="charge"><div></div></div>
 <div id="big">GÓÓÓL!</div>
