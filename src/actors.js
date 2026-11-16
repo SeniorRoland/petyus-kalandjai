@@ -1,4 +1,4 @@
-// Petike a parkban – actors: Actor (séta, ülés, pózok), állatmodellek, részecske-effektek.
+// Petyus kalandjai – actors: Actor (séta, ülés, pózok), állatmodellek, részecske-effektek.
 import * as THREE from 'three';
 import { sPoof } from './audio.js';
 import { animWalk, resetPose, sitKnee } from './rigs.js';

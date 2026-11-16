@@ -1,4 +1,4 @@
-// Petike a parkban – intro: A nyitójelenet (async cutscene) és eszközei.
+// Petyus kalandjai – intro: A nyitójelenet (async cutscene) és eszközei.
 import { poof } from './actors.js';
 import { spawnBall } from './ball.js';
 import { isTouch } from './input.js';
@@ -57,7 +57,7 @@ export function dismount(x, z) {
 async function introDialog() {
   try {
     await W(1.0); say(G.petya, 'Milyen szép idő van ma a parkban!', 3);
-    await W(3.4); say(G.angi, 'Petike, ne rollerezz olyan gyorsan!', 3);
+    await W(3.4); say(G.angi, 'Petyus, ne rollerezz olyan gyorsan!', 3);
     await W(3.3); say(G.petike, 'Jó, anya! De siessünk, focizni akarok!', 3.2);
     await W(5.0); say(G.petya, 'Nézd, ott van már a focipálya!', 3);
     await W(4.6); say(G.angi, 'Ott egy pad, leülünk mellé.', 2.8);
@@ -66,7 +66,7 @@ async function introDialog() {
 export async function runIntro() {
   G.mode = 'intro'; $('skipBtn').style.display = 'block';
   toast('Nyomj <b>Entert</b> vagy a <b>Kihagyás</b> gombot a jelenet átugrásához', 4);
-  // the cinematic prologue first: Petike races from home to the park, dad calls him back behind them
+  // the cinematic prologue first: Petyus races from home to the park, dad calls him back behind them
   try { await runPrologue(); } catch (e) { if (e !== SKIP) console.error(e); return finishIntro(); }
   const route = INTRO_ROUTE;
   const pR = offsetPath(route, 0.42), aR = offsetPath(route, -0.42);
@@ -87,7 +87,7 @@ export async function runIntro() {
     await W(0.8); say(G.angi, 'Végre egy kis pihenő!', 2.4);
     await until(() => !roller.path);
     await W(0.4);
-    // Petike steps off and leans the roller against the bench
+    // Petyus steps off and leans the roller against the bench
     dismount(35.4, -11.65);
     say(G.petike, 'Leteszem a rollert a padhoz!', 2.6);
     G.petike.walkTo([[35.75, -11.75]], 0.8);
@@ -133,6 +133,6 @@ function finishIntro() {
   G.mode = 'play'; G.viewSizeTarget = 8.5;
   $('skipBtn').style.display = 'none'; $('hud').style.display = 'block'; $('help').style.display = 'block';
   if (isTouch) { $('touch').style.display = 'block'; $('help').style.display = 'none'; }
-  toast('<b>Irányítsd Petikét!</b> Rúgj gólt a kapukba ⚽', 4.5);
+  toast('<b>Irányítsd Petyust!</b> Rúgj gólt a kapukba ⚽', 4.5);
 }
 

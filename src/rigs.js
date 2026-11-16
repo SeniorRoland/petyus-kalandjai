@@ -1,4 +1,4 @@
-// Petike a parkban – rigs: Karakter-rigek: skinnelt (Mixamo-csontnevű) és régi felosztós modellek, NPC-k.
+// Petyus kalandjai – rigs: Karakter-rigek: skinnelt (Mixamo-csontnevű) és régi felosztós modellek, NPC-k.
 import * as THREE from 'three';
 import { V3, pick, rand } from './util.js';
 import { partMesh } from './world.js';

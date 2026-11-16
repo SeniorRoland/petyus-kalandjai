@@ -1,4 +1,4 @@
-// Petike a parkban – cine: Játék közbeni átvezetők: fekete csíkok, narrátor, kamerafókusz, lassítás.
+// Petyus kalandjai – cine: Játék közbeni átvezetők: fekete csíkok, narrátor, kamerafókusz, lassítás.
 import { setPrompt } from './activities/drinking.js';
 import { CAM_OFF, camTarget, updateProjection } from './scene.js';
 import { G } from './state.js';

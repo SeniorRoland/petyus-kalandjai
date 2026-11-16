@@ -1,4 +1,4 @@
-// Petike a parkban – ball: Labda: fizika, gól.
+// Petyus kalandjai – ball: Labda: fizika, gól.
 import * as THREE from 'three';
 import { actors, confetti } from './actors.js';
 import { sBounce, sCheer, sPop, sThunk, sWhistle } from './audio.js';
@@ -57,7 +57,7 @@ export function updateBall(dt) {
       const vn = ball.vel.x * nx + ball.vel.z * nz;
       if (vn < 0) { const k = 1 + c.e; ball.vel.x -= k * vn * nx; ball.vel.z -= k * vn * nz; if (c.e < 0.3) { ball.vel.x *= 0.5; ball.vel.z *= 0.5; ball.vel.y *= 0.5; } else if (-vn > 1.5) sThunk(-vn); }
     });
-    // bounce off people (not Petike)
+    // bounce off people (not Petyus)
     if (ball.pos.y < 1.7) for (const a of actors) {
       if (a === G.petike || !a.solid) continue; const p = a.riding ? roller.pos : a.pos;
       const dx = ball.pos.x - p.x, dz = ball.pos.z - p.z; const d = Math.hypot(dx, dz); const m = 0.3 + ball.r;
@@ -96,7 +96,7 @@ function goal(g) {
   confetti(g.x + g.dir * 0.5, 0);
   G.angi.cheer = 2.6; G.petike.cheer = 1.6;
   if (G.petyaMode === 'bench') { G.petya.point = 1.6; say(G.petya, pick(GOAL_GRUMBLE), 2.8); dad.talkT = 4.5; }
-  setTimeout(() => say(G.angi, pick(['Ügyes vagy, kicsim!', 'Bravó, Petike!', 'Gyönyörű volt!', 'Juhééé!']), 2.5), 1300);
+  setTimeout(() => say(G.angi, pick(['Ügyes vagy, kicsim!', 'Bravó, Petyus!', 'Gyönyörű volt!', 'Juhééé!']), 2.5), 1300);
   for (const n of npcs) if (n.actor.pos.distanceTo(G.petike.pos) < 18 && rand() < 0.5) setTimeout(() => say(n.actor, pick(['Szép gól!', 'Bravó!', 'Hű!']), 1.8, ''), R(300, 1200));
 }
 

@@ -1,4 +1,4 @@
-// Petike a parkban – main: Belépési pont: fő ciklus (step) és betöltés.
+// Petyus kalandjai – main: Belépési pont: fő ciklus (step) és betöltés.
 import * as THREE from 'three';
 // comic lettering for the speech bubbles (bundled, latin-ext → ő/ű work offline too)
 import '@fontsource/patrick-hand/index.css';
@@ -23,7 +23,7 @@ import { updatePlayer } from './player.js';
 import { CFG, rigFromGLTF } from './rigs.js';
 import { rollerRide } from './roller.js';
 import { camTarget, camera, renderer, scene, updateProjection } from './scene.js';
-import { G, ball, rigs, roller } from './state.js';
+import { EPISODE, G, SERIES, ball, rigs, roller } from './state.js';
 import { say, updateBubbles } from './ui.js';
 import { $, V3 } from './util.js';
 import { TREES, buildWorld, collide } from './world.js';
@@ -107,12 +107,15 @@ async function boot() {
 
   G.petya = new Actor(rigs.petya, 'Petya'); G.petya.stride = 4.2;
   G.angi = new Actor(rigs.angi, 'Angi'); G.angi.stride = 4.5;
-  G.petike = new Actor(rigs.roller, 'Petike'); G.petike.stride = 6.5;
+  G.petike = new Actor(rigs.roller, 'Petyus'); G.petike.stride = 6.5;
   buildPeople();
   // initial (pre-start) view
   G.petya.place(-4, -5.6, Math.PI / 2); G.angi.place(-4, -6.4, Math.PI / 2);
   roller.base = new V3(-8.6, 0, -6); roller.pos.copy(roller.base); roller.dir = new V3(1, 0, 0); roller.heading = Math.PI / 2; mountRider(); rollerRide(0.016);
   G.mode = 'title'; camTarget.set(-6, 0, -6);
+  // title screen + tab title from the episode data (the HTML has the same text, so nothing flashes)
+  $('epNum').textContent = `${EPISODE.n}. rész:`; $('epDay').textContent = EPISODE.day; $('epBlurb').textContent = EPISODE.blurb;
+  document.title = `${SERIES} – ${EPISODE.n}. rész: ${EPISODE.day}`;
   const btn = $('startBtn'); btn.disabled = false; btn.textContent = 'Indítás ▶';
   btn.onclick = () => { initAudio(); $('overlay').classList.add('hide'); runIntro(); };
   requestAnimationFrame(frame);

@@ -1,4 +1,4 @@
-// Petike a parkban – camera: Kamerakövetés.
+// Petyus kalandjai – camera: Kamerakövetés.
 import { cine } from './cine.js';
 import { CAM_OFF, SUN_OFF, camTarget, camera, sun, updateProjection } from './scene.js';
 import { G, ball, roller } from './state.js';

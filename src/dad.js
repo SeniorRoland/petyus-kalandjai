@@ -1,4 +1,4 @@
-// Petike a parkban – dad: Az apa (Petya) viselkedése és szövegei.
+// Petyus kalandjai – dad: Az apa (Petya) viselkedése és szövegei.
 import { updateDadCat } from './activities/cat.js';
 import { tickSeq, updateDadFountain } from './activities/fountain.js';
 import { SEAT } from './intro.js';
@@ -25,7 +25,7 @@ export function navTarget(p, to) {
 export const petyaFront = () => [SEAT.petya[0], -11.85];
 export function dadStartFollow() {
   G.petyaMode = 'standing'; G.petya.sitTarget = 0; G.petya.path = null; dad.talkT = 2.5;
-  say(G.petya, pick(['Petike! Várj meg! Sisak rajtad van?!', 'Jaj ne, a roller… Lassan!!', 'Várj, megyek veled!']), 2.4); G.petya.point = 1.2;
+  say(G.petya, pick(['Petyus! Várj meg! Sisak rajtad van?!', 'Jaj ne, a roller… Lassan!!', 'Várj, megyek veled!']), 2.4); G.petya.point = 1.2;
 }
 export function dadReturn() { G.petyaMode = 'return'; dad.talkT = 1.6; }
 export function dadAlarm() { if (dad.alarmT > G.clockT) return; dad.alarmT = G.clockT + 2; say(G.petya, pick(['Jaj! Megütötted magad?!', 'Mondtam, hogy vigyázz!', 'Nekimentél! Na tessék!']), 2.2); G.petya.point = 1.2; dad.talkT = 3; }
@@ -61,7 +61,7 @@ export function updateDad(dt) {
   else if (G.pstate === 'free') {
     if (playingFootball()) line = coachLine();
     else { const far = G.petike.pos.distanceTo(p.pos) > 28; line = far ? null : pick(rand() < 0.6 ? GRUMBLE : BENCH_IDLE); gap = R(6, 9); point = false;
-      if (far) { say(G.angi, pick(['Petike, ne menj túl messzire!', 'Petikééé, gyere vissza a pályára!']), 2.6); } }
+      if (far) { say(G.angi, pick(['Petyus, ne menj túl messzire!', 'Petyuuus, gyere vissza a pályára!']), 2.6); } }
   }
   if (line) {
     if (line === dad.last) line = coachFallback(); dad.last = line;
@@ -74,7 +74,7 @@ function playingFootball() {
   if (!ball.active) return false;
   return inPitch(G.petike.pos.x, G.petike.pos.z) || G.petike.pos.distanceTo(ball.pos) < 4;
 }
-const coachFallback = () => pick(['Az én időmben ezt mezítláb csináltuk!', 'Figyelj oda, Petike!', 'Nem így! … Vagyis igen, de mégse.', 'Koncentrálj!']);
+const coachFallback = () => pick(['Az én időmben ezt mezítláb csináltuk!', 'Figyelj oda, Petyus!', 'Nem így! … Vagyis igen, de mégse.', 'Koncentrálj!']);
 function coachLine() {
   const sp = Math.hypot(pvel.x, pvel.z), db = G.petike.pos.distanceTo(ball.pos);
   if (G.lastKick && G.clockT - G.lastKick.t < 2.5) {
@@ -82,7 +82,7 @@ function coachLine() {
     if (k.power < 0) return pick(['A labdát kell megrúgni, nem a levegőt!', 'Hol volt a labda? Hát nem ott!']);
     if (k.power < 0.35) return pick(['Erősebben! Nem hallottam a labdát!', 'Ez passz volt vagy simogatás?', 'Rúgd meg rendesen, nem tojás!']);
     if (k.power > 0.8) return pick(['Nem ekkorát! Ez nem rakétakilövés!', 'Pontosság, nem erő, hányszor mondjam!', 'A felhőket akarod eltalálni?']);
-    if (!k.toward) return pick(['Kapura, Petike, KAPURA!', 'Rossz irány! A kapu arra van!', 'Ezt meg kinek rúgtad?']);
+    if (!k.toward) return pick(['Kapura, Petyus, KAPURA!', 'Rossz irány! A kapu arra van!', 'Ezt meg kinek rúgtad?']);
     return pick(['Közepes. Lehetett volna jobb.', 'Hmm. A térdedet hajlítsd be jobban!', 'Majdnem jó. De csak majdnem.']);
   }
   if (db > 4) return pick(['Menj már a labdára!', 'Mit csinálsz ott? A labda ott van!', 'Ne sétálgass, a labdáért futni kell!']);
@@ -107,10 +107,10 @@ function worryLine() {
   for (const n of npcs) if (Math.hypot(n.actor.pos.x - x, n.actor.pos.z - z) < 2.4) return pick(['Vigyázz a nénire!', 'Csengess! Ja, nincs csengő…', 'Kerüld ki a bácsit!']);
   for (const an of animals) if (Math.hypot(an.pos.x - x, an.pos.z - z) < 2.6) return an.type === 'cat' ? 'Ne üsd el a cicát!' : 'Vigyázz a kutyára!';
   if (Math.abs(ro.turn) > 1.2 && ro.speed > 2) return pick(['Ne kanyarodj ilyen élesen!', 'Óvatosan a kanyarban!']);
-  return pick(['Két kézzel fogd a kormányt!', 'Nézz előre, ne hátra!', 'Hajlítsd be a térded!', 'Lassabban, Petike!', 'Sisak rajtad van? Jó.', 'Ne menj túl messzire!', 'Fékezz időben!', 'Jaj, a szívem…']);
+  return pick(['Két kézzel fogd a kormányt!', 'Nézz előre, ne hátra!', 'Hajlítsd be a térded!', 'Lassabban, Petyus!', 'Sisak rajtad van? Jó.', 'Ne menj túl messzire!', 'Fékezz időben!', 'Jaj, a szívem…']);
 }
 const GRUMBLE = ['Ez a gyerek egyszer a frászt hozza rám…', 'Minek vettünk neki elektromos rollert…', 'A térdem… mindjárt leszakad.', 'Az én időmben görkorcsolya volt, az is fából.', 'Bezzeg ha én akarnék rollerezni…', 'Na, ennyi volt a nyugodt vasárnap.', 'Ki bírja ezt a sok futkározást?', 'Legközelebb ő hozza a táskát.'];
-const BENCH_IDLE = ['Na, mi lesz? Focizni jöttünk vagy nézelődni?', 'Petike, a pálya arra van!', 'A labda nem fog magától gurulni!', 'Ha nem focizol, mehetünk haza is.'];
+const BENCH_IDLE = ['Na, mi lesz? Focizni jöttünk vagy nézelődni?', 'Petyus, a pálya arra van!', 'A labda nem fog magától gurulni!', 'Ha nem focizol, mehetünk haza is.'];
 export const ANGI_DEFEND = ['Petya, hagyd már szegény gyereket!', 'Szerintem nagyon ügyes!', 'Ne kiabálj, mindenki minket néz.', 'Te is ilyen voltál kicsiben?', 'Hagyd játszani, Petya!', 'Ügyes vagy, kicsim, ne figyelj apára!'];
 export const GOAL_GRUMBLE = ['Na jó. De a bal lábaddal is menne?', 'Szerencsés volt. Még egyszer!', 'Ezt a nagymamád is berúgta volna.', 'Gól, gól… de a kapus hol volt?', 'Túl lassú volt a lövés, de mindegy.', 'Rendben, de ünnepelni ráérsz otthon!'];
 

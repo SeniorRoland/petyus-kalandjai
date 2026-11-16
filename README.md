@@ -1,6 +1,8 @@
-# Petike a parkban
+# Petyus kalandjai
 
-Izometrikus, voxel stílusú 3D böngészős játék Three.js-ben. Petya és Angi a parkban sétál, Petike elektromos rollerrel megy utánuk, a focipályánál átöltözik, és focizni kezd – a játékos irányítja.
+Izometrikus, voxel stílusú 3D böngészős játéksorozat Three.js-ben. Minden rész egy napot dolgoz fel Petyus (a gyerek), Petya (apa) és Angi (anya) életéből.
+
+**1. rész: Vasárnap** – Petya és Angi a parkban sétál, Petyus elektromos rollerrel megy utánuk, a focipályánál átöltözik, és focizni kezd – a játékos irányítja.
 
 ## Indítás
 
@@ -28,7 +30,7 @@ A design terv (3D objektumkatalógus): http://localhost:5173/designterv.html
 | Shift | futás / roller gyorsítás |
 | Szóköz | rúgás – nyomva tartva erősebb, magasabb (rolleren: fék) |
 | E | ivókút / rollerre fel–le |
-| R | labda Petike elé |
+| R | labda Petyus elé |
 | Görgő | zoom |
 | M | hang ki/be |
 | H | súgó elrejtése |

@@ -1,4 +1,4 @@
-// Petike a parkban – ambience: Környezeti hangok: madarak, biciklicsengő, autódudálás, kutyaugatás.
+// Petyus kalandjai – ambience: Környezeti hangok: madarak, biciklicsengő, autódudálás, kutyaugatás.
 import { actx, sBark, sBell, sBird, sHorn, soundAt } from './audio.js';
 import { camTarget } from './scene.js';
 import { G, animals, cars } from './state.js';

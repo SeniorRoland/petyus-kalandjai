@@ -1,4 +1,4 @@
-// Petike a parkban – world: A világ: voxel-batch, csempék/talaj, ütközők, épületek, pálya, voxel-kellékek (voxels.js), fák.
+// Petyus kalandjai – world: A világ: voxel-batch, csempék/talaj, ütközők, épületek, pálya, voxel-kellékek (voxels.js), fák.
 import * as THREE from 'three';
 import { scene } from './scene.js';
 import { R, V3, clamp, distSeg, pick, rand } from './util.js';

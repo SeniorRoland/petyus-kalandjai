@@ -1,4 +1,4 @@
-// Petike a parkban – player: Petike irányítása: mozgás, rúgás, cselezés.
+// Petyus kalandjai – player: Petyus irányítása: mozgás, rúgás, cselezés.
 import { CAT_STATES, idleFootball, updateCatPetike } from './activities/cat.js';
 import { interactions, updateDrinking } from './activities/drinking.js';
 import { updateFountainDrink } from './activities/fountain.js';
@@ -30,7 +30,7 @@ export function updatePlayer(dt) {
   if (touch.active) { ix = touch.x; iy = touch.y; }
   let wx = CAM_RIGHT.x * ix + CAM_FWD.x * iy, wz = CAM_RIGHT.z * ix + CAM_FWD.z * iy;
   const il0 = Math.hypot(wx, wz); if (il0 > 1) { wx /= il0; wz /= il0; }
-  // idle on the pitch → Petike starts playing on his own (any input takes control back)
+  // idle on the pitch → Petyus starts playing on his own (any input takes control back)
   const anyInput = il0 > 0.1 || G.kickPressed || G.charging;
   const auto = idleFootball(dt, anyInput);
   if (auto) { wx = auto.wx; wz = auto.wz; }

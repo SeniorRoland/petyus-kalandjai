@@ -1,4 +1,4 @@
-// Petike a parkban – prologue: Drámai nyitány: Petike rollerrel száguld otthonról a park felé, szlalomozik a
+// Petyus kalandjai – prologue: Drámai nyitány: Petyus rollerrel száguld otthonról a park felé, szlalomozik a
 // járókelők között, farolva fékez, majd Petya mérgesen visszahívja maguk mögé. Utána indul a családi séta (intro.js).
 import * as THREE from 'three';
 import { Actor, spawnFx } from './actors.js';
@@ -9,7 +9,7 @@ import { loopPoint } from './npcs.js';
 import { makePerson } from './rigs.js';
 import { poseRider } from './roller.js';
 import { scene } from './scene.js';
-import { G, npcs, roller } from './state.js';
+import { EPISODE, G, SERIES, npcs, roller } from './state.js';
 import { say } from './ui.js';
 import { $, R, V3, clamp, dampAngle, lerp, pick, smooth } from './util.js';
 import { groundH } from './world.js';
@@ -67,7 +67,7 @@ const returnLine = (x, z) => polyline([[x, z], [x - 0.6, z + 1.2], [x - 2.3, z +
 // the family walks out of the door to their starting spots of the intro walk
 const FAMILY_ROUTE = [[-31, -18.4], [-31, -17.2], [-18, -6], [-4, -6]];
 
-// ---------- the pedestrians Petike slaloms between (afterwards they join the park's walkers)
+// ---------- the pedestrians Petyus slaloms between (afterwards they join the park's walkers)
 const PEDS = [
   { x: -13, z: -6.55, h: -Math.PI / 2, o: { hat: true }, line: 'Hoppá!' },
   { x: -8.5, z: -5.5, h: Math.PI / 2, o: { dress: false }, line: 'Ejnye, fiatalember!' },
@@ -126,13 +126,13 @@ export async function runPrologue() {
 
   // 2. the race: out of the door, down the diagonal, slalom along the north path
   pro.hum = startHum(); say(G.petike, 'Indulááás!', 1.6);
-  cineFocus(lead(1.4), 5.6); cineCap('Petike egész héten erre a pillanatra várt.', 3.4);
+  cineFocus(lead(1.4), 5.6); cineCap('Petyus egész héten erre a pillanatra várt.', 3.4);
   let famGo = false, slow = 0, benchSaid = false, cornerCap = false;
   await each((dt) => {
     pro.t += dt;
     if (!famGo && pro.t > 1.3) {
       famGo = true; G.petya.walkTo(fam.p.slice(1), 1.8); G.angi.walkTo(fam.a.slice(1), 1.8);
-      say(G.angi, 'Petike! A sisak!', 2.0);
+      say(G.angi, 'Petyus! A sisak!', 2.0);
     }
     const vt = s > 17 && s < 22 ? 5.0 : 6.8;                      // eases off for the corner onto the north path
     v = v < vt ? Math.min(vt, v + 6 * dt) : Math.max(vt, v - 9 * dt);
@@ -183,7 +183,7 @@ export async function runPrologue() {
   for (const a of [G.petya, G.angi]) { a.path = null; a.targetHeading = Math.atan2(roller.pos.x - a.pos.x, roller.pos.z - a.pos.z); }
   await cut(() => atHeight((G.petya.pos.x + G.angi.pos.x) / 2, 1.25, (G.petya.pos.z + G.angi.pos.z) / 2), 3.4);
   sSting(true); shake(0.2);
-  say(G.petya, 'PETIKEEEE!!!', 2.0); G.petya.point = 2.2;
+  say(G.petya, 'PETYUUUUS!!!', 2.0); G.petya.point = 2.2;
   await W(2.0); say(G.petya, 'Azonnal gyere vissza! Ide, mögénk!', 2.6); G.petya.point = 2.6;
   await W(2.7); say(G.angi, 'Petya, a szomszédok is hallják…', 2.2);
   await W(2.2); say(G.petya, 'Hadd hallják! Elektromos rollerrel nem száguldozunk a parkban!', 3.0); G.petya.point = 3; shake(0.1);
@@ -213,7 +213,7 @@ export async function runPrologue() {
   G.petya.targetHeading = G.angi.targetHeading = Math.PI / 2;
 
   // 7. title, then the film look fades into the normal intro
-  sSting(); await titleCard('Petike a parkban', 'egy vasárnap délután', 3.0);
+  sSting(); await titleCard(SERIES, `${EPISODE.n}. rész · ${EPISODE.day}`, 3.4);
   endPrologue();
   await W(0.8);
 }

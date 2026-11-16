@@ -1,4 +1,4 @@
-// Petike a parkban – util: Segédfüggvények: véletlen (seedelt), interpoláció, szögek, DOM-elérés.
+// Petyus kalandjai – util: Segédfüggvények: véletlen (seedelt), interpoláció, szögek, DOM-elérés.
 import * as THREE from 'three';
 
 export const V3 = THREE.Vector3;
