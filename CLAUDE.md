@@ -3,6 +3,7 @@
 Izometrikus, voxel stílusú 3D böngészős játék (Three.js r187 + Vite 8). Petike (gyerek), Petya (apa) és Angi (anya) egy kisvárosi parkban; a nyitójelenet után a játékos Petikét irányítja: focizik, iszik az ivókútból, elektromos rollerezik, miközben az apa folyamatosan instruálja.
 
 - A felhasználó magyar; **a játékban minden szöveg magyar** (buborékok, súgó, feliratok). Kódkommentek angolul vagy magyarul is lehetnek.
+- Buborékok (`say(actor, szöveg, mp, név)` a `ui.js`-ben): képregényes stílus, betűtípusok npm-ből (`@fontsource/patrick-hand` a szöveghez, `@fontsource/bangers` a nevekhez/kiabáláshoz/hanghatásokhoz – mindkettő latin-ext, kell az ő/ű!). Fajták a szövegből: kiabálás (`!!` vagy nagybetűk) · motyogás (`…`-re végződik) · hanghatás (ha a „beszélő” nem Actor, pl. állat, autó: csak színes felirat). A farok SVG-ben (`#tails`) mindig a beszélő feje felé mutat; a buborékok nem takarják egymást (megjelenési sorrendben helyezkednek el, a foglalt helyről a legközelebbi szabad helyre csúsznak). A buborékok csak a látható képen belül lehetnek (a cutscene-csíkok magasságát minden képkockán megméri); ha a beszélő feje nincs a képen, a szöveg ugyanilyen stílusú **feliratként** jelenik meg alul középen (név mellett ◀/▶ jelzi, merre van; egyszerre legfeljebb 3; képen kívüli hanghatás nem jelenik meg). Ezért a cutscene-ek közelijeit testmagasságra kell keretezni: `atHeight(x, y, z)` (`cine.js`), nem a talppontra.
 - Futtatás: `npm install`, majd `npm run dev` (http://localhost:5173). Build: `npm run build` → `dist/`.
 - Objektumkatalógus (design terv): `designterv.html` – ugyanazt a `src/voxels.js`-t használja, mint a játék.
 
@@ -34,7 +35,7 @@ Izometrikus, voxel stílusú 3D böngészős játék (Three.js r187 + Vite 8). P
 | `world.js` | voxel batch, csempék/talaj, ütközők, világépítés, voxel-kellékek, `TREES` |
 | `rigs.js` · `actors.js` | karakter-rigek · `Actor`, állatmodellek, FX |
 | `audio.js` · `ambience.js` | szintetizált hangok, `soundAt` · környezeti hangok |
-| `ui.js` · `input.js` | buborékok, toast, nagy felirat · billentyűzet/érintés |
+| `ui.js` · `input.js` | képregényes buborékok (`say`), toast, nagy felirat · billentyűzet/érintés |
 | `ball.js` · `player.js` · `roller.js` · `npcs.js` | labda · Petike irányítása · roller · járókelők, állatok |
 | `prologue.js` · `intro.js` · `cine.js` · `camera.js` | filmes nyitány · nyitójelenet (családi séta) · átvezetők (`cineCut`, `shake`) · kamera |
 | `activities/drinking.js` | `interactions()`, `setPrompt()`, ivókút |

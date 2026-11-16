@@ -1,5 +1,10 @@
 // Petike a parkban – main: Belépési pont: fő ciklus (step) és betöltés.
 import * as THREE from 'three';
+// comic lettering for the speech bubbles (bundled, latin-ext → ő/ű work offline too)
+import '@fontsource/patrick-hand/index.css';
+import '@fontsource/bangers/index.css';
+// load them up front (incl. the latin-ext part with ő/ű) so the first bubble doesn't swap fonts while it is shown
+if (document.fonts) for (const f of ['19px "Patrick Hand"', '20px Bangers']) document.fonts.load(f, 'aáőű').catch(() => {});
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { cev } from './activities/cat.js';
 import { ftn } from './activities/fountain.js';
@@ -19,7 +24,7 @@ import { CFG, rigFromGLTF } from './rigs.js';
 import { rollerRide } from './roller.js';
 import { camTarget, camera, renderer, scene, updateProjection } from './scene.js';
 import { G, ball, rigs, roller } from './state.js';
-import { updateBubbles } from './ui.js';
+import { say, updateBubbles } from './ui.js';
 import { $, V3 } from './util.js';
 import { TREES, buildWorld, collide } from './world.js';
 
@@ -113,6 +118,6 @@ async function boot() {
   requestAnimationFrame(frame);
   window.__game = { THREE, scene, camera, renderer, petike: () => G.petike, petya: () => G.petya, angi: () => G.angi, ball, roller, keys, skipIntro, get mode() { return G.mode; }, get pstate() { return G.pstate; }, get petyaMode() { return G.petyaMode; }, use: () => { G.usePressed = true; }, roller, setZoom: (z) => { G.zoomOverride = z; G.viewSizeTarget = z; G.viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { G.kickPressed = true; setTimeout(() => { G.kickReleased = true; }, p); },
     // manual stepping (works even when the tab is hidden and rAF is paused): __game.tick(seconds)
-    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); step(dt * cine.slow); } renderer.render(scene, camera); }, cine, ftn, cev, TREES, jug, jugPress, juggle: () => { G.qPressed = true; } };
+    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); step(dt * cine.slow); } renderer.render(scene, camera); }, cine, ftn, cev, TREES, jug, jugPress, juggle: () => { G.qPressed = true; }, say };
 }
 boot();

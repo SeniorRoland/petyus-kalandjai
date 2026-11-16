@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { Actor, spawnFx } from './actors.js';
 import { noise, sScreech, sSting, startHum } from './audio.js';
-import { cine, cineCap, cineCut, cineEnd, cineFocus, cineStart, shake, slowMo } from './cine.js';
+import { atHeight, cine, cineCap, cineCut, cineEnd, cineFocus, cineStart, shake, slowMo } from './cine.js';
 import { ROLLER_START, W, mountRider, offsetPath, until } from './intro.js';
 import { loopPoint } from './npcs.js';
 import { makePerson } from './rigs.js';
@@ -37,7 +37,8 @@ function placeRoller(x, z, heading, lean, speed, dt, crouch = 0) {
   const r = G.petike.rig; r.inner.rotation.x += crouch; if (r.apply) r.apply();
   G.petike.pos.set(x, 0, z); G.petike.heading = heading;    // so cats and pigeons notice him
 }
-const lead = (d) => () => ({ x: roller.pos.x + Math.sin(roller.heading) * d, z: roller.pos.z + Math.cos(roller.heading) * d });
+// framed at chest height (not at the feet), so heads and speech bubbles stay inside the letterbox
+const lead = (d, y = 0.85) => () => atHeight(roller.pos.x + Math.sin(roller.heading) * d, y, roller.pos.z + Math.cos(roller.heading) * d);
 async function titleCard(big, small, dur) {
   const el = $('filmTitle'); el.querySelector('.big').textContent = big; el.querySelector('.small').textContent = small;
   el.classList.add('show'); await W(dur); el.classList.remove('show');
@@ -153,7 +154,7 @@ export async function runPrologue() {
 
   // 3. the drifting skid stop ("farolva fékez")
   const dir = { x: Math.sin(h), z: Math.cos(h) }, h0 = h; let st = 0, markD = 0;
-  sScreech(); shake(0.28); slowMo(0.5, 0.7); cineFocus(() => ({ x: roller.pos.x + dir.x * 0.8, z: roller.pos.z + dir.z * 0.8 }), 4.4);
+  sScreech(); shake(0.28); slowMo(0.5, 0.7); cineFocus(() => atHeight(roller.pos.x + dir.x * 0.8, 0.85, roller.pos.z + dir.z * 0.8), 4.4);
   say(G.petike, 'Íííí-ha!', 1.4);
   await each((dt) => {
     st += dt; const v0 = v; v = Math.max(0, v - 5.2 * dt);
@@ -180,7 +181,7 @@ export async function runPrologue() {
 
   // 5. cut: the angry father
   for (const a of [G.petya, G.angi]) { a.path = null; a.targetHeading = Math.atan2(roller.pos.x - a.pos.x, roller.pos.z - a.pos.z); }
-  await cut(() => ({ x: (G.petya.pos.x + G.angi.pos.x) / 2, z: (G.petya.pos.z + G.angi.pos.z) / 2 }), 3.4);
+  await cut(() => atHeight((G.petya.pos.x + G.angi.pos.x) / 2, 1.25, (G.petya.pos.z + G.angi.pos.z) / 2), 3.4);
   sSting(true); shake(0.2);
   say(G.petya, 'PETIKEEEE!!!', 2.0); G.petya.point = 2.2;
   await W(2.0); say(G.petya, 'Azonnal gyere vissza! Ide, mögénk!', 2.6); G.petya.point = 2.6;
@@ -196,7 +197,7 @@ export async function runPrologue() {
     const rest = a.pos.x < -18.3 ? lane.slice(2) : lane.slice(3);           // still on the diagonal → via the corner
     a.walkTo(rest, 1.8);
   }
-  cineFocus(() => ({ x: (roller.pos.x + G.petya.pos.x) / 2, z: (roller.pos.z + G.petya.pos.z) / 2 - 0.5 }), 8.5);
+  cineFocus(() => atHeight((roller.pos.x + G.petya.pos.x) / 2, 1.0, (roller.pos.z + G.petya.pos.z) / 2 - 0.5), 8.5);
   const back = returnLine(roller.pos.x, roller.pos.z); s = 0; v = 0; h = roller.heading; let mutter = false;
   await each((dt) => {
     v = Math.min(2.6, v + 2.5 * dt); s = Math.min(back.len, s + v * dt);
