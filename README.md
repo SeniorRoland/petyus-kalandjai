@@ -38,7 +38,8 @@ A design terv (3D objektumkatalógus): http://localhost:5173/designterv.html
 
 ```
 index.html, designterv.html   oldalak
-src/game.js                   a játék
+src/main.js, src/*.js         a játék ES-modulokban (state.js: közös állapot G)
+src/activities/               ivókút, szökőkút, macska, dekázás, roller
 src/voxels.js                 voxel objektumkönyvtár (játék + katalógus közös)
 src/designterv.js             katalógus oldal
 public/                       a betöltött .glb modellek (riggelt, T-pose karakterek + roller)
