@@ -54,6 +54,7 @@ export const G = {
   lastKick: null,   // activities/drinking.js
   qPressed: false,   // activities/juggle.js
   petyaMode: 'bench',   // dad.js
+  paused: false,   // mischief.js – the journal is open
 };
 
 // ---------------------------------------------------------------- game state

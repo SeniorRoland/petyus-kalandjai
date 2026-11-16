@@ -5,6 +5,7 @@ import { resetBallToPlayer } from './ball.js';
 import { skipIntro } from './intro.js';
 import { G } from './state.js';
 import { $, clamp } from './util.js';
+import { journalOpen, toggleJournal } from './mischief.js';
 
 // ---------------------------------------------------------------- input
 export const keys = {};
@@ -12,7 +13,10 @@ export const touch = { active: false, x: 0, y: 0, run: false };
 export let kickHeld = false;
 window.addEventListener('keydown', (e) => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
-  if (e.repeat) return; keys[e.code] = true;
+  if (e.repeat) return;
+  if (e.code === 'KeyN') { toggleJournal(); return; }
+  if (journalOpen()) { if (e.code === 'Escape') toggleJournal(false); return; }   // the journal is open: keys don't reach the game
+  keys[e.code] = true;
   if (G.pstate === 'juggle') { for (const k in JUG) if (JUG[k].codes.includes(e.code)) jugPress(k); }
   if (e.code === 'KeyQ') G.qPressed = true;
   if (e.code === 'Space') { kickHeld = true; G.kickPressed = true; }

@@ -53,14 +53,17 @@ import './dad.js';
 import './cine.js';
 import './camera.js';
 import './ambience.js';
+import { initMischief } from './mischief.js';
 
 // ---------------------------------------------------------------- main loop
 let last = performance.now();
 const TIME_SCALE = Math.max(1, Math.min(8, +(new URLSearchParams(location.search).get('speed') || 1)));
 function frame(now) {
   const dt0 = Math.min(0.05, (now - last) / 1000); last = now;
-  tickCine(dt0);
-  for (let i = 0; i < TIME_SCALE; i++) step(dt0 * cine.slow);
+  if (!G.paused) {   // paused while the mischief journal is open (still rendered)
+    tickCine(dt0);
+    for (let i = 0; i < TIME_SCALE; i++) step(dt0 * cine.slow);
+  }
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
@@ -85,6 +88,7 @@ function step(dt) {
 // ---------------------------------------------------------------- boot
 async function boot() {
   buildEpisodeMenu();   // the 12 monthly episodes on the start screen (August playable once loaded)
+  initMischief();       // stars, ⭐ totals, the mischief journal
   buildWorld();
   makeBall();
   const loader = new GLTFLoader();

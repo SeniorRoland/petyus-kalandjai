@@ -23,6 +23,7 @@ export function buildEpisodeMenu() {
     cap.append(num, month);
     if (ep.ready) {
       if (ep.sub) { const sub = document.createElement('span'); sub.className = 'sub'; sub.textContent = ep.sub; cap.appendChild(sub); }
+      const st = document.createElement('span'); st.className = 'stars'; cap.appendChild(st);   // ⭐ x/30 (refreshTotals)
       const go = document.createElement('span'); go.className = 'go'; go.textContent = 'Betöltés…'; cap.appendChild(go);
       tile.id = 'startBtn'; tile.disabled = true; tile.setAttribute('aria-label', `${ep.n}. rész: ${ep.month} – ${ep.sub || ''}`);
       start = tile;

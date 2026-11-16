@@ -7,23 +7,25 @@ import { G, ball } from '../state.js';
 import { bigText, say } from '../ui.js';
 import { $, R, V3, clamp, lerp, pick, rand } from '../util.js';
 import { setPrompt } from './drinking.js';
+import { coachFail, coachKid, coachTouch } from './coach.js';
 import { runSeq } from './fountain.js';
 
 // ---------- juggling (dekázás): Q next to the ball, then a quick-time event per touch
 // The ball flies between "contacts" (left foot / right foot / head). On each flight the key to press is shown with a ring
 // closing in on it; press it within ±W of the contact. Faster flights and a narrower window as the count grows.
 export const JUG = { L: { codes: ['ArrowLeft', 'KeyA'], sym: '←', part: 'bal láb' }, R: { codes: ['ArrowRight', 'KeyD'], sym: '→', part: 'jobb láb' }, U: { codes: ['ArrowUp', 'KeyW'], sym: '↑', part: 'fej' } };
-export const jug = { n: 0, best: 0, t: 0, T: 0.9, H: 0.9, next: 'R', prev: 'R', from: new V3(), to: new V3(), hit: false, kickT: -1, kickPart: 'R', msgT: 0 };
+// who = the juggler (Petyus, or dad in the „Fordított edzés” mischief: dad = true → narrower window, Petyus coaches)
+export const jug = { n: 0, best: 0, t: 0, T: 0.9, H: 0.9, next: 'R', prev: 'R', from: new V3(), to: new V3(), hit: false, kickT: -1, kickPart: 'R', msgT: 0, who: null, dad: false };
 try { jug.best = +(localStorage.getItem('petike.dekazasRekord') || 0) || 0; } catch (e) { /* storage blocked – the record lives for this session only */ }
 $('jBest').textContent = jug.best;
 
-const jugWindow = () => clamp(0.2 - jug.n * 0.004, 0.09, 0.2);
+const jugWindow = () => jug.dad ? clamp(0.13 - jug.n * 0.003, 0.075, 0.13) : clamp(0.2 - jug.n * 0.004, 0.09, 0.2);   // dad „isn't as quick any more”
 export function canJuggle() {
   if (!ball.active || G.goalLock > 0 || ball.juggle) return false;
   return Math.hypot(ball.pos.x - G.petike.pos.x, ball.pos.z - G.petike.pos.z) < 1.3 && ball.pos.y < 0.6 && Math.hypot(ball.vel.x, ball.vel.z) < 3;
 }
 function jugContact(part, out) {
-  const a = G.petike, h = a.heading, fx = Math.sin(h), fz = Math.cos(h), lx = Math.cos(h), lz = -Math.sin(h);   // forward, left (+X at heading 0)
+  const a = jug.who || G.petike, h = a.heading, fx = Math.sin(h), fz = Math.cos(h), lx = Math.cos(h), lz = -Math.sin(h);   // forward, left (+X at heading 0)
   if (part === 'U') return out.set(a.pos.x + fx * 0.05, a.rig.height + 0.19, a.pos.z + fz * 0.05);   // just above the head
   const s = part === 'L' ? 0.1 : -0.1;
   return out.set(a.pos.x + fx * 0.3 + lx * s, 0.35, a.pos.z + fz * 0.3 + lz * s);
@@ -32,15 +34,17 @@ function jugUI(show) {
   $('juggle').style.display = show ? 'block' : 'none';
   if (show && isTouch) $('jTouch').style.display = 'flex';
 }
-export function startJuggle() {
-  const a = G.petike;
-  G.pstate = 'juggle'; pvel.set(0, 0, 0); G.charging = false; a.kickT = -1; setPrompt(''); $('charge').style.display = 'none';
-  a.targetHeading = a.heading = Math.atan2(ball.pos.x - a.pos.x, ball.pos.z - a.pos.z);
+export function startJuggle(who = G.petike) {
+  const a = who; jug.who = who; jug.dad = who === G.petya;
+  G.pstate = 'juggle'; pvel.set(0, 0, 0); G.charging = false; G.petike.kickT = -1; setPrompt(''); $('charge').style.display = 'none';
+  if (!jug.dad) a.targetHeading = a.heading = Math.atan2(ball.pos.x - a.pos.x, ball.pos.z - a.pos.z);   // dad already faces his coach
   ball.juggle = true; ball.vel.set(0, 0, 0); jug.n = 0; jug.next = 'R';
   jugContact('R', ball.pos); jug.kickT = 0; jug.kickPart = 'R'; sKick(0.05);   // first flick from the right foot
-  $('jCount').textContent = '0'; $('jMsg').textContent = ''; jugUI(true);
-  say(a, pick(['Figyelj, apa!', 'Dekázok!', 'Na, most nézzétek!']), 1.6);
-  if (G.petyaMode === 'bench' && rand() < 0.6) runSeq([[1.2, () => { if (G.pstate === 'juggle') say(G.petya, pick(['Na, lássuk, hányat bírsz!', 'Ne a labdát nézd… vagyis de, azt nézd!']), 2.2); }]]);
+  $('jCount').textContent = '0'; $('jMsg').textContent = ''; $('jLabel').textContent = jug.dad ? 'apa dekázik' : 'dekázás'; jugUI(true);
+  if (!jug.dad) {
+    say(a, pick(['Figyelj, apa!', 'Dekázok!', 'Na, most nézzétek!']), 1.6);
+    if (G.petyaMode === 'bench' && rand() < 0.6) runSeq([[1.2, () => { if (G.pstate === 'juggle') say(G.petya, pick(['Na, lássuk, hányat bírsz!', 'Ne a labdát nézd… vagyis de, azt nézd!', 'Számolom! …Egy. Kettő. Hol tartottam?']), 2.2); }]]);
+  }
   newFlight();
 }
 function newFlight() {
@@ -67,7 +71,8 @@ function jugTouch() {
   jug.kickT = 0; jug.kickPart = jug.next;
   if (jug.next === 'U') tone('sine', 260, 180, 0.08, 0.25); else sKick(0.08);
   const n = jug.n;
-  if (G.petyaMode === 'bench') {
+  if (jug.dad) coachTouch(n);
+  else if (G.petyaMode === 'bench') {
     const L = { 5: 'Öt. Ne a labdát nézd! …Jó, nézd a labdát.', 10: 'Tíz! De a bal lábad csak dísz?', 20: 'Húsz?! Ki tanított erre? …Én, persze.', 30: 'Jó-jó, de én a te korodban százat dekáztam!', 50: 'Ötven… Angi, ezt látod? …Mármint láttam már jobbat is.' }[n];
     if (L) { say(G.petya, L, 2.6); G.petya.point = 1.2; dad.talkT = 6; }
     if (n === 15) say(G.angi, 'Petya, nézd már, milyen ügyes!', 2.4);
@@ -83,6 +88,7 @@ function jugFail(msg) {
   const el = $('jMsg'); el.textContent = msg; el.style.color = '#ff6b5b'; jug.msgT = 1.6;
   $('jKey').textContent = '✗'; $('jPart').textContent = n + ' dekázás';
   setTimeout(() => { if (G.pstate !== 'juggle') jugUI(false); }, 1600);
+  if (jug.dad) return coachFail(n);   // dad's attempt: scored as a mischief, not Petyus' record
   say(G.petike, pick(['Jaj!', 'Hoppá…', 'Majdnem!', 'A fene…']), 1.4);
   if (n > old) {
     jug.best = n; $('jBest').textContent = n;
@@ -96,7 +102,7 @@ function jugFail(msg) {
   }
 }
 export function updateJuggle(dt) {
-  const a = G.petike, r = a.rig;
+  const a = jug.who || G.petike, r = a.rig;
   G.kickPressed = G.kickReleased = false; G.usePressed = false; G.qPressed = false;
   jug.t += dt;
   const W = jugWindow(), k = jug.t / jug.T;
@@ -119,5 +125,6 @@ export function updateJuggle(dt) {
     if (jug.kickT > 0.26) jug.kickT = -1;
   }
   a.sync();
+  if (jug.dad) coachKid(dt);   // Petyus stands by as the coach
 }
 
