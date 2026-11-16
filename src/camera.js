@@ -20,6 +20,7 @@ export function updateCamera(dt) {
   const ck = cine.on ? 3.5 / Math.max(0.3, cine.slow) : 3;   // the cutscene camera keeps up even in slow motion
   camTarget.x = damp(camTarget.x, tx, ck, dt); camTarget.z = damp(camTarget.z, tz, ck, dt);
   camera.position.copy(camTarget).add(CAM_OFF); camera.lookAt(camTarget);
+  if (cine.shake > 0) { const s = cine.shake; camera.position.x += (Math.random() - 0.5) * s; camera.position.y += (Math.random() - 0.5) * s * 0.6; camera.position.z += (Math.random() - 0.5) * s; }   // not the seeded rand: keeps the world deterministic
   if (Math.abs(G.viewSize - G.viewSizeTarget) > 0.001) { G.viewSize = damp(G.viewSize, G.viewSizeTarget, 4, dt); updateProjection(); }
   // shadow camera follows (snapped to texels to avoid shimmering)
   const step = 64 / 2048; const sx = Math.round(camTarget.x / step) * step, sz = Math.round(camTarget.z / step) * step;

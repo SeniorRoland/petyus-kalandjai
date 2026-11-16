@@ -10,6 +10,7 @@ const RIDE_LEGACY = { x: 0.06, z: 0.16, ry: -0.12, lean: 0.15, front: -0.14, bac
 const RIDE_SKINNED = { x: 0.0, z: 0.14, ry: 0, lean: 0.15, front: -0.14, back: 0.22, sh: -0.6, shz: 0.05, elbow: 0.3 };
 export function rollerRide(dt) {
   const ro = roller;
+  if (ro.scripted) return;   // the prologue drives the scooter itself
   if (ro.path) {
     const t = ro.path[0]; const dx = t.x - ro.base.x, dz = t.z - ro.base.z; const d = Math.hypot(dx, dz); const st = ro.speed * dt;
     if (d <= st) { ro.base.x = t.x; ro.base.z = t.z; ro.path.shift(); if (!ro.path.length) ro.path = null; }

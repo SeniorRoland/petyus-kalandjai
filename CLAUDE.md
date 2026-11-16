@@ -36,7 +36,7 @@ Izometrikus, voxel stílusú 3D böngészős játék (Three.js r187 + Vite 8). P
 | `audio.js` · `ambience.js` | szintetizált hangok, `soundAt` · környezeti hangok |
 | `ui.js` · `input.js` | buborékok, toast, nagy felirat · billentyűzet/érintés |
 | `ball.js` · `player.js` · `roller.js` · `npcs.js` | labda · Petike irányítása · roller · járókelők, állatok |
-| `intro.js` · `cine.js` · `camera.js` | nyitójelenet · játék közbeni átvezetők · kamera |
+| `prologue.js` · `intro.js` · `cine.js` · `camera.js` | filmes nyitány · nyitójelenet (családi séta) · átvezetők (`cineCut`, `shake`) · kamera |
 | `activities/drinking.js` | `interactions()`, `setPrompt()`, ivókút |
 | `activities/fountain.js` · `cat.js` · `juggle.js` · `scooter.js` | szökőkút-ivás · macska-jelenet (+ madárraj) · dekázás · rollerezés |
 | `dad.js` | az apa AI-ja és szövegei |
@@ -67,6 +67,7 @@ Izometrikus, voxel stílusú 3D böngészős játék (Three.js r187 + Vite 8). P
 ## Játékállapotok
 
 - `mode`: `loading → title → intro → play`. Az intro egy `async` jelenet (`runIntro`), Enterrel/Kihagyással átugorható (`finishIntro` determinisztikus végállapotot állít be).
+- Az intro elején a **filmes nyitány** (`runPrologue`, kb. 40 mp): Petike a társasház ajtajából rollerrel száguld a park felé, a déli/északi sétányon szlalomozik a direkt odaállított járókelők (`PEDS`) között (a két beszélgető néni között lassítva), farolva fékez (por, féknyom, csikorgás), Petya mérgesen visszahívja, Petike duzzogva visszagurul a szülők mögé (`ROLLER_START`) – innen folytatódik a családi séta (`INTRO_ROUTE`). Filmes hatás: `body.film` (2,39:1 csíkok, szemcse, vignetta, színkorrekció), `#filmTitle` főcím, `#filmDip` vágás, `cineCut`/`shake`/`slowMo`, `sSting`/`sScreech`/`startHum`. A roller ilyenkor `roller.scripted` (a `rollerRide` nem mozgatja). A park sétálói addig a déli oldalon várnak; a végén (vagy átugráskor) az `endPrologue()` mindent visszaállít, a szlalom-járókelők sima sétálók lesznek.
 - `pstate` (Petike): `free | toDrink | drinking | riding | toFountain | ftnDrink | caught | chased | atMom | autoBall | catScared | catChased | catSafe | catToMom | catAtMom | juggle`. Interakció: **E** (`usePressed`), a `interactions()` dönti el, mi elérhető, és írja a `#prompt`-ot.
 - `petyaMode` (apa): `bench | standing | leaving | follow | return | seat`. Az `updateDad()` mozgatja (`navTarget()` a pálya kapuján és a pad mögül is kivezet) és beszélteti: `worryLine()` (rollerezés), `coachLine()` (foci – sosem elégedett, `lastKick` alapján), `GRUMBLE`, `GOAL_GRUMBLE`, `ANGI_DEFEND`.
 - Szökőkút-ivás (tilos!): a szökőkút pereménél **E** → `startFountain()`. Az apa felpattan és odafut (`ftnStand → ftnRun`), leszidja (`ftnScold`), majd visszakergeti Petikét Angihoz (`ftnChase → ftnWait → seat`); közben Petike nem irányítható (`caught`, `chased`: robotpilóta `autoRun()`-nal, `FTN_WAY` a pálya ÉNy-i sarkánál), a végén családi szópárbaj. A párbeszédeket a `runSeq()`/`tickSeq()` mini-ütemező játssza le (egyszerre több sorozat is futhat; a `W()`/`until()` játék közben nem használható, mert az intro átugrása után a `cs.skip` igaz marad). Szövegek: `FTN_SHOUT`, `FTN_RUN`, `FTN_SIP`, `FTN_SCOLD`, `FTN_EXCUSE`, `FTN_CHASE`.

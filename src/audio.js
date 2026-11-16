@@ -58,6 +58,23 @@ export function sBird(d = 0) {   // four kinds of songbird
   else if (k === 2) { tone('sine', f * 1.2, f * 0.8, 0.16, v, d); tone('sine', f * 1.2, f * 0.8, 0.16, v, d + 0.24); }       // tsee-u, tsee-u
   else { for (let i = 0; i < 4; i++) tone('triangle', f * (1 + (i % 2) * 0.25), f * (1.1 + (i % 2) * 0.2), 0.09, v * 0.7, d + i * 0.1); }   // warble
 }
-export const sBell = () => { for (const d of [0, 0.17]) { tone('sine', 2350, 2330, 0.55, 0.11, d); tone('sine', 5640, 5600, 0.3, 0.035, d); tone('triangle', 1175, 1170, 0.4, 0.04, d); } };
+// --- prologue: dramatic sting, tyre screech, electric-motor hum
+export const sSting = (low = false) => {
+  const f = low ? 49 : 73.4;
+  for (const m of [1, 1.5, 2, 3]) tone('sawtooth', f * m, f * m * 0.985, 1.7, 0.09 / m);
+  tone('sine', 62, 36, 1.0, 0.4); noise(0.7, 170, 0.7, 0.22);
+};
+export const sScreech = () => { tone('sawtooth', 1900, 1250, 1.15, 0.03); tone('square', 2450, 1650, 1.05, 0.012); noise(1.15, 3200, 1.6, 0.14); };
+export function startHum() {
+  if (!actx) return { set() {}, stop() {} };
+  const o = actx.createOscillator(), o2 = actx.createOscillator(), f = actx.createBiquadFilter(), g = actx.createGain();
+  o.type = 'sawtooth'; o2.type = 'sine'; f.type = 'lowpass'; f.frequency.value = 900; g.gain.value = 0;
+  o.connect(f); o2.connect(f); f.connect(g); g.connect(master); o.start(); o2.start();
+  return {
+    set(v) { const t = actx.currentTime; o.frequency.setTargetAtTime(70 + v * 28, t, 0.08); o2.frequency.setTargetAtTime(140 + v * 56, t, 0.08); g.gain.setTargetAtTime(G.muted ? 0 : 0.012 + v * 0.005, t, 0.1); },
+    stop() { const t = actx.currentTime; g.gain.setTargetAtTime(0, t, 0.15); o.stop(t + 0.8); o2.stop(t + 0.8); },
+  };
+}
+export const sBell =() => { for (const d of [0, 0.17]) { tone('sine', 2350, 2330, 0.55, 0.11, d); tone('sine', 5640, 5600, 0.3, 0.035, d); tone('triangle', 1175, 1170, 0.4, 0.04, d); } };
 export const sHorn = (twice) => { for (const d of twice ? [0, 0.3] : [0]) { tone('square', 330, 326, twice ? 0.2 : 0.45, 0.05, d); tone('square', 415, 411, twice ? 0.2 : 0.45, 0.045, d); } };
 
