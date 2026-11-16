@@ -10,7 +10,7 @@ import { V3 } from './util.js';
 export const SERIES = 'Petyus kalandjai';
 const NYAR = 'evszak-nyar.webp', OSZTEL = 'evszak-osz-tel.webp', TAVASZ = 'evszak-tel-tavasz.webp';
 export const EPISODES = [
-  { n: 1, month: 'Augusztus', day: 'Vasárnap', sub: 'Vasárnap a parkban', art: { img: NYAR, col: 1, row: 1 }, ready: true },
+  { n: 1, month: 'Augusztus', day: 'Vasárnap', sub: 'Egy nap a parkban', art: { img: NYAR, col: 1, row: 1 }, ready: true },
   { n: 2, month: 'Szeptember', art: { img: NYAR, col: 0, row: 0 } },
   { n: 3, month: 'Október', art: { img: OSZTEL, col: 0, row: 0 } },
   { n: 4, month: 'November', art: { img: OSZTEL, col: 1, row: 0 } },

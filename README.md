@@ -4,7 +4,7 @@ Izometrikus, voxel stílusú 3D böngészős játéksorozat Three.js-ben. Petyus
 
 A sorozat 12 részből áll, mindegyik egy hónap (augusztustól júliusig); a kezdőképernyőn mind látszik, egyelőre csak az első játszható.
 
-**1. rész: Augusztus** (vasárnap a parkban) – Petya és Angi a parkban sétál, Petyus elektromos rollerrel megy utánuk, a focipályánál átöltözik, és focizni kezd – a játékos irányítja.
+**1. rész: Augusztus – Egy nap a parkban** – Petya és Angi a parkban sétál, Petyus elektromos rollerrel megy utánuk, a focipályánál átöltözik, és focizni kezd – a játékos irányítja.
 
 ## Indítás
 
