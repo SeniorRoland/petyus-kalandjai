@@ -41,6 +41,7 @@ utils → renderer/scene → voxel batch (`Batch`: összeolvasztott dobozok egy 
 - `rigFromSkinned()` ugyanazt az interfészt adja, mint a régi felosztós rig: `rig.hip[R,L]` = UpLeg, `rig.knee[R,L]` = Leg csontok; **`rig.sh[R,L]` proxyk** (Object3D) – „lelógó kar” jelentéssel. A `rig.apply()` írja át őket a karcsontokra: `armBone.rotation = (sh.x, sh.y, sh.z + armBase)`, ahol `armBase = [+1.5, −1.5]` hozza le a T-pose karokat. Index 0 = jobb (−X), 1 = bal (+X).
   - Kar előre lendítése: `sh.rotation.x < 0`; comb előre: `hip.rotation.x < 0`; térd hajlítása: `knee.rotation.x > 0`.
   - `Actor.sync()` hívja az `apply()`-t; aki közvetlenül pózol (pl. `poseRider`), annak is hívnia kell.
+- Ülés: `sitKnee()` a lábszár hossza (`rig.kneeH`) alapján dönti meg a lábszárat, hogy a talp a földön legyen (a `rig.foot` csont vízszintesen tartja a talpat).
 - `CFG` (skála + régi felosztási küszöbök): Petya 0.93, Angi 0.86, focista Petike 0.70, rolleres Petike 0.95; a roller 0.72.
 - Ha nem skinnelt GLB-t kap, a `rigFromGLTF` a régi módon (voxel-y/x küszöbökkel) bontja végtagokra.
 - **Gyakori hiba:** Blenderből FBX-et menteni `.glb` névvel → a betöltés elhasal. Mindig glTF 2.0 Binary (.glb) export.
@@ -80,4 +81,3 @@ utils → renderer/scene → voxel batch (`Batch`: összeolvasztott dobozok egy 
 
 - `src/game.js` felbontása modulokra (world, rigs, actors, activities, dad AI, audio, ui).
 - Mixamo-animációk betöltése (`AnimationMixer`) a kézi pózok helyett – a csontnevek már egyeznek.
-- Angi ülésmagassága: a lábszára hosszabb a pad ülésénél (a lábfej kb. 3 cm-re a talaj alá kerül).
