@@ -833,10 +833,12 @@ let kickHeld = false, kickPressed = false, kickReleased = false;
 window.addEventListener('keydown', (e) => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
   if (e.repeat) return; keys[e.code] = true;
+  if (pstate === 'juggle') { for (const k in JUG) if (JUG[k].codes.includes(e.code)) jugPress(k); }
+  if (e.code === 'KeyQ') qPressed = true;
   if (e.code === 'Space') { kickHeld = true; kickPressed = true; }
   if (e.code === 'Enter' || e.code === 'Escape') skipIntro();
   if (e.code === 'KeyM') toggleMute();
-  if (e.code === 'KeyR') resetBallToPlayer();
+  if (e.code === 'KeyR' && pstate !== 'juggle') resetBallToPlayer();
   if (e.code === 'KeyE') usePressed = true;
   if (e.code === 'KeyH') { const h = $('help'); h.style.display = h.style.display === 'none' ? 'block' : 'none'; }
 });
@@ -856,6 +858,7 @@ if (isTouch) {
   $('kickBtn').addEventListener('touchstart', (e) => { kickHeld = true; kickPressed = true; e.preventDefault(); }, { passive: false });
   $('kickBtn').addEventListener('touchend', (e) => { kickHeld = false; kickReleased = true; e.preventDefault(); }, { passive: false });
   $('useBtn').addEventListener('touchstart', (e) => { usePressed = true; e.preventDefault(); }, { passive: false });
+  for (const b of document.querySelectorAll('#jTouch button')) b.addEventListener('touchstart', (e) => { jugPress(b.dataset.k); e.preventDefault(); }, { passive: false });
   $('runBtn').addEventListener('touchstart', (e) => { touch.run = !touch.run; $('runBtn').style.background = touch.run ? 'rgba(255,122,61,.85)' : ''; e.preventDefault(); }, { passive: false });
 }
 
@@ -894,6 +897,9 @@ const axis = new V3(), q = new THREE.Quaternion();
 function updateBall(dt) {
   if (!ball.active) return;
   ball.scale = Math.min(1, ball.scale + dt * 5); ball.mesh.scale.setScalar(ball.r * (0.4 + 0.6 * smooth(ball.scale)));
+  if (ball.juggle) {   // kinematic while juggling (updateJuggle moves it); just spin
+    axis.set(1, 0, 0); q.setFromAxisAngle(axis, -9 * dt); ball.mesh.quaternion.premultiply(q); ball.mesh.position.copy(ball.pos); return;
+  }
   ball.hitCd -= dt;
   const steps = 3, h = dt / steps;
   for (let s = 0; s < steps; s++) {
@@ -964,6 +970,7 @@ function updatePlayer(dt) {
   if (pstate === 'toDrink' || pstate === 'drinking') return updateDrinking(dt);
   if (FTN_STATES.includes(pstate)) return updateFountainDrink(dt);
   if (CAT_STATES.includes(pstate)) return updateCatPetike(dt);
+  if (pstate === 'juggle') return updateJuggle(dt);
   if (pstate !== 'autoBall' && interactions()) return;
   const a = petike;
   let ix = 0, iy = 0;
@@ -1364,12 +1371,15 @@ function interactions() {
   const dDrink = Math.hypot(p.x - DRINK.x, p.z - DRINK.z), dRoll = Math.hypot(p.x - roller.pos.x, p.z - roller.pos.z);
   const dFtn = Math.hypot(p.x - FOUNTAIN.x, p.z - FOUNTAIN.z);
   const canDrink = dDrink < 1.6, canRide = dRoll < 1.5 && !roller.rider, canFtn = dFtn < FOUNTAIN.r + 1.0;
-  setPrompt(canDrink ? 'E – inni az ivókútból' : canRide ? 'E – felszállni a rollerre' : canFtn ? 'E – inni a szökőkútból' : '');
+  const canJug = canJuggle();
+  setPrompt(canDrink ? 'E – inni az ivókútból' : canRide ? 'E – felszállni a rollerre' : canFtn ? 'E – inni a szökőkútból' : canJug ? (isTouch ? 'Dekázás' : 'Q – dekázás') : '');
+  if (qPressed) { qPressed = false; if (canJug) { startJuggle(); return true; } }
   if (!usePressed) return false;
   usePressed = false;
   if (canDrink) { startDrink(); return true; }
   if (canRide) { mountScooter(); return true; }
   if (canFtn) { startFountain(); return true; }
+  if (canJug && isTouch) { startJuggle(); return true; }   // touch: the use button starts juggling
   return false;
 }
 
@@ -1760,6 +1770,118 @@ function onCatLanded() {
   ]);
 }
 
+// ---------- juggling (dekázás): Q next to the ball, then a quick-time event per touch
+// The ball flies between "contacts" (left foot / right foot / head). On each flight the key to press is shown with a ring
+// closing in on it; press it within ±W of the contact. Faster flights and a narrower window as the count grows.
+const JUG = { L: { codes: ['ArrowLeft', 'KeyA'], sym: '←', part: 'bal láb' }, R: { codes: ['ArrowRight', 'KeyD'], sym: '→', part: 'jobb láb' }, U: { codes: ['ArrowUp', 'KeyW'], sym: '↑', part: 'fej' } };
+const jug = { n: 0, best: 0, t: 0, T: 0.9, H: 0.9, next: 'R', prev: 'R', from: new V3(), to: new V3(), hit: false, kickT: -1, kickPart: 'R', msgT: 0 };
+try { jug.best = +(localStorage.getItem('petike.dekazasRekord') || 0) || 0; } catch (e) { /* storage blocked – the record lives for this session only */ }
+$('jBest').textContent = jug.best;
+let qPressed = false;
+const jugWindow = () => clamp(0.2 - jug.n * 0.004, 0.09, 0.2);
+function canJuggle() {
+  if (!ball.active || goalLock > 0 || ball.juggle) return false;
+  return Math.hypot(ball.pos.x - petike.pos.x, ball.pos.z - petike.pos.z) < 1.3 && ball.pos.y < 0.6 && Math.hypot(ball.vel.x, ball.vel.z) < 3;
+}
+function jugContact(part, out) {
+  const a = petike, h = a.heading, fx = Math.sin(h), fz = Math.cos(h), lx = Math.cos(h), lz = -Math.sin(h);   // forward, left (+X at heading 0)
+  if (part === 'U') return out.set(a.pos.x + fx * 0.05, 1.45, a.pos.z + fz * 0.05);
+  const s = part === 'L' ? 0.1 : -0.1;
+  return out.set(a.pos.x + fx * 0.28 + lx * s, 0.32, a.pos.z + fz * 0.28 + lz * s);
+}
+function jugUI(show) {
+  $('juggle').style.display = show ? 'block' : 'none';
+  if (show && isTouch) $('jTouch').style.display = 'flex';
+}
+function startJuggle() {
+  const a = petike;
+  pstate = 'juggle'; pvel.set(0, 0, 0); charging = false; a.kickT = -1; setPrompt(''); $('charge').style.display = 'none';
+  a.targetHeading = a.heading = Math.atan2(ball.pos.x - a.pos.x, ball.pos.z - a.pos.z);
+  ball.juggle = true; ball.vel.set(0, 0, 0); jug.n = 0; jug.next = 'R';
+  jugContact('R', ball.pos); jug.kickT = 0; jug.kickPart = 'R'; sKick(0.05);   // first flick from the right foot
+  $('jCount').textContent = '0'; $('jMsg').textContent = ''; jugUI(true);
+  say(a, pick(['Figyelj, apa!', 'Dekázok!', 'Na, most nézzétek!']), 1.6);
+  if (petyaMode === 'bench' && rand() < 0.6) runSeq([[1.2, () => { if (pstate === 'juggle') say(petya, pick(['Na, lássuk, hányat bírsz!', 'Ne a labdát nézd… vagyis de, azt nézd!']), 2.2); }]]);
+  newFlight();
+}
+function newFlight() {
+  jug.from.copy(ball.pos); jug.prev = jug.next;
+  // first touches alternate feet; later the head joins in, and the order gets less predictable
+  const r = rand();
+  jug.next = jug.n >= 4 && r < 0.22 ? 'U' : (jug.n < 3 ? (jug.prev === 'R' ? 'L' : 'R') : (r < 0.61 ? 'L' : 'R'));
+  if (jug.next === 'U' && jug.prev === 'U') jug.next = 'R';
+  jug.T = Math.max(0.52, 0.9 - jug.n * 0.012); jug.H = jug.next === 'U' || jug.prev === 'U' ? 0.6 : 0.95;
+  jugContact(jug.next, jug.to); jug.t = 0; jug.hit = false;
+  $('jKey').textContent = JUG[jug.next].sym; $('jPart').textContent = JUG[jug.next].part;
+}
+function jugPress(k) {
+  if (pstate !== 'juggle' || jug.hit) return;
+  const dtc = jug.t - jug.T, W = jugWindow();
+  if (dtc < -W) return jugFail('Korai!');
+  if (k !== jug.next) return jugFail('Rossz! A ' + JUG[jug.next].part + ' kellett!');
+  jug.hit = true; jug.msgT = 0.7;
+  const el = $('jMsg'); el.textContent = Math.abs(dtc) < W * 0.35 ? 'Tökéletes!' : 'Jó!'; el.style.color = Math.abs(dtc) < W * 0.35 ? '#7ddc5a' : '#ffd166';
+}
+function jugTouch() {
+  // the ball meets foot / head: count it, then the next flight
+  jug.n++; $('jCount').textContent = jug.n;
+  jug.kickT = 0; jug.kickPart = jug.next;
+  if (jug.next === 'U') tone('sine', 260, 180, 0.08, 0.25); else sKick(0.08);
+  const n = jug.n;
+  if (petyaMode === 'bench') {
+    const L = { 5: 'Öt. Ne a labdát nézd! …Jó, nézd a labdát.', 10: 'Tíz! De a bal lábad csak dísz?', 20: 'Húsz?! Ki tanított erre? …Én, persze.', 30: 'Jó-jó, de én a te korodban százat dekáztam!', 50: 'Ötven… Angi, ezt látod? …Mármint láttam már jobbat is.' }[n];
+    if (L) { say(petya, L, 2.6); petya.point = 1.2; dad.talkT = 6; }
+    if (n === 15) say(angi, 'Petya, nézd már, milyen ügyes!', 2.4);
+  }
+  newFlight();
+}
+function jugFail(msg) {
+  const n = jug.n, old = jug.best;
+  pstate = 'free'; ball.juggle = false;
+  // the ball just drops away
+  const k = jug.t / jug.T, vy = (jug.to.y - jug.from.y) / jug.T + 4 * jug.H * (1 - 2 * k) / jug.T;
+  ball.vel.set((jug.to.x - jug.from.x) / jug.T + R(-1.2, 1.2), Math.min(vy, 1), (jug.to.z - jug.from.z) / jug.T + R(-1.2, 1.2));
+  const el = $('jMsg'); el.textContent = msg; el.style.color = '#ff6b5b'; jug.msgT = 1.6;
+  $('jKey').textContent = '✗'; $('jPart').textContent = n + ' dekázás';
+  setTimeout(() => { if (pstate !== 'juggle') jugUI(false); }, 1600);
+  say(petike, pick(['Jaj!', 'Hoppá…', 'Majdnem!', 'A fene…']), 1.4);
+  if (n > old) {
+    jug.best = n; $('jBest').textContent = n;
+    try { localStorage.setItem('petike.dekazasRekord', String(n)); } catch (e) { /* not stored */ }
+    if (old > 0 || n >= 3) { bigText('ÚJ REKORD: ' + n + '!', 2.2); sCheer(); angi.cheer = 1.6; }
+  }
+  if (petyaMode === 'bench') {
+    const line = n < 3 ? pick(['Ennyi? A nagymamád is többet dekázik!', 'Ez még bemelegítésnek is kevés.']) : n < 10 ? pick(['Na, majd ha tízet megcsinálsz, akkor beszélünk.', 'Nem rossz. Nem is jó.']) : n > old ? pick(['Hát… nem rossz. De én a te korodban százat!', 'Rekord? Az én rekordom ezt meg se nézi.']) : pick(['A rekordodat se érted el. Gyakorolj!', 'Láttam már tőled jobbat is.']);
+    runSeq([[0.9, () => { say(petya, line, 2.6); petya.point = 1.3; dad.talkT = 5; }]]);
+    if (n >= 10) runSeq([[3.6, () => say(angi, pick(ANGI_DEFEND), 2.4)]]);
+  }
+}
+function updateJuggle(dt) {
+  const a = petike, r = a.rig;
+  kickPressed = kickReleased = false; usePressed = false; qPressed = false;
+  jug.t += dt;
+  const W = jugWindow(), k = jug.t / jug.T;
+  // ball on a parabola from the last contact to the next one (keeps falling if the touch is late)
+  ball.pos.x = lerp(jug.from.x, jug.to.x, Math.min(k, 1.15)); ball.pos.z = lerp(jug.from.z, jug.to.z, Math.min(k, 1.15));
+  ball.pos.y = Math.max(ball.r, lerp(jug.from.y, jug.to.y, k) + 4 * jug.H * k * (1 - k));
+  // QTE ring
+  const ring = $('jRing'); ring.style.transform = 'scale(' + lerp(2.4, 1, clamp(k, 0, 1)).toFixed(3) + ')';
+  ring.classList.toggle('hot', Math.abs(jug.t - jug.T) <= W);
+  if (jug.msgT > 0) { jug.msgT -= dt; if (jug.msgT <= 0) $('jMsg').textContent = ''; }
+  if (jug.hit && jug.t >= jug.T) jugTouch();
+  else if (!jug.hit && jug.t > jug.T + W) { jugFail('Késő!'); }
+  // pose: arms out for balance, eyes on the ball, kick / header
+  a.animate(dt, false, 0);
+  r.sh[0].rotation.z = -0.55; r.sh[1].rotation.z = 0.55; r.sh[0].rotation.x = -0.2; r.sh[1].rotation.x = -0.2;
+  if (jug.kickT >= 0) {
+    jug.kickT += dt; const s = Math.sin(Math.PI * Math.min(1, jug.kickT / 0.26));
+    if (jug.kickPart === 'U') { r.inner.rotation.x = -0.22 * s; r.inner.position.y += 0.05 * s; }
+    else { const i = jug.kickPart === 'R' ? 0 : 1; r.hip[i].rotation.x = -0.85 * s; r.knee[i].rotation.x = 0.75 * s; }
+    if (jug.kickT > 0.26) jug.kickT = -1;
+  }
+  a.sync();
+}
+
 // a flock of small birds bursting out of the tree the cat landed in
 const flock = [];
 function makeSparrow() {
@@ -2042,7 +2164,7 @@ function step(dt) {
     if ((roller.rider || roller.path) && pstate !== 'riding') rollerRide(dt);
     if (mode === 'play') { updateDad(dt); if (['follow', 'return', 'ftnRun', 'ftnChase', 'catRun', 'catCarry'].includes(petyaMode)) { collide(petya.pos, 0.3, 0, null); petya.sync(); } }
     updateBall(dt);
-    usePressed = false;
+    usePressed = false; qPressed = false;
   }
   updateNPCs(dt); updateAnimals(dt); updateFountain(dt); updateFx(dt);
   updateCamera(dt); updateBubbles(dt);
@@ -2088,6 +2210,6 @@ async function boot() {
   requestAnimationFrame(frame);
   window.__game = { THREE, scene, camera, renderer, petike: () => petike, petya: () => petya, angi: () => angi, ball, roller, keys, skipIntro, get mode() { return mode; }, get pstate() { return pstate; }, get petyaMode() { return petyaMode; }, use: () => { usePressed = true; }, roller, setZoom: (z) => { zoomOverride = z; viewSizeTarget = z; viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { kickPressed = true; setTimeout(() => { kickReleased = true; }, p); },
     // manual stepping (works even when the tab is hidden and rAF is paused): __game.tick(seconds)
-    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); step(dt * cine.slow); } renderer.render(scene, camera); }, cine, ftn, cev, TREES };
+    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); step(dt * cine.slow); } renderer.render(scene, camera); }, cine, ftn, cev, TREES, jug, jugPress, juggle: () => { qPressed = true; } };
 }
 boot();
