@@ -745,21 +745,40 @@ function confetti(x, z) {
 }
 
 // ---------------------------------------------------------------- audio
-let actx = null, muted = false, master = null;
+let actx = null, muted = false, master = null, outNode = null, ambBed = null;
 function initAudio() {
-  if (actx) return; try { actx = new (window.AudioContext || window.webkitAudioContext)(); master = actx.createGain(); master.gain.value = 0.5; master.connect(actx.destination); } catch (e) { actx = null; }
+  if (actx) return; try { actx = new (window.AudioContext || window.webkitAudioContext)(); master = actx.createGain(); master.gain.value = 0.5; master.connect(actx.destination); startAmbience(); } catch (e) { actx = null; }
+}
+// constant park ambience: wind in the leaves (slowly swelling) + far-away traffic rumble
+function startAmbience() {
+  const s = actx.createBufferSource(); s.buffer = noiseBuf(4); s.loop = true;
+  const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 320;
+  const bp = actx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1900; bp.Q.value = 0.5;
+  const g1 = actx.createGain(); g1.gain.value = 0.06; const g2 = actx.createGain(); g2.gain.value = 0.014;
+  const lfo = actx.createOscillator(); lfo.frequency.value = 0.11; const lg = actx.createGain(); lg.gain.value = 0.011; lfo.connect(lg); lg.connect(g2.gain);
+  s.connect(lp); lp.connect(g1); s.connect(bp); bp.connect(g2);
+  ambBed = actx.createGain(); ambBed.gain.value = muted ? 0 : 1; g1.connect(ambBed); g2.connect(ambBed); ambBed.connect(master);
+  s.start(); lfo.start();
+}
+// play the sounds made inside fn() as if they came from world point (x, z): stereo pan + distance falloff (relative to the camera)
+function soundAt(x, z, fn, vol = 1) {
+  if (!actx || muted) return;
+  const dx = x - camTarget.x, dz = z - camTarget.z, d = Math.hypot(dx, dz);
+  const sp = actx.createStereoPanner(); sp.pan.value = clamp((dx - dz) / Math.SQRT2 / 16, -0.9, 0.9);   // screen-x (camera right = (1,0,-1)/√2)
+  const g = actx.createGain(); g.gain.value = vol * clamp(1.15 - d / 38, 0.12, 1);
+  sp.connect(g); g.connect(master); outNode = sp; try { fn(); } finally { outNode = null; }
 }
 function noiseBuf(dur) { const b = actx.createBuffer(1, actx.sampleRate * dur, actx.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; }
 function env(g, t, a, peak, d) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); }
 function tone(type, f0, f1, dur, vol = 0.3, delay = 0) {
   if (!actx || muted) return; const t = actx.currentTime + delay; const o = actx.createOscillator(); const g = actx.createGain();
   o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
-  env(g, t, 0.01, vol, dur); o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05);
+  env(g, t, 0.01, vol, dur); o.connect(g); g.connect(outNode || master); o.start(t); o.stop(t + dur + 0.05);
 }
 function noise(dur, freq, q, vol, delay = 0, type = 'bandpass') {
   if (!actx || muted) return; const t = actx.currentTime + delay; const s = actx.createBufferSource(); s.buffer = noiseBuf(dur + 0.05);
   const f = actx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q; const g = actx.createGain();
-  env(g, t, Math.min(0.08, dur * 0.3), vol, dur); s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + dur + 0.1);
+  env(g, t, Math.min(0.08, dur * 0.3), vol, dur); s.connect(f); f.connect(g); g.connect(outNode || master); s.start(t); s.stop(t + dur + 0.1);
 }
 const sKick = (p) => { tone('sine', 160, 45, 0.18, 0.5 + p * 0.3); noise(0.06, 1800, 1, 0.25 + p * 0.2); };
 const sBounce = (v) => tone('sine', 120, 60, 0.08, clamp(v * 0.05, 0.02, 0.2));
@@ -772,6 +791,16 @@ const sMeow = () => tone('triangle', 700, 1000, 0.35, 0.08);
 const sChirp = () => { const f = R(2800, 4200); for (let i = 0; i < 3; i++) tone('sine', f, f * 1.35, 0.07, 0.04, i * 0.11); };
 const sPop = () => tone('sine', 600, 1200, 0.12, 0.15);
 const sFlap = () => noise(0.3, 800, 0.8, 0.08);
+// --- ambience voices
+function sBird(d = 0) {   // four kinds of songbird
+  const k = Math.floor(rand() * 4), f = R(2600, 4400), v = R(0.05, 0.09);
+  if (k === 0) for (let i = 0; i < 3; i++) tone('sine', f, f * 1.35, 0.07, v, d + i * 0.11);                                  // chirp-chirp-chirp
+  else if (k === 1) { const n = 6 + Math.floor(rand() * 6); for (let i = 0; i < n; i++) tone('sine', f * 1.1, f * 0.9, 0.035, v * 0.8, d + i * 0.045); }   // trill
+  else if (k === 2) { tone('sine', f * 1.2, f * 0.8, 0.16, v, d); tone('sine', f * 1.2, f * 0.8, 0.16, v, d + 0.24); }       // tsee-u, tsee-u
+  else { for (let i = 0; i < 4; i++) tone('triangle', f * (1 + (i % 2) * 0.25), f * (1.1 + (i % 2) * 0.2), 0.09, v * 0.7, d + i * 0.1); }   // warble
+}
+const sBell = () => { for (const d of [0, 0.17]) { tone('sine', 2350, 2330, 0.55, 0.11, d); tone('sine', 5640, 5600, 0.3, 0.035, d); tone('triangle', 1175, 1170, 0.4, 0.04, d); } };
+const sHorn = (twice) => { for (const d of twice ? [0, 0.3] : [0]) { tone('square', 330, 326, twice ? 0.2 : 0.45, 0.05, d); tone('square', 415, 411, twice ? 0.2 : 0.45, 0.045, d); } };
 
 // ---------------------------------------------------------------- UI helpers
 const bubbles = [];
@@ -804,17 +833,19 @@ let kickHeld = false, kickPressed = false, kickReleased = false;
 window.addEventListener('keydown', (e) => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
   if (e.repeat) return; keys[e.code] = true;
+  if (pstate === 'juggle') { for (const k in JUG) if (JUG[k].codes.includes(e.code)) jugPress(k); }
+  if (e.code === 'KeyQ') qPressed = true;
   if (e.code === 'Space') { kickHeld = true; kickPressed = true; }
   if (e.code === 'Enter' || e.code === 'Escape') skipIntro();
   if (e.code === 'KeyM') toggleMute();
-  if (e.code === 'KeyR') resetBallToPlayer();
+  if (e.code === 'KeyR' && pstate !== 'juggle') resetBallToPlayer();
   if (e.code === 'KeyE') usePressed = true;
   if (e.code === 'KeyH') { const h = $('help'); h.style.display = h.style.display === 'none' ? 'block' : 'none'; }
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; if (e.code === 'Space') { kickHeld = false; kickReleased = true; } });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 window.addEventListener('wheel', (e) => { viewSizeTarget = clamp(viewSizeTarget * (e.deltaY > 0 ? 1.1 : 0.9), 5, 24); }, { passive: true });
-function toggleMute() { muted = !muted; $('muteBtn').textContent = muted ? '🔇' : '🔊'; }
+function toggleMute() { muted = !muted; $('muteBtn').textContent = muted ? '🔇' : '🔊'; if (ambBed) ambBed.gain.value = muted ? 0 : 1; }
 $('muteBtn').onclick = toggleMute;
 $('skipBtn').onclick = () => skipIntro();
 // touch joystick
@@ -827,6 +858,7 @@ if (isTouch) {
   $('kickBtn').addEventListener('touchstart', (e) => { kickHeld = true; kickPressed = true; e.preventDefault(); }, { passive: false });
   $('kickBtn').addEventListener('touchend', (e) => { kickHeld = false; kickReleased = true; e.preventDefault(); }, { passive: false });
   $('useBtn').addEventListener('touchstart', (e) => { usePressed = true; e.preventDefault(); }, { passive: false });
+  for (const b of document.querySelectorAll('#jTouch button')) b.addEventListener('touchstart', (e) => { jugPress(b.dataset.k); e.preventDefault(); }, { passive: false });
   $('runBtn').addEventListener('touchstart', (e) => { touch.run = !touch.run; $('runBtn').style.background = touch.run ? 'rgba(255,122,61,.85)' : ''; e.preventDefault(); }, { passive: false });
 }
 
@@ -865,6 +897,9 @@ const axis = new V3(), q = new THREE.Quaternion();
 function updateBall(dt) {
   if (!ball.active) return;
   ball.scale = Math.min(1, ball.scale + dt * 5); ball.mesh.scale.setScalar(ball.r * (0.4 + 0.6 * smooth(ball.scale)));
+  if (ball.juggle) {   // kinematic while juggling (updateJuggle moves it); just spin
+    axis.set(1, 0, 0); q.setFromAxisAngle(axis, -9 * dt); ball.mesh.quaternion.premultiply(q); ball.mesh.position.copy(ball.pos); return;
+  }
   ball.hitCd -= dt;
   const steps = 3, h = dt / steps;
   for (let s = 0; s < steps; s++) {
@@ -935,6 +970,7 @@ function updatePlayer(dt) {
   if (pstate === 'toDrink' || pstate === 'drinking') return updateDrinking(dt);
   if (FTN_STATES.includes(pstate)) return updateFountainDrink(dt);
   if (CAT_STATES.includes(pstate)) return updateCatPetike(dt);
+  if (pstate === 'juggle') return updateJuggle(dt);
   if (pstate !== 'autoBall' && interactions()) return;
   const a = petike;
   let ix = 0, iy = 0;
@@ -1133,6 +1169,7 @@ function threatNear(p, r) {
   return null;
 }
 function updateAnimals(dt) {
+  updateFlock(dt);
   for (const an of animals) {
     if (an.evt) { updateEvtCat(an, dt); continue; }
     const a = an.a; let moving = 0, spd = 0;
@@ -1334,12 +1371,15 @@ function interactions() {
   const dDrink = Math.hypot(p.x - DRINK.x, p.z - DRINK.z), dRoll = Math.hypot(p.x - roller.pos.x, p.z - roller.pos.z);
   const dFtn = Math.hypot(p.x - FOUNTAIN.x, p.z - FOUNTAIN.z);
   const canDrink = dDrink < 1.6, canRide = dRoll < 1.5 && !roller.rider, canFtn = dFtn < FOUNTAIN.r + 1.0;
-  setPrompt(canDrink ? 'E – inni az ivókútból' : canRide ? 'E – felszállni a rollerre' : canFtn ? 'E – inni a szökőkútból' : '');
+  const canJug = canJuggle();
+  setPrompt(canDrink ? 'E – inni az ivókútból' : canRide ? 'E – felszállni a rollerre' : canFtn ? 'E – inni a szökőkútból' : canJug ? (isTouch ? 'Dekázás' : 'Q – dekázás') : '');
+  if (qPressed) { qPressed = false; if (canJug) { startJuggle(); return true; } }
   if (!usePressed) return false;
   usePressed = false;
   if (canDrink) { startDrink(); return true; }
   if (canRide) { mountScooter(); return true; }
   if (canFtn) { startFountain(); return true; }
+  if (canJug && isTouch) { startJuggle(); return true; }   // touch: the use button starts juggling
   return false;
 }
 
@@ -1517,8 +1557,12 @@ const sHiss = () => { noise(0.55, 3400, 0.7, 0.2); noise(0.45, 5600, 1.2, 0.1, 0
 const CAT_HISS = ['FFFHHH!', 'Pssszt… FFFHHH!', 'Rrrrr… FFF!', 'HHHHH!'];
 const CAT_PANIC = ['Segítség! Macska!', 'Apaaa! Megesz a macska!', 'Nem bántottalak!!', 'Anyaaa!', 'Miért pont engem?!', 'Gyorsabb, mint én!!'];
 const CAT_DAD_RUN = ['Félre, jövök!', 'Cicc! Cicc… gyere csak ide!', 'Na megállj, te szőrgombóc!'];
+// camera focus for a point in the air: the ground point on the same view ray (ortho camera looks along −CAM_OFF)
+const airFocus = (x, y, z) => ({ x: x - y * CAM_OFF.x / CAM_OFF.y, z: z - y * CAM_OFF.z / CAM_OFF.y });
+const CAT_TREE_MEOW = 12;     // s: the cat on the tree meows at this interval
 function idleFootball(dt, anyInput) {
   const a = petike;
+  if (cine.on) anyInput = false;   // no taking over during a cutscene
   if (anyInput) {
     cev.idleT = 0;
     if (pstate === 'autoBall') { pstate = 'free'; if (cev.cat && cev.cat.evt === 'approach') { cev.cat.evt = null; cev.cat = null; } }
@@ -1547,17 +1591,31 @@ function callCat() {
   let best = null, bd = 1e9;
   for (const an of animals) if (an.type === 'cat' && !an.evt) { const d = an.pos.distanceTo(petike.pos); if (d < bd) { bd = d; best = an; } }
   cev.cat = best || false;           // false: no cats left on the ground → just keep playing
-  if (best) { best.evt = 'approach'; best.y = 0; }
+  if (!best) return;
+  // it creeps out from under the bushes south of the pitch, close to Petike – cutscene!
+  best.evt = 'sneak'; best.y = 0; best.sneakT = 0;
+  best.pos.set(clamp(petike.pos.x + R(-3, 3), FENCE.x0 + 2, FENCE.x1 - 2), 0, 12.4); best.heading = Math.PI;
+  cineStart(() => best.pos, 4.2);
+  cineCap('Eközben, a bokor alján…', 3.2);
 }
 // the event cat (bypasses the normal cat AI; slips through the pitch fence like real cats do)
 function updateEvtCat(an, dt) {
   const a = an.a, P = petike.pos; let moving = 0, spd = 0;
   a.body.rotation.set(0, 0, 0); a.body.position.y = 0; a.tail.rotation.x = -0.3;
   const go = (tx, tz, sp) => { const dx = tx - an.pos.x, dz = tz - an.pos.z, d = Math.hypot(dx, dz); if (d < 0.05) return d; const st = Math.min(d, sp * dt); an.pos.x += dx / d * st; an.pos.z += dz / d * st; an.heading = dampAngle(an.heading, Math.atan2(dx, dz), 9, dt); moving = 1; spd = sp; return d; };
-  if (an.evt === 'approach') {
-    const d = go(P.x, P.z, 5.0);   // trots over briskly
+  if (an.evt === 'sneak') {
+    // creeping low, eyes on the boy who dared to wake it up
+    an.sneakT += dt; go(P.x, P.z, 0.9); a.body.position.y = -0.05; a.tail.rotation.x = -0.1;
+    if (an.sneakT > 2.8) {
+      an.evt = 'approach';
+      cineFocus(() => ({ x: (an.pos.x + P.x) / 2, z: (an.pos.z + P.z) / 2 }), 6.5);
+      cineCap('…valaki nagyon nem szereti, ha a délutáni alvását focilabda zavarja.', 3.6);
+    }
+  } else if (an.evt === 'approach') {
+    const d = go(P.x, P.z, 3.4);
     if (d < 1.4) { an.evt = 'hiss'; sHiss(); say(catVoice(an), 'FFFHHH!', 1.4, ''); pstate = 'catScared'; cev.t = 0; pvel.set(0, 0, 0); charging = false; petike.kickT = -1; $('charge').style.display = 'none'; setPrompt('');
-      say(petike, pick(['Á-á-á! Egy macska!', 'Jaj! Ez a cica nagyon mérges!']), 1.8); }
+      say(petike, pick(['Á-á-á! Egy macska!', 'Jaj! Ez a cica nagyon mérges!']), 1.8);
+      slowMo(0.35, 1.3); cineFocus(null, 3.8); cineCap('Ez nem fog jól végződni.', 2.4); }
   } else if (an.evt === 'hiss') {
     an.heading = dampAngle(an.heading, Math.atan2(P.x - an.pos.x, P.z - an.pos.z), 9, dt);
     a.body.position.y = 0.05; a.body.rotation.x = 0.15; a.tail.rotation.x = -1.3;   // arched back, tail up
@@ -1573,11 +1631,13 @@ function updateEvtCat(an, dt) {
     cev.throwT += dt; const k = Math.min(1, cev.throwT / 1.1);
     an.pos.lerpVectors(cev.from, cev.to, k); an.y = lerp(cev.from.y, cev.to.y, k) + Math.sin(k * Math.PI) * 2.6;
     a.body.rotation.x = k * Math.PI * 4; moving = 1; spd = 4;
-    if (k >= 1) { an.evt = 'tree'; an.y = cev.to.y; an.wait = R(5, 8);
+    if (k >= 1) { an.evt = 'tree'; an.y = cev.to.y; an.wait = CAT_TREE_MEOW;
       noise(0.5, 900, 0.6, 0.25); for (let i = 0; i < 18; i++) spawnFx(new V3(an.pos.x, an.y + 0.2, an.pos.z), new V3(R(-1.5, 1.5), R(0.5, 2), R(-1.5, 1.5)), pick([0x4f9a3a, 0x6bbf4e, 0x3d7d2c]), 0.07, 0.8, 5);
-      sMeow(); say(catVoice(an), 'Miaú?!', 1.6, ''); onCatLanded(); }
+      scatterBirds(an.pos.x, an.y, an.pos.z);
+      soundAt(an.pos.x, an.pos.z, sMeow, 1.4); say(catVoice(an), 'Miaú?!', 1.6, ''); onCatLanded(); }
   } else if (an.evt === 'tree') {
-    an.wait -= dt; if (an.wait <= 0) { an.wait = R(9, 15); say(catVoice(an), pick(['Miaú…', 'Miaaaú!', 'Mrrr…']), 1.4, ''); }
+    // stuck up there for good – meows at a steady interval
+    an.wait -= dt; if (an.wait <= 0) { an.wait = CAT_TREE_MEOW; soundAt(an.pos.x, an.pos.z, sMeow, 1.4); say(catVoice(an), pick(['Miaú…', 'Miaaaú!', 'Mrrr… miaú.', 'MIAÚ!']), 1.4, ''); }
   }
   an.phase += dt * spd * 9; animLegs(a, an.phase, moving);
   if (an.evt === 'held') { for (let i = 0; i < 4; i++) a.legs[i].rotation.x = Math.sin(clockT * 22 + i * 1.7) * 0.9; }
@@ -1597,10 +1657,15 @@ function updateCatPetike(dt) {
       pstate = 'catChased'; cat.evt = 'chase'; cev.t = 0; cev.lineT = 0.8;
       const dx = a.pos.x - PITCH.cx, dz = a.pos.z - PITCH.cz; cev.loopA = Math.atan2(dz / CHASE_LOOP.rz, dx / CHASE_LOOP.rx);
       say(a, 'Segítség!!!', 1.6);
+      cineEnd(10.5);   // wide shot for the merry-go-round
       runSeq([
         [3.0, () => { say(petya, pick(['Csak egy macska, Petike! Ne fuss el előle!', 'Állj meg és nézz rá szigorúan!']), 2.6); petya.point = 1.5; }],
         [3.5, () => { say(angi, 'Petya! Csinálj már valamit!', 2.4); }],
-        [CAT_DAD - 6.5, () => { say(petya, 'Jó, jó, megyek már! A térdem…', 2.4); petyaMode = 'catStand'; petya.sitTarget = 0; petya.path = null; dad.lineT = 2.5; }],
+        [CAT_DAD - 6.5, () => {
+          // cutscene: the hero rises from the bench
+          cineStart(() => petya.pos, 4.0); cineCap('Ekkor Petya úgy döntött: elég volt.', 3.0);
+          say(petya, 'Jó, jó, megyek már! A térdem…', 2.4); petyaMode = 'catStand'; petya.sitTarget = 0; petya.path = null; dad.lineT = 2.5;
+        }],
       ]);
     }
   } else if (pstate === 'catChased') {
@@ -1646,7 +1711,7 @@ function updateDadCat(dt) {
   const p = petya, cat = cev.cat;
   dad.lineT -= dt;
   if (petyaMode === 'catStand') { if (p.sit < 0.05) { p.walkTo([petyaFront()], 2.2); petyaMode = 'catLeave'; } return; }   // step out in front of the bench first
-  if (petyaMode === 'catLeave') { if (!p.path) petyaMode = 'catRun'; return; }
+  if (petyaMode === 'catLeave') { if (!p.path) { petyaMode = 'catRun'; cineFocus(() => ({ x: (p.pos.x * 2 + cat.pos.x) / 3, z: (p.pos.z * 2 + cat.pos.z) / 3 }), 7.5); cineCap('A térde tiltakozott. Petya nem hallgatott rá.', 3.2); } return; }
   if (petyaMode === 'catRun') {
     const t = navTarget(p.pos, [cat.pos.x, cat.pos.z]);
     p.path = [new V3(t[0], 0, t[1])]; p.speed = 5.0; p.keepHeading = false;
@@ -1658,6 +1723,8 @@ function updateDadCat(dt) {
       say(petike, pick(['Huh… köszi, apa!', 'Hű… ez meleg helyzet volt!']), 2.2);
       cev.tree = pickCatTree(cat.pos.x);
       cev.spot = [clamp(cev.tree.x, FENCE.x0 + 0.8, FENCE.x1 - 0.8), FENCE.z0 + 0.7];
+      slowMo(0.3, 1.5); cineFocus(() => p.pos, 3.6); cineCap('Egy apa nem ismer lehetetlent.', 3.0);
+      runSeq([[1.6, () => cineFocus(() => ({ x: (p.pos.x + cev.spot[0]) / 2, z: (p.pos.z + cev.spot[1]) / 2 }), 6.5)]]);
     }
     return;
   }
@@ -1675,6 +1742,7 @@ function updateDadCat(dt) {
       cev.from.set(cat.pos.x, 1.9, cat.pos.z); cev.to.set(cev.tree.x, treeTop(cev.tree) - 0.12, cev.tree.z);
       noise(0.35, 1500, 0.8, 0.2); say(p, 'HOPP!', 1.2); p.cheer = 0;
       cev.from.y = 1.9; cat.y = 1.9;
+      cineFocus(() => airFocus(cat.pos.x, cat.y || 0, cat.pos.z), 7.5);   // follow the flying cat
     }
     if (cev.t >= 0.9) { const k = Math.min(1, (cev.t - 0.9) / 0.25); r.sh[0].rotation.x = lerp(-3.0, -1.2, k); r.sh[1].rotation.x = lerp(-3.0, -1.2, k); }
     p.sync(); return;
@@ -1688,7 +1756,9 @@ function onCatLanded() {
   const P = petike.pos;
   pstate = 'catToMom'; ftn.path = inPitch(P.x, P.z) ? [G_IN, G_OUT, ftnMom()] : [ftnMom()]; ftn.stuckT = 0; ftn.ghostT = 0; ftn.lastP.copy(P);
   petyaMode = 'catCurse';
-  const p = petya, cat = cev.cat;
+  const p = petya, cat = cev.cat, top = airFocus(cat.pos.x, cat.y, cat.pos.z);
+  cineFocus(() => top, 6.5); cineCap('A fa lakói nem örültek a vendégnek.', 3.0);
+  runSeq([[3.0, () => cineEnd(8.5)]]);   // back to Petike
   runSeq([
     [0.8, () => { say(angi, 'PETYA! Az egy cica volt!', 2.2); }],
     [1.8, () => { say(p, 'Most már fáramászó cica!', 2.2); p.point = 2; }],
@@ -1698,6 +1768,151 @@ function onCatLanded() {
     [1.4, () => { say(p, 'Ne miákolj itt nekem! #@&%!', 2.2); p.point = 2; }],
     [2.4, () => { say(p, pick(['Na. Ennyi volt a vasárnapi pihenés.', 'A térdem… megérte.']), 2.4); petyaMode = 'return'; dad.talkT = 7; }],
   ]);
+}
+
+// ---------- juggling (dekázás): Q next to the ball, then a quick-time event per touch
+// The ball flies between "contacts" (left foot / right foot / head). On each flight the key to press is shown with a ring
+// closing in on it; press it within ±W of the contact. Faster flights and a narrower window as the count grows.
+const JUG = { L: { codes: ['ArrowLeft', 'KeyA'], sym: '←', part: 'bal láb' }, R: { codes: ['ArrowRight', 'KeyD'], sym: '→', part: 'jobb láb' }, U: { codes: ['ArrowUp', 'KeyW'], sym: '↑', part: 'fej' } };
+const jug = { n: 0, best: 0, t: 0, T: 0.9, H: 0.9, next: 'R', prev: 'R', from: new V3(), to: new V3(), hit: false, kickT: -1, kickPart: 'R', msgT: 0 };
+try { jug.best = +(localStorage.getItem('petike.dekazasRekord') || 0) || 0; } catch (e) { /* storage blocked – the record lives for this session only */ }
+$('jBest').textContent = jug.best;
+let qPressed = false;
+const jugWindow = () => clamp(0.2 - jug.n * 0.004, 0.09, 0.2);
+function canJuggle() {
+  if (!ball.active || goalLock > 0 || ball.juggle) return false;
+  return Math.hypot(ball.pos.x - petike.pos.x, ball.pos.z - petike.pos.z) < 1.3 && ball.pos.y < 0.6 && Math.hypot(ball.vel.x, ball.vel.z) < 3;
+}
+function jugContact(part, out) {
+  const a = petike, h = a.heading, fx = Math.sin(h), fz = Math.cos(h), lx = Math.cos(h), lz = -Math.sin(h);   // forward, left (+X at heading 0)
+  if (part === 'U') return out.set(a.pos.x + fx * 0.05, 1.45, a.pos.z + fz * 0.05);
+  const s = part === 'L' ? 0.1 : -0.1;
+  return out.set(a.pos.x + fx * 0.28 + lx * s, 0.32, a.pos.z + fz * 0.28 + lz * s);
+}
+function jugUI(show) {
+  $('juggle').style.display = show ? 'block' : 'none';
+  if (show && isTouch) $('jTouch').style.display = 'flex';
+}
+function startJuggle() {
+  const a = petike;
+  pstate = 'juggle'; pvel.set(0, 0, 0); charging = false; a.kickT = -1; setPrompt(''); $('charge').style.display = 'none';
+  a.targetHeading = a.heading = Math.atan2(ball.pos.x - a.pos.x, ball.pos.z - a.pos.z);
+  ball.juggle = true; ball.vel.set(0, 0, 0); jug.n = 0; jug.next = 'R';
+  jugContact('R', ball.pos); jug.kickT = 0; jug.kickPart = 'R'; sKick(0.05);   // first flick from the right foot
+  $('jCount').textContent = '0'; $('jMsg').textContent = ''; jugUI(true);
+  say(a, pick(['Figyelj, apa!', 'Dekázok!', 'Na, most nézzétek!']), 1.6);
+  if (petyaMode === 'bench' && rand() < 0.6) runSeq([[1.2, () => { if (pstate === 'juggle') say(petya, pick(['Na, lássuk, hányat bírsz!', 'Ne a labdát nézd… vagyis de, azt nézd!']), 2.2); }]]);
+  newFlight();
+}
+function newFlight() {
+  jug.from.copy(ball.pos); jug.prev = jug.next;
+  // first touches alternate feet; later the head joins in, and the order gets less predictable
+  const r = rand();
+  jug.next = jug.n >= 4 && r < 0.22 ? 'U' : (jug.n < 3 ? (jug.prev === 'R' ? 'L' : 'R') : (r < 0.61 ? 'L' : 'R'));
+  if (jug.next === 'U' && jug.prev === 'U') jug.next = 'R';
+  jug.T = Math.max(0.52, 0.9 - jug.n * 0.012); jug.H = jug.next === 'U' || jug.prev === 'U' ? 0.6 : 0.95;
+  jugContact(jug.next, jug.to); jug.t = 0; jug.hit = false;
+  $('jKey').textContent = JUG[jug.next].sym; $('jPart').textContent = JUG[jug.next].part;
+}
+function jugPress(k) {
+  if (pstate !== 'juggle' || jug.hit) return;
+  const dtc = jug.t - jug.T, W = jugWindow();
+  if (dtc < -W) return jugFail('Korai!');
+  if (k !== jug.next) return jugFail('Rossz! A ' + JUG[jug.next].part + ' kellett!');
+  jug.hit = true; jug.msgT = 0.7;
+  const el = $('jMsg'); el.textContent = Math.abs(dtc) < W * 0.35 ? 'Tökéletes!' : 'Jó!'; el.style.color = Math.abs(dtc) < W * 0.35 ? '#7ddc5a' : '#ffd166';
+}
+function jugTouch() {
+  // the ball meets foot / head: count it, then the next flight
+  jug.n++; $('jCount').textContent = jug.n;
+  jug.kickT = 0; jug.kickPart = jug.next;
+  if (jug.next === 'U') tone('sine', 260, 180, 0.08, 0.25); else sKick(0.08);
+  const n = jug.n;
+  if (petyaMode === 'bench') {
+    const L = { 5: 'Öt. Ne a labdát nézd! …Jó, nézd a labdát.', 10: 'Tíz! De a bal lábad csak dísz?', 20: 'Húsz?! Ki tanított erre? …Én, persze.', 30: 'Jó-jó, de én a te korodban százat dekáztam!', 50: 'Ötven… Angi, ezt látod? …Mármint láttam már jobbat is.' }[n];
+    if (L) { say(petya, L, 2.6); petya.point = 1.2; dad.talkT = 6; }
+    if (n === 15) say(angi, 'Petya, nézd már, milyen ügyes!', 2.4);
+  }
+  newFlight();
+}
+function jugFail(msg) {
+  const n = jug.n, old = jug.best;
+  pstate = 'free'; ball.juggle = false;
+  // the ball just drops away
+  const k = jug.t / jug.T, vy = (jug.to.y - jug.from.y) / jug.T + 4 * jug.H * (1 - 2 * k) / jug.T;
+  ball.vel.set((jug.to.x - jug.from.x) / jug.T + R(-1.2, 1.2), Math.min(vy, 1), (jug.to.z - jug.from.z) / jug.T + R(-1.2, 1.2));
+  const el = $('jMsg'); el.textContent = msg; el.style.color = '#ff6b5b'; jug.msgT = 1.6;
+  $('jKey').textContent = '✗'; $('jPart').textContent = n + ' dekázás';
+  setTimeout(() => { if (pstate !== 'juggle') jugUI(false); }, 1600);
+  say(petike, pick(['Jaj!', 'Hoppá…', 'Majdnem!', 'A fene…']), 1.4);
+  if (n > old) {
+    jug.best = n; $('jBest').textContent = n;
+    try { localStorage.setItem('petike.dekazasRekord', String(n)); } catch (e) { /* not stored */ }
+    if (old > 0 || n >= 3) { bigText('ÚJ REKORD: ' + n + '!', 2.2); sCheer(); angi.cheer = 1.6; }
+  }
+  if (petyaMode === 'bench') {
+    const line = n < 3 ? pick(['Ennyi? A nagymamád is többet dekázik!', 'Ez még bemelegítésnek is kevés.']) : n < 10 ? pick(['Na, majd ha tízet megcsinálsz, akkor beszélünk.', 'Nem rossz. Nem is jó.']) : n > old ? pick(['Hát… nem rossz. De én a te korodban százat!', 'Rekord? Az én rekordom ezt meg se nézi.']) : pick(['A rekordodat se érted el. Gyakorolj!', 'Láttam már tőled jobbat is.']);
+    runSeq([[0.9, () => { say(petya, line, 2.6); petya.point = 1.3; dad.talkT = 5; }]]);
+    if (n >= 10) runSeq([[3.6, () => say(angi, pick(ANGI_DEFEND), 2.4)]]);
+  }
+}
+function updateJuggle(dt) {
+  const a = petike, r = a.rig;
+  kickPressed = kickReleased = false; usePressed = false; qPressed = false;
+  jug.t += dt;
+  const W = jugWindow(), k = jug.t / jug.T;
+  // ball on a parabola from the last contact to the next one (keeps falling if the touch is late)
+  ball.pos.x = lerp(jug.from.x, jug.to.x, Math.min(k, 1.15)); ball.pos.z = lerp(jug.from.z, jug.to.z, Math.min(k, 1.15));
+  ball.pos.y = Math.max(ball.r, lerp(jug.from.y, jug.to.y, k) + 4 * jug.H * k * (1 - k));
+  // QTE ring
+  const ring = $('jRing'); ring.style.transform = 'scale(' + lerp(2.4, 1, clamp(k, 0, 1)).toFixed(3) + ')';
+  ring.classList.toggle('hot', Math.abs(jug.t - jug.T) <= W);
+  if (jug.msgT > 0) { jug.msgT -= dt; if (jug.msgT <= 0) $('jMsg').textContent = ''; }
+  if (jug.hit && jug.t >= jug.T) jugTouch();
+  else if (!jug.hit && jug.t > jug.T + W) { jugFail('Késő!'); }
+  // pose: arms out for balance, eyes on the ball, kick / header
+  a.animate(dt, false, 0);
+  r.sh[0].rotation.z = -0.55; r.sh[1].rotation.z = 0.55; r.sh[0].rotation.x = -0.2; r.sh[1].rotation.x = -0.2;
+  if (jug.kickT >= 0) {
+    jug.kickT += dt; const s = Math.sin(Math.PI * Math.min(1, jug.kickT / 0.26));
+    if (jug.kickPart === 'U') { r.inner.rotation.x = -0.22 * s; r.inner.position.y += 0.05 * s; }
+    else { const i = jug.kickPart === 'R' ? 0 : 1; r.hip[i].rotation.x = -0.85 * s; r.knee[i].rotation.x = 0.75 * s; }
+    if (jug.kickT > 0.26) jug.kickT = -1;
+  }
+  a.sync();
+}
+
+// a flock of small birds bursting out of the tree the cat landed in
+const flock = [];
+function makeSparrow() {
+  const col = pick([[0x8b5a2b, 0xd9b48f], [0x6b6f7a, 0xe8e2d0], [0xa0522d, 0xf4d58d], [0x3a3a3a, 0xc9c9c9]]);
+  const root = new THREE.Group(); const body = new THREE.Group(); root.add(body);
+  body.add(partMesh((b) => {
+    b.bx(0, 0, 0, 0.08, 0.07, 0.13, col[0], 0, 0); b.bx(0, -0.015, 0.01, 0.07, 0.04, 0.1, col[1], 0, 0);
+    b.bx(0, 0.04, 0.07, 0.06, 0.06, 0.06, col[0], 0, 0); b.bx(0, 0.035, 0.11, 0.02, 0.02, 0.03, 0xf2c14e, 0, 0);
+    b.bx(0, 0.01, -0.09, 0.05, 0.02, 0.07, col[0], 0, 0);
+  }));
+  const wings = [];
+  for (const s of [-1, 1]) { const w = new THREE.Group(); w.position.set(s * 0.04, 0.02, 0); body.add(w); w.add(partMesh((b) => b.box(s * 0.06, 0, 0, 0.12, 0.015, 0.09, col[0], 0, 0))); wings.push(w); }
+  return { root, wings };
+}
+function scatterBirds(x, y, z) {
+  for (let i = 0; i < 16; i++) {
+    const b = makeSparrow(); scene.add(b.root);
+    const a = rand() * Math.PI * 2, sp = R(3, 6.5);
+    flock.push({ b, pos: new V3(x + R(-0.6, 0.6), y + R(-0.5, 0.4), z + R(-0.6, 0.6)), vel: new V3(Math.cos(a) * sp, R(1.2, 3.2), Math.sin(a) * sp), t: R(4.5, 7), ph: rand() * 6 });
+  }
+  soundAt(x, z, () => { for (let i = 0; i < 6; i++) noise(0.25, R(600, 1100), 0.8, 0.1, i * 0.05); for (let i = 0; i < 5; i++) sBird(R(0, 0.8)); }, 1.6);
+}
+function updateFlock(dt) {
+  for (let i = flock.length - 1; i >= 0; i--) {
+    const f = flock[i]; f.t -= dt;
+    f.vel.y += Math.sin(clockT * 3 + f.ph) * 1.5 * dt;            // a little bobbing in flight
+    f.pos.addScaledVector(f.vel, dt);
+    for (const w of f.b.wings) w.rotation.z = Math.sin(clockT * 34 + f.ph) * 1.0 * (w.position.x > 0 ? 1 : -1);
+    f.b.root.position.copy(f.pos); f.b.root.rotation.y = Math.atan2(f.vel.x, f.vel.z);
+    if (f.t <= 0) { scene.remove(f.b.root); flock.splice(i, 1); }
+  }
 }
 
 // ---------- scooter
@@ -1868,10 +2083,24 @@ const BENCH_IDLE = ['Na, mi lesz? Focizni jöttünk vagy nézelődni?', 'Petike,
 const ANGI_DEFEND = ['Petya, hagyd már szegény gyereket!', 'Szerintem nagyon ügyes!', 'Ne kiabálj, mindenki minket néz.', 'Te is ilyen voltál kicsiben?', 'Hagyd játszani, Petya!', 'Ügyes vagy, kicsim, ne figyelj apára!'];
 const GOAL_GRUMBLE = ['Na jó. De a bal lábaddal is menne?', 'Szerencsés volt. Még egyszer!', 'Ezt a nagymamád is berúgta volna.', 'Gól, gól… de a kapus hol volt?', 'Túl lassú volt a lövés, de mindegy.', 'Rendben, de ünnepelni ráérsz otthon!'];
 
+// ---------------------------------------------------------------- in-game cutscenes (letterbox, narrator, camera focus, slow motion)
+const cine = { on: false, focus: null, zoom: 6, slow: 1, slowT: 0, capT: 0 };
+function cineStart(focus, zoom) { cine.on = true; cine.focus = focus; cine.zoom = zoom; document.body.classList.add('cine'); setPrompt(''); }
+function cineFocus(focus, zoom) { if (focus) cine.focus = focus; if (zoom) cine.zoom = zoom; }
+function cineCap(txt, dur = 3) { const el = $('cineCap'); el.textContent = txt; el.classList.add('show'); cine.capT = dur; }
+function cineEnd(zoomAfter = 8.5) { cine.on = false; cine.focus = null; cine.slow = 1; document.body.classList.remove('cine'); $('cineCap').classList.remove('show'); viewSizeTarget = zoomOverride || zoomAfter; }
+function slowMo(f, dur) { cine.slow = f; cine.slowT = dur; }   // dur in real seconds
+function tickCine(realDt) {
+  if (cine.slowT > 0) { cine.slowT -= realDt; if (cine.slowT <= 0) cine.slow = 1; }
+  if (cine.capT > 0) { cine.capT -= realDt; if (cine.capT <= 0) $('cineCap').classList.remove('show'); }
+}
+
 // ---------------------------------------------------------------- camera
 function updateCamera(dt) {
   let tx, tz;
-  if (mode === 'intro') {
+  if (cine.on && cine.focus) {
+    const f = cine.focus(); tx = f.x; tz = f.z; viewSizeTarget = cine.zoom;
+  } else if (mode === 'intro') {
     const rp = roller.rider ? roller.pos : petike.pos;
     tx = (petya.pos.x + angi.pos.x + rp.x) / 3; tz = (petya.pos.z + angi.pos.z + rp.z) / 3;
     viewSizeTarget = zoomOverride || 7.5;
@@ -1879,7 +2108,8 @@ function updateCamera(dt) {
     const bw = pstate === 'riding' ? 0 : 0.25;
     tx = petike.pos.x + (ball.active ? (ball.pos.x - petike.pos.x) * bw : 0); tz = petike.pos.z + (ball.active ? (ball.pos.z - petike.pos.z) * bw : 0);
   } else { tx = 0; tz = -4; }
-  camTarget.x = damp(camTarget.x, tx, 3, dt); camTarget.z = damp(camTarget.z, tz, 3, dt);
+  const ck = cine.on ? 3.5 / Math.max(0.3, cine.slow) : 3;   // the cutscene camera keeps up even in slow motion
+  camTarget.x = damp(camTarget.x, tx, ck, dt); camTarget.z = damp(camTarget.z, tz, ck, dt);
   camera.position.copy(camTarget).add(CAM_OFF); camera.lookAt(camTarget);
   if (Math.abs(viewSize - viewSizeTarget) > 0.001) { viewSize = damp(viewSize, viewSizeTarget, 4, dt); updateProjection(); }
   // shadow camera follows (snapped to texels to avoid shimmering)
@@ -1887,12 +2117,41 @@ function updateCamera(dt) {
   sun.position.set(sx + SUN_OFF.x, SUN_OFF.y, sz + SUN_OFF.z); sun.target.position.set(sx, 0, sz); sun.target.updateMatrixWorld();
 }
 
+// ---------------------------------------------------------------- ambience (birds, bike bells, car horns, dogs)
+const amb = { bird: 1.5, bell: 12, horn: 8, dog: 6 };
+function updateAmbience(dt) {
+  if (!actx || muted) return;
+  amb.bird -= dt; amb.bell -= dt; amb.horn -= dt; amb.dog -= dt;
+  if (amb.bird <= 0) {
+    // a bird in one of the trees near the camera, sometimes answered by another
+    amb.bird = R(1.0, 3.2);
+    const near = TREES.filter((t) => Math.hypot(t.x - camTarget.x, t.z - camTarget.z) < 32);
+    const t = near.length ? pick(near) : { x: camTarget.x + R(-20, 20), z: camTarget.z + R(-20, 20) };
+    soundAt(t.x, t.z, () => sBird(), 1.2);
+    if (rand() < 0.35) { const u = near.length ? pick(near) : t; soundAt(u.x, u.z, () => sBird(R(0.35, 0.7)), 1.1); }
+  }
+  if (amb.bell <= 0) {   // a cyclist rings on the street
+    amb.bell = R(12, 26); const x = camTarget.x + R(-18, 18);
+    soundAt(x, 16, sBell, 1.3);
+  }
+  if (amb.horn <= 0 && cars.length) {   // an impatient driver
+    amb.horn = R(9, 20); const c = pick(cars), twice = rand() < 0.5;
+    soundAt(c.x, c.z, () => sHorn(twice), 1.4);
+    if (Math.abs(c.x - camTarget.x) < 26) say({ headWorld: (v) => v.set(c.x, 1.7, c.z) }, twice ? 'Tütü!' : 'TÜÜÜT!', 1.2, '');
+  }
+  if (amb.dog <= 0) {
+    amb.dog = R(7, 15); const dogs = animals.filter((a) => a.type === 'free' || a.type === 'leashed');
+    if (dogs.length) { const d = pick(dogs); soundAt(d.pos.x, d.pos.z, sBark, 1.4); if (Math.hypot(d.pos.x - camTarget.x, d.pos.z - camTarget.z) < 22) say({ headWorld: (v) => v.set(d.pos.x, 1.0, d.pos.z) }, pick(['Vau! Vau!', 'Vaú!', 'Vau-vau-vau!']), 1.3, ''); }
+  }
+}
+
 // ---------------------------------------------------------------- main loop
-let last = performance.now(), chirpT = 5;
+let last = performance.now();
 const TIME_SCALE = Math.max(1, Math.min(8, +(new URLSearchParams(location.search).get('speed') || 1)));
 function frame(now) {
   const dt0 = Math.min(0.05, (now - last) / 1000); last = now;
-  for (let i = 0; i < TIME_SCALE; i++) step(dt0);
+  tickCine(dt0);
+  for (let i = 0; i < TIME_SCALE; i++) step(dt0 * cine.slow);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
@@ -1905,13 +2164,13 @@ function step(dt) {
     if ((roller.rider || roller.path) && pstate !== 'riding') rollerRide(dt);
     if (mode === 'play') { updateDad(dt); if (['follow', 'return', 'ftnRun', 'ftnChase', 'catRun', 'catCarry'].includes(petyaMode)) { collide(petya.pos, 0.3, 0, null); petya.sync(); } }
     updateBall(dt);
-    usePressed = false;
+    usePressed = false; qPressed = false;
   }
   updateNPCs(dt); updateAnimals(dt); updateFountain(dt); updateFx(dt);
   updateCamera(dt); updateBubbles(dt);
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').classList.remove('show'); }
   if (bigT > 0) { bigT -= dt; if (bigT <= 0) $('big').classList.remove('show'); }
-  chirpT -= dt; if (chirpT < 0) { chirpT = R(4, 10); sChirp(); }
+  updateAmbience(dt);
 }
 
 // ---------------------------------------------------------------- boot
@@ -1951,6 +2210,6 @@ async function boot() {
   requestAnimationFrame(frame);
   window.__game = { THREE, scene, camera, renderer, petike: () => petike, petya: () => petya, angi: () => angi, ball, roller, keys, skipIntro, get mode() { return mode; }, get pstate() { return pstate; }, get petyaMode() { return petyaMode; }, use: () => { usePressed = true; }, roller, setZoom: (z) => { zoomOverride = z; viewSizeTarget = z; viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { kickPressed = true; setTimeout(() => { kickReleased = true; }, p); },
     // manual stepping (works even when the tab is hidden and rAF is paused): __game.tick(seconds)
-    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) step(dt); renderer.render(scene, camera); }, ftn, cev, TREES };
+    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); step(dt * cine.slow); } renderer.render(scene, camera); }, cine, ftn, cev, TREES, jug, jugPress, juggle: () => { qPressed = true; } };
 }
 boot();
