@@ -463,7 +463,7 @@ function rigFromSkinned(gltf, cfg) {
   let sm = null;
   model.traverse((o) => { if (o.isMesh) { o.material = charMat; o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; if (o.isSkinnedMesh) sm = o; } });
   const bone = (n) => { const b = sm.skeleton.bones.find((x) => x.name.replace(/^mixamorig:?/, '') === n); if (!b) throw new Error('Hiányzó csont: ' + n); return b; };
-  rig.hip = [bone('RightUpLeg'), bone('LeftUpLeg')]; rig.knee = [bone('RightLeg'), bone('LeftLeg')];
+  rig.hip = [bone('RightUpLeg'), bone('LeftUpLeg')]; rig.knee = [bone('RightLeg'), bone('LeftLeg')]; rig.foot = [bone('RightFoot'), bone('LeftFoot')];
   rig.armBones = [bone('RightArm'), bone('LeftArm')]; rig.foreBones = [bone('RightForeArm'), bone('LeftForeArm')];
   rig.handBones = [bone('RightHand'), bone('LeftHand')];
   rig.armBase = [1.5, -1.5];                      // T-pose → arms down (slightly away from the body)
@@ -478,6 +478,7 @@ function rigFromSkinned(gltf, cfg) {
   rig.skinned = true;
   rig.root.updateMatrixWorld(true);
   const hp = new V3(); rig.hip[0].getWorldPosition(hp); rig.hipH = hp.y;
+  rig.knee[0].getWorldPosition(hp); rig.kneeH = hp.y;   // standing knee height ≈ shin + foot length (used for sitting)
   rig.height = new THREE.Box3().setFromObject(rig.root).max.y;
   return rig;
 }
@@ -604,6 +605,14 @@ function animWalk(r, phase, amt, swing = 0.6) {
   r.inner.position.y = Math.abs(Math.cos(phase)) * 0.045 * amt;
 }
 
+// Seated knee bend: the thigh is horizontal (knee ≈ at seat height); a shin longer than that is angled forward
+// so the sole lands on the ground instead of sinking into it (Angi); shorter shins just hang (Petya).
+function sitKnee(r, seatH) {
+  if (!r.kneeH) return 1.45;
+  const c = (seatH - 0.04) / r.kneeH;           // the seated knee sits a bit below the seat (measured: sole ends at ±0 cm)
+  return c >= 1 ? 1.45 : Math.min(1.45, 1.5 - Math.acos(c));
+}
+
 // ---------------------------------------------------------------- Actor
 const actors = [];
 class Actor {
@@ -639,9 +648,13 @@ class Actor {
     animWalk(r, this.phase, this.amt * (1 - this.sit), sw);
     if (!moving && this.sit < 0.01) { this.idleT += dt; const b = Math.sin(this.idleT * 2) * 0.04; r.sh[0].rotation.z = -0.05 - b * 0.5; r.sh[1].rotation.z = 0.05 + b * 0.5; }
     this.sit = clamp(this.sit + Math.sign(this.sitTarget - this.sit) * dt * 1.8, 0, 1);
+    if (r.foot) for (let i = 0; i < 2; i++) r.foot[i].rotation.x = 0;
     if (this.sit > 0) {
-      const s = smooth(this.sit);
-      for (let i = 0; i < 2; i++) { r.hip[i].rotation.x = lerp(r.hip[i].rotation.x, -1.5, s); r.knee[i].rotation.x = lerp(r.knee[i].rotation.x, 1.45, s); r.sh[i].rotation.x = lerp(r.sh[i].rotation.x, -0.35, s); }
+      const s = smooth(this.sit), kneeSit = sitKnee(r, this.seatH);
+      for (let i = 0; i < 2; i++) {
+        r.hip[i].rotation.x = lerp(r.hip[i].rotation.x, -1.5, s); r.knee[i].rotation.x = lerp(r.knee[i].rotation.x, kneeSit, s); r.sh[i].rotation.x = lerp(r.sh[i].rotation.x, -0.35, s);
+        if (r.foot) r.foot[i].rotation.x = (1.5 - kneeSit) * s;   // keep the sole flat on the ground
+      }
       r.inner.position.y = lerp(r.inner.position.y, this.seatH - r.hipH, s);
       r.inner.position.z = lerp(0, -0.05, s);
     }
