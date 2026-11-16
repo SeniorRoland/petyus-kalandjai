@@ -55,13 +55,29 @@
   #toast.show { opacity:1; }
 
   #bubbles { position:fixed; inset:0; pointer-events:none; z-index:12; }
-  .bubble { position:absolute; transform:translate(-50%,-100%); background:#fff; color:var(--ink); padding:7px 12px;
-    border-radius:12px; font-size:15px; max-width:240px; text-align:center; box-shadow:0 3px 0 rgba(0,0,0,.15);
-    border:2px solid var(--ink); white-space:normal; animation:pop .25s ease-out; }
-  .bubble:after { content:""; position:absolute; left:50%; bottom:-10px; margin-left:-8px; border:8px solid transparent;
-    border-top-color:var(--ink); border-bottom:0; }
-  .bubble b { color:#c2410c; display:block; font-size:12px; }
-  @keyframes pop { from { transform:translate(-50%,-80%) scale(.5); opacity:0; } }
+  /* comic speech bubbles (positioned by ui.js: top-left via transform; the tail is drawn in #tails) */
+  .bubble { position:absolute; left:0; top:0; will-change:transform; }
+  .bubble .in { position:relative; background:#fff; color:#151515; padding:7px 13px 6px; max-width:230px; text-align:center;
+    font-family:'Patrick Hand', 'Comic Sans MS', cursive; font-size:19px; line-height:1.12; letter-spacing:.2px;
+    border:3px solid #151515; border-radius:22px / 18px; box-shadow:4px 4px 0 rgba(21,21,21,.85); white-space:normal;
+    animation:pop .28s cubic-bezier(.2,1.6,.4,1); transform-origin:50% 100%; }
+  .bubble .who { position:absolute; left:10px; top:-13px; background:#151515; color:#ffd166; padding:1px 8px 0; border-radius:6px;
+    font-family:'Bangers', Impact, sans-serif; font-size:14px; letter-spacing:1px; transform:rotate(-3deg); white-space:nowrap; }
+  .bubble.named .in { padding-top:10px; }
+  /* shouting: yellow, shouty lettering, a bit tilted */
+  .bubble.shout .in { background:#fff3a0; font-family:'Bangers', Impact, sans-serif; font-size:22px; letter-spacing:1.2px; border-width:3.5px;
+    border-radius:10px; transform:rotate(-1deg); }
+  /* muttering: dashed, grey */
+  .bubble.mutter .in { border-style:dashed; color:#444; font-size:17px; box-shadow:3px 3px 0 rgba(21,21,21,.45); }
+  /* sound effects (animals, cars): lettering only, no balloon */
+  .bubble.sfx .in { background:none; border:0; box-shadow:none; padding:0; font-family:'Bangers', Impact, sans-serif; font-size:30px;
+    letter-spacing:1.5px; color:var(--sfx, #ff5c3d); -webkit-text-stroke:2px #151515; paint-order:stroke fill;
+    text-shadow:3px 3px 0 #151515; transform:rotate(var(--rot, -6deg)); white-space:nowrap; max-width:none; }
+  @keyframes pop { from { transform:scale(.4); opacity:0; } }
+  #tails { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:13; overflow:visible; }
+  #tails .fill { fill:#fff; } #tails .shout .fill { fill:#fff3a0; }
+  #tails .edge { fill:none; stroke:#151515; stroke-width:3; stroke-linejoin:round; stroke-linecap:round; }
+  #tails .mutter .edge { stroke-dasharray:6 5; }
 
   /* cutscene: letterbox bars + narrator caption */
   .cbar { position:fixed; left:0; right:0; height:0; background:#000; z-index:16; transition:height .6s ease; pointer-events:none; }
@@ -119,6 +135,7 @@
 <body>
 <div id="app"></div>
 <div id="bubbles"></div>
+<svg id="tails" xmlns="http://www.w3.org/2000/svg"></svg>
 
 <div id="overlay">
   <h1>Petike a parkban</h1>
