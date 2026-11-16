@@ -2,27 +2,29 @@
 import * as THREE from 'three';
 import { V3 } from './util.js';
 
-// shared, reassigned-from-anywhere game state (was module-level 'let's in game.js)
 // the series: 12 episodes, one per month, starting with August. Only the `ready` ones can be played (for now: August).
-// art = panel of the cover image (public/kezdokep.webp: 0 cycling · 1 mountain hike · 2 beach · 3 scooters in the park);
-// without art the tile shows a month icon on a seasonal gradient.
+// art = one panel of a 2×2 season image (public/evszak-nyar.webp: cycling · mountain hike / beach · scooters in the park;
+// public/evszak-osz-tel.webp: autumn hike · autumn cycling / sledding · ice skating); without art: a month icon on a seasonal gradient.
+// The start screen's background is the cover image (public/kezdokep.webp).
 export const SERIES = 'Petyus kalandjai';
+const NYAR = 'evszak-nyar.webp', OSZTEL = 'evszak-osz-tel.webp';
 export const EPISODES = [
-  { n: 1, month: 'Augusztus', day: 'Vasárnap', sub: 'Vasárnap a parkban', art: 3, ready: true },
-  { n: 2, month: 'Szeptember', icon: '🎒', c: ['#f6c560', '#d9822b'] },
-  { n: 3, month: 'Október', art: 1 },
-  { n: 4, month: 'November', icon: '🍂', c: ['#c97b3d', '#7a4a2a'] },
-  { n: 5, month: 'December', icon: '🎄', c: ['#3f8f5a', '#1d4a32'] },
-  { n: 6, month: 'Január', icon: '⛄', c: ['#bfe3f7', '#6fa8d6'] },
+  { n: 1, month: 'Augusztus', day: 'Vasárnap', sub: 'Vasárnap a parkban', art: { img: NYAR, col: 1, row: 1 }, ready: true },
+  { n: 2, month: 'Szeptember', art: { img: NYAR, col: 0, row: 0 } },
+  { n: 3, month: 'Október', art: { img: OSZTEL, col: 0, row: 0 } },
+  { n: 4, month: 'November', art: { img: OSZTEL, col: 1, row: 0 } },
+  { n: 5, month: 'December', art: { img: OSZTEL, col: 0, row: 1 } },
+  { n: 6, month: 'Január', art: { img: OSZTEL, col: 1, row: 1 } },
   { n: 7, month: 'Február', icon: '🎭', c: ['#c58ee6', '#6b3fa0'] },
   { n: 8, month: 'Március', icon: '🌷', c: ['#ffb3c7', '#e0607e'] },
   { n: 9, month: 'Április', icon: '🐣', c: ['#fff1a6', '#9fd36a'] },
-  { n: 10, month: 'Május', art: 0 },
-  { n: 11, month: 'Június', icon: '🍓', c: ['#ff9a8a', '#e04b4b'] },
-  { n: 12, month: 'Július', art: 2 },
+  { n: 10, month: 'Május', icon: '🌼', c: ['#fff3a0', '#7cc96b'] },
+  { n: 11, month: 'Június', art: { img: NYAR, col: 1, row: 0 } },
+  { n: 12, month: 'Július', art: { img: NYAR, col: 0, row: 1 } },
 ];
 export const EPISODE = EPISODES[0];   // the one this build plays
 
+// shared, reassigned-from-anywhere game state (was module-level 'let's in game.js)
 export const G = {
   clockT: 0,   // util.js
   viewSize: 9,   // scene.js

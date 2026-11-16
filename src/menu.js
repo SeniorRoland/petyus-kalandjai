@@ -11,7 +11,11 @@ export function buildEpisodeMenu() {
     tile.className = 'ep ' + (ep.ready ? 'ready' : 'locked');
     tile.setAttribute('role', 'listitem');
     if (ep.c) { tile.style.setProperty('--c1', ep.c[0]); tile.style.setProperty('--c2', ep.c[1]); }
-    if (ep.art !== undefined) { const art = document.createElement('span'); art.className = 'art'; art.style.setProperty('--px', (ep.art * 100 / 3).toFixed(3) + '%'); tile.appendChild(art); }
+    if (ep.art) {   // one panel of a 2×2 season image
+      const art = document.createElement('span'); art.className = 'art';
+      art.style.setProperty('--img', `url("${import.meta.env.BASE_URL}${ep.art.img}")`); art.style.setProperty('--bx', ep.art.col * 100 + '%'); art.style.setProperty('--by', ep.art.row * 100 + '%');
+      tile.appendChild(art);
+    }
     else if (ep.icon) { const ic = document.createElement('span'); ic.className = 'icon'; ic.textContent = ep.icon; tile.appendChild(ic); }
     const cap = document.createElement('span'); cap.className = 'cap';
     const num = document.createElement('span'); num.className = 'num'; num.textContent = `${ep.n}. rész`;
