@@ -5,17 +5,18 @@ import { isTouch } from './input.js';
 import { resetPose } from './rigs.js';
 import { scene } from './scene.js';
 import { G, ball, rigs, roller } from './state.js';
+import { endPrologue, runPrologue } from './prologue.js';
 import { say, toast } from './ui.js';
 import { $, V3, angDiff, lerp, smooth } from './util.js';
 import { FAMILY_BENCH, L, addCircleCol, colliders } from './world.js';
 
 // ---------------------------------------------------------------- cutscene system
-const SKIP = { skip: true };
+export const SKIP = { skip: true };
 const waiters = [], tweens = [];
 const cs = { skip: false, done: false };
-function W(t) { return new Promise((res, rej) => waiters.push({ t, res, rej })); }
-function until(fn) { return new Promise((res, rej) => waiters.push({ fn, res, rej })); }
-function tween(dur, fn) { return new Promise((res, rej) => tweens.push({ t: 0, dur, fn, res, rej })); }
+export function W(t) { return new Promise((res, rej) => waiters.push({ t, res, rej })); }
+export function until(fn) { return new Promise((res, rej) => waiters.push({ fn, res, rej })); }
+export function tween(dur, fn) { return new Promise((res, rej) => tweens.push({ t: 0, dur, fn, res, rej })); }
 export function tickCutscene(dt) {
   for (let i = waiters.length - 1; i >= 0; i--) {
     const w = waiters[i];
@@ -29,7 +30,7 @@ export function tickCutscene(dt) {
   }
 }
 export function skipIntro() { if (G.mode === 'intro' && !cs.done) { cs.skip = true; } }
-function offsetPath(pts, d) {
+export function offsetPath(pts, d) {
   return pts.map((p, i) => {
     const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
     let dx = b[0] - a[0], dz = b[1] - a[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
@@ -39,6 +40,9 @@ function offsetPath(pts, d) {
 export const SEAT = { angi: L(FAMILY_BENCH.x, FAMILY_BENCH.z, 0, -0.45, -0.05), petya: L(FAMILY_BENCH.x, FAMILY_BENCH.z, 0, 0.45, -0.05) };
 const LEAN = { x: 34.55, z: -12.55, heading: Math.PI, lean: -0.24 };
 const PLAY_START = [31, -6.6];
+// where the family walk of the intro starts (the prologue ends exactly here)
+export const INTRO_ROUTE = [[-4, -6], [18, -6], [22.5, -11], [33, -11]];
+export const ROLLER_START = [-8.6, -6];
 
 export function mountRider() {
   roller.rider = G.petike; G.petike.riding = true;
@@ -62,11 +66,13 @@ async function introDialog() {
 export async function runIntro() {
   G.mode = 'intro'; $('skipBtn').style.display = 'block';
   toast('Nyomj <b>Entert</b> vagy a <b>Kihagyás</b> gombot a jelenet átugrásához', 4);
-  const route = [[-4, -6], [18, -6], [22.5, -11], [33, -11]];
+  // the cinematic prologue first: Petike races from home to the park, dad calls him back behind them
+  try { await runPrologue(); } catch (e) { if (e !== SKIP) console.error(e); return finishIntro(); }
+  const route = INTRO_ROUTE;
   const pR = offsetPath(route, 0.42), aR = offsetPath(route, -0.42);
   G.petya.place(pR[0][0], pR[0][1], Math.PI / 2); G.angi.place(aR[0][0], aR[0][1], Math.PI / 2);
   G.petya.walkTo(pR.slice(1), 1.55); G.angi.walkTo(aR.slice(1), 1.55);
-  roller.base = new V3(-8.6, 0, -6); roller.pos.copy(roller.base); roller.dir = new V3(1, 0, 0); roller.heading = Math.PI / 2; roller.t = 0;
+  roller.base = new V3(ROLLER_START[0], 0, ROLLER_START[1]); roller.pos.copy(roller.base); roller.dir = new V3(1, 0, 0); roller.heading = Math.PI / 2; roller.t = 0;
   roller.path = [...route.slice(1), [35.4, -11.1]].map((p) => new V3(p[0], 0, p[1])); roller.speed = 1.55;
   mountRider();
   introDialog();
@@ -112,6 +118,7 @@ export async function runIntro() {
 }
 function finishIntro() {
   cs.done = true; waiters.length = 0; tweens.length = 0;
+  endPrologue();   // film look off, borrowed pedestrians back to walking (also when skipped mid-prologue)
   // final, deterministic state (also used when skipping)
   G.petya.path = G.angi.path = null; G.petya.place(SEAT.petya[0], SEAT.petya[1], 0); G.angi.place(SEAT.angi[0], SEAT.angi[1], 0);
   G.petya.sit = G.petya.sitTarget = 1; G.angi.sit = G.angi.sitTarget = 1;
