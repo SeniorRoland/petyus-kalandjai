@@ -63,6 +63,30 @@
   .bubble b { color:#c2410c; display:block; font-size:12px; }
   @keyframes pop { from { transform:translate(-50%,-80%) scale(.5); opacity:0; } }
 
+  /* cutscene: letterbox bars + narrator caption */
+  .cbar { position:fixed; left:0; right:0; height:0; background:#000; z-index:16; transition:height .6s ease; pointer-events:none; }
+  #cbarT { top:0; } #cbarB { bottom:0; }
+  body.cine .cbar { height:11vh; }
+  body.cine #hud, body.cine #help, body.cine #prompt, body.cine #touch { opacity:0; pointer-events:none; }
+  #cineCap { position:fixed; left:0; right:0; bottom:3.2vh; z-index:17; text-align:center; color:#fff; font-style:italic;
+    font-size:clamp(15px,2.4vw,24px); letter-spacing:.5px; opacity:0; transition:opacity .5s; pointer-events:none; padding:0 16px; }
+  #cineCap.show { opacity:1; }
+
+  /* juggling (dekázás) quick-time event */
+  #juggle { position:fixed; left:50%; bottom:13vh; transform:translateX(-50%); z-index:14; display:none; text-align:center; color:#fff;
+    text-shadow:0 2px 0 rgba(0,0,0,.4); pointer-events:none; }
+  #jCount { font-size:44px; font-weight:900; color:#ffd166; text-shadow:0 4px 0 #c2410c; line-height:1; }
+  #jLabel { font-size:13px; font-weight:bold; opacity:.9; margin-bottom:8px; }
+  #jKeyWrap { position:relative; width:84px; height:84px; margin:0 auto; }
+  #jKey { position:absolute; inset:14px; border-radius:14px; background:rgba(255,255,255,.95); color:var(--ink); font-size:34px; font-weight:900;
+    display:flex; align-items:center; justify-content:center; border:3px solid var(--ink); }
+  #jRing { position:absolute; inset:8px; border-radius:50%; border:5px solid #ffd166; transform:scale(2.4); }
+  #jRing.hot { border-color:#7ddc5a; }
+  #jPart { font-size:14px; font-weight:bold; margin-top:6px; }
+  #jMsg { font-size:18px; font-weight:900; height:22px; color:#7ddc5a; }
+  #jTouch { display:none; gap:10px; justify-content:center; margin-top:8px; pointer-events:auto; }
+  #jTouch button { width:64px; height:64px; border-radius:14px; border:0; font-size:28px; font-weight:900; background:rgba(255,255,255,.9); color:var(--ink); }
+
   #touch { display:none; }
   #joy { position:fixed; left:24px; bottom:24px; width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,.18);
     border:3px solid rgba(255,255,255,.45); z-index:11; }
@@ -86,7 +110,14 @@
   <a id="designLink" href="designterv.html" target="_blank" rel="noopener">Objektumkatalógus (design terv) ↗</a>
 </div>
 
-<div id="hud"><span class="chip">⚽ Gólok: <span id="score">0</span></span></div>
+<div id="hud"><span class="chip">⚽ Gólok: <span id="score">0</span></span> <span class="chip">🏅 Dekázás-rekord: <span id="jBest">0</span></span></div>
+<div class="cbar" id="cbarT"></div><div class="cbar" id="cbarB"></div><div id="cineCap"></div>
+<div id="juggle">
+  <div id="jCount">0</div><div id="jLabel">dekázás</div>
+  <div id="jKeyWrap"><div id="jRing"></div><div id="jKey">→</div></div>
+  <div id="jPart">jobb láb</div><div id="jMsg"></div>
+  <div id="jTouch"><button data-k="L">←</button><button data-k="U">↑</button><button data-k="R">→</button></div>
+</div>
 <div id="topright">
   <button class="btn" id="skipBtn">Kihagyás ⏭</button>
   <button class="btn" id="muteBtn">🔊</button>
@@ -94,7 +125,8 @@
 <div id="help">
   <b>WASD / nyilak</b> – mozgás &nbsp; <b>Shift</b> – futás<br>
   <b>Szóköz</b> – rúgás (tartsd nyomva az erősebb, magasabb lövéshez)<br>
-  <b>E</b> – ivókút / roller fel-le &nbsp; <b>R</b> – labda ide<br><b>Görgő</b> – zoom &nbsp; <b>M</b> – hang &nbsp; <b>H</b> – súgó elrejtése
+  <b>E</b> – ivókút / roller fel-le &nbsp; <b>R</b> – labda ide<br>
+  <b>Q</b> – dekázás a labda mellett (<b>← → ↑</b>, amikor a kör ráér a gombra)<br><b>Görgő</b> – zoom &nbsp; <b>M</b> – hang &nbsp; <b>H</b> – súgó elrejtése
 </div>
 <div id="charge"><div></div></div>
 <div id="big">GÓÓÓL!</div>

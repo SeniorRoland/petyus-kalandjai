@@ -1162,6 +1162,7 @@ function threatNear(p, r) {
   return null;
 }
 function updateAnimals(dt) {
+  updateFlock(dt);
   for (const an of animals) {
     if (an.evt) { updateEvtCat(an, dt); continue; }
     const a = an.a; let moving = 0, spd = 0;
@@ -1546,8 +1547,12 @@ const sHiss = () => { noise(0.55, 3400, 0.7, 0.2); noise(0.45, 5600, 1.2, 0.1, 0
 const CAT_HISS = ['FFFHHH!', 'Pssszt… FFFHHH!', 'Rrrrr… FFF!', 'HHHHH!'];
 const CAT_PANIC = ['Segítség! Macska!', 'Apaaa! Megesz a macska!', 'Nem bántottalak!!', 'Anyaaa!', 'Miért pont engem?!', 'Gyorsabb, mint én!!'];
 const CAT_DAD_RUN = ['Félre, jövök!', 'Cicc! Cicc… gyere csak ide!', 'Na megállj, te szőrgombóc!'];
+// camera focus for a point in the air: the ground point on the same view ray (ortho camera looks along −CAM_OFF)
+const airFocus = (x, y, z) => ({ x: x - y * CAM_OFF.x / CAM_OFF.y, z: z - y * CAM_OFF.z / CAM_OFF.y });
+const CAT_TREE_MEOW = 12;     // s: the cat on the tree meows at this interval
 function idleFootball(dt, anyInput) {
   const a = petike;
+  if (cine.on) anyInput = false;   // no taking over during a cutscene
   if (anyInput) {
     cev.idleT = 0;
     if (pstate === 'autoBall') { pstate = 'free'; if (cev.cat && cev.cat.evt === 'approach') { cev.cat.evt = null; cev.cat = null; } }
@@ -1576,17 +1581,31 @@ function callCat() {
   let best = null, bd = 1e9;
   for (const an of animals) if (an.type === 'cat' && !an.evt) { const d = an.pos.distanceTo(petike.pos); if (d < bd) { bd = d; best = an; } }
   cev.cat = best || false;           // false: no cats left on the ground → just keep playing
-  if (best) { best.evt = 'approach'; best.y = 0; }
+  if (!best) return;
+  // it creeps out from under the bushes south of the pitch, close to Petike – cutscene!
+  best.evt = 'sneak'; best.y = 0; best.sneakT = 0;
+  best.pos.set(clamp(petike.pos.x + R(-3, 3), FENCE.x0 + 2, FENCE.x1 - 2), 0, 12.4); best.heading = Math.PI;
+  cineStart(() => best.pos, 4.2);
+  cineCap('Eközben, a bokor alján…', 3.2);
 }
 // the event cat (bypasses the normal cat AI; slips through the pitch fence like real cats do)
 function updateEvtCat(an, dt) {
   const a = an.a, P = petike.pos; let moving = 0, spd = 0;
   a.body.rotation.set(0, 0, 0); a.body.position.y = 0; a.tail.rotation.x = -0.3;
   const go = (tx, tz, sp) => { const dx = tx - an.pos.x, dz = tz - an.pos.z, d = Math.hypot(dx, dz); if (d < 0.05) return d; const st = Math.min(d, sp * dt); an.pos.x += dx / d * st; an.pos.z += dz / d * st; an.heading = dampAngle(an.heading, Math.atan2(dx, dz), 9, dt); moving = 1; spd = sp; return d; };
-  if (an.evt === 'approach') {
-    const d = go(P.x, P.z, 5.0);   // trots over briskly
+  if (an.evt === 'sneak') {
+    // creeping low, eyes on the boy who dared to wake it up
+    an.sneakT += dt; go(P.x, P.z, 0.9); a.body.position.y = -0.05; a.tail.rotation.x = -0.1;
+    if (an.sneakT > 2.8) {
+      an.evt = 'approach';
+      cineFocus(() => ({ x: (an.pos.x + P.x) / 2, z: (an.pos.z + P.z) / 2 }), 6.5);
+      cineCap('…valaki nagyon nem szereti, ha a délutáni alvását focilabda zavarja.', 3.6);
+    }
+  } else if (an.evt === 'approach') {
+    const d = go(P.x, P.z, 3.4);
     if (d < 1.4) { an.evt = 'hiss'; sHiss(); say(catVoice(an), 'FFFHHH!', 1.4, ''); pstate = 'catScared'; cev.t = 0; pvel.set(0, 0, 0); charging = false; petike.kickT = -1; $('charge').style.display = 'none'; setPrompt('');
-      say(petike, pick(['Á-á-á! Egy macska!', 'Jaj! Ez a cica nagyon mérges!']), 1.8); }
+      say(petike, pick(['Á-á-á! Egy macska!', 'Jaj! Ez a cica nagyon mérges!']), 1.8);
+      slowMo(0.35, 1.3); cineFocus(null, 3.8); cineCap('Ez nem fog jól végződni.', 2.4); }
   } else if (an.evt === 'hiss') {
     an.heading = dampAngle(an.heading, Math.atan2(P.x - an.pos.x, P.z - an.pos.z), 9, dt);
     a.body.position.y = 0.05; a.body.rotation.x = 0.15; a.tail.rotation.x = -1.3;   // arched back, tail up
@@ -1602,11 +1621,13 @@ function updateEvtCat(an, dt) {
     cev.throwT += dt; const k = Math.min(1, cev.throwT / 1.1);
     an.pos.lerpVectors(cev.from, cev.to, k); an.y = lerp(cev.from.y, cev.to.y, k) + Math.sin(k * Math.PI) * 2.6;
     a.body.rotation.x = k * Math.PI * 4; moving = 1; spd = 4;
-    if (k >= 1) { an.evt = 'tree'; an.y = cev.to.y; an.wait = R(5, 8);
+    if (k >= 1) { an.evt = 'tree'; an.y = cev.to.y; an.wait = CAT_TREE_MEOW;
       noise(0.5, 900, 0.6, 0.25); for (let i = 0; i < 18; i++) spawnFx(new V3(an.pos.x, an.y + 0.2, an.pos.z), new V3(R(-1.5, 1.5), R(0.5, 2), R(-1.5, 1.5)), pick([0x4f9a3a, 0x6bbf4e, 0x3d7d2c]), 0.07, 0.8, 5);
-      sMeow(); say(catVoice(an), 'Miaú?!', 1.6, ''); onCatLanded(); }
+      scatterBirds(an.pos.x, an.y, an.pos.z);
+      soundAt(an.pos.x, an.pos.z, sMeow, 1.4); say(catVoice(an), 'Miaú?!', 1.6, ''); onCatLanded(); }
   } else if (an.evt === 'tree') {
-    an.wait -= dt; if (an.wait <= 0) { an.wait = R(9, 15); say(catVoice(an), pick(['Miaú…', 'Miaaaú!', 'Mrrr…']), 1.4, ''); }
+    // stuck up there for good – meows at a steady interval
+    an.wait -= dt; if (an.wait <= 0) { an.wait = CAT_TREE_MEOW; soundAt(an.pos.x, an.pos.z, sMeow, 1.4); say(catVoice(an), pick(['Miaú…', 'Miaaaú!', 'Mrrr… miaú.', 'MIAÚ!']), 1.4, ''); }
   }
   an.phase += dt * spd * 9; animLegs(a, an.phase, moving);
   if (an.evt === 'held') { for (let i = 0; i < 4; i++) a.legs[i].rotation.x = Math.sin(clockT * 22 + i * 1.7) * 0.9; }
@@ -1626,10 +1647,15 @@ function updateCatPetike(dt) {
       pstate = 'catChased'; cat.evt = 'chase'; cev.t = 0; cev.lineT = 0.8;
       const dx = a.pos.x - PITCH.cx, dz = a.pos.z - PITCH.cz; cev.loopA = Math.atan2(dz / CHASE_LOOP.rz, dx / CHASE_LOOP.rx);
       say(a, 'Segítség!!!', 1.6);
+      cineEnd(10.5);   // wide shot for the merry-go-round
       runSeq([
         [3.0, () => { say(petya, pick(['Csak egy macska, Petike! Ne fuss el előle!', 'Állj meg és nézz rá szigorúan!']), 2.6); petya.point = 1.5; }],
         [3.5, () => { say(angi, 'Petya! Csinálj már valamit!', 2.4); }],
-        [CAT_DAD - 6.5, () => { say(petya, 'Jó, jó, megyek már! A térdem…', 2.4); petyaMode = 'catStand'; petya.sitTarget = 0; petya.path = null; dad.lineT = 2.5; }],
+        [CAT_DAD - 6.5, () => {
+          // cutscene: the hero rises from the bench
+          cineStart(() => petya.pos, 4.0); cineCap('Ekkor Petya úgy döntött: elég volt.', 3.0);
+          say(petya, 'Jó, jó, megyek már! A térdem…', 2.4); petyaMode = 'catStand'; petya.sitTarget = 0; petya.path = null; dad.lineT = 2.5;
+        }],
       ]);
     }
   } else if (pstate === 'catChased') {
@@ -1675,7 +1701,7 @@ function updateDadCat(dt) {
   const p = petya, cat = cev.cat;
   dad.lineT -= dt;
   if (petyaMode === 'catStand') { if (p.sit < 0.05) { p.walkTo([petyaFront()], 2.2); petyaMode = 'catLeave'; } return; }   // step out in front of the bench first
-  if (petyaMode === 'catLeave') { if (!p.path) petyaMode = 'catRun'; return; }
+  if (petyaMode === 'catLeave') { if (!p.path) { petyaMode = 'catRun'; cineFocus(() => ({ x: (p.pos.x * 2 + cat.pos.x) / 3, z: (p.pos.z * 2 + cat.pos.z) / 3 }), 7.5); cineCap('A térde tiltakozott. Petya nem hallgatott rá.', 3.2); } return; }
   if (petyaMode === 'catRun') {
     const t = navTarget(p.pos, [cat.pos.x, cat.pos.z]);
     p.path = [new V3(t[0], 0, t[1])]; p.speed = 5.0; p.keepHeading = false;
@@ -1687,6 +1713,8 @@ function updateDadCat(dt) {
       say(petike, pick(['Huh… köszi, apa!', 'Hű… ez meleg helyzet volt!']), 2.2);
       cev.tree = pickCatTree(cat.pos.x);
       cev.spot = [clamp(cev.tree.x, FENCE.x0 + 0.8, FENCE.x1 - 0.8), FENCE.z0 + 0.7];
+      slowMo(0.3, 1.5); cineFocus(() => p.pos, 3.6); cineCap('Egy apa nem ismer lehetetlent.', 3.0);
+      runSeq([[1.6, () => cineFocus(() => ({ x: (p.pos.x + cev.spot[0]) / 2, z: (p.pos.z + cev.spot[1]) / 2 }), 6.5)]]);
     }
     return;
   }
@@ -1704,6 +1732,7 @@ function updateDadCat(dt) {
       cev.from.set(cat.pos.x, 1.9, cat.pos.z); cev.to.set(cev.tree.x, treeTop(cev.tree) - 0.12, cev.tree.z);
       noise(0.35, 1500, 0.8, 0.2); say(p, 'HOPP!', 1.2); p.cheer = 0;
       cev.from.y = 1.9; cat.y = 1.9;
+      cineFocus(() => airFocus(cat.pos.x, cat.y || 0, cat.pos.z), 7.5);   // follow the flying cat
     }
     if (cev.t >= 0.9) { const k = Math.min(1, (cev.t - 0.9) / 0.25); r.sh[0].rotation.x = lerp(-3.0, -1.2, k); r.sh[1].rotation.x = lerp(-3.0, -1.2, k); }
     p.sync(); return;
@@ -1717,7 +1746,9 @@ function onCatLanded() {
   const P = petike.pos;
   pstate = 'catToMom'; ftn.path = inPitch(P.x, P.z) ? [G_IN, G_OUT, ftnMom()] : [ftnMom()]; ftn.stuckT = 0; ftn.ghostT = 0; ftn.lastP.copy(P);
   petyaMode = 'catCurse';
-  const p = petya, cat = cev.cat;
+  const p = petya, cat = cev.cat, top = airFocus(cat.pos.x, cat.y, cat.pos.z);
+  cineFocus(() => top, 6.5); cineCap('A fa lakói nem örültek a vendégnek.', 3.0);
+  runSeq([[3.0, () => cineEnd(8.5)]]);   // back to Petike
   runSeq([
     [0.8, () => { say(angi, 'PETYA! Az egy cica volt!', 2.2); }],
     [1.8, () => { say(p, 'Most már fáramászó cica!', 2.2); p.point = 2; }],
@@ -1727,6 +1758,39 @@ function onCatLanded() {
     [1.4, () => { say(p, 'Ne miákolj itt nekem! #@&%!', 2.2); p.point = 2; }],
     [2.4, () => { say(p, pick(['Na. Ennyi volt a vasárnapi pihenés.', 'A térdem… megérte.']), 2.4); petyaMode = 'return'; dad.talkT = 7; }],
   ]);
+}
+
+// a flock of small birds bursting out of the tree the cat landed in
+const flock = [];
+function makeSparrow() {
+  const col = pick([[0x8b5a2b, 0xd9b48f], [0x6b6f7a, 0xe8e2d0], [0xa0522d, 0xf4d58d], [0x3a3a3a, 0xc9c9c9]]);
+  const root = new THREE.Group(); const body = new THREE.Group(); root.add(body);
+  body.add(partMesh((b) => {
+    b.bx(0, 0, 0, 0.08, 0.07, 0.13, col[0], 0, 0); b.bx(0, -0.015, 0.01, 0.07, 0.04, 0.1, col[1], 0, 0);
+    b.bx(0, 0.04, 0.07, 0.06, 0.06, 0.06, col[0], 0, 0); b.bx(0, 0.035, 0.11, 0.02, 0.02, 0.03, 0xf2c14e, 0, 0);
+    b.bx(0, 0.01, -0.09, 0.05, 0.02, 0.07, col[0], 0, 0);
+  }));
+  const wings = [];
+  for (const s of [-1, 1]) { const w = new THREE.Group(); w.position.set(s * 0.04, 0.02, 0); body.add(w); w.add(partMesh((b) => b.box(s * 0.06, 0, 0, 0.12, 0.015, 0.09, col[0], 0, 0))); wings.push(w); }
+  return { root, wings };
+}
+function scatterBirds(x, y, z) {
+  for (let i = 0; i < 16; i++) {
+    const b = makeSparrow(); scene.add(b.root);
+    const a = rand() * Math.PI * 2, sp = R(3, 6.5);
+    flock.push({ b, pos: new V3(x + R(-0.6, 0.6), y + R(-0.5, 0.4), z + R(-0.6, 0.6)), vel: new V3(Math.cos(a) * sp, R(1.2, 3.2), Math.sin(a) * sp), t: R(4.5, 7), ph: rand() * 6 });
+  }
+  soundAt(x, z, () => { for (let i = 0; i < 6; i++) noise(0.25, R(600, 1100), 0.8, 0.1, i * 0.05); for (let i = 0; i < 5; i++) sBird(R(0, 0.8)); }, 1.6);
+}
+function updateFlock(dt) {
+  for (let i = flock.length - 1; i >= 0; i--) {
+    const f = flock[i]; f.t -= dt;
+    f.vel.y += Math.sin(clockT * 3 + f.ph) * 1.5 * dt;            // a little bobbing in flight
+    f.pos.addScaledVector(f.vel, dt);
+    for (const w of f.b.wings) w.rotation.z = Math.sin(clockT * 34 + f.ph) * 1.0 * (w.position.x > 0 ? 1 : -1);
+    f.b.root.position.copy(f.pos); f.b.root.rotation.y = Math.atan2(f.vel.x, f.vel.z);
+    if (f.t <= 0) { scene.remove(f.b.root); flock.splice(i, 1); }
+  }
 }
 
 // ---------- scooter
@@ -1897,10 +1961,24 @@ const BENCH_IDLE = ['Na, mi lesz? Focizni jöttünk vagy nézelődni?', 'Petike,
 const ANGI_DEFEND = ['Petya, hagyd már szegény gyereket!', 'Szerintem nagyon ügyes!', 'Ne kiabálj, mindenki minket néz.', 'Te is ilyen voltál kicsiben?', 'Hagyd játszani, Petya!', 'Ügyes vagy, kicsim, ne figyelj apára!'];
 const GOAL_GRUMBLE = ['Na jó. De a bal lábaddal is menne?', 'Szerencsés volt. Még egyszer!', 'Ezt a nagymamád is berúgta volna.', 'Gól, gól… de a kapus hol volt?', 'Túl lassú volt a lövés, de mindegy.', 'Rendben, de ünnepelni ráérsz otthon!'];
 
+// ---------------------------------------------------------------- in-game cutscenes (letterbox, narrator, camera focus, slow motion)
+const cine = { on: false, focus: null, zoom: 6, slow: 1, slowT: 0, capT: 0 };
+function cineStart(focus, zoom) { cine.on = true; cine.focus = focus; cine.zoom = zoom; document.body.classList.add('cine'); setPrompt(''); }
+function cineFocus(focus, zoom) { if (focus) cine.focus = focus; if (zoom) cine.zoom = zoom; }
+function cineCap(txt, dur = 3) { const el = $('cineCap'); el.textContent = txt; el.classList.add('show'); cine.capT = dur; }
+function cineEnd(zoomAfter = 8.5) { cine.on = false; cine.focus = null; cine.slow = 1; document.body.classList.remove('cine'); $('cineCap').classList.remove('show'); viewSizeTarget = zoomOverride || zoomAfter; }
+function slowMo(f, dur) { cine.slow = f; cine.slowT = dur; }   // dur in real seconds
+function tickCine(realDt) {
+  if (cine.slowT > 0) { cine.slowT -= realDt; if (cine.slowT <= 0) cine.slow = 1; }
+  if (cine.capT > 0) { cine.capT -= realDt; if (cine.capT <= 0) $('cineCap').classList.remove('show'); }
+}
+
 // ---------------------------------------------------------------- camera
 function updateCamera(dt) {
   let tx, tz;
-  if (mode === 'intro') {
+  if (cine.on && cine.focus) {
+    const f = cine.focus(); tx = f.x; tz = f.z; viewSizeTarget = cine.zoom;
+  } else if (mode === 'intro') {
     const rp = roller.rider ? roller.pos : petike.pos;
     tx = (petya.pos.x + angi.pos.x + rp.x) / 3; tz = (petya.pos.z + angi.pos.z + rp.z) / 3;
     viewSizeTarget = zoomOverride || 7.5;
@@ -1908,7 +1986,8 @@ function updateCamera(dt) {
     const bw = pstate === 'riding' ? 0 : 0.25;
     tx = petike.pos.x + (ball.active ? (ball.pos.x - petike.pos.x) * bw : 0); tz = petike.pos.z + (ball.active ? (ball.pos.z - petike.pos.z) * bw : 0);
   } else { tx = 0; tz = -4; }
-  camTarget.x = damp(camTarget.x, tx, 3, dt); camTarget.z = damp(camTarget.z, tz, 3, dt);
+  const ck = cine.on ? 3.5 / Math.max(0.3, cine.slow) : 3;   // the cutscene camera keeps up even in slow motion
+  camTarget.x = damp(camTarget.x, tx, ck, dt); camTarget.z = damp(camTarget.z, tz, ck, dt);
   camera.position.copy(camTarget).add(CAM_OFF); camera.lookAt(camTarget);
   if (Math.abs(viewSize - viewSizeTarget) > 0.001) { viewSize = damp(viewSize, viewSizeTarget, 4, dt); updateProjection(); }
   // shadow camera follows (snapped to texels to avoid shimmering)
@@ -1949,7 +2028,8 @@ let last = performance.now();
 const TIME_SCALE = Math.max(1, Math.min(8, +(new URLSearchParams(location.search).get('speed') || 1)));
 function frame(now) {
   const dt0 = Math.min(0.05, (now - last) / 1000); last = now;
-  for (let i = 0; i < TIME_SCALE; i++) step(dt0);
+  tickCine(dt0);
+  for (let i = 0; i < TIME_SCALE; i++) step(dt0 * cine.slow);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
@@ -2008,6 +2088,6 @@ async function boot() {
   requestAnimationFrame(frame);
   window.__game = { THREE, scene, camera, renderer, petike: () => petike, petya: () => petya, angi: () => angi, ball, roller, keys, skipIntro, get mode() { return mode; }, get pstate() { return pstate; }, get petyaMode() { return petyaMode; }, use: () => { usePressed = true; }, roller, setZoom: (z) => { zoomOverride = z; viewSizeTarget = z; viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { kickPressed = true; setTimeout(() => { kickReleased = true; }, p); },
     // manual stepping (works even when the tab is hidden and rAF is paused): __game.tick(seconds)
-    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) step(dt); renderer.render(scene, camera); }, ftn, cev, TREES };
+    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); step(dt * cine.slow); } renderer.render(scene, camera); }, cine, ftn, cev, TREES };
 }
 boot();
