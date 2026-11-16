@@ -2,11 +2,30 @@
 import * as THREE from 'three';
 import { V3 } from './util.js';
 
-// shared, reassigned-from-anywhere game state (was module-level 'let's in game.js)
-// the series: every episode is one day in Petyus' life (the game currently is episode 1)
+// the series: 12 episodes, one per month, starting with August. Only the `ready` ones can be played (for now: August).
+// art = one panel of a 2×2 season image (public/evszak-nyar.webp: cycling · mountain hike / beach · scooters in the park;
+// public/evszak-osz-tel.webp: autumn hike · autumn cycling / sledding · ice skating;
+// public/evszak-tel-tavasz.webp: snowball fight · snowdrops / blossoms · picnic); without art: a month icon on a seasonal gradient.
+// The start screen's background is the cover image (public/kezdokep.webp).
 export const SERIES = 'Petyus kalandjai';
-export const EPISODE = { n: 1, day: 'Vasárnap', blurb: 'egy délután a parkban Petyával, Angival és Petyussal' };
+const NYAR = 'evszak-nyar.webp', OSZTEL = 'evszak-osz-tel.webp', TAVASZ = 'evszak-tel-tavasz.webp';
+export const EPISODES = [
+  { n: 1, month: 'Augusztus', day: 'Vasárnap', sub: 'Vasárnap a parkban', art: { img: NYAR, col: 1, row: 1 }, ready: true },
+  { n: 2, month: 'Szeptember', art: { img: NYAR, col: 0, row: 0 } },
+  { n: 3, month: 'Október', art: { img: OSZTEL, col: 0, row: 0 } },
+  { n: 4, month: 'November', art: { img: OSZTEL, col: 1, row: 0 } },
+  { n: 5, month: 'December', art: { img: OSZTEL, col: 0, row: 1 } },
+  { n: 6, month: 'Január', art: { img: OSZTEL, col: 1, row: 1 } },
+  { n: 7, month: 'Február', art: { img: TAVASZ, col: 0, row: 0 } },
+  { n: 8, month: 'Március', art: { img: TAVASZ, col: 1, row: 0 } },
+  { n: 9, month: 'Április', art: { img: TAVASZ, col: 0, row: 1 } },
+  { n: 10, month: 'Május', art: { img: TAVASZ, col: 1, row: 1 } },
+  { n: 11, month: 'Június', art: { img: NYAR, col: 1, row: 0 } },
+  { n: 12, month: 'Július', art: { img: NYAR, col: 0, row: 1 } },
+];
+export const EPISODE = EPISODES[0];   // the one this build plays
 
+// shared, reassigned-from-anywhere game state (was module-level 'let's in game.js)
 export const G = {
   clockT: 0,   // util.js
   viewSize: 9,   // scene.js

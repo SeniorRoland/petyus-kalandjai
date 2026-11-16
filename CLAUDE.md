@@ -1,6 +1,6 @@
 # Petyus kalandjai – projekt-útmutató Claude Code-hoz
 
-Izometrikus, voxel stílusú 3D böngészős **játéksorozat** (Three.js r187 + Vite 8): minden rész egy napot dolgoz fel; a jelenlegi az **1. rész: Vasárnap** (a park). A rész adatai egy helyen: `SERIES`, `EPISODE` a `state.js`-ben (címképernyő, böngészőfül-cím, a nyitány záró főcíme). Petyus (gyerek), Petya (apa) és Angi (anya) egy kisvárosi parkban; a nyitójelenet után a játékos Petyust irányítja: focizik, iszik az ivókútból, elektromos rollerezik, miközben az apa folyamatosan instruálja.
+Izometrikus, voxel stílusú 3D böngészős **játéksorozat** (Three.js r187 + Vite 8): **12 rész, egy-egy hónap**, augusztussal kezdve. Most csak az **1. rész: Augusztus** (vasárnap a parkban) játszható; a kezdőképernyőn mind a 12 látszik, a többi zárva („Hamarosan”). A részek adatai egy helyen: `SERIES`, `EPISODES` (`n`, `month`, `ready`, `art: { img, col, row }` = egy 2×2-es évszakkép panelje, vagy `icon` + `c` színátmenet) és `EPISODE` (a játszható rész) a `state.js`-ben; a csempéket a `menu.js` építi (a játszható csempe a `#startBtn`). Képek: `public/kezdokep.webp` (a kezdőképernyő háttere), `public/evszak-nyar.webp` (bicikli · hegyi túra / strand · roller a parkban) `public/evszak-osz-tel.webp` (őszi túra · őszi bicikli / szánkó · korcsolya) és `public/evszak-tel-tavasz.webp` (hógolyózás · hóvirág / virágzó park · piknik) – a csempék ezekből vágnak (aug.: roller, szept.: bicikli, okt.–jan.: ősz/tél, febr.–máj.: tél vége/tavasz, jún.: túra, júl.: strand). Kép nélküli részhez `icon` + `c` is megadható. Petyus (gyerek), Petya (apa) és Angi (anya) egy kisvárosi parkban; a nyitójelenet után a játékos Petyust irányítja: focizik, iszik az ivókútból, elektromos rollerezik, miközben az apa folyamatosan instruálja.
 
 - A gyerek neve a játékban **Petyus** (korábban Petike). A kódban az azonosítók és fájlnevek történeti okból `petike`-ek maradtak (`G.petike`, `petike_foci.glb`, `updateCatPetike`, a rekord `localStorage`-kulcsa) – a játékos ezeket nem látja.
 - A felhasználó magyar; **a játékban minden szöveg magyar** (buborékok, súgó, feliratok). Kódkommentek angolul vagy magyarul is lehetnek.
@@ -36,6 +36,7 @@ Izometrikus, voxel stílusú 3D böngészős **játéksorozat** (Three.js r187 +
 | `world.js` | voxel batch, csempék/talaj, ütközők, világépítés, voxel-kellékek, `TREES` |
 | `rigs.js` · `actors.js` | karakter-rigek · `Actor`, állatmodellek, FX |
 | `audio.js` · `ambience.js` | szintetizált hangok, `soundAt` · környezeti hangok |
+| `menu.js` | kezdőképernyő: a 12 havi rész csempéi (`buildEpisodeMenu`, `setStartLabel`) |
 | `ui.js` · `input.js` | képregényes buborékok (`say`), toast, nagy felirat · billentyűzet/érintés |
 | `ball.js` · `player.js` · `roller.js` · `npcs.js` | labda · Petyus irányítása · roller · járókelők, állatok |
 | `prologue.js` · `intro.js` · `cine.js` · `camera.js` | filmes nyitány · nyitójelenet (családi séta) · átvezetők (`cineCut`, `shake`) · kamera |

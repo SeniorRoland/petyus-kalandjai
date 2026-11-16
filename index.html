@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Petyus kalandjai – 1. rész: Vasárnap</title>
+<title>Petyus kalandjai – 1. rész: Augusztus</title>
 <link rel="icon" href="data:,">
 <style>
   :root { --ink:#2b2d42; --accent:#ff7a3d; }
@@ -11,23 +11,51 @@
   html,body { margin:0; height:100%; overflow:hidden; background:#9fd6f0; font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif; user-select:none; -webkit-user-select:none; }
   #app canvas { display:block; touch-action:none; }
 
-  #overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    background:linear-gradient(160deg,#8fd3ff 0%,#bfe9a8 100%); z-index:50; transition:opacity .6s; }
+  /* start screen: the cover image behind a comic strip of 12 monthly episodes */
+  #overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    padding:16px; background:#151515; z-index:50; transition:opacity .6s; overflow-y:auto; }
   #overlay.hide { opacity:0; pointer-events:none; }
-  #overlay h1 { font-size:clamp(34px,7vw,72px); margin:0 0 6px; color:#fff; letter-spacing:2px;
-    text-shadow:0 4px 0 #3a7d44, 0 8px 18px rgba(0,0,0,.25); }
-  #overlay p { color:#24543a; font-size:18px; margin:4px 0 22px; }
-  #overlay p.episode { margin:0 0 2px; font-family:'Bangers', Impact, sans-serif; font-size:clamp(20px,3vw,30px); letter-spacing:2px; color:#1d4a32; }
-  #overlay p.episode b { color:#c2410c; font-weight:400; }
-  #overlay #epBlurb { margin-top:0; }
-  #startBtn { font:inherit; font-size:24px; font-weight:bold; padding:14px 40px; border:0; border-radius:14px; cursor:pointer;
-    background:var(--accent); color:#fff; box-shadow:0 6px 0 #b8501f; transition:transform .1s; }
-  #startBtn:active { transform:translateY(4px); box-shadow:0 2px 0 #b8501f; }
-  #startBtn:disabled { background:#aaa; box-shadow:0 6px 0 #777; cursor:wait; }
-  #loadbar { width:260px; height:10px; background:rgba(255,255,255,.5); border-radius:6px; margin-bottom:20px; overflow:hidden; }
-  #loadbar div { height:100%; width:0; background:#3a7d44; transition:width .2s; }
-  #designLink { margin-top:18px; color:#24543a; font-size:14px; }
-  #err { color:#a00; max-width:560px; text-align:center; margin-top:16px; font-size:15px; }
+  #coverBg { position:fixed; inset:-30px; background:url(kezdokep.webp) center / cover no-repeat; filter:blur(7px) brightness(.5) saturate(1.15); z-index:0; }
+  #overlay > *:not(#coverBg) { position:relative; z-index:1; }
+  #overlay h1 { font-family:'Bangers', Impact, sans-serif; font-weight:400; font-size:clamp(40px,7vw,86px); margin:0; color:#ffd166; letter-spacing:3px;
+    -webkit-text-stroke:2px #151515; paint-order:stroke fill; text-shadow:5px 5px 0 #151515; line-height:1; text-align:center; }
+  #overlay .tag { margin:0; color:#fff; font-family:'Patrick Hand', 'Comic Sans MS', cursive; font-size:clamp(17px,2vw,22px); text-shadow:0 2px 4px rgba(0,0,0,.6); text-align:center; }
+  #episodes { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; padding:8px; border-radius:6px; background:#151515;
+    width:min(1120px, 100%, calc((100vh - 200px) * 2.3)); box-shadow:0 10px 40px rgba(0,0,0,.55); }
+  /* wide panels like the season images (512×286) */
+  .ep { position:relative; aspect-ratio:16 / 9; overflow:hidden; border:0; padding:0; margin:0; font:inherit; text-align:left; color:#151515; border-radius:3px;
+    background:linear-gradient(160deg, var(--c1, #8fd3ff), var(--c2, #3a7d44)); }
+  .ep .art { position:absolute; inset:0; background:var(--img) var(--bx, 0%) var(--by, 0%) / 200% 200% no-repeat; }
+  .ep .icon { position:absolute; left:0; right:0; top:14%; text-align:center; font-size:clamp(30px,4.2vw,58px); filter:drop-shadow(0 4px 0 rgba(0,0,0,.25)); }
+  .ep .cap { position:absolute; left:6px; bottom:6px; max-width:calc(100% - 12px); padding:2px 9px 3px; background:#fff; border:3px solid #151515;
+    border-radius:10px / 8px; box-shadow:3px 3px 0 #151515; }
+  .ep .num { display:inline; font-family:'Bangers', Impact, sans-serif; font-size:13px; letter-spacing:1px; color:#c2410c; margin-right:6px; }
+  .ep .month { display:inline; font-family:'Bangers', Impact, sans-serif; font-size:clamp(15px,1.7vw,21px); letter-spacing:1px; line-height:1; }
+  .ep .sub { display:block; font-family:'Patrick Hand', cursive; font-size:15px; line-height:1.05; }
+  .ep .go { display:block; margin-top:3px; padding:2px 10px 0; text-align:center; border-radius:8px; background:var(--accent); color:#fff;
+    font-family:'Bangers', Impact, sans-serif; font-size:17px; letter-spacing:1px; box-shadow:0 3px 0 #b8501f; }
+  .ep.ready { cursor:pointer; outline:4px solid #ffd166; outline-offset:-4px; animation:epGlow 1.6s ease-in-out infinite; transition:transform .15s; z-index:1; }
+  .ep.ready:hover:not(:disabled), .ep.ready:focus-visible { transform:scale(1.04); z-index:2; }
+  .ep.ready:disabled { cursor:wait; animation:none; }
+  .ep.ready:disabled .go { background:#999; box-shadow:0 3px 0 #666; }
+  @keyframes epGlow { 50% { outline-color:#fff3a0; box-shadow:0 0 22px 4px rgba(255,209,102,.7); } }
+  .ep.locked { cursor:not-allowed; }
+  /* locked: visible, but clearly not available – faded colours under a light veil */
+  .ep.locked .art { filter:grayscale(.85) brightness(.8); }
+  .ep.locked .icon { filter:grayscale(.55) drop-shadow(0 4px 0 rgba(0,0,0,.25)); opacity:.9; }
+  .ep.locked::before { content:""; position:absolute; inset:0; background:rgba(20,20,20,.38); }
+  .ep.locked:not(:has(.art)) { filter:saturate(.55); }
+  .ep.locked .cap { background:#d8d8d8; color:#555; box-shadow:3px 3px 0 #000; }
+  .ep.locked .num { color:#777; }
+  .ep .lock { position:absolute; top:8px; right:8px; background:#151515; color:#fff; padding:2px 7px 1px; border-radius:6px;
+    font-family:'Bangers', Impact, sans-serif; font-size:13px; letter-spacing:1px; transform:rotate(3deg); white-space:nowrap; }
+  @media (max-width: 900px), (max-height: 560px) { #episodes { grid-template-columns:repeat(3, minmax(0, 1fr)); width:100%; } #overlay { justify-content:flex-start; } }
+  @media (max-width: 560px) { #episodes { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:6px; padding:6px; } .ep .sub { font-size:13px; } .ep .lock .t { display:none; } .ep .go { font-size:15px; } .ep .num { font-size:11px; } }
+  #loadbar { width:260px; max-width:70vw; height:8px; background:rgba(255,255,255,.35); border-radius:6px; overflow:hidden; }
+  #loadbar div { height:100%; width:0; background:#ffd166; transition:width .2s; }
+  #loadbar.done { visibility:hidden; }
+  #designLink { color:#ddd; font-size:14px; text-shadow:0 1px 3px #000; }
+  #err { color:#ffb3b3; max-width:560px; text-align:center; margin-top:16px; font-size:15px; }
 
   #hud { position:fixed; left:14px; top:12px; z-index:10; color:#fff; font-weight:bold; font-size:22px;
     text-shadow:0 2px 0 rgba(0,0,0,.35); display:none; }
@@ -143,11 +171,11 @@
 <svg id="tails" xmlns="http://www.w3.org/2000/svg"></svg>
 
 <div id="overlay">
+  <div id="coverBg"></div>
   <h1>Petyus kalandjai</h1>
-  <p class="episode"><span id="epNum">1. rész:</span> <b id="epDay">Vasárnap</b></p>
-  <p id="epBlurb">egy délután a parkban Petyával, Angival és Petyussal</p>
+  <p class="tag">12 rész, 12 hónap – Petyus, Petya és Angi kalandjai egész évben</p>
   <div id="loadbar"><div></div></div>
-  <button id="startBtn" disabled>Betöltés…</button>
+  <div id="episodes" role="list" aria-label="Részek"></div>
   <div id="err"></div>
   <a id="designLink" href="designterv.html" target="_blank" rel="noopener">Objektumkatalógus (design terv) ↗</a>
 </div>

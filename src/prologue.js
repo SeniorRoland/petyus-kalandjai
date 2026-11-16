@@ -213,7 +213,7 @@ export async function runPrologue() {
   G.petya.targetHeading = G.angi.targetHeading = Math.PI / 2;
 
   // 7. title, then the film look fades into the normal intro
-  sSting(); await titleCard(SERIES, `${EPISODE.n}. rész · ${EPISODE.day}`, 3.4);
+  sSting(); await titleCard(SERIES, `${EPISODE.n}. rész · ${EPISODE.month}`, 3.4);
   endPrologue();
   await W(0.8);
 }
