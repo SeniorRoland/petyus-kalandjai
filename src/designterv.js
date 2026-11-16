@@ -8,8 +8,8 @@ import { CATALOG, getGeometry } from './voxels.js';
 const CHARS = [
   { id: 'petya', name: 'Petya (apa)', file: 'petya.glb', scale: 0.93, desc: 'Az apa. T-pose-ban riggelt modell, 27 Mixamo-nevű csonttal; a játék a csontokat mozgatja (séta, ülés, ujjongás).', use: 'Nyitójelenet, a családi padon ül' },
   { id: 'angi', name: 'Angi (anya)', file: 'angi.glb', scale: 0.86, desc: 'Az anya, rózsaszín felsőben. Petyához hasonlóan riggelt, T-pose-ban álló modell.', use: 'Nyitójelenet, a családi padon ül' },
-  { id: 'petike-roller', name: 'Petike (rolleres ruha)', file: 'petike_roller.glb', scale: 1.045, desc: 'Sisakos, rolleres öltözet, riggelt T-pose modell. A rolleren két lábbal a deszkán áll, és fogja a kormányt.', use: 'Nyitójelenet' },
-  { id: 'petike-foci', name: 'Petike (focista ruha)', file: 'petike_foci.glb', scale: 0.77, desc: 'Riggelt T-pose modell; ebben a ruhában irányítja a játékos: fut, cselez és rúg.', use: 'Játékmenet' },
+  { id: 'petike-roller', name: 'Petike (rolleres ruha)', file: 'petike_roller.glb', scale: 1.14, desc: 'Sisakos, rolleres öltözet, riggelt T-pose modell. A rolleren két lábbal a deszkán áll, és fogja a kormányt.', use: 'Nyitójelenet' },
+  { id: 'petike-foci', name: 'Petike (focista ruha)', file: 'petike_foci.glb', scale: 0.833, desc: 'Riggelt T-pose modell; ebben a ruhában irányítja a játékos: fut, cselez és rúg.', use: 'Játékmenet' },
   { id: 'roller', name: 'Elektromos roller', file: 'roller_kicsi.glb', scale: 0.72, rotY: Math.PI / 2, desc: 'Gyerekméretű elektromos roller. A nyitójelenet végén Petike a padhoz támasztja.', use: 'Nyitójelenet, a pad mellett' },
 ];
 const ORDER = ['Növények', 'Utcabútor', 'Park', 'Pálya', 'Utca', 'Karakterek'];
