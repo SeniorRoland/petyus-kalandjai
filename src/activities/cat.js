@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { animLegs, spawnFx } from '../actors.js';
 import { noise, sBird, sMeow, soundAt } from '../audio.js';
-import { cine, cineCap, cineEnd, cineFocus, cineStart, slowMo } from '../cine.js';
+import { atHeight, cine, cineCap, cineEnd, cineFocus, cineStart, slowMo } from '../cine.js';
 import { G_IN, G_OUT, dad, inPitch, navTarget, petyaFront } from '../dad.js';
 import { pvel } from '../player.js';
 import { CAM_OFF, scene } from '../scene.js';
@@ -78,7 +78,7 @@ export function updateEvtCat(an, dt) {
     an.sneakT += dt; go(P.x, P.z, 0.9); a.body.position.y = -0.05; a.tail.rotation.x = -0.1;
     if (an.sneakT > 2.8) {
       an.evt = 'approach';
-      cineFocus(() => ({ x: (an.pos.x + P.x) / 2, z: (an.pos.z + P.z) / 2 }), 6.5);
+      cineFocus(() => atHeight((an.pos.x + P.x) / 2, 0.6, (an.pos.z + P.z) / 2), 6.5);
       cineCap('…valaki nagyon nem szereti, ha a délutáni alvását focilabda zavarja.', 3.6);
     }
   } else if (an.evt === 'approach') {
@@ -133,7 +133,7 @@ export function updateCatPetike(dt) {
         [3.5, () => { say(G.angi, 'Petya! Csinálj már valamit!', 2.4); }],
         [CAT_DAD - 6.5, () => {
           // cutscene: the hero rises from the bench
-          cineStart(() => G.petya.pos, 4.0); cineCap('Ekkor Petya úgy döntött: elég volt.', 3.0);
+          cineStart(() => atHeight(G.petya.pos.x, 1.2, G.petya.pos.z), 4.0); cineCap('Ekkor Petya úgy döntött: elég volt.', 3.0);
           say(G.petya, 'Jó, jó, megyek már! A térdem…', 2.4); G.petyaMode = 'catStand'; G.petya.sitTarget = 0; G.petya.path = null; dad.lineT = 2.5;
         }],
       ]);
@@ -193,7 +193,7 @@ export function updateDadCat(dt) {
       say(G.petike, pick(['Huh… köszi, apa!', 'Hű… ez meleg helyzet volt!']), 2.2);
       cev.tree = pickCatTree(cat.pos.x);
       cev.spot = [clamp(cev.tree.x, FENCE.x0 + 0.8, FENCE.x1 - 0.8), FENCE.z0 + 0.7];
-      slowMo(0.3, 1.5); cineFocus(() => p.pos, 3.6); cineCap('Egy apa nem ismer lehetetlent.', 3.0);
+      slowMo(0.3, 1.5); cineFocus(() => atHeight(p.pos.x, 1.1, p.pos.z), 3.6); cineCap('Egy apa nem ismer lehetetlent.', 3.0);
       runSeq([[1.6, () => cineFocus(() => ({ x: (p.pos.x + cev.spot[0]) / 2, z: (p.pos.z + cev.spot[1]) / 2 }), 6.5)]]);
     }
     return;

@@ -73,6 +73,8 @@
   .bubble.sfx .in { background:none; border:0; box-shadow:none; padding:0; font-family:'Bangers', Impact, sans-serif; font-size:30px;
     letter-spacing:1.5px; color:var(--sfx, #ff5c3d); -webkit-text-stroke:2px #151515; paint-order:stroke fill;
     text-shadow:3px 3px 0 #151515; transform:rotate(var(--rot, -6deg)); white-space:nowrap; max-width:none; }
+  /* the speaker is out of the picture: the same balloon as a subtitle at the bottom (no tail, a bit wider) */
+  .bubble.sub .in { max-width:min(560px, 86vw); }
   @keyframes pop { from { transform:scale(.4); opacity:0; } }
   #tails { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:13; overflow:visible; }
   #tails .fill { fill:#fff; } #tails .shout .fill { fill:#fff3a0; }
