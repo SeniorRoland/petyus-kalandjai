@@ -1,6 +1,6 @@
 // =====================================================================
 //  Petike a parkban – voxel objektumkönyvtár
-//  Minden beépített környezeti elem itt van definiálva. A játék (game.js)
+//  Minden beépített környezeti elem itt van definiálva. A játék (world.js)
 //  és a design terv (designterv.html) ugyanezt a modult használja.
 // =====================================================================
 import * as THREE from 'three';

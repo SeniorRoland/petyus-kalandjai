@@ -17,16 +17,34 @@ Izometrikus, voxel stílusú 3D böngészős játék (Three.js r187 + Vite 8). P
 | Fájl | Tartalom |
 |---|---|
 | `index.html` | UI (start képernyő, HUD, súgó, buborékok, érintéses vezérlők, `#prompt` interakciós felirat) |
-| `src/game.js` | a teljes játék (egy modul, szakaszokra bontva – lásd lent) |
+| `src/main.js` + `src/*.js`, `src/activities/*.js` | a játék ES-modulokra bontva (belépési pont: `main.js`, lásd lent) |
 | `src/voxels.js` | voxel objektumkönyvtár: `VoxelGrid`, `CATALOG`, `getGeometry(id, variant)` |
 | `src/designterv.js` | a 3D katalógus oldal logikája |
 | `public/*.glb` | a játék által betöltött modellek: `petya`, `angi`, `petike_roller`, `petike_foci` (riggelt, T-pose), `roller_kicsi` (a roller) |
 | `models/source/*.glb` | az **eredeti**, nem riggelt karaktermodellek (lelógó karral) – a modell-pipeline bemenete |
 | `tools/model-pipeline/` | Python: T-pose + csontváz generálása (lásd lent) |
 
-## `src/game.js` szakaszai (a `// ----` fejlécek szerint)
+## A játék moduljai (`src/`)
 
-utils → renderer/scene → voxel batch (`Batch`: összeolvasztott dobozok egy hálóban) → tiles/ground (1 m-es csempék: `T.GRASS/PARK/PATH/PITCH/ROAD/SIDEWALK/PLAZA`, `groundH()`) → colliders (`addBoxCol`, `addCircleCol`, `collide()`; `h` = magasság, `e` = pattanás) → world building (`buildWorld`, épületek, pálya, kerítés) → instanced voxel props (`place(id,x,y,z,rot,s,variant,opts)` + `buildInstances()`) → character rigs (`rigFromSkinned`, `rigFromGLTF` régi fallback, `makePerson` NPC) → `Actor` → animals → FX → audio (WebAudio szintetizált hangok; `soundAt(x,z,fn)` térhangzás, `startAmbience()` alapzaj) → UI helpers (`say(actor, szöveg)`) → input → game state → ball (fizika, gól) → player control (`updatePlayer`, rúgás, cselezés) → roller (`rollerRide`, `poseRider`, `RIDE_SKINNED`) → NPCs & animals → cutscene system (`W()`, `until()`, `tween()`, `runIntro`, `finishIntro`) → play activities (ivókút, szökőkút, macska-jelenet, dekázás, roller, apa AI) → in-game cutscenes (`cine`) → camera → ambience (`updateAmbience`: madarak, csengő, duda, kutya) → main loop (`step(dt)`) → boot.
+| Modul | Tartalom |
+|---|---|
+| `util.js` | `V3`, `$`, seedelt `rand`/`R`/`pick`, `clamp`, `lerp`, `damp`, `dampAngle` … |
+| `state.js` | **`G`** – a közös, több modulból is átírt állapot (`G.mode`, `G.pstate`, `G.petyaMode`, `G.petike`/`G.petya`/`G.angi`, `G.score`, `G.viewSizeTarget`, `G.usePressed` …), valamint `ball`, `roller`, `rigs`, `npcs`/`animals`/`pigeons`/`cars` |
+| `scene.js` | renderer, jelenet, kamera (`CAM_OFF`, `camTarget`, `updateProjection`), fények |
+| `world.js` | voxel batch, csempék/talaj, ütközők, világépítés, voxel-kellékek, `TREES` |
+| `rigs.js` · `actors.js` | karakter-rigek · `Actor`, állatmodellek, FX |
+| `audio.js` · `ambience.js` | szintetizált hangok, `soundAt` · környezeti hangok |
+| `ui.js` · `input.js` | buborékok, toast, nagy felirat · billentyűzet/érintés |
+| `ball.js` · `player.js` · `roller.js` · `npcs.js` | labda · Petike irányítása · roller · járókelők, állatok |
+| `intro.js` · `cine.js` · `camera.js` | nyitójelenet · játék közbeni átvezetők · kamera |
+| `activities/drinking.js` | `interactions()`, `setPrompt()`, ivókút |
+| `activities/fountain.js` · `cat.js` · `juggle.js` · `scooter.js` | szökőkút-ivás · macska-jelenet (+ madárraj) · dekázás · rollerezés |
+| `dad.js` | az apa AI-ja és szövegei |
+| `main.js` | fő ciklus (`step(dt)`), betöltés, `window.__game` |
+
+- **Szabály:** egy importált változót a fogadó modul nem írhat felül (ES-modul). Ami több modulból is változik, az a `G` objektumon él (`G.pstate = 'free'`); a csak a saját modulban írt `let`-ek sima `export let`-ek maradnak (élő kötés). Függvényeket és objektumokat szabadon lehet importálni.
+- Az import-ciklusok rendben vannak, amíg a modulok **betöltéskor** (függvényen kívül) csak a `util.js`/`state.js`/`scene.js`/`world.js` konstansait olvassák.
+- A korábbi egyetlen `game.js` szakaszai (sorrendben, ma ezek a modulok): utils → renderer/scene → voxel batch (`Batch`: összeolvasztott dobozok egy hálóban) → tiles/ground (1 m-es csempék: `T.GRASS/PARK/PATH/PITCH/ROAD/SIDEWALK/PLAZA`, `groundH()`) → colliders (`addBoxCol`, `addCircleCol`, `collide()`; `h` = magasság, `e` = pattanás) → world building (`buildWorld`, épületek, pálya, kerítés) → instanced voxel props (`place(id,x,y,z,rot,s,variant,opts)` + `buildInstances()`) → character rigs (`rigFromSkinned`, `rigFromGLTF` régi fallback, `makePerson` NPC) → `Actor` → animals → FX → audio (WebAudio szintetizált hangok; `soundAt(x,z,fn)` térhangzás, `startAmbience()` alapzaj) → UI helpers (`say(actor, szöveg)`) → input → game state → ball (fizika, gól) → player control (`updatePlayer`, rúgás, cselezés) → roller (`rollerRide`, `poseRider`, `RIDE_SKINNED`) → NPCs & animals → cutscene system (`W()`, `until()`, `tween()`, `runIntro`, `finishIntro`) → play activities (ivókút, szökőkút, macska-jelenet, dekázás, roller, apa AI) → in-game cutscenes (`cine`) → camera → ambience (`updateAmbience`: madarak, csengő, duda, kutya) → main loop (`step(dt)`) → boot.
 
 ## Világ és koordináták
 
@@ -79,5 +97,4 @@ utils → renderer/scene → voxel batch (`Batch`: összeolvasztott dobozok egy 
 
 ## Ötletek / nyitott pontok
 
-- `src/game.js` felbontása modulokra (world, rigs, actors, activities, dad AI, audio, ui).
 - Mixamo-animációk betöltése (`AnimationMixer`) a kézi pózok helyett – a csontnevek már egyeznek.
