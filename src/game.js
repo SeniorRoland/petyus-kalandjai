@@ -220,7 +220,12 @@ function buildInstances() {
   }
 }
 const quarter = () => Math.floor(rand() * 4) * Math.PI / 2;
-function tree(x, z, type = 'round', s = 1) { place(type === 'round' ? 'oak' : type, x, 0, z, quarter(), s); }
+const TREES = [];   // { x, z, id, v, s } – e.g. for the cat thrown onto a tree top
+function tree(x, z, type = 'round', s = 1) {
+  const id = type === 'round' ? 'oak' : type, rot = quarter(), v = Math.floor(rand() * DEF[id].variants);   // same rand() order as before
+  place(id, x, 0, z, rot, s, v); TREES.push({ x, z, id, v, s, rot });
+}
+function treeTop(t) { const g = getGeometry(t.id, t.v); if (!g.boundingBox) g.computeBoundingBox(); return g.boundingBox.max.y * t.s; }
 function bush(x, z, s = 1) { place('bush', x, 0, z, quarter(), s); }
 function flowerBed(x, z, w) { place(w >= 2 ? 'bed_long' : (w >= 1.5 ? 'bed_square' : 'bed_small'), x, groundH(x, z), z, 0, 1); }
 function bench(x, z, rot) { place('bench', x, 0, z, rot, 1); }
@@ -929,14 +934,20 @@ function updatePlayer(dt) {
   if (pstate === 'riding') return updateRiding(dt);
   if (pstate === 'toDrink' || pstate === 'drinking') return updateDrinking(dt);
   if (FTN_STATES.includes(pstate)) return updateFountainDrink(dt);
-  if (interactions()) return;
+  if (CAT_STATES.includes(pstate)) return updateCatPetike(dt);
+  if (pstate !== 'autoBall' && interactions()) return;
   const a = petike;
   let ix = 0, iy = 0;
   if (keys.KeyA || keys.ArrowLeft) ix -= 1; if (keys.KeyD || keys.ArrowRight) ix += 1;
   if (keys.KeyW || keys.ArrowUp) iy += 1; if (keys.KeyS || keys.ArrowDown) iy -= 1;
   if (touch.active) { ix = touch.x; iy = touch.y; }
   let wx = CAM_RIGHT.x * ix + CAM_FWD.x * iy, wz = CAM_RIGHT.z * ix + CAM_FWD.z * iy;
-  const il = Math.hypot(wx, wz); if (il > 1) { wx /= il; wz /= il; }
+  const il0 = Math.hypot(wx, wz); if (il0 > 1) { wx /= il0; wz /= il0; }
+  // idle on the pitch → Petike starts playing on his own (any input takes control back)
+  const anyInput = il0 > 0.1 || kickPressed || charging;
+  const auto = idleFootball(dt, anyInput);
+  if (auto) { wx = auto.wx; wz = auto.wz; }
+  const il = Math.hypot(wx, wz);
   const sprint = keys.ShiftLeft || keys.ShiftRight || touch.run;
   const maxSp = (sprint ? 5.4 : 3.3) * (charging ? 0.6 : 1);
   pvel.x = damp(pvel.x, wx * maxSp, 10, dt); pvel.z = damp(pvel.z, wz * maxSp, 10, dt);
@@ -1123,6 +1134,7 @@ function threatNear(p, r) {
 }
 function updateAnimals(dt) {
   for (const an of animals) {
+    if (an.evt) { updateEvtCat(an, dt); continue; }
     const a = an.a; let moving = 0, spd = 0;
     an.barkCd = (an.barkCd || 0) - dt;
     if (an.type === 'leashed') {
@@ -1360,14 +1372,17 @@ function updateDrinking(dt) {
 // pstate: toFountain → ftnDrink → caught → chased → atMom → free;  petyaMode: ftnStand → ftnRun → ftnScold → ftnChase → ftnWait → seat
 const FTN_WAY = [22.6, -11.6];                       // round the pitch fence's north-west corner
 const ftnMom = () => [SEAT.angi[0], -11.15];         // in front of Angi on the family bench
-const ftn = { spot: null, t: 0, lineT: 0, count: 0, seq: null, stuckT: 0, ghostT: 0, lastP: new V3(), path: null };
-// tiny sequencer: [[delay, fn, untilFn?], …] – each step waits `delay` seconds (and until `untilFn()` is true), then runs fn
-function runSeq(steps) { ftn.seq = { steps, i: 0, t: 0 }; }
+const ftn = { spot: null, t: 0, lineT: 0, count: 0, stuckT: 0, ghostT: 0, lastP: new V3(), path: null };
+// tiny sequencer: [[delay, fn, untilFn?], …] – each step waits `delay` seconds (and until `untilFn()` is true), then runs fn.
+// Several sequences may run at once (e.g. dad cursing while Petike talks to mom).
+const seqs = [];
+function runSeq(steps) { seqs.push({ steps, i: 0, t: 0 }); }
 function tickSeq(dt) {
-  const s = ftn.seq; if (!s) return;
-  s.t += dt; const st = s.steps[s.i];
-  if (!st) { ftn.seq = null; return; }
-  if (s.t >= st[0] && (!st[2] || st[2]())) { s.i++; s.t = 0; st[1](); }
+  for (let k = seqs.length - 1; k >= 0; k--) {
+    const s = seqs[k]; s.t += dt; const st = s.steps[s.i];
+    if (!st) { seqs.splice(k, 1); continue; }
+    if (s.t >= st[0] && (!st[2] || st[2]())) { s.i++; s.t = 0; st[1](); }
+  }
 }
 const FTN_SHOUT = ['PETIKEEE!!! Abból NE igyál!!', 'Állj! Az nem ivókút, az SZÖKŐKÚT!', 'Jaj ne… ne… NEEE! Petike!!'];
 const FTN_SHOUT_AGAIN = ['MÁR MEGINT?!', 'Ezt nem hiszem el! MEGINT?!', 'Hányszor mondjam még?!'];
@@ -1380,7 +1395,7 @@ function startFountain() {
   pstate = 'toFountain'; pvel.set(0, 0, 0); charging = false; petike.kickT = -1; setPrompt(''); $('charge').style.display = 'none';
   const dx = petike.pos.x - FOUNTAIN.x, dz = petike.pos.z - FOUNTAIN.z, d = Math.hypot(dx, dz) || 1;
   ftn.spot = [FOUNTAIN.x + dx / d * (FOUNTAIN.r + 0.3), FOUNTAIN.z + dz / d * (FOUNTAIN.r + 0.3)];
-  ftn.t = 0; ftn.lineT = 1.6; ftn.seq = null; ftn.count++;
+  ftn.t = 0; ftn.lineT = 1.6; seqs.length = 0; ftn.count++;
   dadFountainAlarm();
 }
 function dadFountainAlarm() {
@@ -1488,6 +1503,203 @@ function updateDadFountain(dt) {
   if (petyaMode === 'ftnWait') p.targetHeading = Math.atan2(a.pos.x - p.pos.x, a.pos.z - p.pos.z);
 }
 
+// ---------- idle on the pitch → Petike plays alone → a cat attacks → dad throws the cat onto a tree
+// pstate: free → autoBall → catScared → catChased → catSafe → catToMom → catAtMom → free
+// petyaMode: bench → catStand → catRun → catCarry → catThrow → catCurse → return → seat
+// cat (an.evt): approach → hiss → chase → held → flying → tree (stays there for good)
+const CAT_STATES = ['catScared', 'catChased', 'catSafe', 'catToMom', 'catAtMom'];
+const CAT_IDLE = 10, CAT_COME = 3.5, CAT_DAD = 10;   // s: standing still before auto-play · auto-play before the cat · chase before dad steps in
+const cev = { idleT: 0, autoT: 0, cat: null, t: 0, lineT: 0, tree: null, spot: null, from: new V3(), to: new V3(), loopA: 0, throwT: 0 };
+const CHASE_LOOP = { rx: 8, rz: 4.6 };                    // chase loop round the centre spot
+const loopPt = (ang) => [PITCH.cx + Math.cos(ang) * CHASE_LOOP.rx, PITCH.cz + Math.sin(ang) * CHASE_LOOP.rz];
+const catVoice = (an) => ({ headWorld: (v) => v.set(an.pos.x, (an.y || 0) + 0.7, an.pos.z) });
+const sHiss = () => { noise(0.55, 3400, 0.7, 0.2); noise(0.45, 5600, 1.2, 0.1, 0.05); };
+const CAT_HISS = ['FFFHHH!', 'Pssszt… FFFHHH!', 'Rrrrr… FFF!', 'HHHHH!'];
+const CAT_PANIC = ['Segítség! Macska!', 'Apaaa! Megesz a macska!', 'Nem bántottalak!!', 'Anyaaa!', 'Miért pont engem?!', 'Gyorsabb, mint én!!'];
+const CAT_DAD_RUN = ['Félre, jövök!', 'Cicc! Cicc… gyere csak ide!', 'Na megállj, te szőrgombóc!'];
+function idleFootball(dt, anyInput) {
+  const a = petike;
+  if (anyInput) {
+    cev.idleT = 0;
+    if (pstate === 'autoBall') { pstate = 'free'; if (cev.cat && cev.cat.evt === 'approach') { cev.cat.evt = null; cev.cat = null; } }
+    return null;
+  }
+  if (pstate === 'free') {
+    const still = Math.hypot(pvel.x, pvel.z) < 0.3 && a.kickT < 0;
+    if (still && inPitch(a.pos.x, a.pos.z) && petyaMode === 'bench' && ball.active) cev.idleT += dt; else cev.idleT = 0;
+    if (cev.idleT < CAT_IDLE) return null;
+    pstate = 'autoBall'; cev.autoT = 0; cev.idleT = 0;
+    say(a, pick(['Unatkozom… akkor játszom magamnak!', 'Jó, akkor egyedül focizok!', 'Senki nem játszik velem? Na jó!']), 2.4);
+    runSeq([[2.2, () => { if (pstate === 'autoBall') { say(petya, pick(['Na végre, magától is megy!', 'Látod? Nem kell ide állandóan engem hallgatni!']), 2.4); petya.point = 1.2; dad.talkT = 6; } }]]);
+  }
+  // auto-play: get behind the ball, dribble towards the nearer goal, shoot when close
+  cev.autoT += dt;
+  if (cev.autoT > CAT_COME && !cev.cat) callCat();
+  if (!ball.active || goalLock > 0) return { wx: 0, wz: 0 };
+  const gx = ball.pos.x > PITCH.cx ? PITCH.x1 : PITCH.x0;
+  let gdx = gx - ball.pos.x, gdz = -ball.pos.z; const gl = Math.hypot(gdx, gdz) || 1; gdx /= gl; gdz /= gl;
+  const bx = ball.pos.x - gdx * 0.4, bz = ball.pos.z - gdz * 0.4, dx = bx - a.pos.x, dz = bz - a.pos.z, d = Math.hypot(dx, dz);
+  const facing = Math.sin(a.heading) * gdx + Math.cos(a.heading) * gdz;
+  if (d < 0.6 && gl < 9 && a.kickT < 0 && facing > 0.85) { a.kickT = 0; kickPower = R(0.35, 0.65); kickDone = false; }
+  return d > 0.35 ? { wx: dx / d * 0.75, wz: dz / d * 0.75 } : { wx: gdx * 0.75, wz: gdz * 0.75 };
+}
+function callCat() {
+  let best = null, bd = 1e9;
+  for (const an of animals) if (an.type === 'cat' && !an.evt) { const d = an.pos.distanceTo(petike.pos); if (d < bd) { bd = d; best = an; } }
+  cev.cat = best || false;           // false: no cats left on the ground → just keep playing
+  if (best) { best.evt = 'approach'; best.y = 0; }
+}
+// the event cat (bypasses the normal cat AI; slips through the pitch fence like real cats do)
+function updateEvtCat(an, dt) {
+  const a = an.a, P = petike.pos; let moving = 0, spd = 0;
+  a.body.rotation.set(0, 0, 0); a.body.position.y = 0; a.tail.rotation.x = -0.3;
+  const go = (tx, tz, sp) => { const dx = tx - an.pos.x, dz = tz - an.pos.z, d = Math.hypot(dx, dz); if (d < 0.05) return d; const st = Math.min(d, sp * dt); an.pos.x += dx / d * st; an.pos.z += dz / d * st; an.heading = dampAngle(an.heading, Math.atan2(dx, dz), 9, dt); moving = 1; spd = sp; return d; };
+  if (an.evt === 'approach') {
+    const d = go(P.x, P.z, 5.0);   // trots over briskly
+    if (d < 1.4) { an.evt = 'hiss'; sHiss(); say(catVoice(an), 'FFFHHH!', 1.4, ''); pstate = 'catScared'; cev.t = 0; pvel.set(0, 0, 0); charging = false; petike.kickT = -1; $('charge').style.display = 'none'; setPrompt('');
+      say(petike, pick(['Á-á-á! Egy macska!', 'Jaj! Ez a cica nagyon mérges!']), 1.8); }
+  } else if (an.evt === 'hiss') {
+    an.heading = dampAngle(an.heading, Math.atan2(P.x - an.pos.x, P.z - an.pos.z), 9, dt);
+    a.body.position.y = 0.05; a.body.rotation.x = 0.15; a.tail.rotation.x = -1.3;   // arched back, tail up
+  } else if (an.evt === 'chase') {
+    const h = petike.heading, tx = P.x - Math.sin(h) * 1.2, tz = P.z - Math.cos(h) * 1.2, d = Math.hypot(tx - an.pos.x, tz - an.pos.z);
+    go(tx, tz, clamp(d * 3, 2, 5.4)); a.tail.rotation.x = -1.2;
+    cev.lineT -= dt; if (cev.lineT <= 0) { cev.lineT = R(1.8, 2.6); sHiss(); say(catVoice(an), pick(CAT_HISS), 1.3, ''); }
+  } else if (an.evt === 'held') {
+    const p = petya, h = p.heading; an.heading = h + Math.PI / 2;
+    an.pos.set(p.pos.x + Math.sin(h) * 0.45, 0, p.pos.z + Math.cos(h) * 0.45); an.y = 0.75;
+    a.body.rotation.z = 0.25; moving = 1; spd = 3;                                      // wriggling, paws paddling in the air
+  } else if (an.evt === 'flying') {
+    cev.throwT += dt; const k = Math.min(1, cev.throwT / 1.1);
+    an.pos.lerpVectors(cev.from, cev.to, k); an.y = lerp(cev.from.y, cev.to.y, k) + Math.sin(k * Math.PI) * 2.6;
+    a.body.rotation.x = k * Math.PI * 4; moving = 1; spd = 4;
+    if (k >= 1) { an.evt = 'tree'; an.y = cev.to.y; an.wait = R(5, 8);
+      noise(0.5, 900, 0.6, 0.25); for (let i = 0; i < 18; i++) spawnFx(new V3(an.pos.x, an.y + 0.2, an.pos.z), new V3(R(-1.5, 1.5), R(0.5, 2), R(-1.5, 1.5)), pick([0x4f9a3a, 0x6bbf4e, 0x3d7d2c]), 0.07, 0.8, 5);
+      sMeow(); say(catVoice(an), 'Miaú?!', 1.6, ''); onCatLanded(); }
+  } else if (an.evt === 'tree') {
+    an.wait -= dt; if (an.wait <= 0) { an.wait = R(9, 15); say(catVoice(an), pick(['Miaú…', 'Miaaaú!', 'Mrrr…']), 1.4, ''); }
+  }
+  an.phase += dt * spd * 9; animLegs(a, an.phase, moving);
+  if (an.evt === 'held') { for (let i = 0; i < 4; i++) a.legs[i].rotation.x = Math.sin(clockT * 22 + i * 1.7) * 0.9; }
+  if (!moving && an.evt !== 'hiss') { a.legs[2].rotation.x = -1.2; a.legs[3].rotation.x = -1.2; a.body.rotation.x = -0.3; a.body.position.y = -0.04; }
+  a.tail.rotation.z = Math.sin(clockT * (an.evt === 'chase' || an.evt === 'hiss' ? 14 : 2)) * 0.3;
+  a.root.position.set(an.pos.x, an.y || (an.evt === 'tree' ? 0 : groundH(an.pos.x, an.pos.z)), an.pos.z); a.root.rotation.y = an.heading;
+}
+function updateCatPetike(dt) {
+  const a = petike, r = a.rig, cat = cev.cat;
+  kickPressed = kickReleased = false; usePressed = false; cev.t += dt;
+  const face = (x, z, k = 8) => { a.heading = dampAngle(a.heading, Math.atan2(x - a.pos.x, z - a.pos.z), k, dt); };
+  if (pstate === 'catScared') {
+    face(cat.pos.x, cat.pos.z, 10); a.animate(dt, false, 0);
+    const k = Math.min(1, cev.t * 4); r.sh[0].rotation.x = -2.8 * k; r.sh[1].rotation.x = -2.8 * k; r.sh[0].rotation.z = -0.4 * k; r.sh[1].rotation.z = 0.4 * k;
+    r.inner.position.y += Math.abs(Math.sin(cev.t * 14)) * 0.06;   // trembling hop
+    if (cev.t > 1.3) {
+      pstate = 'catChased'; cat.evt = 'chase'; cev.t = 0; cev.lineT = 0.8;
+      const dx = a.pos.x - PITCH.cx, dz = a.pos.z - PITCH.cz; cev.loopA = Math.atan2(dz / CHASE_LOOP.rz, dx / CHASE_LOOP.rx);
+      say(a, 'Segítség!!!', 1.6);
+      runSeq([
+        [3.0, () => { say(petya, pick(['Csak egy macska, Petike! Ne fuss el előle!', 'Állj meg és nézz rá szigorúan!']), 2.6); petya.point = 1.5; }],
+        [3.5, () => { say(angi, 'Petya! Csinálj már valamit!', 2.4); }],
+        [CAT_DAD - 6.5, () => { say(petya, 'Jó, jó, megyek már! A térdem…', 2.4); petyaMode = 'catStand'; petya.sitTarget = 0; petya.path = null; dad.lineT = 2.5; }],
+      ]);
+    }
+  } else if (pstate === 'catChased') {
+    // round and round the centre circle, the cat hissing at his heels
+    cev.loopA += 4.1 / ((CHASE_LOOP.rx + CHASE_LOOP.rz) / 2) * dt;
+    const t = loopPt(cev.loopA + 0.45), dx = t[0] - a.pos.x, dz = t[1] - a.pos.z, d = Math.hypot(dx, dz), sp = 4.4;
+    if (d > 0.01) { const st = Math.min(d, sp * dt); a.pos.x += dx / d * st; a.pos.z += dz / d * st; face(t[0], t[1], 12); }
+    a.animate(dt, true, sp);
+    const w = Math.sin(clockT * 18) * 0.4; r.sh[0].rotation.x = -2.6 + w; r.sh[1].rotation.x = -2.6 - w; r.sh[0].rotation.z = -0.35; r.sh[1].rotation.z = 0.35;   // arms flailing above the head
+    cev.lineT -= dt; if (cev.lineT <= 0) { cev.lineT = R(2.2, 3.0); say(a, pick(CAT_PANIC), 1.9); }
+  } else if (pstate === 'catSafe') {
+    face(petya.pos.x, petya.pos.z); a.animate(dt, false, 0);
+    r.inner.rotation.x = 0.3; r.sh[0].rotation.x = -0.5; r.sh[1].rotation.x = -0.5;   // hands on knees, panting
+  } else if (pstate === 'catToMom') {
+    if (autoRun(a, 3.2, dt)) {
+      pstate = 'catAtMom'; cev.t = 0;
+      runSeq([
+        [0.0, () => say(a, 'Anyaaa! Megtámadott egy macska!', 2.4)],
+        [2.4, () => say(angi, 'Jaj, kicsim! Nagyon megijedtél?', 2.4)],
+        [2.4, () => say(a, 'Csak egy kicsit… De apa feldobta a fára!', 2.4)],
+        [2.6, () => say(angi, 'A fára?! …Petya!', 2.2)],
+        [2.2, () => { pstate = 'free'; cev.cat = null; cev.idleT = 0; }],
+      ]);
+    }
+  } else if (pstate === 'catAtMom') {
+    a.heading = dampAngle(a.heading, Math.PI, 8, dt); a.animate(dt, false, 0);
+  }
+  a.pos.x = clamp(a.pos.x, GX0 + 1, GX1 - 1); a.pos.z = clamp(a.pos.z, GZ0 + 1, GZ1 - 1);
+  a.sync();
+}
+function pickCatTree(x) {
+  // a tree north of the pitch fence (nearest to x), leafy ones preferred
+  let best = null, bd = 1e9;
+  for (const t of TREES) {
+    if (t.z > FENCE.z0 - 2 || t.z < FENCE.z0 - 9 || t.x < FENCE.x0 - 4 || t.x > FENCE.x1 + 4) continue;
+    const d = Math.abs(t.x - x) + (t.id === 'oak' ? 0 : 4) + Math.abs(t.z - (FENCE.z0 - 4.5)) * 0.3;
+    if (d < bd) { bd = d; best = t; }
+  }
+  if (!best) for (const t of TREES) { const d = Math.hypot(t.x - x, t.z - FENCE.z0); if (d < bd) { bd = d; best = t; } }
+  return best;
+}
+function updateDadCat(dt) {
+  const p = petya, cat = cev.cat;
+  dad.lineT -= dt;
+  if (petyaMode === 'catStand') { if (p.sit < 0.05) { p.walkTo([petyaFront()], 2.2); petyaMode = 'catLeave'; } return; }   // step out in front of the bench first
+  if (petyaMode === 'catLeave') { if (!p.path) petyaMode = 'catRun'; return; }
+  if (petyaMode === 'catRun') {
+    const t = navTarget(p.pos, [cat.pos.x, cat.pos.z]);
+    p.path = [new V3(t[0], 0, t[1])]; p.speed = 5.0; p.keepHeading = false;
+    if (dad.lineT <= 0) { dad.lineT = R(2.4, 3.2); say(p, pick(CAT_DAD_RUN), 2.0); }
+    if (cat.evt === 'chase' && Math.hypot(p.pos.x - cat.pos.x, p.pos.z - cat.pos.z) < 0.75 && inPitch(p.pos.x, p.pos.z)) {
+      cat.evt = 'held'; pstate = 'catSafe'; petyaMode = 'catCarry'; p.path = null; cev.t = 0;
+      sMeow(); say(catVoice(cat), 'MRRRÁÚÚ!', 1.5, '');
+      say(p, pick(['Megvagy, te kis szőrös terrorista!', 'Megvagy! Na, most beszélgetünk!']), 2.4);
+      say(petike, pick(['Huh… köszi, apa!', 'Hű… ez meleg helyzet volt!']), 2.2);
+      cev.tree = pickCatTree(cat.pos.x);
+      cev.spot = [clamp(cev.tree.x, FENCE.x0 + 0.8, FENCE.x1 - 0.8), FENCE.z0 + 0.7];
+    }
+    return;
+  }
+  if (petyaMode === 'catCarry') {
+    const s = cev.spot, d = Math.hypot(p.pos.x - s[0], p.pos.z - s[1]);
+    if (d > 0.12) { p.path = [new V3(s[0], 0, s[1])]; p.speed = 1.8; p.keepHeading = false; p.rig.sh[0].rotation.x = -1.3; p.rig.sh[1].rotation.x = -1.3; }
+    else { p.path = null; petyaMode = 'catThrow'; cev.t = 0; p.targetHeading = Math.atan2(cev.tree.x - p.pos.x, cev.tree.z - p.pos.z); say(p, 'Na, repülni tanulunk!', 1.6); }
+    p.sync(); return;
+  }
+  if (petyaMode === 'catThrow') {
+    cev.t += dt; const r = p.rig;
+    if (cev.t < 0.9) { const k = smooth(Math.min(1, cev.t / 0.9)); r.sh[0].rotation.x = lerp(-1.3, -3.0, k); r.sh[1].rotation.x = lerp(-1.3, -3.0, k); }   // wind-up over the head
+    else if (cat.evt === 'held') {
+      cat.evt = 'flying'; cev.throwT = 0;
+      cev.from.set(cat.pos.x, 1.9, cat.pos.z); cev.to.set(cev.tree.x, treeTop(cev.tree) - 0.12, cev.tree.z);
+      noise(0.35, 1500, 0.8, 0.2); say(p, 'HOPP!', 1.2); p.cheer = 0;
+      cev.from.y = 1.9; cat.y = 1.9;
+    }
+    if (cev.t >= 0.9) { const k = Math.min(1, (cev.t - 0.9) / 0.25); r.sh[0].rotation.x = lerp(-3.0, -1.2, k); r.sh[1].rotation.x = lerp(-3.0, -1.2, k); }
+    p.sync(); return;
+  }
+  if (petyaMode === 'catCurse') {
+    p.targetHeading = Math.atan2(cev.tree.x - p.pos.x, cev.tree.z - p.pos.z);
+  }
+}
+function onCatLanded() {
+  // Petike heads to mom (through the pitch gate), dad stays and has a word with the cat
+  const P = petike.pos;
+  pstate = 'catToMom'; ftn.path = inPitch(P.x, P.z) ? [G_IN, G_OUT, ftnMom()] : [ftnMom()]; ftn.stuckT = 0; ftn.ghostT = 0; ftn.lastP.copy(P);
+  petyaMode = 'catCurse';
+  const p = petya, cat = cev.cat;
+  runSeq([
+    [0.8, () => { say(angi, 'PETYA! Az egy cica volt!', 2.2); }],
+    [1.8, () => { say(p, 'Most már fáramászó cica!', 2.2); p.point = 2; }],
+    [2.4, () => { say(p, 'Te #@&%! szőrgombóc! Ha még egyszer a gyerek közelébe mész…', 2.8); p.point = 2.8; }],
+    [3.0, () => { say(p, '…akkor @#%&! a tűzoltók szednek le, de csak jövő kedden!', 2.8); p.point = 2.8; }],
+    [3.0, () => { sMeow(); say(catVoice(cat), 'Miaú.', 1.4, ''); }],
+    [1.4, () => { say(p, 'Ne miákolj itt nekem! #@&%!', 2.2); p.point = 2; }],
+    [2.4, () => { say(p, pick(['Na. Ennyi volt a vasárnapi pihenés.', 'A térdem… megérte.']), 2.4); petyaMode = 'return'; dad.talkT = 7; }],
+  ]);
+}
+
 // ---------- scooter
 function mountScooter() {
   pstate = 'riding'; setPrompt(''); charging = false; petike.kickT = -1; pvel.set(0, 0, 0); $('charge').style.display = 'none';
@@ -1559,6 +1771,8 @@ function navTarget(p, to) {
   // stuck behind the family bench → walk round its end first
   const B = FAMILY_BENCH; if (p.z < B.z + 0.2 && Math.abs(p.x - B.x) < 1.5 && to[1] > B.z) return [B.x + (p.x >= B.x ? 1.7 : -1.7), p.z];
   const a = inPitch(p.x, p.z), b = inPitch(to[0], to[1]); if (a === b) return to;
+  // already in the gate passage → head for the gate point on the destination side (no flip-flopping between the two)
+  if (Math.abs(p.x - (FENCE.gate0 + FENCE.gate1) / 2) < 0.9 && p.z > G_OUT[1] - 0.4 && p.z < G_IN[1] + 0.4) return b ? G_IN : G_OUT;
   const first = a ? G_IN : G_OUT, second = a ? G_OUT : G_IN;
   return Math.hypot(p.x - first[0], p.z - first[1]) > 0.35 ? first : second;
 }
@@ -1574,6 +1788,7 @@ function updateDad(dt) {
   const p = petya;
   tickSeq(dt);
   if (petyaMode.startsWith('ftn')) return updateDadFountain(dt);
+  if (petyaMode.startsWith('cat')) return updateDadCat(dt);
   if (petyaMode === 'standing') { if (p.sit < 0.05) { p.walkTo([petyaFront()], 1.4); petyaMode = 'leaving'; } }
   else if (petyaMode === 'leaving') { if (!p.path) petyaMode = pstate === 'riding' ? 'follow' : 'return'; }
   else if (petyaMode === 'follow') {
@@ -1688,7 +1903,7 @@ function step(dt) {
     petya.update(dt); angi.update(dt);
     if (mode === 'play') updatePlayer(dt); else petike.update(dt);
     if ((roller.rider || roller.path) && pstate !== 'riding') rollerRide(dt);
-    if (mode === 'play') { updateDad(dt); if (['follow', 'return', 'ftnRun', 'ftnChase'].includes(petyaMode)) { collide(petya.pos, 0.3, 0, null); petya.sync(); } }
+    if (mode === 'play') { updateDad(dt); if (['follow', 'return', 'ftnRun', 'ftnChase', 'catRun', 'catCarry'].includes(petyaMode)) { collide(petya.pos, 0.3, 0, null); petya.sync(); } }
     updateBall(dt);
     usePressed = false;
   }
@@ -1736,6 +1951,6 @@ async function boot() {
   requestAnimationFrame(frame);
   window.__game = { THREE, scene, camera, renderer, petike: () => petike, petya: () => petya, angi: () => angi, ball, roller, keys, skipIntro, get mode() { return mode; }, get pstate() { return pstate; }, get petyaMode() { return petyaMode; }, use: () => { usePressed = true; }, roller, setZoom: (z) => { zoomOverride = z; viewSizeTarget = z; viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { kickPressed = true; setTimeout(() => { kickReleased = true; }, p); },
     // manual stepping (works even when the tab is hidden and rAF is paused): __game.tick(seconds)
-    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) step(dt); renderer.render(scene, camera); }, ftn };
+    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) step(dt); renderer.render(scene, camera); }, ftn, cev, TREES };
 }
 boot();
