@@ -3,9 +3,25 @@ import * as THREE from 'three';
 import { V3 } from './util.js';
 
 // shared, reassigned-from-anywhere game state (was module-level 'let's in game.js)
-// the series: every episode is one day in Petyus' life (the game currently is episode 1)
+// the series: 12 episodes, one per month, starting with August. Only the `ready` ones can be played (for now: August).
+// art = panel of the cover image (public/kezdokep.webp: 0 cycling · 1 mountain hike · 2 beach · 3 scooters in the park);
+// without art the tile shows a month icon on a seasonal gradient.
 export const SERIES = 'Petyus kalandjai';
-export const EPISODE = { n: 1, day: 'Vasárnap', blurb: 'egy délután a parkban Petyával, Angival és Petyussal' };
+export const EPISODES = [
+  { n: 1, month: 'Augusztus', day: 'Vasárnap', sub: 'Vasárnap a parkban', art: 3, ready: true },
+  { n: 2, month: 'Szeptember', icon: '🎒', c: ['#f6c560', '#d9822b'] },
+  { n: 3, month: 'Október', art: 1 },
+  { n: 4, month: 'November', icon: '🍂', c: ['#c97b3d', '#7a4a2a'] },
+  { n: 5, month: 'December', icon: '🎄', c: ['#3f8f5a', '#1d4a32'] },
+  { n: 6, month: 'Január', icon: '⛄', c: ['#bfe3f7', '#6fa8d6'] },
+  { n: 7, month: 'Február', icon: '🎭', c: ['#c58ee6', '#6b3fa0'] },
+  { n: 8, month: 'Március', icon: '🌷', c: ['#ffb3c7', '#e0607e'] },
+  { n: 9, month: 'Április', icon: '🐣', c: ['#fff1a6', '#9fd36a'] },
+  { n: 10, month: 'Május', art: 0 },
+  { n: 11, month: 'Június', icon: '🍓', c: ['#ff9a8a', '#e04b4b'] },
+  { n: 12, month: 'Július', art: 2 },
+];
+export const EPISODE = EPISODES[0];   // the one this build plays
 
 export const G = {
   clockT: 0,   // util.js

@@ -24,6 +24,7 @@ import { CFG, rigFromGLTF } from './rigs.js';
 import { rollerRide } from './roller.js';
 import { camTarget, camera, renderer, scene, updateProjection } from './scene.js';
 import { EPISODE, G, SERIES, ball, rigs, roller } from './state.js';
+import { buildEpisodeMenu, setStartLabel } from './menu.js';
 import { say, updateBubbles } from './ui.js';
 import { $, V3 } from './util.js';
 import { TREES, buildWorld, collide } from './world.js';
@@ -83,6 +84,7 @@ function step(dt) {
 
 // ---------------------------------------------------------------- boot
 async function boot() {
+  buildEpisodeMenu();   // the 12 monthly episodes on the start screen (August playable once loaded)
   buildWorld();
   makeBall();
   const loader = new GLTFLoader();
@@ -93,7 +95,7 @@ async function boot() {
     res = await Promise.all(files.map((f) => loader.loadAsync(import.meta.env.BASE_URL + f).then((g) => { done++; bar.style.width = (done / files.length * 100) + '%'; return g; })));
   } catch (e) {
     $('err').innerHTML = 'Nem sikerült betölteni a modelleket (' + (e.message || e) + ').<br>Ellenőrizd, hogy a <code>public/</code> mappában valódi .glb fájlok vannak.';
-    $('startBtn').textContent = 'Hiba'; console.error(e); return;
+    setStartLabel('Hiba'); console.error(e); return;
   }
   const [gPetya, gAngi, gRoller, gFoci, gScooter] = res;
   rigs.petya = rigFromGLTF(gPetya, CFG.petya);
@@ -113,10 +115,10 @@ async function boot() {
   G.petya.place(-4, -5.6, Math.PI / 2); G.angi.place(-4, -6.4, Math.PI / 2);
   roller.base = new V3(-8.6, 0, -6); roller.pos.copy(roller.base); roller.dir = new V3(1, 0, 0); roller.heading = Math.PI / 2; mountRider(); rollerRide(0.016);
   G.mode = 'title'; camTarget.set(-6, 0, -6);
-  // title screen + tab title from the episode data (the HTML has the same text, so nothing flashes)
-  $('epNum').textContent = `${EPISODE.n}. rész:`; $('epDay').textContent = EPISODE.day; $('epBlurb').textContent = EPISODE.blurb;
-  document.title = `${SERIES} – ${EPISODE.n}. rész: ${EPISODE.day}`;
-  const btn = $('startBtn'); btn.disabled = false; btn.textContent = 'Indítás ▶';
+  // tab title from the episode data; the August tile becomes clickable
+  document.title = `${SERIES} – ${EPISODE.n}. rész: ${EPISODE.month}`;
+  $('loadbar').classList.add('done');
+  const btn = $('startBtn'); btn.disabled = false; setStartLabel('Indítás ▶'); btn.focus({ preventScroll: true });
   btn.onclick = () => { initAudio(); $('overlay').classList.add('hide'); runIntro(); };
   requestAnimationFrame(frame);
   window.__game = { THREE, scene, camera, renderer, petike: () => G.petike, petya: () => G.petya, angi: () => G.angi, ball, roller, keys, skipIntro, get mode() { return G.mode; }, get pstate() { return G.pstate; }, get petyaMode() { return G.petyaMode; }, use: () => { G.usePressed = true; }, roller, setZoom: (z) => { G.zoomOverride = z; G.viewSizeTarget = z; G.viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { G.kickPressed = true; setTimeout(() => { G.kickReleased = true; }, p); },

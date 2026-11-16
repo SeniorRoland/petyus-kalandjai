@@ -1,8 +1,10 @@
 # Petyus kalandjai
 
-Izometrikus, voxel stílusú 3D böngészős játéksorozat Three.js-ben. Minden rész egy napot dolgoz fel Petyus (a gyerek), Petya (apa) és Angi (anya) életéből.
+Izometrikus, voxel stílusú 3D böngészős játéksorozat Three.js-ben. Petyus (a gyerek), Petya (apa) és Angi (anya) kalandjai.
 
-**1. rész: Vasárnap** – Petya és Angi a parkban sétál, Petyus elektromos rollerrel megy utánuk, a focipályánál átöltözik, és focizni kezd – a játékos irányítja.
+A sorozat 12 részből áll, mindegyik egy hónap (augusztustól júliusig); a kezdőképernyőn mind látszik, egyelőre csak az első játszható.
+
+**1. rész: Augusztus** (vasárnap a parkban) – Petya és Angi a parkban sétál, Petyus elektromos rollerrel megy utánuk, a focipályánál átöltözik, és focizni kezd – a játékos irányítja.
 
 ## Indítás
 
