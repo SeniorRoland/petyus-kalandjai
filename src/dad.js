@@ -37,7 +37,8 @@ export function updateDad(dt) {
   if (G.petyaMode.startsWith('ftn')) return updateDadFountain(dt);
   if (G.petyaMode.startsWith('cat')) return updateDadCat(dt);
   if (G.petyaMode === 'coach') return;   // the „Fordított edzés” mischief drives him (activities/coach.js)
-  napTick(dt);
+  napTick(dt);   // (also tidies up if he was woken from his nap)
+  if (G.petyaMode === 'photo') return;   // activities/photo.js walks him to the fountain
   if (G.petyaMode === 'doze') return updateDoze(dt);   // „A szundikáló apa” (activities/nap.js)
   if (G.petyaMode === 'bench' && G.mode === 'play') { dad.benchT += dt; if (dad.benchT > DOZE_AFTER && canDoze()) { startDoze(); return; } } else dad.benchT = Math.min(dad.benchT, 0);
   if (dad.limpT > 0) dad.limpT -= dt;

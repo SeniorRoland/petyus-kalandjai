@@ -16,12 +16,15 @@ import { updateTower } from './activities/nap.js';
 import { pig, scatterCrumbs, tickCrumbs } from './activities/pigeons.js';
 import { squirtTick, updateSquirt } from './activities/squirt.js';
 import { updateSled } from './activities/sled.js';
+import { photoTick, updatePhoto } from './activities/photo.js';
+import { fishTick, updateFish } from './activities/fish.js';
 
 // ---------------------------------------------------------------- player control
 export const CAM_FWD = new V3(-1, 0, -1).normalize(), CAM_RIGHT = new V3(1, 0, -1).normalize();
 export const pvel = new V3();
 let charge = 0;
 export function updatePlayer(dt) {
+  photoTick(dt); fishTick(dt);   // background bits of the 6./7. mischief (invitation, people walking off)
   if (G.pstate === 'riding') return updateRiding(dt);
   if (G.pstate === 'toDrink' || G.pstate === 'drinking') return updateDrinking(dt);
   if (FTN_STATES.includes(G.pstate)) return updateFountainDrink(dt);
@@ -32,6 +35,8 @@ export function updatePlayer(dt) {
   squirtTick(dt);
   if (G.pstate === 'squirt') return updateSquirt(dt);
   if (G.pstate === 'sled') return updateSled(dt);
+  if (G.pstate === 'photo') return updatePhoto(dt);
+  if (G.pstate === 'fish') return updateFish(dt);
   tickCrumbs(dt);
   if (G.pstate !== 'autoBall' && interactions()) return;
   const a = G.petike;

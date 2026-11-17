@@ -1,7 +1,7 @@
 # 1. rész (Augusztus – Egy nap a parkban): csibészség-ötletek
 
 Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** a közös pontozó rendszer (`mischief.js` + napló) és az 1–5. csibészség kész; a 6–10. még terv (tetszés szerinti sorrendben).
+**Állapot:** a közös pontozó rendszer (`mischief.js` + napló) és az 1–7. csibészség kész; a 8–10. még terv (tetszés szerinti sorrendben).
 
 ## Pontozás és csibészség-napló (közös rendszer, minden csibészségre)
 
@@ -23,8 +23,8 @@ Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni
 | 3 | Galambraj-vezénylés | galamb száll apára | 8 galamb | 15 galamb, 60 mp-en belül | „Angi táskájában van valami morzsás.” | **kész** |
 | 4 | Vízipisztoly az ivókútból | 1 találat | 8 találat | 12 találat, köztük apa feje | „Az ivókútból nem csak inni lehet.” | **kész** |
 | 5 | Kutyaszán | végigér | legfeljebb 3 ütközés | ütközés nélkül a szökőkútig | „A szomszéd néni kutyája unatkozik.” | **kész** |
-| 6 | Fotóbomba | 1 elrontott fotó | 3 a 5-ből | mind az 5, és az egyiken galamb van a kezében | „Anya fotózni készül a szökőkútnál.” | terv |
-| 7 | Pénzhalászat a szökőkútból | 3 érme | 6 érme | 10 érme lebukás nélkül | „Valami csillog a szökőkút alján.” | terv |
+| 6 | Fotóbomba | 1 elrontott fotó | 3 a 5-ből | mind az 5, és az egyiken galamb van a kezében | „Anya fotózni készül a szökőkútnál.” | **kész** |
+| 7 | Pénzhalászat a szökőkútból | 3 érme | 6 érme | 10 érme lebukás nélkül | „Valami csillog a szökőkút alján.” | **kész** |
 | 8 | Rollerverseny a nyugdíjassal | célba ér | félúton vezet | legyőzi a bácsit (szélárnyékból előz a turbó előtt) | „A padon ülő bácsi gyorsnak tartja magát.” | terv |
 | 9 | Bújócska apával | 20 mp rejtőzés | 40 mp | apa feladja („Nem láttad a gyereket?”) | „Apa szeret keresgélni.” | terv |
 | 10 | Lufis bácsi | felszáll a lufikkal | eléri a labdát | eléri, és egy lufi sem pukkad ki | „Valaki lufit árul a park szélén.” | terv |
@@ -74,19 +74,21 @@ Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni
 - **Csillagok:** ★ végigér a kutyával · ★★ legfeljebb 3 ütközés · ★★★ ütközés nélkül jut el a szökőkútig (a csobbanás maga a jutalom).
 - **Megvalósítás** (`src/activities/sled.js`): rolleren egy kutyasétáltató mellett **E – Megsétáltatom a kutyát!** → „De vigyázz, Bodri erős!”, `pstate = 'sled'`. A kutya a park körsétányának egyenes szakaszán, majd 2–3 akadályon (pad, virágágyás, lámpa, kuka) át egyenesen a szökőkút felé húz (az akadályokat átugorja); Petyus 5 m-ről bekiabálja őket („Jaj, egy pad!”). A játékos csak oldalra kormányoz (WASD a kamerához képest, a póráz keresztirányában ±1,9 m). A kutya a macskák után is elkanyarodik („Bodri, NEEE! Az egy cica!”). Ütközés: a roller beleütközik egy akadályba (0,9 mp-enként egyszer számít). A végén a kutya a szökőkútba ugrik, Petyus utána: CSOBBANÁS!, a néni: „Bodri még sosem volt ilyen boldog!”, apa kiabál, Angi hozza a törölközőt. `award('kutyaszan', ütközések)` – itt a kevesebb a jobb (`lower: true` a `MISCHIEFS`-ben).
 
-## 6. Fotóbomba
+## 6. Fotóbomba  ✅ kész
 
 - **Játék:** Angi családi fotót akar a szökőkút előtt. Visszaszámlálás; a kattanás pillanatában kell bohóckodni (ugrás, nyelvöltés, galamb a kézben).
 - **Poén:** minden képen Petya pislog vagy tüsszent. A fotók polaroidként gyűlnek, és a rész végén a stáblista alatt megjelennek.
 - **Mire épül:** gyorsasági gombnyomás, filmes átvezetők (`cine.js`, `prologue.js` főcímei).
 - **Csillagok:** ★ 1 elrontott fotó · ★★ 3 az 5-ből · ★★★ mind az 5, és az egyiken galamb van a kezében.
+- **Megvalósítás** (`src/activities/photo.js`): ha apa és anya nyugton ül a padon (apa szundíthat is – Angi felkelti), és Petyus szabadon jár, 35 mp után (utána 75 mp-enként) Angi szól: „Családi fotó! Mindenki a szökőkúthoz!” – apa morogva, Angi a szökőkút déli oldalára sétál, egy kék kör jelzi Petyus helyét (ha 40 mp-ig nem jön: „Na jó… akkor majd később.”). Beállva `pstate = 'photo'`: 5 kép; Angi „3… 2… 1…”, majd változó szünet után KATT (vaku, zár hang). A kattanáskor futó póz rontja el a képet: **Szóköz / ↑** ugrás, **A / D** grimasz (nyúlfül apának, orrpiszén) – a póz kb. 0,75 mp; ha Angi a számolás közben észreveszi, előről kezdi („Petyus! Állj rendesen!”). Az egyik képnél (2.–4.) egy galamb sétál Petyus lábához: **E – galamb a kézbe!**, így az a kép biztosan elrontott, és ★★★-hoz kell. Apa minden képen pislog vagy tüsszent (HAPCI!). A képek valódi pillanatképek (a vászon kivágása), polaroidként gyűlnek a bal szélen (`#polaroids`), a végén középen nagyban: Angi és apa kommentálja. `award('fotobomba', elrontott, { pigeon })`. HUD: `#mini` (📸 kép · 🤪 elrontva). *(A stáblista alatti megjelenítés még nincs – stáblista sincs.)*
 
-## 7. Pénzhalászat a szökőkútból
+## 7. Pénzhalászat a szökőkútból  ✅ kész
 
 - **Játék:** a szökőkút alján érmék csillognak. Petyus bottal halászik, miközben új szereplő, a **parkőr bácsi** körbe-körbe járőrözik. Ha felé néz, Petyusnak mozdulatlanná kell dermednie („piros lámpa, zöld lámpa”).
 - **Poén:** a pénzből fagyit vesz, a fagyi pont Petya cipőjére esik.
 - **Mire épül:** szökőkút (`FOUNTAIN`), járókelő-rig (`makePerson`); új: parkőr, fagyis.
 - **Csillagok:** ★ 3 érme · ★★ 6 érme · ★★★ 10 érme úgy, hogy a parkőr egyszer sem veszi észre.
+- **Megvalósítás** (`src/activities/fish.js`): a szökőkút peremén **Szóköz** (az E továbbra is ivás) → `pstate = 'fish'`, 70 mp. Petyus bottal a peremen áll; 12 érme csillog a medence alján. **A / D** (bármely irány) körbeviszi a peremen (a gombot tartva végig ugyanarra megy), **Szóköz** nyomva tartva kb. 1 mp alatt kihalássza az előtte lévő érmét (a cél érme villog, a bot hegye beleér a vízbe). A **parkőr bácsi** (új szereplő, zöld egyenruha) a szökőkút körüli kövezett gyűrűn járőrözik; időnként megáll („Hmm?” – 🟡), majd odanéz (🔴, 1,6–2,8 mp): ha ilyenkor Petyus mozog vagy halászik → síp, „Hé, fiatalember! A szökőkút nem pénztárca!”, egy érme visszakerül a vízbe; 3 lebukás után vége. A szökőkút középső oszlopa eltakar előle. **E** idő előtt befejezi. Legalább 3 érmével: begurul a fagyis kocsi (csengő), Petyus vesz egy gombócot (az érmék számától függ a mérete), odaviszi apának a padhoz: „Honnan volt rá pénzed?” – „…A szökőkútból.” – a gombóc PLACCS apa cipőjére: „…Ez az új cipőm volt.” Angi: „Legalább csokis.” `award('penzhalasz', érmék, { seen })`. HUD: `#mini` (🪙 · ⏱ · lámpa), tipp: `#fishTip`.
 
 ## 8. Rollerverseny a nyugdíjassal
 

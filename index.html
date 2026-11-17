@@ -203,6 +203,18 @@
   #mini { position:fixed; right:14px; top:60px; z-index:10; display:none; background:#fffdf3; color:#151515; border:3px solid #151515; border-radius:12px;
     box-shadow:3px 3px 0 #151515; padding:4px 12px; font-family:'Bangers', Impact, sans-serif; font-size:19px; letter-spacing:1px; }
   body.cine #mini { opacity:0; }
+  #polaroids { position:fixed; left:14px; top:64px; z-index:9; display:none; flex-direction:column; gap:6px; pointer-events:none; }
+  #polaroids.show { display:flex; }
+  #polaroids .pol { background:#fff; padding:5px 5px 4px; border:2px solid #151515; box-shadow:3px 3px 0 rgba(0,0,0,.35); transform:rotate(var(--rot)); width:92px; animation:polIn .35s ease-out; }
+  #polaroids .pol img, #polaroids .pol .noimg { display:block; width:92px; height:92px; background:#9cc; object-fit:cover; }
+  #polaroids .pol span { display:block; font-family:'Patrick Hand', sans-serif; font-size:13px; line-height:1.1; text-align:center; color:#151515; margin-top:3px; }
+  #polaroids .pol.bomb span { color:#c2410c; }
+  #polaroids.review { left:50%; top:50%; transform:translate(-50%,-50%); flex-direction:row; flex-wrap:wrap; justify-content:center; max-width:94vw; gap:12px; }
+  #polaroids.review .pol { width:150px; } #polaroids.review .pol img, #polaroids.review .pol .noimg { width:150px; height:150px; } #polaroids.review .pol span { font-size:17px; }
+  @keyframes polIn { from { transform:translateY(-30px) rotate(0deg) scale(1.4); opacity:0; } }
+  #fishTip { position:fixed; left:50%; top:62px; transform:translateX(-50%); z-index:10; display:none; background:#fffdf3; color:#151515; border:3px solid #151515; border-radius:12px;
+    box-shadow:3px 3px 0 #151515; padding:5px 12px; font-family:'Patrick Hand', sans-serif; font-size:17px; text-align:center; max-width:92vw; }
+  #fishTip.show { display:block; }
   #crumbs { position:fixed; right:14px; top:60px; z-index:10; display:none; background:#fffdf3; color:#151515; border:3px solid #151515; border-radius:12px;
     box-shadow:3px 3px 0 #151515; padding:4px 12px; font-family:'Bangers', Impact, sans-serif; font-size:19px; letter-spacing:1px; }
   #crumbs .late { color:#c2410c; }
@@ -251,6 +263,8 @@
   <div id="twHint">SZÓKÖZ vagy E – rátenni, amikor a jel a zöldben van · horkolásnál remeg!</div>
 </div>
 <div id="mini"></div>
+<div id="polaroids"></div>
+<div id="fishTip"></div>
 <div id="crumbs">🥖 Morzsa · <span>⏱ <span id="crTime">90</span></span> · 🐦 <span id="crBirds">0</span></div>
 <div id="juggle">
   <div id="jCount">0</div><div id="jLabel">dekázás</div>

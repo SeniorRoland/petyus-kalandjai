@@ -56,6 +56,7 @@ export const followers = () => pigeons.filter((pg) => pg.state === 'follow');
 
 // called for every pigeon by npcs.js; returns true if it handled (and placed) the bird
 export function pigeonHook(pg, dt) {
+  if (pg.hook) return pg.hook(pg, dt);   // driven by another mischief (activities/photo.js)
   const p = pg.p, P = G.petike.pos;
   if (pg.state === 'idle' && pig.active && !pig.done && pg.pos.distanceTo(P) < 3.5) follow(pg);   // with a bag of crumbs he is not scary
   if (pg.state === 'follow') {
