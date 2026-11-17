@@ -14,6 +14,7 @@ import { mountScooter } from './scooter.js';
 import { canTower, startTower } from './nap.js';
 import { askCrumbs, canAskCrumbs, canDump, dumpOnDad, pig } from './pigeons.js';
 import { startSquirt } from './squirt.js';
+import { canFish, startFish } from './fish.js';
 
 // ---------------------------------------------------------------- play activities: drinking fountain, scooter, worried dad
 const DRINK = { x: 28.3, z: -12.9, stand: [28.3, -12.36] };
@@ -32,10 +33,12 @@ export function interactions() {
   const canDrink = dDrink < 1.6, canRide = dRoll < 1.5 && !roller.rider, canFtn = dFtn < FOUNTAIN.r + 1.0;
   const canJug = canJuggle(), canCoach = canChallengeDad(), canDmp = canDump(), canTwr = canTower(), canCrumb = canAskCrumbs();
   // the bench mischiefs win over the scooter leaning right next to dad
-  setPrompt(canDrink ? (pig.active ? 'E – inni az ivókútból' : isTouch ? 'HASZNÁL – inni · RÚGÁS – vízipisztoly!' : 'E – inni · Szóköz – vízipisztoly!') : canDmp ? 'E – Morzsa apára!' : canTwr ? 'E – Torony apa fejére (csitt!)' : canRide ? 'E – felszállni a rollerre' : canFtn ? 'E – inni a szökőkútból'
+  setPrompt(canDrink ? (pig.active ? 'E – inni az ivókútból' : isTouch ? 'HASZNÁL – inni · RÚGÁS – vízipisztoly!' : 'E – inni · Szóköz – vízipisztoly!') : canDmp ? 'E – Morzsa apára!' : canTwr ? 'E – Torony apa fejére (csitt!)' : canRide ? 'E – felszállni a rollerre' : canFtn ? (pig.active ? 'E – inni a szökőkútból' : isTouch ? 'HASZNÁL – inni a szökőkútból · RÚGÁS – pénzhalászat' : 'E – inni a szökőkútból · Szóköz – pénzhalászat')
     : canCoach ? 'E – Mutasd te, apa!' : canCrumb ? 'E – Anya, van egy kis morzsád?' : pig.active && !pig.done ? (isTouch ? 'RÚGÁS – morzsát szórni' : 'Szóköz – morzsát szórni') : canJug ? (isTouch ? 'Dekázás' : 'Q – dekázás') : '');
   if (G.qPressed) { G.qPressed = false; if (canJug) { startJuggle(); return true; } }
   if (canDrink && G.kickPressed && !pig.active) { G.kickPressed = false; startSquirt(); return true; }   // 4. csibészség: „Vízipisztoly az ivókútból”
+  const atRim = canFtn && !canDrink && !canDmp && !canTwr && !canRide;
+  if (atRim && G.kickPressed && !pig.active && canFish()) { G.kickPressed = false; startFish(); return true; }   // 7. csibészség: „Pénzhalászat a szökőkútból”
   if (!G.usePressed) return false;
   G.usePressed = false;
   if (canDrink) { startDrink(); return true; }

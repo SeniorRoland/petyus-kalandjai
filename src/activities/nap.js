@@ -30,7 +30,7 @@ const ITEMS = [   // what goes on his head, bottom to top (h = height of the ite
   { name: 'pitypang', icon: '🌼', h: 0.12, mk: (b) => { b.bx(0, 0.05, 0, 0.02, 0.1, 0.02, 0x3a8f3a, 0, 0); b.bx(0, 0.11, 0, 0.08, 0.06, 0.08, 0xf2f2f2, 0, 0.05); } },
   { name: 'a labda', icon: '⚽', h: 0.34, mk: null },   // the real ball look-alike on top
 ];
-const nap = { asleep: false, t: 0, snoreT: 2, loud: 0, jolt: 0, game: false, n: 0, phase: 0, tower: null, items: [], fallT: -1, msgT: 0 };
+export const nap = { asleep: false, t: 0, snoreT: 2, loud: 0, jolt: 0, game: false, n: 0, phase: 0, tower: null, items: [], fallT: -1, msgT: 0 };
 
 // ---------- dozing (dad.js calls these while petyaMode is 'doze')
 export function canDoze() { return G.pstate === 'free' && G.petike.pos.distanceTo(G.petya.pos) > 3; }

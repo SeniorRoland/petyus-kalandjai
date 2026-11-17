@@ -14,7 +14,7 @@ export function updateCamera(dt) {
     tx = (G.petya.pos.x + G.angi.pos.x + rp.x) / 3; tz = (G.petya.pos.z + G.angi.pos.z + rp.z) / 3;
     G.viewSizeTarget = G.zoomOverride || 7.5;
   } else if (G.mode === 'play') {
-    const bw = G.pstate === 'riding' ? 0 : 0.25 * Math.min(1, G.zoom);   // close up, keep Petyus in the middle rather than leaning towards the ball
+    const bw = G.pstate === 'free' || G.pstate === 'autoBall' ? 0.25 * Math.min(1, G.zoom) : 0;   // lean towards the ball only while playing football (close up: less)
     tx = G.petike.pos.x + (ball.active ? (ball.pos.x - G.petike.pos.x) * bw : 0); tz = G.petike.pos.z + (ball.active ? (ball.pos.z - G.petike.pos.z) * bw : 0);
   } else { tx = 0; tz = -4; }
   const ck = cine.on ? 3.5 / Math.max(0.3, cine.slow) : 3;   // the cutscene camera keeps up even in slow motion
