@@ -20,11 +20,11 @@
   #overlay.hide { opacity:0; pointer-events:none; }
   #coverBg { position:fixed; inset:-30px; background:url(kezdokep.webp) center / cover no-repeat; filter:blur(7px) brightness(.5) saturate(1.15); z-index:0; }
   #overlay > *:not(#coverBg) { position:relative; z-index:1; }
-  #overlay h1 { font-family:'Bangers', Impact, sans-serif; font-weight:400; font-size:clamp(40px,7vw,86px); margin:0; color:#ffd166; letter-spacing:3px;
+  #overlay h1 { font-family:'Bangers', Impact, sans-serif; font-weight:400; font-size:clamp(52px,9.5vw,124px); margin:4vh 0 0; color:#ffd166; letter-spacing:4px;
     -webkit-text-stroke:2px #151515; paint-order:stroke fill; text-shadow:5px 5px 0 #151515; line-height:1; text-align:center; }
   #overlay .tag { margin:0; color:#fff; font-family:'Patrick Hand', 'Comic Sans MS', cursive; font-size:clamp(17px,2vw,22px); text-shadow:0 2px 4px rgba(0,0,0,.6); text-align:center; }
   #episodes { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; padding:8px; border-radius:6px; background:#151515;
-    width:min(1120px, 100%, calc((100vh - 200px) * 2.3)); box-shadow:0 10px 40px rgba(0,0,0,.55); }
+    width:min(880px, 100%, calc((100vh - 300px) * 2)); box-shadow:0 10px 40px rgba(0,0,0,.55); margin-top:1.5vh; }
   /* wide panels like the season images (512×286) */
   .ep { position:relative; aspect-ratio:16 / 9; overflow:hidden; border:0; padding:0; margin:0; font:inherit; text-align:left; color:#151515; border-radius:3px;
     background:linear-gradient(160deg, var(--c1, #8fd3ff), var(--c2, #3a7d44)); }
@@ -63,8 +63,12 @@
   #hud { position:fixed; left:14px; top:12px; z-index:10; color:#fff; font-weight:bold; font-size:22px;
     text-shadow:0 2px 0 rgba(0,0,0,.35); display:none; }
   #hud .chip { background:rgba(43,45,66,.55); padding:6px 14px; border-radius:12px; display:inline-block; }
-  #help { position:fixed; left:14px; bottom:12px; z-index:10; color:#fff; background:rgba(43,45,66,.6);
-    padding:10px 14px; border-radius:12px; font-size:14px; line-height:1.55; display:none; max-width:430px; }
+  /* help: right-hand side, one key per row (key column right-aligned, description left) */
+  #help { position:fixed; right:14px; bottom:12px; z-index:10; color:#fff; background:rgba(43,45,66,.6);
+    padding:9px 14px; border-radius:12px; font-size:13.5px; line-height:1.45; display:none; max-width:min(390px, 46vw); }
+  #help dl { display:grid; grid-template-columns:auto 1fr; column-gap:10px; margin:0; }
+  #help dt { color:#ffd166; font-weight:bold; text-align:right; white-space:nowrap; }
+  #help dd { margin:0; }
   #help b { color:#ffd166; }
   #topright { position:fixed; right:12px; top:12px; z-index:19; display:flex; gap:8px; }
   .btn { font:inherit; font-weight:bold; font-size:15px; border:0; border-radius:10px; padding:8px 14px; cursor:pointer;
@@ -277,12 +281,19 @@
   <button class="btn" id="journalBtn" title="Csibészség-napló (N)">📒</button>
   <button class="btn" id="muteBtn">🔊</button>
 </div>
-<div id="help">
-  <b>WASD / nyilak</b> – mozgás &nbsp; <b>Shift</b> – futás<br>
-  <b>Szóköz</b> – rúgás (tartsd nyomva az erősebb, magasabb lövéshez)<br>
-  <b>E</b> – ivókút / roller fel-le &nbsp; <b>R</b> – labda ide<br>
-  <b>N</b> – csibészség-napló &nbsp; <b>Q</b> – dekázás a labda mellett (<b>← → ↑</b>, amikor a kör ráér a gombra)<br><b>Görgő</b> / <b>+ −</b> – zoom (<b>0</b>: alap) &nbsp; <b>M</b> – hang &nbsp; <b>H</b> – súgó elrejtése
-</div>
+<div id="help"><dl>
+  <dt>WASD / nyilak</dt><dd>mozgás</dd>
+  <dt>Shift</dt><dd>futás</dd>
+  <dt>Szóköz</dt><dd>rúgás (nyomva tartva erősebb, magasabb)</dd>
+  <dt>E</dt><dd>használat: ivókút, roller fel-le, …</dd>
+  <dt>Q</dt><dd>dekázás a labda mellett</dd>
+  <dt>← → ↑</dt><dd>dekázáskor, amikor a kör ráér a gombra</dd>
+  <dt>R</dt><dd>labda ide</dd>
+  <dt>N</dt><dd>csibészség-napló</dd>
+  <dt>Görgő / + −</dt><dd>zoom (0: alap)</dd>
+  <dt>M</dt><dd>hang</dd>
+  <dt>H</dt><dd>súgó elrejtése</dd>
+</dl></div>
 <div id="charge"><div></div></div>
 <div id="big">GÓÓÓL!</div>
 <div id="toast"></div>

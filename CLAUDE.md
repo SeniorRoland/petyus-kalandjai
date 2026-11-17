@@ -18,7 +18,7 @@ Izometrikus, voxel stílusú 3D böngészős **játéksorozat** (Three.js r187 +
 
 | Fájl | Tartalom |
 |---|---|
-| `index.html` | UI (start képernyő, HUD, súgó, buborékok, érintéses vezérlők, `#prompt` interakciós felirat) |
+| `index.html` | UI (start képernyő: nagy cím fent, alatta a 12 rész kisebb csempéi; HUD; súgó `#help` a jobb alsó sarokban, gombonként egy sor – `<dl>`: gomb · leírás, **H** rejti; buborékok, érintéses vezérlők, `#prompt` interakciós felirat) |
 | `src/main.js` + `src/*.js`, `src/activities/*.js` | a játék ES-modulokra bontva (belépési pont: `main.js`, lásd lent) |
 | `src/voxels.js` | voxel objektumkönyvtár: `VoxelGrid`, `CATALOG`, `getGeometry(id, variant)` |
 | `src/designterv.js` | a 3D katalógus oldal logikája |
