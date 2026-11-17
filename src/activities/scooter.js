@@ -11,6 +11,7 @@ import { say } from '../ui.js';
 import { $, angDiff, clamp, damp, pick } from '../util.js';
 import { GX0, GX1, GZ0, GZ1, addCircleCol, collide, colliders, groundH } from '../world.js';
 import { setPrompt } from './drinking.js';
+import { sledDog, startSled } from './sled.js';
 
 // ---------- scooter
 export function mountScooter() {
@@ -36,8 +37,9 @@ function dismountScooter() {
 }
 export function updateRiding(dt) {
   const ro = roller, a = G.petike;
-  if (G.usePressed) { G.usePressed = false; dismountScooter(); return; }
-  setPrompt('E – leszállni a rollerről');
+  const dog = sledDog();   // 5. csibészség: „Kutyaszán” – a dog walker right here
+  if (G.usePressed) { G.usePressed = false; if (dog) return startSled(dog); dismountScooter(); return; }
+  setPrompt(dog ? 'E – Megsétáltatom a kutyát!' : 'E – leszállni a rollerről');
   let ix = 0, iy = 0;
   if (keys.KeyA || keys.ArrowLeft) ix -= 1; if (keys.KeyD || keys.ArrowRight) ix += 1;
   if (keys.KeyW || keys.ArrowUp) iy += 1; if (keys.KeyS || keys.ArrowDown) iy -= 1;
