@@ -46,7 +46,7 @@ export function buildPeople() {
   const dogCols = [[0xc68642, 0x8a5a2b], [0x2b2b2b, 0xf0f0f0], [0xe6c27a, 0xb08850], [0xffffff, 0x8a5a2b]];
   for (const owner of [npcs[1], npcs[5]]) {
     const [ca, cb] = pick(dogCols); const d = makeDog(ca, cb, R(0.9, 1.15)); scene.add(d.root);
-    const leash = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(), new V3()]), new THREE.LineBasicMaterial({ color: 0xc0392b })); scene.add(leash);
+    const leash = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(), new V3()]), new THREE.LineBasicMaterial({ color: 0xc0392b })); leash.frustumCulled = false; scene.add(leash);   // setFromPoints doesn't refresh the bounding sphere
     animals.push({ a: d, type: 'leashed', owner: owner.actor, pos: owner.actor.pos.clone(), heading: 0, phase: 0, leash, barkCd: 0 });
   }
   const free = makeDog(0xe6c27a, 0xb08850, 1.2); scene.add(free.root);

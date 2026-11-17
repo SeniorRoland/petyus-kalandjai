@@ -130,7 +130,8 @@ export function updateSled(dt) {
 // the leash from Petyus' hand to the dog's collar (npcs.js draws the dog, we draw the leash while sledding)
 function leash() {
   const an = sl.dog, hp = new V3();
-  G.petike.rig.sh[1].getWorldPosition(hp); hp.y -= 0.35;
+  const r = G.petike.rig, hb = r.handBones && r.handBones[1];   // the skinned rig's sh[] are proxies outside the scene graph – use the real hand bone
+  if (hb) { r.root.updateMatrixWorld(true); hb.getWorldPosition(hp); } else { r.sh[1].getWorldPosition(hp); hp.y -= 0.35; }
   an.sledLeash = [hp, new V3(an.pos.x + Math.sin(an.heading) * 0.2 * an.a.s, 0.38 * an.a.s + (an.y || 0), an.pos.z + Math.cos(an.heading) * 0.2 * an.a.s)];
 }
 function leap() {
