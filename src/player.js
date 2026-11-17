@@ -14,6 +14,8 @@ import { GX0, GX1, GZ0, GZ1, PITCH, collide } from './world.js';
 import { updateCoach } from './activities/coach.js';
 import { updateTower } from './activities/nap.js';
 import { pig, scatterCrumbs, tickCrumbs } from './activities/pigeons.js';
+import { squirtTick, updateSquirt } from './activities/squirt.js';
+import { updateSled } from './activities/sled.js';
 
 // ---------------------------------------------------------------- player control
 export const CAM_FWD = new V3(-1, 0, -1).normalize(), CAM_RIGHT = new V3(1, 0, -1).normalize();
@@ -27,6 +29,9 @@ export function updatePlayer(dt) {
   if (G.pstate === 'juggle') return updateJuggle(dt);
   if (G.pstate === 'coach') return updateCoach(dt);
   if (G.pstate === 'tower') return updateTower(dt);
+  squirtTick(dt);
+  if (G.pstate === 'squirt') return updateSquirt(dt);
+  if (G.pstate === 'sled') return updateSled(dt);
   tickCrumbs(dt);
   if (G.pstate !== 'autoBall' && interactions()) return;
   const a = G.petike;

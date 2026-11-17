@@ -9,8 +9,8 @@ export const MISCHIEFS = [
   { id: 'apa-dekaz', title: 'Fordított edzés', hint: 'Apa mindig okosabb… vagy mégsem? (vidd oda neki a labdát)', fmt: (v) => `apa ${v} érintést bírt`, stars: (v) => 1 + (v >= 8) + (v >= 15) },
   { id: 'szundi', title: 'A szundikáló apa', hint: 'Ha apa sokáig ül a padon… (hagyd egy kicsit pihenni)', fmt: (v) => `${v} tárgy apa fején`, stars: (v) => 1 + (v >= 6) + (v >= 10) },
   { id: 'galamb', title: 'Galambraj-vezénylés', hint: 'Angi táskájában van valami morzsás.', fmt: (v, x) => `${v} galamb apán` + (x && x.t ? ` (${Math.round(x.t)} mp)` : ''), stars: (v, x) => 1 + (v >= 8) + (v >= 15 && x.t <= 60) },
-  { id: 'vizipisztoly', title: 'Vízipisztoly az ivókútból', hint: 'Az ivókútból nem csak inni lehet.' },
-  { id: 'kutyaszan', title: 'Kutyaszán', hint: 'A szomszéd néni kutyája unatkozik.' },
+  { id: 'vizipisztoly', title: 'Vízipisztoly az ivókútból', hint: 'Az ivókútból nem csak inni lehet. (Szóköz az ivókútnál)', fmt: (v, x) => `${v} találat` + (x && x.dad ? ', apa is ázott' : ''), stars: (v, x) => 1 + (v >= 8) + (v >= 12 && !!x.dad) },
+  { id: 'kutyaszan', title: 'Kutyaszán', hint: 'A szomszéd néni kutyája unatkozik. (rollerrel menj oda)', lower: true, fmt: (v) => v === 0 ? 'ütközés nélkül a szökőkútig' : `${v} ütközéssel a szökőkútig`, stars: (v) => 1 + (v <= 3) + (v === 0) },
   { id: 'fotobomba', title: 'Fotóbomba', hint: 'Anya fotózni készül a szökőkútnál.' },
   { id: 'penzhalasz', title: 'Pénzhalászat a szökőkútból', hint: 'Valami csillog a szökőkút alján.' },
   { id: 'rollerverseny', title: 'Rollerverseny a nyugdíjassal', hint: 'A padon ülő bácsi gyorsnak tartja magát.' },
@@ -29,8 +29,9 @@ export const doneCount = () => MISCHIEFS.filter((m) => saved[m.id]).length;
 export function award(id, value, extra = {}) {
   const m = MISCHIEFS.find((x) => x.id === id); if (!m) return 0;
   const stars = clamp(m.stars ? m.stars(value, extra) : 1, 1, 3), prev = saved[id];
-  const best = prev ? Math.max(prev.best, value) : value;
-  const improved = !prev || best > prev.best || stars > prev.stars;
+  // best result: the highest – or the lowest for „fewer is better” (m.lower, e.g. collisions)
+  const best = prev ? (m.lower ? Math.min(prev.best, value) : Math.max(prev.best, value)) : value;
+  const improved = !prev || (m.lower ? best < prev.best : best > prev.best) || stars > prev.stars;
   saved[id] = { stars: Math.max(stars, prev ? prev.stars : 0), best, x: improved ? extra : prev.x, at: prev && !improved ? prev.at : Date.now() };
   save(); refreshTotals();
   showAward(m, stars, value, !prev, improved && !!prev, extra);

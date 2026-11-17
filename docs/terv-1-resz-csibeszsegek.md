@@ -21,8 +21,8 @@ Javasolt sorrend: **1 → 2 → 3**, utána tetszés szerint. Elsőként a köz�
 | 1 | Fordított edzés: Petyus tanítja apát dekázni | apa dekáz | 8 érintés | 15 érintés | „Apa mindig okosabb… vagy mégsem?” | **kész** |
 | 2 | A szundikáló apa | 3 tárgy a fején | 6 tárgy | 10 tárgy, a tetején a labda | „Ha apa sokáig ül a padon…” | **kész** |
 | 3 | Galambraj-vezénylés | galamb száll apára | 8 galamb | 15 galamb, 60 mp-en belül | „Angi táskájában van valami morzsás.” | **kész** |
-| 4 | Vízipisztoly az ivókútból | 1 találat | 8 találat | 12 találat, köztük apa feje | „Az ivókútból nem csak inni lehet.” | terv |
-| 5 | Kutyaszán | végigér | legfeljebb 3 ütközés | ütközés nélkül a szökőkútig | „A szomszéd néni kutyája unatkozik.” | terv |
+| 4 | Vízipisztoly az ivókútból | 1 találat | 8 találat | 12 találat, köztük apa feje | „Az ivókútból nem csak inni lehet.” | **kész** |
+| 5 | Kutyaszán | végigér | legfeljebb 3 ütközés | ütközés nélkül a szökőkútig | „A szomszéd néni kutyája unatkozik.” | **kész** |
 | 6 | Fotóbomba | 1 elrontott fotó | 3 a 5-ből | mind az 5, és az egyiken galamb van a kezében | „Anya fotózni készül a szökőkútnál.” | terv |
 | 7 | Pénzhalászat a szökőkútból | 3 érme | 6 érme | 10 érme lebukás nélkül | „Valami csillog a szökőkút alján.” | terv |
 | 8 | Rollerverseny a nyugdíjassal | célba ér | félúton vezet | legyőzi a bácsit (szélárnyékból előz a turbó előtt) | „A padon ülő bácsi gyorsnak tartja magát.” | terv |
@@ -64,6 +64,7 @@ Javasolt sorrend: **1 → 2 → 3**, utána tetszés szerint. Elsőként a köz�
 - **Poén:** ha Petyát éri: „Ez nem vízipisztoly! Ez ivókút! IVÓ-KÚT!” Ha Angit, ő visszafröcsköl.
 - **Mire épül:** ivókút (`DRINK`, `activities/drinking.js`), vízcsepp-effektek (`spawnFx`), járókelők (`npcs`).
 - **Csillagok:** ★ 1 találat · ★★ 8 találat · ★★★ 12 találat, köztük apa feje (a találatszám a mért érték).
+- **Megvalósítás** (`src/activities/squirt.js`): az ivókútnál **Szóköz** (érintőn RÚGÁS; morzsás zacskóval nem) → `pstate = 'squirt'`, 25 mp. A sugár becsapódási pontját egy kék gyűrű jelzi: **WASD / nyilak** képernyő-irányban mozgatják (1,8–7,2 m a csaptól), **Szóköz** nyomva tartva fröcsköl (parabola-cseppek). Közben 5 ideiglenes járókelő sétál a pálya melletti sétányon; eltalálva felkiáltanak és elfutnak. Apa első találatra: „Ez nem vízipisztoly! Ez ivókút! IVÓ-KÚT!”; Angi egyszer visszafröcsköl („Áááá! Hideg! Anya!”). **E** idő előtt befejezi. HUD: `#mini` (💦 találat · ⏱). Utána a járókelők kisétálnak és eltűnnek. `award('vizipisztoly', találat, { dad })`.
 
 ## 5. Kutyaszán
 
@@ -71,6 +72,7 @@ Javasolt sorrend: **1 → 2 → 3**, utána tetszés szerint. Elsőként a köz�
 - **Poén:** a vége mindig a szökőkút vagy egy virágágyás. A néni: „Bodri még sosem volt ilyen boldog!”
 - **Mire épül:** rollerezés (`activities/scooter.js`, `updateRiding`), kutyák és macskák (`animals`), ütközők (`collide`).
 - **Csillagok:** ★ végigér a kutyával · ★★ legfeljebb 3 ütközés · ★★★ ütközés nélkül jut el a szökőkútig (a csobbanás maga a jutalom).
+- **Megvalósítás** (`src/activities/sled.js`): rolleren egy kutyasétáltató mellett **E – Megsétáltatom a kutyát!** → „De vigyázz, Bodri erős!”, `pstate = 'sled'`. A kutya a park körsétányának egyenes szakaszán, majd 2–3 akadályon (pad, virágágyás, lámpa, kuka) át egyenesen a szökőkút felé húz (az akadályokat átugorja); Petyus 5 m-ről bekiabálja őket („Jaj, egy pad!”). A játékos csak oldalra kormányoz (WASD a kamerához képest, a póráz keresztirányában ±1,9 m). A kutya a macskák után is elkanyarodik („Bodri, NEEE! Az egy cica!”). Ütközés: a roller beleütközik egy akadályba (0,9 mp-enként egyszer számít). A végén a kutya a szökőkútba ugrik, Petyus utána: CSOBBANÁS!, a néni: „Bodri még sosem volt ilyen boldog!”, apa kiabál, Angi hozza a törölközőt. `award('kutyaszan', ütközések)` – itt a kevesebb a jobb (`lower: true` a `MISCHIEFS`-ben).
 
 ## 6. Fotóbomba
 

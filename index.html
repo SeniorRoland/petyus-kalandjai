@@ -200,6 +200,9 @@
   #twZone.shaky { background:#ffd166; }
   #twMark { position:absolute; top:-3px; bottom:-3px; width:6px; margin-left:-3px; background:#151515; border-radius:3px; }
   #twHint { font-family:'Patrick Hand', cursive; font-size:15px; margin-top:5px; color:#444; }
+  #mini { position:fixed; right:14px; top:60px; z-index:10; display:none; background:#fffdf3; color:#151515; border:3px solid #151515; border-radius:12px;
+    box-shadow:3px 3px 0 #151515; padding:4px 12px; font-family:'Bangers', Impact, sans-serif; font-size:19px; letter-spacing:1px; }
+  body.cine #mini { opacity:0; }
   #crumbs { position:fixed; right:14px; top:60px; z-index:10; display:none; background:#fffdf3; color:#151515; border:3px solid #151515; border-radius:12px;
     box-shadow:3px 3px 0 #151515; padding:4px 12px; font-family:'Bangers', Impact, sans-serif; font-size:19px; letter-spacing:1px; }
   #crumbs .late { color:#c2410c; }
@@ -247,6 +250,7 @@
   <div id="twBar"><div id="twZone"></div><div id="twMark"></div></div>
   <div id="twHint">SZÓKÖZ vagy E – rátenni, amikor a jel a zöldben van · horkolásnál remeg!</div>
 </div>
+<div id="mini"></div>
 <div id="crumbs">🥖 Morzsa · <span>⏱ <span id="crTime">90</span></span> · 🐦 <span id="crBirds">0</span></div>
 <div id="juggle">
   <div id="jCount">0</div><div id="jLabel">dekázás</div>

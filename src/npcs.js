@@ -97,7 +97,10 @@ export function updateAnimals(dt) {
     if (an.evt) { updateEvtCat(an, dt); continue; }
     const a = an.a; let moving = 0, spd = 0;
     an.barkCd = (an.barkCd || 0) - dt;
-    if (an.type === 'leashed') {
+    if (an.type === 'leashed' && an.sled) {   // pulling Petyus' scooter (activities/sled.js moves it)
+      moving = an.sledSpd > 0.2 ? 1 : 0; spd = an.sledSpd;
+      if (an.sledLeash) an.leash.geometry.setFromPoints(an.sledLeash);
+    } else if (an.type === 'leashed') {
       const o = an.owner; const h = o.heading; const tx = o.pos.x + Math.cos(h) * 0.75 - Math.sin(h) * 0.35, tz = o.pos.z - Math.sin(h) * 0.75 - Math.cos(h) * 0.35;
       const dx = tx - an.pos.x, dz = tz - an.pos.z; const d = Math.hypot(dx, dz);
       if (d > 0.08) { spd = Math.min(3.2, d * 3); an.pos.x += dx / d * spd * dt; an.pos.z += dz / d * spd * dt; an.heading = dampAngle(an.heading, Math.atan2(dx, dz), 6, dt); moving = 1; }
@@ -125,7 +128,7 @@ export function updateAnimals(dt) {
     animLegs(a, an.phase, moving);
     a.tail.rotation.z = Math.sin(G.clockT * (an.type === 'cat' ? 2 : 12)) * (an.type === 'cat' ? 0.25 : 0.5);
     if (an.type === 'cat' && !moving) { a.legs[2].rotation.x = -1.2; a.legs[3].rotation.x = -1.2; a.body.rotation.x = -0.3; a.body.position.y = -0.04; } else a.body.rotation.x = 0;
-    a.root.position.set(an.pos.x, groundH(an.pos.x, an.pos.z), an.pos.z); a.root.rotation.y = an.heading;
+    a.root.position.set(an.pos.x, groundH(an.pos.x, an.pos.z) + (an.sled ? an.y || 0 : 0), an.pos.z); a.root.rotation.y = an.heading;
   }
   // pigeons
   for (const pg of pigeons) {
