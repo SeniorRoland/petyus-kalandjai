@@ -20,40 +20,50 @@
   #overlay.hide { opacity:0; pointer-events:none; }
   #coverBg { position:fixed; inset:-30px; background:url(kezdokep.webp) center / cover no-repeat; filter:blur(7px) brightness(.5) saturate(1.15); z-index:0; }
   #overlay > *:not(#coverBg) { position:relative; z-index:1; }
-  #overlay h1 { font-family:'Bangers', Impact, sans-serif; font-weight:400; font-size:clamp(40px,7vw,86px); margin:0; color:#ffd166; letter-spacing:3px;
+  #overlay h1 { font-family:'Bangers', Impact, sans-serif; font-weight:400; font-size:clamp(52px,9.5vw,124px); margin:4vh 0 0; color:#ffd166; letter-spacing:4px;
     -webkit-text-stroke:2px #151515; paint-order:stroke fill; text-shadow:5px 5px 0 #151515; line-height:1; text-align:center; }
   #overlay .tag { margin:0; color:#fff; font-family:'Patrick Hand', 'Comic Sans MS', cursive; font-size:clamp(17px,2vw,22px); text-shadow:0 2px 4px rgba(0,0,0,.6); text-align:center; }
-  #episodes { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; padding:8px; border-radius:6px; background:#151515;
-    width:min(1120px, 100%, calc((100vh - 200px) * 2.3)); box-shadow:0 10px 40px rgba(0,0,0,.55); }
-  /* wide panels like the season images (512×286) */
-  .ep { position:relative; aspect-ratio:16 / 9; overflow:hidden; border:0; padding:0; margin:0; font:inherit; text-align:left; color:#151515; border-radius:3px;
-    background:linear-gradient(160deg, var(--c1, #8fd3ff), var(--c2, #3a7d44)); }
-  .ep .art { position:absolute; inset:0; background:var(--img) var(--bx, 0%) var(--by, 0%) / 200% 200% no-repeat; }
+  /* the 12 monthly episodes: polaroids scattered on the table (rotation / offset per tile from menu.js: --rot, --dx, --dy) */
+  #episodes { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:22px 26px; padding:14px 18px; align-items:start;
+    width:min(900px, 100%, calc((100vh - 300px) * 1.75)); margin-top:1.5vh; }
+  .ep { position:relative; display:block; border:0; margin:0; font:inherit; text-align:left; color:#2a2a2a; cursor:default;
+    background:#fbf9f2; padding:7px 7px 0; border-radius:2px; box-shadow:0 5px 12px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.4);
+    transform:translate(var(--dx, 0), var(--dy, 0)) rotate(var(--rot, 0deg)); transition:transform .22s cubic-bezier(.3,1.5,.6,1), box-shadow .22s, filter .22s; }
+  .ep .photo { position:relative; display:block; aspect-ratio:16 / 9; overflow:hidden; background:linear-gradient(160deg, var(--c1, #8fd3ff), var(--c2, #3a7d44)); }
+  .ep .art { position:absolute; inset:0; background:var(--img) var(--bx, 0%) var(--by, 0%) / 200% 200% no-repeat; transition:filter .22s; }
   .ep .icon { position:absolute; left:0; right:0; top:14%; text-align:center; font-size:clamp(30px,4.2vw,58px); filter:drop-shadow(0 4px 0 rgba(0,0,0,.25)); }
-  .ep .cap { position:absolute; left:6px; bottom:6px; max-width:calc(100% - 12px); padding:2px 9px 3px; background:#fff; border:3px solid #151515;
-    border-radius:10px / 8px; box-shadow:3px 3px 0 #151515; }
-  .ep .num { display:inline; font-family:'Bangers', Impact, sans-serif; font-size:13px; letter-spacing:1px; color:#c2410c; margin-right:6px; }
-  .ep .month { display:inline; font-family:'Bangers', Impact, sans-serif; font-size:clamp(15px,1.7vw,21px); letter-spacing:1px; line-height:1; }
-  .ep .sub { display:block; font-family:'Patrick Hand', cursive; font-size:15px; line-height:1.05; }
-  .ep .go { display:block; margin-top:3px; padding:2px 10px 0; text-align:center; border-radius:8px; background:var(--accent); color:#fff;
-    font-family:'Bangers', Impact, sans-serif; font-size:17px; letter-spacing:1px; box-shadow:0 3px 0 #b8501f; }
-  .ep.ready { cursor:pointer; outline:4px solid #ffd166; outline-offset:-4px; animation:epGlow 1.6s ease-in-out infinite; transition:transform .15s; z-index:1; }
-  .ep.ready:hover:not(:disabled), .ep.ready:focus-visible { transform:scale(1.04); z-index:2; }
+  /* a strip of tape on some of them */
+  .ep.tape::after { content:""; position:absolute; left:50%; top:-9px; width:56px; height:18px; transform:translateX(-50%) rotate(var(--tape, -4deg));
+    background:rgba(255,246,200,.72); box-shadow:0 1px 2px rgba(0,0,0,.18); }
+  /* the handwritten caption in the white margin */
+  .ep .cap { display:block; padding:4px 2px 6px; font-family:'Patrick Hand', 'Comic Sans MS', cursive; line-height:1.05; text-align:center; }
+  .ep .num { font-size:15px; color:#8a8a8a; margin-right:5px; }
+  .ep .month { font-family:'Bangers', Impact, sans-serif; font-size:clamp(16px,1.7vw,22px); letter-spacing:1px; color:#2a2a2a; }
+  .ep .sub { display:block; font-size:16px; color:#444; }
+  .ep .stars { position:absolute; left:6px; top:6px; background:rgba(255,253,243,.95); border:2px solid #151515; border-radius:8px; padding:1px 7px 0;
+    font-family:'Bangers', Impact, sans-serif; font-size:14px; letter-spacing:1px; color:#7a5b00; }
+  .ep .go { position:absolute; right:6px; bottom:6px; padding:3px 12px 1px; border-radius:9px; background:var(--accent); color:#fff; border:2px solid #151515;
+    font-family:'Bangers', Impact, sans-serif; font-size:18px; letter-spacing:1px; box-shadow:0 3px 0 #151515; }
+  .ep .lock { position:absolute; top:6px; right:6px; z-index:1; background:#151515; color:#fff; padding:2px 7px 1px; border-radius:6px;
+    font-family:'Bangers', Impact, sans-serif; font-size:11px; letter-spacing:1px; transform:rotate(3deg); white-space:nowrap; }
+  /* the playable one glows */
+  .ep.ready { cursor:pointer; animation:epGlow 1.8s ease-in-out infinite; z-index:1; }
   .ep.ready:disabled { cursor:wait; animation:none; }
-  .ep.ready:disabled .go { background:#999; box-shadow:0 3px 0 #666; }
-  @keyframes epGlow { 50% { outline-color:#fff3a0; box-shadow:0 0 22px 4px rgba(255,209,102,.7); } }
-  .ep.locked { cursor:not-allowed; }
-  /* locked: visible, but clearly not available – faded colours under a light veil */
-  .ep.locked .art { filter:grayscale(.85) brightness(.8); }
+  .ep.ready:disabled .go { background:#999; }
+  @keyframes epGlow { 50% { box-shadow:0 0 0 4px #ffd166, 0 0 26px 6px rgba(255,209,102,.75), 0 5px 12px rgba(0,0,0,.5); } }
+  /* locked: faded photo, grey caption */
+  .ep.locked .art { filter:grayscale(.8) brightness(.82); }
   .ep.locked .icon { filter:grayscale(.55) drop-shadow(0 4px 0 rgba(0,0,0,.25)); opacity:.9; }
-  .ep.locked::before { content:""; position:absolute; inset:0; background:rgba(20,20,20,.38); }
-  .ep.locked:not(:has(.art)) { filter:saturate(.55); }
-  .ep.locked .cap { background:#d8d8d8; color:#555; box-shadow:3px 3px 0 #000; }
-  .ep.locked .num { color:#777; }
-  .ep .lock { position:absolute; top:8px; right:8px; background:#151515; color:#fff; padding:2px 7px 1px; border-radius:6px;
-    font-family:'Bangers', Impact, sans-serif; font-size:13px; letter-spacing:1px; transform:rotate(3deg); white-space:nowrap; }
-  @media (max-width: 900px), (max-height: 560px) { #episodes { grid-template-columns:repeat(3, minmax(0, 1fr)); width:100%; } #overlay { justify-content:flex-start; } }
-  @media (max-width: 560px) { #episodes { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:6px; padding:6px; } .ep .sub { font-size:13px; } .ep .lock .t { display:none; } .ep .go { font-size:15px; } .ep .num { font-size:11px; } }
+  .ep.locked .photo::after { content:""; position:absolute; inset:0; background:rgba(20,20,20,.3); transition:opacity .22s; }
+  .ep.locked .month { color:#777; }
+  /* pointing at a photo picks it up: straight, bigger, on top (the locked ones get their colours back a little) */
+  .ep:hover, .ep:focus-visible, .ep.active { transform:translate(var(--dx, 0), calc(var(--dy, 0px) - 6px)) rotate(0deg) scale(1.12); z-index:5;
+    box-shadow:0 14px 28px rgba(0,0,0,.55), 0 2px 4px rgba(0,0,0,.4); outline:none; }
+  .ep.ready:hover:not(:disabled), .ep.ready:focus-visible { animation:none; box-shadow:0 0 0 4px #ffd166, 0 14px 30px rgba(0,0,0,.55); }
+  .ep.locked:hover .art { filter:grayscale(.25) brightness(.95); }
+  .ep.locked:hover .photo::after { opacity:.35; }
+  @media (max-width: 900px), (max-height: 560px) { #episodes { grid-template-columns:repeat(3, minmax(0, 1fr)); width:100%; gap:16px 18px; } #overlay { justify-content:flex-start; } }
+  @media (max-width: 560px) { #episodes { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; padding:8px; } .ep .sub { font-size:14px; } .ep .lock .t { display:none; } .ep .go { font-size:15px; } .ep .num { font-size:12px; } }
   #loadbar { width:260px; max-width:70vw; height:8px; background:rgba(255,255,255,.35); border-radius:6px; overflow:hidden; }
   #loadbar div { height:100%; width:0; background:#ffd166; transition:width .2s; }
   #loadbar.done { visibility:hidden; }
@@ -63,8 +73,12 @@
   #hud { position:fixed; left:14px; top:12px; z-index:10; color:#fff; font-weight:bold; font-size:22px;
     text-shadow:0 2px 0 rgba(0,0,0,.35); display:none; }
   #hud .chip { background:rgba(43,45,66,.55); padding:6px 14px; border-radius:12px; display:inline-block; }
-  #help { position:fixed; left:14px; bottom:12px; z-index:10; color:#fff; background:rgba(43,45,66,.6);
-    padding:10px 14px; border-radius:12px; font-size:14px; line-height:1.55; display:none; max-width:430px; }
+  /* help: right-hand side, one key per row (key column right-aligned, description left) */
+  #help { position:fixed; right:14px; bottom:12px; z-index:10; color:#fff; background:rgba(43,45,66,.6);
+    padding:9px 14px; border-radius:12px; font-size:13.5px; line-height:1.45; display:none; max-width:min(390px, 46vw); }
+  #help dl { display:grid; grid-template-columns:auto 1fr; column-gap:10px; margin:0; }
+  #help dt { color:#ffd166; font-weight:bold; text-align:right; white-space:nowrap; }
+  #help dd { margin:0; }
   #help b { color:#ffd166; }
   #topright { position:fixed; right:12px; top:12px; z-index:19; display:flex; gap:8px; }
   .btn { font:inherit; font-weight:bold; font-size:15px; border:0; border-radius:10px; padding:8px 14px; cursor:pointer;
@@ -187,7 +201,6 @@
   .jr.todo .nm { color:#999; } .jr.todo .info { color:#777; font-style:italic; } .jr.todo .stars { color:#e4e4e4; }
   #journalLink { font-family:'Bangers', Impact, sans-serif; font-size:20px; letter-spacing:1px; background:#fffdf3; color:#151515; border:3px solid #151515;
     border-radius:10px; padding:3px 14px 1px; box-shadow:3px 3px 0 #151515; cursor:pointer; }
-  .ep .stars { display:block; font-family:'Bangers', Impact, sans-serif; font-size:14px; letter-spacing:1px; color:#7a5b00; }
 
   /* mischief 2: the tower on dad's head (timing bar) · mischief 3: the bag of crumbs */
   #tower { position:fixed; left:50%; bottom:12vh; transform:translateX(-50%); z-index:14; display:none; width:min(420px, 90vw); text-align:center;
@@ -277,12 +290,19 @@
   <button class="btn" id="journalBtn" title="Csibészség-napló (N)">📒</button>
   <button class="btn" id="muteBtn">🔊</button>
 </div>
-<div id="help">
-  <b>WASD / nyilak</b> – mozgás &nbsp; <b>Shift</b> – futás<br>
-  <b>Szóköz</b> – rúgás (tartsd nyomva az erősebb, magasabb lövéshez)<br>
-  <b>E</b> – ivókút / roller fel-le &nbsp; <b>R</b> – labda ide<br>
-  <b>N</b> – csibészség-napló &nbsp; <b>Q</b> – dekázás a labda mellett (<b>← → ↑</b>, amikor a kör ráér a gombra)<br><b>Görgő</b> / <b>+ −</b> – zoom (<b>0</b>: alap) &nbsp; <b>M</b> – hang &nbsp; <b>H</b> – súgó elrejtése
-</div>
+<div id="help"><dl>
+  <dt>WASD / nyilak</dt><dd>mozgás</dd>
+  <dt>Shift</dt><dd>futás</dd>
+  <dt>Szóköz</dt><dd>rúgás (nyomva tartva erősebb, magasabb)</dd>
+  <dt>E</dt><dd>használat: ivókút, roller fel-le, …</dd>
+  <dt>Q</dt><dd>dekázás a labda mellett</dd>
+  <dt>← → ↑</dt><dd>dekázáskor, amikor a kör ráér a gombra</dd>
+  <dt>R</dt><dd>labda ide</dd>
+  <dt>N</dt><dd>csibészség-napló</dd>
+  <dt>Görgő / + −</dt><dd>zoom (0: alap)</dd>
+  <dt>M</dt><dd>hang</dd>
+  <dt>H</dt><dd>súgó elrejtése</dd>
+</dl></div>
 <div id="charge"><div></div></div>
 <div id="big">GÓÓÓL!</div>
 <div id="toast"></div>
