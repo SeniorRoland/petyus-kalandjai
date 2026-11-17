@@ -221,7 +221,7 @@ function startFinale() {
     [1.6, () => {
       award('penzhalasz', n, { seen: fi.seen });
       G.pstate = 'free'; fi.end = '';
-      if (fi.cone) { scene.remove(fi.cone.g); fi.cone = null; }
+      if (fi.cone) { scene.remove(fi.cone.g); fi.cone = null; if (a.rig.elbow) a.rig.elbow[0] = 0; }
       fi.vendor.walkTo([[16.8, -5.4], [22, -11.2], [60, -11.2]], 1.6); fi.cartGo = true; fi.leaving.push(fi.vendor); fi.vendor = null; fi.leaveT = 14;
       setTimeout(() => { if (fi.scoop) { scene.remove(fi.scoop); fi.scoop = null; } }, 15000);
     }],
@@ -231,14 +231,22 @@ function dropScoop() {
   const s = fi.cone.s, from = new V3(); s.getWorldPosition(from); fi.cone.g.remove(s); scene.add(s); s.position.copy(from);
   const P = G.petya.pos; fi.scoop = s; fi.drop = { from, to: new V3(P.x + 0.11, 0.08, P.z + 0.5), t: 0 };
 }
+// the ice cream in the right fist: forearm up, hand in front of the chest (also while walking), the cone stuck in the fist
+export const HOLD = { sh: -0.55, shz: 0.12, elbow: 1.45, grip: 0.06, up: 0.03 };
+function holdCone() {
+  const a = G.petike, r = a.rig;
+  r.sh[0].rotation.x = HOLD.sh; r.sh[0].rotation.z = HOLD.shz; if (r.elbow) r.elbow[0] = HOLD.elbow; a.sync();
+  const hb = r.handBones, hp = new V3();
+  if (!hb) { fi.cone.g.position.set(a.pos.x, 1.0, a.pos.z); return; }
+  r.root.updateMatrixWorld(true); hb[0].getWorldPosition(hp);
+  const fp = new V3(); r.foreBones[0].getWorldPosition(fp);
+  const dir = hp.clone().sub(fp).normalize();   // along the forearm, towards the fingers
+  fi.cone.g.position.copy(hp).addScaledVector(dir, HOLD.grip); fi.cone.g.position.y += HOLD.up;
+}
 function updateFinale(dt) {
   const a = G.petike;
   a.update(dt);
-  if (fi.cone) {
-    const hb = a.rig.handBones, hp = new V3(); if (hb) { a.rig.root.updateMatrixWorld(true); hb[0].getWorldPosition(hp); } else hp.set(a.pos.x, 0.9, a.pos.z);
-    fi.cone.g.position.set(hp.x, hp.y + 0.12, hp.z);
-    if (!a.path) { a.rig.sh[0].rotation.x = -0.9; a.sync(); }
-  }
+  if (fi.cone) holdCone();
   if (fi.drop) {
     const d = fi.drop; d.t = Math.min(1, d.t + dt / 0.45); fi.scoop.position.lerpVectors(d.from, d.to, d.t); fi.scoop.position.y = d.from.y + (d.to.y - d.from.y) * d.t * d.t;
     if (d.t >= 1) {
