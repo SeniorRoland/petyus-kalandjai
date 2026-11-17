@@ -37,7 +37,7 @@ Izometrikus, voxel stílusú 3D böngészős **játéksorozat** (Three.js r187 +
 | `world.js` | voxel batch, csempék/talaj, ütközők, világépítés, voxel-kellékek, `TREES` |
 | `rigs.js` · `actors.js` | karakter-rigek · `Actor`, állatmodellek, FX |
 | `audio.js` · `ambience.js` | szintetizált hangok, `soundAt` · környezeti hangok |
-| `menu.js` | kezdőképernyő: a 12 havi rész csempéi (`buildEpisodeMenu`, `setStartLabel`) |
+| `menu.js` | kezdőképernyő: a 12 havi rész szétszórt polaroidokként (`buildEpisodeMenu`: részenként rögzített `--rot`/`--dx`/`--dy`, minden harmadikon ragasztószalag; egér alatt kiegyenesedik, megnő, előre jön), `setStartLabel` |
 | `mischief.js` | csibészségek: `MISCHIEFS` (id, cím, napló-tipp, `stars(eredmény, extra)` → 1–3, `lower: true` = a kisebb eredmény a jobb), `award(id, eredmény, extra)` (legjobb mentése `localStorage`-ba, felugró csillagok), `toggleJournal()` (napló, **N** / 📒 – játék közben szünetel: `G.paused`), ⭐ összesítés |
 | `ui.js` · `input.js` | képregényes buborékok (`say`), toast, nagy felirat · billentyűzet/érintés |
 | `ball.js` · `player.js` · `roller.js` · `npcs.js` | labda · Petyus irányítása · roller · járókelők, állatok |
