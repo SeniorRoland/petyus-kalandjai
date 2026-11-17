@@ -98,6 +98,7 @@ Izometrikus, voxel stílusú 3D böngészős **játéksorozat** (Three.js r187 +
 
 ## Tesztelés / hibakeresés
 
+- Zoom: a jelenet adja az alap-képkivágást (`G.viewSizeTarget`), erre szorzódik a játékos saját zoomja (`G.zoom`, 0,3 … 2,6; görgő, `+`/`−`, `0` = alap, érintőn két ujjas csippentés – `zoomBy()` az `input.js`-ben); cutscene-ben csak a jelenet képkivágása számít.
 - `window.__game` debug-objektum: `petike()`, `petya()`, `angi()`, `ball`, `roller`, `mode`, `pstate`, `petyaMode`, `skipIntro()`, `use()`, `setZoom(z)`, `camTarget`, `ftn`, `cev`, `TREES`, `keys`, `cine`, `jug`, `jugPress(k)`, `juggle()`, `tick(mp)` (kézi léptetés – rejtett fülön is fut, ahol a `requestAnimationFrame` áll; az intro átugrásához a tickek között `await` kell).
 - `?speed=4` URL-paraméter: gyorsított idő (1–8) a nyitójelenet teszteléséhez.
 - Headless teszthez (Playwright) WebGL: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`.
