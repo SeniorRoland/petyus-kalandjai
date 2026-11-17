@@ -1,13 +1,13 @@
 // Petyus kalandjai – roller: A roller modellje és a rajta álló Petyus pózai.
 import { resetPose } from './rigs.js';
-import { roller } from './state.js';
+import { ROLLER_SCALE, roller } from './state.js';
 import { angDiff, clamp, damp, dampAngle } from './util.js';
 import { groundH } from './world.js';
 
 // ---------------------------------------------------------------- roller (scooter)
 // rider stances: legacy = original petike_roller.glb (has a 0.12 rad yaw baked in), skinned = rigged T-pose model
 const RIDE_LEGACY = { x: 0.06, z: 0.16, ry: -0.12, lean: 0.15, front: -0.14, back: 0.22, sh: -0.9, shz: 0.05 };
-const RIDE_SKINNED = { x: 0.0, z: 0.08, ry: 0, lean: 0.36, front: -0.14, back: 0.22, sh: -0.16, shz: -0.06, elbow: 0.3 };   // fitted so the hands sit on the grips (Petyus × 1.14 ≈ 1.5 m: he leans over the kid-size scooter)
+const RIDE_SKINNED = { x: 0.0, z: 0.08, ry: 0, lean: 0.25, front: -0.14, back: 0.22, sh: -0.38, shz: 0.06, elbow: 0.72 };   // fitted so the hands sit on the grips (Petyus × 1.14 ≈ 1.5 m on the scooter × ROLLER_SCALE 0.84)
 export function rollerRide(dt) {
   const ro = roller;
   if (ro.scripted) return;   // the prologue drives the scooter itself
@@ -39,7 +39,7 @@ export function poseRider(ro) {
     r.hip[1].rotation.z = 0.03; r.hip[0].rotation.z = -0.03;
     r.sh[0].rotation.x = P.sh; r.sh[1].rotation.x = P.sh; r.sh[0].rotation.z = -P.shz; r.sh[1].rotation.z = P.shz;
     if (r.elbow) r.elbow[0] = r.elbow[1] = P.elbow || 0;
-    r.root.position.set(P.x, 0.15 + vib, P.z); r.root.rotation.y = P.ry;
+    r.root.position.set(P.x, 0.15 * ROLLER_SCALE / 0.72 + vib, P.z);   // the deck height grows with the scooter r.root.rotation.y = P.ry;
     if (r.apply) r.apply();
   }
 }
