@@ -60,6 +60,8 @@ export const G = {
 
 // ---------------------------------------------------------------- game state
 export let rigs = {};
+// the scooter model's scale (roller_kicsi.glb); the rider's stance (RIDE_SKINNED in roller.js) is fitted to it
+export const ROLLER_SCALE = 0.84;
 export const roller = { group: new THREE.Group(), pos: new V3(), heading: 0, path: null, speed: 1.6, t: 0, rider: null, lean: 0, weaveAmp: 0 };
 export const ball = { mesh: null, pos: new V3(0, -10, 0), vel: new V3(), r: 0.17, active: false, scale: 1, hitCd: 0 };
 

@@ -23,7 +23,7 @@ import { updatePlayer } from './player.js';
 import { CFG, rigFromGLTF } from './rigs.js';
 import { rollerRide } from './roller.js';
 import { camTarget, camera, renderer, scene, updateProjection } from './scene.js';
-import { EPISODE, G, SERIES, ball, rigs, roller } from './state.js';
+import { EPISODE, G, ROLLER_SCALE, SERIES, ball, rigs, roller } from './state.js';
 import { buildEpisodeMenu, setStartLabel } from './menu.js';
 import { say, updateBubbles } from './ui.js';
 import { $, V3 } from './util.js';
@@ -108,7 +108,7 @@ async function boot() {
   rigs.foci = rigFromGLTF(gFoci, CFG.foci);
   // scooter
   G.rollerModel = gScooter.scene; G.rollerModel.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-  const sc = new THREE.Group(); sc.add(G.rollerModel); G.rollerModel.scale.setScalar(0.72); G.rollerModel.rotation.y = Math.PI / 2; G.rollerModel.position.x = 0.07 * 0.72;
+  const sc = new THREE.Group(); sc.add(G.rollerModel); G.rollerModel.scale.setScalar(ROLLER_SCALE); G.rollerModel.rotation.y = Math.PI / 2; G.rollerModel.position.x = 0.07 * ROLLER_SCALE;
   roller.group.add(sc); scene.add(roller.group);
 
   G.petya = new Actor(rigs.petya, 'Petya'); G.petya.stride = 4.2;
