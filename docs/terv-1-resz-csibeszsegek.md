@@ -1,7 +1,7 @@
 # 1. rész (Augusztus – Egy nap a parkban): csibészség-ötletek
 
 Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-Javasolt sorrend: **1 → 2 → 3**, utána tetszés szerint. Elsőként a közös pontozó rendszert (`mischief.js` + napló) érdemes megépíteni, hogy minden csibészség rögtön csillagot adhasson.
+**Állapot:** a közös pontozó rendszer (`mischief.js` + napló) és az 1–5. csibészség kész; a 6–10. még terv (tetszés szerinti sorrendben).
 
 ## Pontozás és csibészség-napló (közös rendszer, minden csibészségre)
 
@@ -13,7 +13,7 @@ Javasolt sorrend: **1 → 2 → 3**, utána tetszés szerint. Elsőként a köz�
   - Fejléc: összesen **⭐ x / 30** és „y / 10 csibészség”.
 - **Összesítés máshol:** a HUD-on a gólok és a dekázás-rekord mellett ⭐ x/30; a kezdőképernyő augusztusi csempéjén is (pl. „⭐ 7/30”).
 - **Mentés:** a böngészőben (`localStorage`, kulcs pl. `petyus.r1.csibeszsegek`: `{ id: { stars, best, at } }`), mint a dekázás-rekord.
-- **Kód (kész):** `src/mischief.js`: a csibészségek listája (`id`, `title`, `hint`, `unit`, `stars: [k1, k2, k3]` küszöbök, `higherIsBetter`), `award(id, érték)` → csillagszám, mentés, felirat; a napló felülete (`#journal` panel, képregényes stílus). Minden mini játék a végén csak `award(...)`-ot hív.
+- **Kód (kész):** `src/mischief.js`: a csibészségek listája (`MISCHIEFS`: `id`, `title`, `hint`, `fmt(érték, extra)` a napló szövegéhez, `stars(érték, extra)` → 1–3, `lower: true`, ha a kisebb eredmény a jobb), `award(id, érték, extra)` → csillagszám, mentés, felirat; a napló felülete (`#journal` panel, képregényes stílus). Minden mini játék a végén csak `award(...)`-ot hív.
 - **Javaslat:** a már meglévő **szökőkút-ivás** is bekerülhetne 11. csibészségként (★ ivás; ★★ legalább 3 korty, mielőtt apa odaér; ★★★ 5 korty és Angi védelmére kel). Ekkor az összesen ⭐ 33.
 
 | # | Csibészség | ★ | ★★ | ★★★ | Tipp a naplóban (amíg nincs meg) | Állapot |
@@ -58,7 +58,7 @@ Javasolt sorrend: **1 → 2 → 3**, utána tetszés szerint. Elsőként a köz�
 - **Mire épül:** a meglévő galambok (`pigeons`, `makePigeon`, repülő állapot a `npcs.js`-ben), a madárraj (`flock` a `activities/cat.js`-ben).
 - **Csillagok:** ★ legalább 1 galamb leszáll apára · ★★ 8 galamb · ★★★ 15 galamb, 60 mp-en belül.
 
-## 4. Vízipisztoly az ivókútból
+## 4. Vízipisztoly az ivókútból  ✅ kész
 
 - **Játék:** Petyus a hüvelykujjával befogja az ivókút csapját, a kifröccsenő sugarat egérrel célozza. Járókelő eltalálása pont; kutyák és macskák felháborodnak.
 - **Poén:** ha Petyát éri: „Ez nem vízipisztoly! Ez ivókút! IVÓ-KÚT!” Ha Angit, ő visszafröcsköl.
@@ -66,7 +66,7 @@ Javasolt sorrend: **1 → 2 → 3**, utána tetszés szerint. Elsőként a köz�
 - **Csillagok:** ★ 1 találat · ★★ 8 találat · ★★★ 12 találat, köztük apa feje (a találatszám a mért érték).
 - **Megvalósítás** (`src/activities/squirt.js`): az ivókútnál **Szóköz** (érintőn RÚGÁS; morzsás zacskóval nem) → `pstate = 'squirt'`, 25 mp. A sugár becsapódási pontját egy kék gyűrű jelzi: **WASD / nyilak** képernyő-irányban mozgatják (1,8–7,2 m a csaptól), **Szóköz** nyomva tartva fröcsköl (parabola-cseppek). Közben 5 ideiglenes járókelő sétál a pálya melletti sétányon; eltalálva felkiáltanak és elfutnak. Apa első találatra: „Ez nem vízipisztoly! Ez ivókút! IVÓ-KÚT!”; Angi egyszer visszafröcsköl („Áááá! Hideg! Anya!”). **E** idő előtt befejezi. HUD: `#mini` (💦 találat · ⏱). Utána a járókelők kisétálnak és eltűnnek. `award('vizipisztoly', találat, { dad })`.
 
-## 5. Kutyaszán
+## 5. Kutyaszán  ✅ kész
 
 - **Játék:** Petyus felajánlja a szomszéd néninek, hogy megsétáltatja a kutyát – rolleren állva. A kutya húz, Petyus csak kormányoz; ki kell kerülni a padokat, virágágyásokat, a szökőkutat. A kutya minden macskát üldözőbe vesz.
 - **Poén:** a vége mindig a szökőkút vagy egy virágágyás. A néni: „Bodri még sosem volt ilyen boldog!”
