@@ -7,10 +7,11 @@ import { G, animals, ball, npcs, roller } from './state.js';
 import { say } from './ui.js';
 import { R, V3, clamp, pick, rand } from './util.js';
 import { FAMILY_BENCH, FENCE, colliders } from './world.js';
+import { DOZE_AFTER, canDoze, napTick, startDoze, updateDoze } from './activities/nap.js';
 
 // ---------- dad (Petya)
        // bench | standing | leaving | follow | return | seat
-export const dad = { talkT: 6, last: '', seatPhase: 0, seatT: 0, alarmT: 0, limpT: 0 };   // limpT: after the „Fordított edzés” his back hurts
+export const dad = { talkT: 6, last: '', seatPhase: 0, seatT: 0, alarmT: 0, limpT: 0, benchT: 0 };   // benchT: quiet time on the bench → he dozes off (activities/nap.js)   // limpT: after the „Fordított edzés” his back hurts
 export const G_OUT = [30, -10.9], G_IN = [30, -8.7];        // the pitch gate, outside / inside
 export const inPitch = (x, z) => x > FENCE.x0 && x < FENCE.x1 && z > FENCE.z0 && z < FENCE.z1;
 export function navTarget(p, to) {
@@ -36,6 +37,9 @@ export function updateDad(dt) {
   if (G.petyaMode.startsWith('ftn')) return updateDadFountain(dt);
   if (G.petyaMode.startsWith('cat')) return updateDadCat(dt);
   if (G.petyaMode === 'coach') return;   // the „Fordított edzés” mischief drives him (activities/coach.js)
+  napTick(dt);
+  if (G.petyaMode === 'doze') return updateDoze(dt);   // „A szundikáló apa” (activities/nap.js)
+  if (G.petyaMode === 'bench' && G.mode === 'play') { dad.benchT += dt; if (dad.benchT > DOZE_AFTER && canDoze()) { startDoze(); return; } } else dad.benchT = Math.min(dad.benchT, 0);
   if (dad.limpT > 0) dad.limpT -= dt;
   if (G.petyaMode === 'standing') { if (p.sit < 0.05) { p.walkTo([petyaFront()], 1.4); G.petyaMode = 'leaving'; } }
   else if (G.petyaMode === 'leaving') { if (!p.path) G.petyaMode = G.pstate === 'riding' ? 'follow' : 'return'; }

@@ -10,6 +10,7 @@ import { say } from './ui.js';
 import { R, V3, clamp, damp, dampAngle, pick, rand } from './util.js';
 import { getGeometry } from './voxels.js';
 import { FOUNTAIN, GX0, GX1, L, benchSpots, collide, groundH, vcMat } from './world.js';
+import { pigeonHook } from './activities/pigeons.js';
 
 // ---------------------------------------------------------------- NPCs & animals
 const LOOP = [[-18, -6], [18, -6], [18, 6], [-18, 6]];
@@ -128,6 +129,7 @@ export function updateAnimals(dt) {
   }
   // pigeons
   for (const pg of pigeons) {
+    if (pigeonHook(pg, dt)) continue;   // following the crumbs / sitting on dad (activities/pigeons.js)
     const p = pg.p; pg.t -= dt;
     if (pg.state === 'idle') {
       p.head.rotation.x = Math.max(0, Math.sin(G.clockT * 6 + pg.home.x)) * 0.8;

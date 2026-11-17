@@ -65,6 +65,36 @@ export const sSting = (low = false) => {
   tone('sine', 62, 36, 1.0, 0.4); noise(0.7, 170, 0.7, 0.22);
 };
 export const sScreech = () => { tone('sawtooth', 1900, 1250, 1.15, 0.03); tone('square', 2450, 1650, 1.05, 0.012); noise(1.15, 3200, 1.6, 0.14); };
+// --- snoring (the dozing dad): a rattling in-breath (the soft palate flutters → amplitude-modulated sawtooth through a lowpass),
+// a breathy out-breath, and the big snort: a sudden, loud, gurgling burst with a „pfff” after it
+function rattle(t, dur, f0, f1, flutter, cutoff, peak, attack) {
+  const out = outNode || master;
+  const o = actx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(f1, t + dur);
+  const am = actx.createGain(); am.gain.value = 0.55;
+  const lfo = actx.createOscillator(); lfo.type = 'triangle'; lfo.frequency.setValueAtTime(flutter, t); lfo.frequency.linearRampToValueAtTime(flutter * 0.8, t + dur);
+  const lg = actx.createGain(); lg.gain.value = 0.5; lfo.connect(lg); lg.connect(am.gain);
+  const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = cutoff; lp.Q.value = 4;
+  const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(am); am.connect(lp); lp.connect(g); g.connect(out);
+  o.start(t); lfo.start(t); o.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
+}
+export function sSnore(big = false) {
+  if (!actx || G.muted) return;
+  const t = actx.currentTime;
+  if (!big) {
+    rattle(t, 1.35, 92, 108, 27, 620, 0.32, 0.8);              // hrrrr… (slowly swelling)
+    noise(1.35, 480, 1.1, 0.14);                                // the air through the nose
+    noise(1.0, 1050, 0.7, 0.07, 1.55);                          // …pfff (out-breath)
+    tone('sine', 820, 460, 0.6, 0.025, 1.6);
+  } else {
+    rattle(t, 0.8, 84, 58, 18, 950, 0.9, 0.05);                 // HRRRK! – sudden and loud
+    rattle(t + 0.04, 0.7, 126, 90, 23, 1300, 0.35, 0.05);       // a second, higher layer for the gurgle
+    noise(0.75, 330, 1.4, 0.55);
+    noise(0.12, 2400, 0.8, 0.25, 0.72);                         // the „k” at the end
+    noise(1.1, 1150, 0.7, 0.16, 0.9);                           // pfff…
+    tone('sine', 900, 420, 0.7, 0.04, 0.95);
+  }
+}
 export function startHum() {
   if (!actx) return { set() {}, stop() {} };
   const o = actx.createOscillator(), o2 = actx.createOscillator(), f = actx.createBiquadFilter(), g = actx.createGain();

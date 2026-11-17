@@ -7,8 +7,8 @@ import { $, clamp } from './util.js';
 
 export const MISCHIEFS = [
   { id: 'apa-dekaz', title: 'Fordított edzés', hint: 'Apa mindig okosabb… vagy mégsem? (vidd oda neki a labdát)', fmt: (v) => `apa ${v} érintést bírt`, stars: (v) => 1 + (v >= 8) + (v >= 15) },
-  { id: 'szundi', title: 'A szundikáló apa', hint: 'Ha apa sokáig ül a padon…' },
-  { id: 'galamb', title: 'Galambraj-vezénylés', hint: 'Angi táskájában van valami morzsás.' },
+  { id: 'szundi', title: 'A szundikáló apa', hint: 'Ha apa sokáig ül a padon… (hagyd egy kicsit pihenni)', fmt: (v) => `${v} tárgy apa fején`, stars: (v) => 1 + (v >= 6) + (v >= 10) },
+  { id: 'galamb', title: 'Galambraj-vezénylés', hint: 'Angi táskájában van valami morzsás.', fmt: (v, x) => `${v} galamb apán` + (x && x.t ? ` (${Math.round(x.t)} mp)` : ''), stars: (v, x) => 1 + (v >= 8) + (v >= 15 && x.t <= 60) },
   { id: 'vizipisztoly', title: 'Vízipisztoly az ivókútból', hint: 'Az ivókútból nem csak inni lehet.' },
   { id: 'kutyaszan', title: 'Kutyaszán', hint: 'A szomszéd néni kutyája unatkozik.' },
   { id: 'fotobomba', title: 'Fotóbomba', hint: 'Anya fotózni készül a szökőkútnál.' },
@@ -26,24 +26,24 @@ export const totalStars = () => MISCHIEFS.reduce((s, m) => s + ((saved[m.id] && 
 export const doneCount = () => MISCHIEFS.filter((m) => saved[m.id]).length;
 
 // score a finished mischief: returns the stars of this attempt
-export function award(id, value) {
+export function award(id, value, extra = {}) {
   const m = MISCHIEFS.find((x) => x.id === id); if (!m) return 0;
-  const stars = clamp(m.stars ? m.stars(value) : 1, 1, 3), prev = saved[id];
+  const stars = clamp(m.stars ? m.stars(value, extra) : 1, 1, 3), prev = saved[id];
   const best = prev ? Math.max(prev.best, value) : value;
-  const improved = !prev || best > prev.best;
-  saved[id] = { stars: Math.max(stars, prev ? prev.stars : 0), best, at: prev && !improved ? prev.at : Date.now() };
+  const improved = !prev || best > prev.best || stars > prev.stars;
+  saved[id] = { stars: Math.max(stars, prev ? prev.stars : 0), best, x: improved ? extra : prev.x, at: prev && !improved ? prev.at : Date.now() };
   save(); refreshTotals();
-  showAward(m, stars, value, !prev, improved && !!prev);
+  showAward(m, stars, value, !prev, improved && !!prev, extra);
   return stars;
 }
 let awardTimer = 0;
-function showAward(m, stars, value, first, better) {
+function showAward(m, stars, value, first, better, extra) {
   const el = $('mAward');
   const keep = saved[m.id] ? '★'.repeat(saved[m.id].stars) : '';
   el.querySelector('.t1').textContent = first ? 'Csibészség teljesítve!' : better ? 'Új legjobb!' : `Nem lett jobb – a legjobbad marad: ${keep}`;
   el.querySelector('.t2').textContent = m.title;
   el.querySelector('.st').innerHTML = [0, 1, 2].map((i) => `<span class="${i < stars ? 'on' : ''}" style="--d:${0.35 + i * 0.35}s">★</span>`).join('');
-  el.querySelector('.t3').textContent = m.fmt ? m.fmt(value) : '';
+  el.querySelector('.t3').textContent = m.fmt ? m.fmt(value, extra) : '';
   el.classList.add('show');
   for (let i = 0; i < stars; i++) tone('triangle', 880 + i * 220, 1320 + i * 220, 0.16, 0.12, 0.35 + i * 0.35);
   if (stars === 3) setTimeout(sCheer, 1300);
@@ -72,7 +72,7 @@ function renderJournal() {
     const num = document.createElement('span'); num.className = 'no'; num.textContent = i + 1 + '.';
     const txt = document.createElement('span'); txt.className = 'tx';
     const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = s ? m.title : '???';
-    const info = document.createElement('span'); info.className = 'info'; info.textContent = s ? (m.fmt ? 'Legjobb: ' + m.fmt(s.best) : 'Teljesítve') : 'Tipp: ' + m.hint;
+    const info = document.createElement('span'); info.className = 'info'; info.textContent = s ? (m.fmt ? 'Legjobb: ' + m.fmt(s.best, s.x) : 'Teljesítve') : 'Tipp: ' + m.hint;
     txt.append(nm, info);
     const st = document.createElement('span'); st.className = 'stars'; st.textContent = s ? '★'.repeat(s.stars) + '☆'.repeat(3 - s.stars) : '☆☆☆';
     row.append(num, txt, st); list.appendChild(row);
