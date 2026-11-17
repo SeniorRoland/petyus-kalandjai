@@ -22,17 +22,32 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Space') { kickHeld = true; G.kickPressed = true; }
   if (e.code === 'Enter' || e.code === 'Escape') skipIntro();
   if (e.code === 'KeyM') toggleMute();
+  if (e.code === 'Equal' || e.code === 'NumpadAdd' || e.key === '+') zoomBy(0.85);
+  if (e.code === 'Minus' || e.code === 'NumpadSubtract' || e.key === '-') zoomBy(1 / 0.85);
+  if (e.code === 'Digit0' || e.code === 'Numpad0') G.zoom = 1;
   if (e.code === 'KeyR' && G.pstate !== 'juggle') resetBallToPlayer();
   if (e.code === 'KeyE') G.usePressed = true;
   if (e.code === 'KeyH') { const h = $('help'); h.style.display = h.style.display === 'none' ? 'block' : 'none'; }
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; if (e.code === 'Space') { kickHeld = false; G.kickReleased = true; } });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
-window.addEventListener('wheel', (e) => { G.viewSizeTarget = clamp(G.viewSizeTarget * (e.deltaY > 0 ? 1.1 : 0.9), 5, 24); }, { passive: true });
+// zoom: wheel, + / − (0 = back to normal), two-finger pinch on touch screens. Range ≈ 3× closer … 2.6× further than normal.
+export const ZOOM_MIN = 0.3, ZOOM_MAX = 2.6;
+export function zoomBy(f) { G.zoom = clamp(G.zoom * f, ZOOM_MIN, ZOOM_MAX); }
+window.addEventListener('wheel', (e) => { if (journalOpen()) return; zoomBy(Math.pow(1.0015, clamp(e.deltaY, -240, 240))); }, { passive: true });
 function toggleMute() { G.muted = !G.muted; $('muteBtn').textContent = G.muted ? '🔇' : '🔊'; if (ambBed) ambBed.gain.value = G.muted ? 0 : 1; }
 $('muteBtn').onclick = toggleMute;
 $('skipBtn').onclick = () => skipIntro();
 // touch joystick
+// two-finger pinch on the game view
+{
+  let d0 = 0, z0 = 1;
+  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const app = $('app');
+  app.addEventListener('touchstart', (e) => { if (e.touches.length === 2) { d0 = dist(e.touches); z0 = G.zoom; } }, { passive: true });
+  app.addEventListener('touchmove', (e) => { if (e.touches.length === 2 && d0 > 0) { G.zoom = clamp(z0 * d0 / Math.max(10, dist(e.touches)), ZOOM_MIN, ZOOM_MAX); e.preventDefault(); } }, { passive: false });
+  app.addEventListener('touchend', (e) => { if (e.touches.length < 2) d0 = 0; });
+}
 export const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 if (isTouch) {
   const joy = $('joy'), knob = $('joyKnob'); let jid = null, jcx = 0, jcy = 0;

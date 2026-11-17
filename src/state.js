@@ -54,6 +54,7 @@ export const G = {
   lastKick: null,   // activities/drinking.js
   qPressed: false,   // activities/juggle.js
   petyaMode: 'bench',   // dad.js
+  zoom: 1,   // input.js – the player's own zoom on top of what the scene asks for (smaller = closer)
   paused: false,   // mischief.js – the journal is open
 };
 
