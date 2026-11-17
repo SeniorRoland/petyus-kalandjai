@@ -4,7 +4,7 @@
 // The zone narrows as the tower grows, big snores shake it. A miss → the tower falls, dad wakes: „Ki volt az?!”.
 import * as THREE from 'three';
 import { spawnFx } from '../actors.js';
-import { noise, soundAt, tone } from '../audio.js';
+import { noise, sSnore, soundAt, tone } from '../audio.js';
 import { dad } from '../dad.js';
 import { award } from '../mischief.js';
 import { pvel } from '../player.js';
@@ -30,7 +30,7 @@ const ITEMS = [   // what goes on his head, bottom to top (h = height of the ite
   { name: 'pitypang', icon: '🌼', h: 0.12, mk: (b) => { b.bx(0, 0.05, 0, 0.02, 0.1, 0.02, 0x3a8f3a, 0, 0); b.bx(0, 0.11, 0, 0.08, 0.06, 0.08, 0xf2f2f2, 0, 0.05); } },
   { name: 'a labda', icon: '⚽', h: 0.34, mk: null },   // the real ball look-alike on top
 ];
-const nap = { asleep: false, t: 0, snoreT: 2, loud: 0, game: false, n: 0, phase: 0, tower: null, items: [], fallT: -1, msgT: 0 };
+const nap = { asleep: false, t: 0, snoreT: 2, loud: 0, jolt: 0, game: false, n: 0, phase: 0, tower: null, items: [], fallT: -1, msgT: 0 };
 
 // ---------- dozing (dad.js calls these while petyaMode is 'doze')
 export function canDoze() { return G.pstate === 'free' && G.petike.pos.distanceTo(G.petya.pos) > 3; }
@@ -45,9 +45,15 @@ export function updateDoze(dt) {
   nap.snoreT -= dt;
   if (nap.loud > 0) nap.loud -= dt;
   if (nap.snoreT <= 0 && nap.fallT < 0) {   // no more snoring once the tower has come down (he is awake by then)
-    const big = rand() < 0.4; nap.snoreT = R(2.8, 3.8); nap.loud = big ? 0.9 : 0;
-    soundAt(p.pos.x, p.pos.z, () => { noise(big ? 0.9 : 0.6, big ? 180 : 140, 0.9, big ? 0.22 : 0.1); tone('sawtooth', big ? 70 : 60, 50, big ? 0.8 : 0.5, big ? 0.05 : 0.025); }, 1.2);
-    if (big) say(p, pick(['HRRRR!', 'HRRR-PSSSS!', 'HRRRRRR!']), 1.0); else if (rand() < 0.6) say(p, pick(['Zzz…', 'Hrrr… zzz…', 'Mmm… gól…', 'Zzz… a térdem…']), 1.6);
+    // a steady snore every ~3 s, now and then a big, loud snort (horkantás) that makes him jerk
+    const big = rand() < 0.35; nap.snoreT = big ? R(3.4, 4.2) : R(2.9, 3.4); nap.loud = big ? 0.9 : 0;
+    soundAt(p.pos.x, p.pos.z, () => sSnore(big), big ? 2.6 : 1.7);
+    if (big) { say(p, pick(['HRRRK!', 'HRRRR-PFFF!', 'HORRRK!!', 'HRRRRRR!']), 1.2); nap.jolt = 0.35; }
+    else if (rand() < 0.6) say(p, pick(['Zzz…', 'Hrrr… zzz…', 'Mmm… gól…', 'Zzz… a térdem…', 'Hrrr… pfff…']), 1.6);
+  }
+  if (nap.jolt > 0) {   // the snort jerks his head and shoulders up
+    nap.jolt -= dt; const k = Math.sin(Math.max(0, nap.jolt) / 0.35 * Math.PI);
+    if (p.sit > 0.95) { const r = p.rig; r.inner.rotation.x = -0.12 - 0.22 * k; r.inner.position.y += 0.05 * k; r.sh[0].rotation.x = r.sh[1].rotation.x = -0.15 - 0.35 * k; p.sync(); }
   }
   if (!nap.game && nap.fallT < 0 && nap.t > WAKE_AFTER) wake(pick(['Hm? Nem aludtam! Csak pihentettem a szemem.', 'Mi? Nem horkoltam. Az egy galamb volt.']), false);
 }
