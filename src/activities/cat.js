@@ -12,6 +12,7 @@ import { $, R, V3, clamp, dampAngle, lerp, pick, rand, smooth } from '../util.js
 import { FENCE, GX0, GX1, GZ0, GZ1, PITCH, TREES, groundH, partMesh, treeTop } from '../world.js';
 import { setPrompt } from './drinking.js';
 import { autoRun, ftn, ftnMom, runSeq } from './fountain.js';
+import { pig } from './pigeons.js';
 
 // ---------- idle on the pitch → Petyus plays alone → a cat attacks → dad throws the cat onto a tree
 // pstate: free → autoBall → catScared → catChased → catSafe → catToMom → catAtMom → free
@@ -40,7 +41,7 @@ export function idleFootball(dt, anyInput) {
   }
   if (G.pstate === 'free') {
     const still = Math.hypot(pvel.x, pvel.z) < 0.3 && a.kickT < 0;
-    if (still && inPitch(a.pos.x, a.pos.z) && G.petyaMode === 'bench' && ball.active) cev.idleT += dt; else cev.idleT = 0;
+    if (still && inPitch(a.pos.x, a.pos.z) && G.petyaMode === 'bench' && ball.active && !pig.active) cev.idleT += dt; else cev.idleT = 0;
     if (cev.idleT < CAT_IDLE) return null;
     G.pstate = 'autoBall'; cev.autoT = 0; cev.idleT = 0;
     say(a, pick(['Unatkozom… akkor játszom magamnak!', 'Jó, akkor egyedül focizok!', 'Senki nem játszik velem? Na jó!']), 2.4);

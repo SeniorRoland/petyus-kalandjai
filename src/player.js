@@ -12,6 +12,8 @@ import { G, ball } from './state.js';
 import { $, R, V3, clamp, damp, dampAngle, lerp, smooth } from './util.js';
 import { GX0, GX1, GZ0, GZ1, PITCH, collide } from './world.js';
 import { updateCoach } from './activities/coach.js';
+import { updateTower } from './activities/nap.js';
+import { pig, scatterCrumbs, tickCrumbs } from './activities/pigeons.js';
 
 // ---------------------------------------------------------------- player control
 export const CAM_FWD = new V3(-1, 0, -1).normalize(), CAM_RIGHT = new V3(1, 0, -1).normalize();
@@ -24,6 +26,8 @@ export function updatePlayer(dt) {
   if (CAT_STATES.includes(G.pstate)) return updateCatPetike(dt);
   if (G.pstate === 'juggle') return updateJuggle(dt);
   if (G.pstate === 'coach') return updateCoach(dt);
+  if (G.pstate === 'tower') return updateTower(dt);
+  tickCrumbs(dt);
   if (G.pstate !== 'autoBall' && interactions()) return;
   const a = G.petike;
   let ix = 0, iy = 0;
@@ -48,7 +52,8 @@ export function updatePlayer(dt) {
   a.heading = dampAngle(a.heading, a.targetHeading, 14, dt);
   a.animate(dt, spd > 0.25, spd);
 
-  // kick input
+  // kick input (with the bag of crumbs SPACE scatters crumbs instead)
+  if (pig.active && !pig.done) { if (G.kickPressed) scatterCrumbs(); G.kickPressed = G.kickReleased = false; G.charging = false; }
   if (G.kickPressed) { G.charging = true; charge = 0; }
   if (G.charging) { charge = Math.min(1, charge + dt / 0.9); }
   if (G.kickReleased && G.charging) { G.charging = false; G.kickPower = charge; a.kickT = 0; G.kickDone = false; }

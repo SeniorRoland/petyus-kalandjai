@@ -186,6 +186,22 @@
     border-radius:10px; padding:3px 14px 1px; box-shadow:3px 3px 0 #151515; cursor:pointer; }
   .ep .stars { display:block; font-family:'Bangers', Impact, sans-serif; font-size:14px; letter-spacing:1px; color:#7a5b00; }
 
+  /* mischief 2: the tower on dad's head (timing bar) · mischief 3: the bag of crumbs */
+  #tower { position:fixed; left:50%; bottom:12vh; transform:translateX(-50%); z-index:14; display:none; width:min(420px, 90vw); text-align:center;
+    background:#fffdf3; color:#151515; border:4px solid #151515; border-radius:16px / 12px; box-shadow:5px 5px 0 #151515; padding:8px 14px 10px; }
+  #twCount { font-family:'Bangers', Impact, sans-serif; font-size:30px; color:#c2410c; line-height:1; }
+  #twLabel { font-family:'Bangers', Impact, sans-serif; font-size:14px; letter-spacing:1px; }
+  #twNext { font-family:'Patrick Hand', cursive; font-size:18px; margin:2px 0 6px; }
+  #twBar { position:relative; height:26px; border:3px solid #151515; border-radius:13px; background:#ffd6cc; overflow:hidden; }
+  #twZone { position:absolute; top:0; bottom:0; background:#7ddc5a; }
+  #twZone.shaky { background:#ffd166; }
+  #twMark { position:absolute; top:-3px; bottom:-3px; width:6px; margin-left:-3px; background:#151515; border-radius:3px; }
+  #twHint { font-family:'Patrick Hand', cursive; font-size:15px; margin-top:5px; color:#444; }
+  #crumbs { position:fixed; right:14px; top:60px; z-index:10; display:none; background:#fffdf3; color:#151515; border:3px solid #151515; border-radius:12px;
+    box-shadow:3px 3px 0 #151515; padding:4px 12px; font-family:'Bangers', Impact, sans-serif; font-size:19px; letter-spacing:1px; }
+  #crumbs .late { color:#c2410c; }
+  body.cine #tower, body.cine #crumbs { opacity:0; }
+
   #touch { display:none; }
   #joy { position:fixed; left:24px; bottom:24px; width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,.18);
     border:3px solid rgba(255,255,255,.45); z-index:11; }
@@ -223,6 +239,12 @@
   <h2>📒 Csibészség-napló</h2><div id="jrSub">1. rész: Augusztus – Egy nap a parkban</div>
   <div id="jrSum"></div><div id="jrList"></div>
 </div></div>
+<div id="tower">
+  <div id="twCount">0 / 10</div><div id="twLabel">torony apa fején</div><div id="twNext"></div>
+  <div id="twBar"><div id="twZone"></div><div id="twMark"></div></div>
+  <div id="twHint">SZÓKÖZ vagy E – rátenni, amikor a jel a zöldben van · horkolásnál remeg!</div>
+</div>
+<div id="crumbs">🥖 Morzsa · <span>⏱ <span id="crTime">90</span></span> · 🐦 <span id="crBirds">0</span></div>
 <div id="juggle">
   <div id="jCount">0</div><div id="jLabel">dekázás</div>
   <div id="jKeyWrap"><div id="jRing"></div><div id="jKey">→</div></div>

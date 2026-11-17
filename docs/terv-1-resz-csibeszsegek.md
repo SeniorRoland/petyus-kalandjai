@@ -19,8 +19,8 @@ Javasolt sorrend: **1 → 2 → 3**, utána tetszés szerint. Elsőként a köz�
 | # | Csibészség | ★ | ★★ | ★★★ | Tipp a naplóban (amíg nincs meg) | Állapot |
 |---|---|---|---|---|---|---|
 | 1 | Fordított edzés: Petyus tanítja apát dekázni | apa dekáz | 8 érintés | 15 érintés | „Apa mindig okosabb… vagy mégsem?” | **kész** |
-| 2 | A szundikáló apa | 3 tárgy a fején | 6 tárgy | 10 tárgy, a tetején a labda | „Ha apa sokáig ül a padon…” | terv |
-| 3 | Galambraj-vezénylés | galamb száll apára | 8 galamb | 15 galamb, 60 mp-en belül | „Angi táskájában van valami morzsás.” | terv |
+| 2 | A szundikáló apa | 3 tárgy a fején | 6 tárgy | 10 tárgy, a tetején a labda | „Ha apa sokáig ül a padon…” | **kész** |
+| 3 | Galambraj-vezénylés | galamb száll apára | 8 galamb | 15 galamb, 60 mp-en belül | „Angi táskájában van valami morzsás.” | **kész** |
 | 4 | Vízipisztoly az ivókútból | 1 találat | 8 találat | 12 találat, köztük apa feje | „Az ivókútból nem csak inni lehet.” | terv |
 | 5 | Kutyaszán | végigér | legfeljebb 3 ütközés | ütközés nélkül a szökőkútig | „A szomszéd néni kutyája unatkozik.” | terv |
 | 6 | Fotóbomba | 1 elrontott fotó | 3 a 5-ből | mind az 5, és az egyiken galamb van a kezében | „Anya fotózni készül a szökőkútnál.” | terv |
@@ -40,14 +40,18 @@ Javasolt sorrend: **1 → 2 → 3**, utána tetszés szerint. Elsőként a köz�
 - **Mire épül:** dekázás (`activities/juggle.js`: `JUG`, `jugWindow`, `jugPress`), apa-szövegek (`coachLine` a `dad.js`-ben).
 - **Csillagok:** ★ apa dekáz (bármennyit) · ★★ 8 érintés · ★★★ 15 érintés (apa szűkebb időablakkal dolgozik, mint Petyus).
 
-## 2. A szundikáló apa
+## 2. A szundikáló apa  ✅ kész
+
+- **Megvalósítás** (`src/activities/nap.js`): ha apa `DOZE_AFTER` (30) mp-ig nyugton ül a padon, és Petyus nincs 3 m-en belül, elalszik (`petyaMode = 'doze'`): horkol (buborék + hang, néha nagy „HRRRR!”). Petyus a pad mögé lopakodik: **E – Torony apa fejére (csitt!)** → `pstate = 'tower'`: a jel ide-oda leng egy sávon, **Szóköz / E**, amikor a zöldben van (a zöld sáv a toronnyal szűkül, nagy horkolásnál remeg). 10 tárgy (toboz, falevél, kavics, … a tetején a labda); elvétve leborul, apa felriad („Ki volt az?!”), Angi fütyörészik, Petyus: „Csak a galambok voltak!”. Kész torony: Angi lefényképezi, aztán egy hatalmas horkolás úgyis ledönti. Ha senki nem zavarja, `WAKE_AFTER` (80) mp után magától felébred („Nem aludtam! Csak pihentettem a szemem.”). A tárgyak a `#tower` panelen, a torony apa feje fölött himbálózik.
 
 - **Játék:** egy idő után Petya elalszik a padon, és horkol. Petyus odalopakodik, és tornyot épít a fejére: toboz, falevél, végül a focilabda. Csak akkor lehet rakni, amikor épp nem horkant nagyot; rossz pillanatban leborul a torony.
 - **Poén:** Petya felriad: „Ki volt az?!” Angi fütyörészve néz az égre. A legmagasabb torony rekordként mentődik (mint a dekázás-rekord).
 - **Mire épül:** ülő póz (`Actor.sit`), gyorsasági gombnyomás (a dekázás mintájára), hangok (`audio.js`), rekord a `localStorage`-ban.
 - **Csillagok:** ★ 3 tárgy a fején · ★★ 6 tárgy · ★★★ 10 tárgy, a tetején a focilabda (a torony magassága a mért érték, rekord is).
 
-## 3. Galambraj-vezénylés
+## 3. Galambraj-vezénylés  ✅ kész
+
+- **Megvalósítás** (`src/activities/pigeons.js`): Angi mellett **E – Anya, van egy kis morzsád?** → morzsás zacskó (`pig.active`, HUD: `#crumbs` ⏱ 90 mp, 🐦 követők). **Szóköz** a rúgás helyett morzsát szór: a közeli galambok követik (`state 'follow'`, laza csapat Petyus körül), az égből újak érkeznek (max. 22 galamb), 8 mp morzsa nélkül elkószálnak. Apánál (a padon, akár alszik is): **E – Morzsa apára!** → a csapat leszáll rá (fej, váll, öl, pad, lába elé: `SLOTS`), „Leszállópálya lettem!”, Angi fényképez, „Galambapa!”, majd szétrebbennek. Csillag: a leszállt galambok száma, ★★★-hoz 60 mp-en belül.
 
 - **Játék:** Angi táskájából előkerül egy zacskó pogácsamorzsa. Petyus szórja, és egyre több galamb követi. A feladat: a rajt a padig vezetni, és pont Petyára szórni az utolsó morzsát.
 - **Poén:** a galambok rászállnak Petyára. „Leszállópálya lettem!” Angi lefényképezi.
