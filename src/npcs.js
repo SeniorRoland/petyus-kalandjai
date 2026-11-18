@@ -15,7 +15,7 @@ import { pigeonHook } from './activities/pigeons.js';
 // ---------------------------------------------------------------- NPCs & animals
 const LOOP = [[-18, -6], [18, -6], [18, 6], [-18, 6]];
 const loopSegs = LOOP.map((p, i) => { const b = LOOP[(i + 1) % LOOP.length]; return { a: p, b, len: Math.hypot(b[0] - p[0], b[1] - p[1]) }; });
-const LOOP_LEN = loopSegs.reduce((s, x) => s + x.len, 0);
+export const LOOP_LEN = loopSegs.reduce((s, x) => s + x.len, 0);
 export function loopPoint(s) {
   s = ((s % LOOP_LEN) + LOOP_LEN) % LOOP_LEN;
   for (const g of loopSegs) { if (s <= g.len) { const t = s / g.len; const dx = (g.b[0] - g.a[0]) / g.len, dz = (g.b[1] - g.a[1]) / g.len; return { x: g.a[0] + (g.b[0] - g.a[0]) * t, z: g.a[1] + (g.b[1] - g.a[1]) * t, dx, dz }; } s -= g.len; }

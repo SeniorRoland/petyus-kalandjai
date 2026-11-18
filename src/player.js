@@ -18,13 +18,15 @@ import { squirtTick, updateSquirt } from './activities/squirt.js';
 import { updateSled } from './activities/sled.js';
 import { photoTick, updatePhoto } from './activities/photo.js';
 import { fishTick, updateFish } from './activities/fish.js';
+import { raceTick, updateRace } from './activities/race.js';
 
 // ---------------------------------------------------------------- player control
 export const CAM_FWD = new V3(-1, 0, -1).normalize(), CAM_RIGHT = new V3(1, 0, -1).normalize();
 export const pvel = new V3();
 let charge = 0;
 export function updatePlayer(dt) {
-  photoTick(dt); fishTick(dt);   // background bits of the 6./7. mischief (invitation, people walking off)
+  photoTick(dt); fishTick(dt); raceTick(dt);   // background bits of the 6./7./8. mischief (invitation, people walking off, the parked moped)
+  if (G.pstate === 'race') return updateRace(dt);
   if (G.pstate === 'riding') return updateRiding(dt);
   if (G.pstate === 'toDrink' || G.pstate === 'drinking') return updateDrinking(dt);
   if (FTN_STATES.includes(G.pstate)) return updateFountainDrink(dt);

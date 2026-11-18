@@ -13,7 +13,7 @@ export const MISCHIEFS = [
   { id: 'kutyaszan', title: 'Kutyaszán', hint: 'A szomszéd néni kutyája unatkozik. (rollerrel menj oda)', lower: true, fmt: (v) => v === 0 ? 'ütközés nélkül a szökőkútig' : `${v} ütközéssel a szökőkútig`, stars: (v) => 1 + (v <= 3) + (v === 0) },
   { id: 'fotobomba', title: 'Fotóbomba', hint: 'Anya fotózni készül a szökőkútnál. (ha apa és anya nyugton ül a padon)', fmt: (v, x) => `${v}/5 kép elrontva` + (x && x.pigeon ? ', galambbal' : ''), stars: (v, x) => 1 + (v >= 3) + (v >= 5 && !!x.pigeon) },
   { id: 'penzhalasz', title: 'Pénzhalászat a szökőkútból', hint: 'Valami csillog a szökőkút alján. (Szóköz a szökőkút peremén)', fmt: (v, x) => `${v} érme` + (x && x.seen === 0 ? ', lebukás nélkül' : x && x.seen ? `, ${x.seen}× lebukott` : ''), stars: (v, x) => 1 + (v >= 6) + (v >= 10 && !x.seen) },
-  { id: 'rollerverseny', title: 'Rollerverseny a nyugdíjassal', hint: 'A padon ülő bácsi gyorsnak tartja magát.' },
+  { id: 'rollerverseny', title: 'Rollerverseny a nyugdíjassal', hint: 'A padon ülő bácsi gyorsnak tartja magát. (rollerrel gurulj oda hozzá)', fmt: (v) => v >= 3 ? 'legyőzte a bácsit' : v === 2 ? 'félúton vezetett' : 'célba ért', stars: (v) => v },
   { id: 'bujocska', title: 'Bújócska apával', hint: 'Apa szeret keresgélni.' },
   { id: 'lufi', title: 'Lufis bácsi', hint: 'Valaki lufit árul a park szélén.' },
 ];

@@ -1,7 +1,7 @@
 # 1. rész (Augusztus – Egy nap a parkban): csibészség-ötletek
 
 Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** a közös pontozó rendszer (`mischief.js` + napló) és az 1–7. csibészség kész; a 8–10. még terv (tetszés szerinti sorrendben).
+**Állapot:** a közös pontozó rendszer (`mischief.js` + napló) és az 1–8. csibészség kész; a 9–10. még terv (tetszés szerinti sorrendben).
 
 ## Pontozás és csibészség-napló (közös rendszer, minden csibészségre)
 
@@ -25,7 +25,7 @@ Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni
 | 5 | Kutyaszán | végigér | legfeljebb 3 ütközés | ütközés nélkül a szökőkútig | „A szomszéd néni kutyája unatkozik.” | **kész** |
 | 6 | Fotóbomba | 1 elrontott fotó | 3 a 5-ből | mind az 5, és az egyiken galamb van a kezében | „Anya fotózni készül a szökőkútnál.” | **kész** |
 | 7 | Pénzhalászat a szökőkútból | 3 érme | 6 érme | 10 érme lebukás nélkül | „Valami csillog a szökőkút alján.” | **kész** |
-| 8 | Rollerverseny a nyugdíjassal | célba ér | félúton vezet | legyőzi a bácsit (szélárnyékból előz a turbó előtt) | „A padon ülő bácsi gyorsnak tartja magát.” | terv |
+| 8 | Rollerverseny a nyugdíjassal | célba ér | félúton vezet | legyőzi a bácsit (szélárnyékból előz a turbó előtt) | „A padon ülő bácsi gyorsnak tartja magát.” | **kész** |
 | 9 | Bújócska apával | 20 mp rejtőzés | 40 mp | apa feladja („Nem láttad a gyereket?”) | „Apa szeret keresgélni.” | terv |
 | 10 | Lufis bácsi | felszáll a lufikkal | eléri a labdát | eléri, és egy lufi sem pukkad ki | „Valaki lufit árul a park szélén.” | terv |
 
@@ -90,12 +90,13 @@ Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni
 - **Csillagok:** ★ 3 érme · ★★ 6 érme · ★★★ 10 érme úgy, hogy a parkőr egyszer sem veszi észre.
 - **Megvalósítás** (`src/activities/fish.js`): a szökőkút peremén **Szóköz** (az E továbbra is ivás) → `pstate = 'fish'`, 70 mp. Petyus bottal a peremen áll; 12 érme csillog a medence alján. **A / D** (bármely irány) körbeviszi a peremen (a gombot tartva végig ugyanarra megy), **Szóköz** nyomva tartva kb. 1 mp alatt kihalássza az előtte lévő érmét (a cél érme villog, a bot hegye beleér a vízbe). A **parkőr bácsi** (új szereplő, zöld egyenruha) a szökőkút körüli kövezett gyűrűn járőrözik; időnként megáll („Hmm?” – 🟡), majd odanéz (🔴, 1,6–2,8 mp): ha ilyenkor Petyus mozog vagy halászik → síp, „Hé, fiatalember! A szökőkút nem pénztárca!”, egy érme visszakerül a vízbe; 3 lebukás után vége. A szökőkút középső oszlopa eltakar előle. **E** idő előtt befejezi. Legalább 3 érmével: begurul a fagyis kocsi (csengő), Petyus vesz egy gombócot (az érmék számától függ a mérete), odaviszi apának a padhoz: „Honnan volt rá pénzed?” – „…A szökőkútból.” – a gombóc PLACCS apa cipőjére: „…Ez az új cipőm volt.” Angi: „Legalább csokis.” `award('penzhalasz', érmék, { seen })`. HUD: `#mini` (🪙 · ⏱ · lámpa), tipp: `#fishTip`.
 
-## 8. Rollerverseny a nyugdíjassal
+## 8. Rollerverseny a nyugdíjassal  ✅ kész
 
 - **Játék:** a padon ülő bácsi kihívja Petyust egy körre a sétányon – a saját elektromos mopedjén. Versenyjáték az ismert pályán.
 - **Poén:** a bácsi a célegyenesben bekapcsolja a „turbót”, és nyer. „Az én időmben is így volt!”
 - **Mire épül:** rollerezés, a sétány útvonala (`loopPoint` a `npcs.js`-ben), a padon ülő bácsik (`type: 'sit'`).
 - **Csillagok:** ★ célba ér · ★★ félúton vezet · ★★★ megnyeri a versenyt (a bácsi szélárnyékából, a turbója előtt kell előzni).
+- **Megvalósítás** (`src/activities/race.js`): a sétány északi padján ülő kalapos bácsi mellett mentazöld moped parkol. Rolleren odagurulva **E – Verseny a bácsival!** → „Szép kis roller… de az én mopedem gyorsabb!”, a bácsi felül a mopedre, 3-2-1-RAJT (`pstate = 'race'`, a roller `scripted`, a mozgás a közös `rideStep()` a `scooter.js`-ben). Egy kör a sétányon (a sétálók köre, 96 m); a sétányról letérve nem halad (nincs levágás). A bácsi az egyeneseken gyorsabb (6 m/s; Petyus Shifttel 5,6), a kanyarokban lassít (4 m/s). **Szélárnyék:** közvetlenül mögötte (5 m-en belül, ugyanabban a sávban) Petyus 25%-kal gyorsabb, és kiállás után még 1,6 mp-ig kitart a lendület – így lehet kanyar előtt belülről előzni. Félúton és az utolsó kanyar után (turbó) dől el: ha ott a bácsi vezet, „Most jön a TURBÓ!!” és nyer – „Az én időmben is így volt!” („Ez nem ér! Neked turbód van!”); ha Petyus vezet, a turbó lefullad („TURBÓ! …Na ne! Pont most?!”). Utána a bácsi visszagurul, leparkol és visszaül a padjára. Apa ilyenkor a padon marad („Verseny?! Petyus, ÓVATOSAN!!”). `award('rollerverseny', 1|2|3)`. HUD: `#mini` (🛴 % · 🥇/🥈 · 💨 szélárnyék · 🔥 turbó).
 
 ## 9. Bújócska apával
 
