@@ -26,7 +26,7 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 5. **Ellenőrzés:** *Actions → Deploy to GitHub Pages* zöld; az élő oldal betölt. A workflow leáll, ha a tag nem a `main`-en van, vagy nem egyezik a `package.json` verziójával.
 
 - Melyik szám nő: **PATCH** – javítás, apró módosítás; **MINOR** – új tartalom (pl. új csibészség, új rész); **MAJOR** – nagy, kész állomás (pl. 1.0.0 = az első teljes rész kiadva).
-- Egyszeri GitHub-beállítás (megvan): *Settings → Pages → Source: GitHub Actions*; és mivel tagről történik a kiadás: *Settings → Environments → github-pages → Deployment branches and tags* → **Add deployment branch or tag rule** → *Tag*, minta: `v*`.
+- Egyszeri GitHub-beállítások: *Settings → Pages → Source: GitHub Actions* (kész); és mivel tagről történik a kiadás: *Settings → Environments → github-pages → Deployment branches and tags* → **Add deployment branch or tag rule** → *Tag*, minta: `v*`.
 
 ## Fájlok
 
