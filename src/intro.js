@@ -125,7 +125,7 @@ function finishIntro() {
   if (roller.rider) dismount(PLAY_START[0], PLAY_START[1]);
   roller.path = null; roller.pos.set(LEAN.x, 0, LEAN.z); roller.heading = LEAN.heading; roller.lean = LEAN.lean;
   roller.group.position.set(LEAN.x, 0.03, LEAN.z); roller.group.rotation.set(0, LEAN.heading, LEAN.lean, 'YXZ');
-  addCircleCol(LEAN.x, LEAN.z, 0.3, 1.0); G.rollerCol = colliders[colliders.length - 1]; roller.speed = 0;
+  addCircleCol(LEAN.x, LEAN.z, 0.3, 1.0); G.rollerCol = colliders[colliders.length - 1]; G.rollerCol.soft = true; roller.speed = 0;
   if (G.petike.rig !== rigs.foci) { G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7; }
   if (cs.skip) { G.petike.path = null; G.petike.place(PLAY_START[0], PLAY_START[1], Math.PI / 2 + 0.3); }
   G.petike.path = null; G.petike.solid = false;

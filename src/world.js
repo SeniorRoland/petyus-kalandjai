@@ -85,10 +85,11 @@ for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++) {
 export const colliders = [];
 function addBoxCol(x0, z0, x1, z1, h = 5, e = 0.6) { colliders.push({ box: true, e, x0: Math.min(x0, x1), z0: Math.min(z0, z1), x1: Math.max(x0, x1), z1: Math.max(z0, z1), h }); }
 export function addCircleCol(x, z, r, h = 5, e = 0.6) { colliders.push({ box: false, x, z, r, h, e }); }
-// pushes p (x,z) out of colliders; returns callback normal
-export function collide(p, rad, yBottom, onHit) {
+// pushes p (x,z) out of colliders; returns callback normal. skipSoft: ignore „soft” colliders (the parked scooter: it only
+// stops Petyus and the ball – dad, passers-by and animals walk round it, they would get stuck on it)
+export function collide(p, rad, yBottom, onHit, skipSoft = false) {
   for (const c of colliders) {
-    if (yBottom > c.h) continue;
+    if (yBottom > c.h || (skipSoft && c.soft)) continue;
     if (c.box) {
       if (p.x < c.x0 - rad || p.x > c.x1 + rad || p.z < c.z0 - rad || p.z > c.z1 + rad) continue;
       const cx = clamp(p.x, c.x0, c.x1), cz = clamp(p.z, c.z0, c.z1);
