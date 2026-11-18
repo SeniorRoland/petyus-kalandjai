@@ -6,7 +6,7 @@ Izometrikus, voxel stílusú 3D böngészős **játéksorozat** (Three.js r187 +
 - A felhasználó magyar; **a játékban minden szöveg magyar** (buborékok, súgó, feliratok). Kódkommentek angolul vagy magyarul is lehetnek.
 - Buborékok (`say(actor, szöveg, mp, név)` a `ui.js`-ben): képregényes stílus, betűtípusok npm-ből (`@fontsource/patrick-hand` a szöveghez, `@fontsource/bangers` a nevekhez/kiabáláshoz/hanghatásokhoz – mindkettő latin-ext, kell az ő/ű!). Fajták a szövegből: kiabálás (`!!` vagy nagybetűk) · motyogás (`…`-re végződik) · hanghatás (ha a „beszélő” nem Actor, pl. állat, autó: csak színes felirat). A farok SVG-ben (`#tails`) mindig a beszélő feje felé mutat; a buborékok nem takarják egymást (megjelenési sorrendben helyezkednek el, a foglalt helyről a legközelebbi szabad helyre csúsznak). A buborékok csak a látható képen belül lehetnek (a cutscene-csíkok magasságát minden képkockán megméri); ha a beszélő feje nincs a képen, a szöveg ugyanilyen stílusú **feliratként** jelenik meg alul középen (név mellett ◀/▶ jelzi, merre van; egyszerre legfeljebb 3; képen kívüli hanghatás nem jelenik meg). Ezért a cutscene-ek közelijeit testmagasságra kell keretezni: `atHeight(x, y, z)` (`cine.js`), nem a talppontra.
 - Futtatás: `npm install`, majd `npm run dev` (http://localhost:5173). Build: `npm run build` → `dist/`.
-- Objektumkatalógus (design terv): `designterv.html` – ugyanazt a `src/voxels.js`-t használja, mint a játék.
+- Objektumkatalógus (design terv): `designterv.html` – ugyanazt a `src/voxels.js`-t használja, mint a játék. A kezdőképernyőről nem érhető el, csak közvetlen címmel (`…/designterv.html`).
 
 ## Git munkafolyamat
 
@@ -32,7 +32,7 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 
 | Fájl | Tartalom |
 |---|---|
-| `index.html` | UI (start képernyő: nagy cím fent, alatta a 12 rész kisebb csempéi; HUD; súgó `#help` a jobb alsó sarokban, gombonként egy sor – `<dl>`: gomb · leírás, **H** rejti; buborékok, érintéses vezérlők, `#prompt` interakciós felirat) |
+| `index.html` | UI (start képernyő: nagy cím fent, alatta a 12 rész kisebb csempéi, jobb alsó sarokban a verzió `#version` – a `package.json`-ból, `__APP_VERSION__` a `vite.config.js`-ben; a katalógusra nem mutat link; HUD; súgó `#help` a jobb alsó sarokban, gombonként egy sor – `<dl>`: gomb · leírás, **H** rejti; buborékok, érintéses vezérlők, `#prompt` interakciós felirat) |
 | `src/main.js` + `src/*.js`, `src/activities/*.js` | a játék ES-modulokra bontva (belépési pont: `main.js`, lásd lent) |
 | `src/voxels.js` | voxel objektumkönyvtár: `VoxelGrid`, `CATALOG`, `getGeometry(id, variant)` |
 | `src/designterv.js` | a 3D katalógus oldal logikája |

@@ -67,7 +67,8 @@
   #loadbar { width:260px; max-width:70vw; height:8px; background:rgba(255,255,255,.35); border-radius:6px; overflow:hidden; }
   #loadbar div { height:100%; width:0; background:#ffd166; transition:width .2s; }
   #loadbar.done { visibility:hidden; }
-  #designLink { color:#ddd; font-size:14px; text-shadow:0 1px 3px #000; }
+  /* the current version, bottom right of the start screen (filled in from package.json by menu.js) */
+  #overlay > #version { position:fixed; right:12px; bottom:8px; z-index:2; color:rgba(255,255,255,.75); font-family:'Patrick Hand', 'Comic Sans MS', cursive; font-size:15px; text-shadow:0 1px 3px #000; pointer-events:none; }
   #err { color:#ffb3b3; max-width:560px; text-align:center; margin-top:16px; font-size:15px; }
 
   #hud { position:fixed; left:14px; top:12px; z-index:10; color:#fff; font-weight:bold; font-size:22px;
@@ -256,7 +257,7 @@
   <div id="episodes" role="list" aria-label="Részek"></div>
   <button id="journalLink" type="button">📒 Csibészség-napló</button>
   <div id="err"></div>
-  <a id="designLink" href="designterv.html" target="_blank" rel="noopener">Objektumkatalógus (design terv) ↗</a>
+  <div id="version"></div>
 </div>
 
 <div id="hud"><span class="chip">⚽ Gólok: <span id="score">0</span></span> <span class="chip">🏅 Dekázás-rekord: <span id="jBest">0</span></span> <span class="chip">⭐ <span id="mStars">0</span>/30</span></div>

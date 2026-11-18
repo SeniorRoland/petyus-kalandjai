@@ -44,5 +44,7 @@ export function buildEpisodeMenu() {
   }
   return start;
 }
+// the current version (package.json, via vite.config.js define), bottom right of the start screen
+export function showVersion() { const el = $('version'); if (el) el.textContent = `v${__APP_VERSION__}`; }
 // the playable tile's label: "Betöltés…" → "Indítás ▶" (or "Hiba")
 export function setStartLabel(txt) { const go = $('startBtn') && $('startBtn').querySelector('.go'); if (go) go.textContent = txt; }
