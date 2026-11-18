@@ -17,7 +17,8 @@
   :root { --ink:#2b2d42; --accent:#ff7a3d; }
   * { box-sizing:border-box; }
   html,body { margin:0; height:100%; overflow:hidden; background:#9fd6f0; font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif; user-select:none; -webkit-user-select:none; }
-  #app canvas { display:block; touch-action:none; }
+  #app canvas { display:block; touch-action:none; cursor:grab; }
+  #app.panning canvas { cursor:grabbing; }
   /* phones: no pull-to-refresh / bounce, no grey tap flash, no long-press menu, no double-tap zoom on the buttons */
   html, body { overscroll-behavior:none; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; }
   button { touch-action:manipulation; }
@@ -77,6 +78,13 @@
   #loadbar div { height:100%; width:0; background:#ffd166; transition:width .2s; }
   #loadbar.done { visibility:hidden; }
   /* the current version, bottom right of the start screen (filled in from package.json by menu.js) */
+  /* phones: „install as an app” offer at the bottom of the start screen (install.js) */
+  #overlay > #install { position:fixed; left:50%; bottom:max(10px, env(safe-area-inset-bottom)); transform:translateX(-50%); z-index:3; display:none; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;
+    width:min(560px, 94vw); background:#fffdf3; color:#151515; border:3px solid #151515; border-radius:12px; box-shadow:3px 3px 0 #151515; padding:7px 10px;
+    font-family:'Patrick Hand', 'Comic Sans MS', cursive; font-size:16px; line-height:1.2; text-align:center; }
+  #overlay > #install.show { display:flex; }
+  #install button { font-family:'Bangers', Impact, sans-serif; font-size:17px; letter-spacing:1px; border:2px solid #151515; border-radius:9px; padding:3px 12px 1px; cursor:pointer; }
+  #install .go { background:var(--accent); color:#fff; box-shadow:0 2px 0 #151515; } #install .no { background:#fff; color:#151515; }
   #overlay > #version { position:fixed; right:12px; bottom:8px; z-index:2; color:rgba(255,255,255,.75); font-family:'Patrick Hand', 'Comic Sans MS', cursive; font-size:15px; text-shadow:0 1px 3px #000; pointer-events:none; }
   #err { color:#ffb3b3; max-width:560px; text-align:center; margin-top:16px; font-size:15px; }
 
@@ -266,6 +274,11 @@
     #mini, #crumbs { top:42px; right:8px; font-size:15px; padding:2px 9px; }
     #prompt { bottom:12px; font-size:14px; padding:5px 12px; }
     .bubble .in { max-width:180px; font-size:15px; padding:5px 10px 4px; }
+    body.mobile .bubble .in { font-size:13px; max-width:160px; line-height:1.15; padding:4px 8px 3px; border-width:2px; }
+    body.mobile .bubble.shout .in { font-size:15px; }
+    body.mobile .bubble.sfx .in { font-size:20px; }
+    body.mobile .bubble.sub .in { max-width:min(420px, 62vw); font-size:13px; padding:3px 10px 2px; }
+    body.mobile .bubble .who { font-size:11px; top:-11px; }
     .bubble.shout .in { font-size:18px; }
     #joy { left:14px; bottom:14px; width:112px; height:112px; } #joyKnob { left:33px; top:33px; width:46px; height:46px; }
     #kickBtn { right:16px; bottom:18px; width:86px; height:86px; font-size:15px; }
@@ -292,6 +305,7 @@
   <button id="journalLink" type="button">📒 Csibészség-napló</button>
   <div id="err"></div>
   <div id="version"></div>
+  <div id="install" role="dialog" aria-label="Telepítés"><span class="txt"></span><button class="go" type="button">Telepítés</button><button class="no" type="button">Most nem</button></div>
 </div>
 
 <div id="hud"><span class="chip">⚽ Gólok: <span id="score">0</span></span> <span class="chip">🏅 Dekázás-rekord: <span id="jBest">0</span></span> <span class="chip">⭐ <span id="mStars">0</span>/30</span></div>
@@ -336,6 +350,7 @@
   <dt>R</dt><dd>labda ide</dd>
   <dt>N</dt><dd>csibészség-napló</dd>
   <dt>Görgő / + −</dt><dd>zoom (0: alap)</dd>
+  <dt>Egérrel húzva</dt><dd>körülnézés</dd>
   <dt>M</dt><dd>hang</dd>
   <dt>H</dt><dd>súgó elrejtése</dd>
 </dl></div>

@@ -39,6 +39,24 @@ function toggleMute() { G.muted = !G.muted; $('muteBtn').textContent = G.muted ?
 $('muteBtn').onclick = toggleMute;
 $('skipBtn').onclick = () => skipIntro();
 // touch joystick
+// looking around (panning): drag the game view with the mouse (desktop) or one finger (touch – not on the joystick / buttons).
+// Screen pixels → ground metres: the orthographic view is 2·viewSize tall; the ground is seen at an angle (CAM_OFF: sin ≈ 0.52).
+const PAN_R = [1 / Math.SQRT2, -1 / Math.SQRT2], PAN_F = [-1 / Math.SQRT2, -1 / Math.SQRT2], PAN_SIN = 34 / Math.hypot(40, 34, 40), PAN_MAX = 28;
+function panBy(dx, dy) {
+  const u = 2 * G.viewSize / window.innerHeight;
+  let x = G.pan.x - (PAN_R[0] * dx - PAN_F[0] * dy / PAN_SIN) * u, z = G.pan.z - (PAN_R[1] * dx - PAN_F[1] * dy / PAN_SIN) * u;
+  const l = Math.hypot(x, z); if (l > PAN_MAX) { x *= PAN_MAX / l; z *= PAN_MAX / l; }
+  G.pan.x = x; G.pan.z = z; G.pan.t = 0;
+}
+{
+  const app = $('app'); let mx = null, my = null, tid = null, tx = 0, ty = 0;
+  app.addEventListener('mousedown', (e) => { if (e.button !== 0 && e.button !== 1) return; mx = e.clientX; my = e.clientY; app.classList.add('panning'); });
+  window.addEventListener('mousemove', (e) => { if (mx === null) return; panBy(e.clientX - mx, e.clientY - my); mx = e.clientX; my = e.clientY; });
+  window.addEventListener('mouseup', () => { mx = null; app.classList.remove('panning'); });
+  app.addEventListener('touchstart', (e) => { if (e.touches.length === 1) { const t = e.touches[0]; tid = t.identifier; tx = t.clientX; ty = t.clientY; } else tid = null; }, { passive: true });
+  app.addEventListener('touchmove', (e) => { if (e.touches.length !== 1 || tid === null) return; const t = e.touches[0]; if (t.identifier !== tid) return; panBy(t.clientX - tx, t.clientY - ty); tx = t.clientX; ty = t.clientY; }, { passive: true });
+  app.addEventListener('touchend', () => { tid = null; });
+}
 // two-finger pinch on the game view
 {
   let d0 = 0, z0 = 1;

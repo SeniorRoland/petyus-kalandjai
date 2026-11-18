@@ -54,6 +54,7 @@ export const G = {
   lastKick: null,   // activities/drinking.js
   qPressed: false,   // activities/juggle.js
   petyaMode: 'bench',   // dad.js
+  pan: { x: 0, z: 0, t: 99 },   // input.js – looking around: camera offset dragged with the mouse / one finger; t = s since the last drag
   zoom: 1,   // input.js – the player's own zoom on top of what the scene asks for (smaller = closer)
   paused: false,   // mischief.js – the journal is open
 };

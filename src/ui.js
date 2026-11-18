@@ -61,12 +61,19 @@ export function updateBubbles(dt) {
     b.w = b.el.offsetWidth; b.h = b.el.offsetHeight;
     if (!b.sub) { b.bx = b.ax - b.w / 2; b.by = b.ay - b.h - (b.kind === 'sfx' ? 4 : TAIL); }
   }
-  // subtitles: centred, stacked upwards from the bottom of the picture (above the prompt / the juggling panel in play)
-  let yb = V.bars ? V.y1 - 4 : H - 110;
-  if ($('juggle').style.display === 'block') yb = Math.min(yb, $('juggle').getBoundingClientRect().top - GAP);
-  // at most 3 at once (the newest; older ones bow out), the newest at the bottom like film subtitles
+  // subtitles: centred, stacked upwards from the bottom of the picture (above the prompt / the juggling panel in play);
+  // on phones at the top centre instead, stacked downwards (the bottom has the joystick, the buttons and the prompt), at most 2
+  const mobile = document.body.classList.contains('mobile') && !V.bars;
   const subs = bubbles.filter((b) => b.sub && !b.hidden).reverse();
-  subs.forEach((b, i) => { if (i >= MAX_SUBS || yb - b.h < V.y0) { b.hidden = true; return; } yb -= b.h; b.bx = W / 2 - b.w / 2; b.by = yb; yb -= GAP; });
+  if (mobile) {
+    let yt = V.y0 + 38;
+    subs.forEach((b, i) => { if (i >= 2 || yt + b.h > V.y1) { b.hidden = true; return; } b.bx = W / 2 - b.w / 2; b.by = yt; yt += b.h + GAP; });
+  } else {
+    let yb = V.bars ? V.y1 - 4 : H - 110;
+    if ($('juggle').style.display === 'block') yb = Math.min(yb, $('juggle').getBoundingClientRect().top - GAP);
+    // at most 3 at once (the newest; older ones bow out), the newest at the bottom like film subtitles
+    subs.forEach((b, i) => { if (i >= MAX_SUBS || yb - b.h < V.y0) { b.hidden = true; return; } yb -= b.h; b.bx = W / 2 - b.w / 2; b.by = yb; yb -= GAP; });
+  }
   // 2. no covering: subtitles first, then the bubbles one by one in the order they appeared (older ones keep their spot);
   //    each goes to its ideal spot above the head, or the nearest free spot around it (up first, then sideways, then down)
   const placed = [];
@@ -106,7 +113,10 @@ export function updateBubbles(dt) {
 function drawTail(b) {
   const { x, y, w, h } = b; let tipX = b.ax, tipY = b.ay - 4;
   let bx, by, px, py, ix, iy;                      // base centre on the border, unit vector along the border, inward normal
-  if (tipY >= y + h - 6 || (tipX >= x && tipX <= x + w)) { bx = clamp(tipX, x + 22, x + w - 22); by = y + h - 1.5; px = 1; py = 0; ix = 0; iy = -1; }
+  const overX = tipX >= x - 4 && tipX <= x + w + 4;
+  if (tipY >= y + h + 2) { bx = clamp(tipX, x + 22, x + w - 22); by = y + h - 1.5; px = 1; py = 0; ix = 0; iy = -1; }         // below: from the bottom edge
+  else if (overX && tipY <= y - 2) { bx = clamp(tipX, x + 22, x + w - 22); by = y + 1.5; px = 1; py = 0; ix = 0; iy = 1; }   // above: from the top edge
+  else if (overX) { b.fill.setAttribute('d', ''); b.edge.setAttribute('d', ''); return; }   // the head is behind the bubble: no tail (it would point into the text)
   else if (tipX < x) { bx = x + 1.5; by = clamp(tipY, y + 16, y + h - 16); px = 0; py = 1; ix = 1; iy = 0; }
   else { bx = x + w - 1.5; by = clamp(tipY, y + 16, y + h - 16); px = 0; py = 1; ix = -1; iy = 0; }
   const d = Math.hypot(tipX - bx, tipY - by);

@@ -46,6 +46,14 @@
 - Ellenőrizni: sebesség (FPS), az időzítéses részek érintéssel, a buborékok és feliratok olvashatósága, a hang.
 - Asztali gépen csak a méret szimulálható, az érintés és a sebesség nem.
 
+## Visszajelzés után (első telefonos próba)  ✅ kész
+
+- Körülnézés egy ujjal húzva (asztalon egérrel) – `G.pan`, 3 mp után visszasiklik.
+- Telefonon kisebb buborékbetű; a feliratok (képen kívüli beszélő) felül középen, legfeljebb 2 – alul a gombok és a joystick vannak.
+- A buborék farka nem mutat bele a szövegbe, ha a buborék a beszélő fejére csúszik (felső szélről indul, vagy nincs).
+- Telefonon a kezdőképernyő felajánlja a telepítést (`install.js`).
+- Ami Petyust kitakarja (fa, lámpa …), áttetsző lesz (`occlude.js`).
+
 ## Később, külön lépésként
 
 - Valódi app-boltos alkalmazás (Google Play, App Store) egy csomagoló réteggel (pl. Capacitor). Ez a fenti lépésekre épül.
