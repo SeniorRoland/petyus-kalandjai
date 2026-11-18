@@ -1,0 +1,16 @@
+{
+  "name": "Petyus kalandjai",
+  "short_name": "Petyus",
+  "description": "Izometrikus voxel 3D játék – Petyus, Petya és Angi kalandjai. 1. rész: Augusztus – Egy nap a parkban.",
+  "lang": "hu",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#151515",
+  "theme_color": "#ff7a3d",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

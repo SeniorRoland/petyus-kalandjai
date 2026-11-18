@@ -8,11 +8,20 @@
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#ff7a3d">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Petyus">
 <style>
   :root { --ink:#2b2d42; --accent:#ff7a3d; }
   * { box-sizing:border-box; }
   html,body { margin:0; height:100%; overflow:hidden; background:#9fd6f0; font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif; user-select:none; -webkit-user-select:none; }
   #app canvas { display:block; touch-action:none; }
+  /* phones: no pull-to-refresh / bounce, no grey tap flash, no long-press menu, no double-tap zoom on the buttons */
+  html, body { overscroll-behavior:none; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; }
+  button { touch-action:manipulation; }
+  #touch, #touch * { touch-action:none; }
 
   /* start screen: the cover image behind a comic strip of 12 monthly episodes */
   #overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;

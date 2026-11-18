@@ -131,10 +131,24 @@ async function boot() {
   document.title = `${SERIES} – ${EPISODE.n}. rész: ${EPISODE.month}`;
   $('loadbar').classList.add('done');
   const btn = $('startBtn'); btn.disabled = false; setStartLabel('Indítás ▶'); btn.focus({ preventScroll: true });
-  btn.onclick = () => { initAudio(); $('overlay').classList.add('hide'); runIntro(); };
+  btn.onclick = () => { initAudio(); if (MOBILE) goFullscreen(); $('overlay').classList.add('hide'); runIntro(); };
   requestAnimationFrame(frame);
   window.__game = { THREE, scene, camera, renderer, petike: () => G.petike, petya: () => G.petya, angi: () => G.angi, ball, roller, keys, skipIntro, get mode() { return G.mode; }, get pstate() { return G.pstate; }, get petyaMode() { return G.petyaMode; }, use: () => { G.usePressed = true; }, roller, setZoom: (z) => { G.zoomOverride = z; G.viewSizeTarget = z; G.viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { G.kickPressed = true; setTimeout(() => { G.kickReleased = true; }, p); },
     // manual stepping (works even when the tab is hidden and rAF is paused): __game.tick(seconds)
     tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); step(dt * cine.slow); } renderer.render(scene, camera); }, cine, ftn, cev, TREES, jug, jugPress, juggle: () => { G.qPressed = true; }, say };
 }
 boot();
+
+// phones: full screen + landscape lock when the game starts (where the browser allows it – Android Chrome; iOS: add to home screen)
+function goFullscreen() {
+  const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req || document.fullscreenElement) return;
+  try {
+    const p = req.call(el, { navigationUI: 'hide' });
+    const lock = () => { try { const o = screen.orientation; if (o && o.lock) o.lock('landscape').catch(() => {}); } catch (e) { /* not supported */ } };
+    if (p && p.then) p.then(lock).catch(() => {}); else lock();
+  } catch (e) { /* not allowed */ }
+}
+// installable web app: works offline after the first visit (only in the built version – the dev server would cache stale files)
+if ('serviceWorker' in navigator && import.meta.env.PROD) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+

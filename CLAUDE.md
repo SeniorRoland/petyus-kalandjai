@@ -39,7 +39,8 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 | `public/*.glb` | a játék által betöltött modellek: `petya`, `angi`, `petike_roller`, `petike_foci` (riggelt, T-pose), `roller_kicsi` (a roller) |
 | `models/source/*.glb` | az **eredeti**, nem riggelt karaktermodellek (lelógó karral) – a modell-pipeline bemenete |
 | `tools/model-pipeline/` | Python: T-pose + csontváz generálása (lásd lent) |
-| `tools/ikon/make_icon.py` | a böngészőfül ikonja (pixel-art focilabda narancs csempén, 32×32-es rács) → `public/favicon.svg`, `favicon-32.png`, `apple-touch-icon.png` (Pillow kell hozzá) |
+| `tools/ikon/make_icon.py` | a böngészőfül ikonja (pixel-art focilabda narancs csempén, 32×32-es rács) → `public/favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`, a webalkalmazás ikonjai `icon-192.png`, `icon-512.png` (Pillow kell hozzá) |
+| `public/manifest.webmanifest` · `public/sw.js` | telepíthető webalkalmazás (PWA): név, ikonok, fekvő teljes képernyő · service worker – az első látogatás után offline is indul (oldal: hálózat → gyorsítótár; minden más: gyorsítótár + háttérfrissítés); csak buildben regisztrál |
 
 ## A játék moduljai (`src/`)
 
@@ -130,4 +131,4 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 - **Csibészségek az 1. részhez** (mini játékok / jelenetek; részletek, poénok és a kódbeli kapcsolódás: [docs/terv-1-resz-csibeszsegek.md](docs/terv-1-resz-csibeszsegek.md), ott az állapotuk is). **Pontozás:** mindegyikért max. 3 csillag (★ teljesítés, ★★/★★★ mérhető eredményért, a legjobb számít), összesen ⭐ 30; **Csibészség-napló** (N / 📒): elvégzettek csillagokkal és legjobb eredménnyel, a hátralévők „???” + tipp; ⭐ x/30 a HUD-on és az augusztusi csempén; mentés `localStorage`-ban. **Kész:** a közös rendszer (`mischief.js`, `award(id, érték, extra)`) és mind a 10 csibészség.
   1. Fordított edzés: Petyus tanítja apát dekázni · 2. A szundikáló apa (torony a fején) · 3. Galambraj-vezénylés · 4. Vízipisztoly az ivókútból · 5. Kutyaszán · 6. Fotóbomba · 7. Pénzhalászat a szökőkútból (parkőr) · 8. Rollerverseny a nyugdíjassal · 9. Bújócska apával · 10. Lufis bácsi
 - Mixamo-animációk betöltése (`AnimationMixer`) a kézi pózok helyett – a csontnevek már egyeznek.
-- **Mobilon is jól játszható játék** (folyamatban, `feature/mobil`; kész: 1. mobil minőség mód + fekvő elrendezés, 2. érintéses vezérlés csibészségenként): mobil minőség mód és fekvő elrendezés → érintéses vezérlés csibészségenként → teljes képernyő, PWA, telefonos apróságok → tesztelés valódi telefonon. Részletek: [docs/terv-mobil.md](docs/terv-mobil.md).
+- **Mobilon is jól játszható játék** (folyamatban, `feature/mobil`; kész: 1. mobil minőség mód + fekvő elrendezés, 2. érintéses vezérlés csibészségenként, 3. teljes képernyő, hang, PWA/offline): mobil minőség mód és fekvő elrendezés → érintéses vezérlés csibészségenként → teljes képernyő, PWA, telefonos apróságok → tesztelés valódi telefonon. Részletek: [docs/terv-mobil.md](docs/terv-mobil.md).

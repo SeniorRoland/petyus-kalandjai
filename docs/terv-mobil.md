@@ -1,6 +1,6 @@
 # Terv: mobilon is jól játszható játék
 
-**Állapot:** folyamatban (`feature/mobil` ág) – az 1–2. lépés kész, a 3–4. hátravan. Becsült méret: kb. 2–4 munkamenet. Nem kell hozzá újraírás.
+**Állapot:** folyamatban (`feature/mobil` ág) – az 1–3. lépés kész, a 4. (tesztelés valódi telefonon) hátravan. Becsült méret: kb. 2–4 munkamenet. Nem kell hozzá újraírás.
 
 ## Ami már megvan
 
@@ -34,7 +34,8 @@
 - **Csibészség-napló:** a 📒 gomb elérhetősége és mérete.
 - A gombok felirata kövesse a helyzetet (pl. RÚGÁS → MORZSA / FRÖCSKÖL / HALÁSZ), ahogy a `#prompt` is.
 
-### 3. Telefonos apróságok
+### 3. Telefonos apróságok  ✅ kész
+- **Megvalósítás:** indításkor telefonon teljes képernyő + fekvő zárolás (`goFullscreen()` a `main.js`-ben; ahol a böngésző engedi – Android Chrome; iPhone-on a főképernyőre tett webalkalmazás fut teljes képernyőn). A hang a háttérbe kerüléskor szünetel, visszatéréskor / a következő érintésre folytatódik (`audio.js`). Nincs „húzd le a frissítéshez”, rugózás, szürke érintés-villanás, hosszan nyomott menü, dupla koppintásos nagyítás a gombokon (CSS). **PWA:** `public/manifest.webmanifest` (név, fekvő, teljes képernyő, ikonok: `icon-192.png`, `icon-512.png` – `tools/ikon/make_icon.py`), `public/sw.js` service worker: az oldal hálózatról jön, ha van net, különben a gyorsítótárból; minden más a gyorsítótárból, a háttérben frissítve → az első látogatás után **offline is indul**. Csak a buildelt változatban regisztrál (`import.meta.env.PROD`). iOS-hez `apple-mobile-web-app-*` metatagek.
 - Teljes képernyős mód az indításkor (Fullscreen API), ahol a böngésző engedi.
 - A hang elindítása az első érintéskor (WebAudio feloldás).
 - A véletlen oldalnagyítás, görgetés és szövegkijelölés tiltása (`touch-action`, `user-scalable=no`).
