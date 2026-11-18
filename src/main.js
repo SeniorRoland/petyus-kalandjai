@@ -25,7 +25,7 @@ import { rollerRide } from './roller.js';
 import { camTarget, camera, renderer, scene, updateProjection } from './scene.js';
 import { EPISODE, G, ROLLER_SCALE, SERIES, ball, rigs, roller } from './state.js';
 import { buildEpisodeMenu, setStartLabel, showVersion } from './menu.js';
-import { say, updateBubbles } from './ui.js';
+import { say, toast, updateBubbles } from './ui.js';
 import { $, V3 } from './util.js';
 import { TREES, buildWorld, collide } from './world.js';
 
@@ -54,13 +54,18 @@ import './cine.js';
 import './camera.js';
 import './ambience.js';
 import { initMischief } from './mischief.js';
+import { MOBILE, watchFrame } from './quality.js';
 
 // ---------------------------------------------------------------- main loop
 let last = performance.now();
 const TIME_SCALE = Math.max(1, Math.min(8, +(new URLSearchParams(location.search).get('speed') || 1)));
 function frame(now) {
-  const dt0 = Math.min(0.05, (now - last) / 1000); last = now;
-  if (!G.paused) {   // paused while the mischief journal is open (still rendered)
+  const raw = (now - last) / 1000, dt0 = Math.min(0.05, raw); last = now;
+  // phones: held upright during the game → a „turn your phone” notice and the game waits
+  const upright = MOBILE && window.innerHeight > window.innerWidth && (G.mode === 'intro' || G.mode === 'play');
+  document.body.classList.toggle('upright', upright);
+  watchFrame(Math.min(raw, 0.25), !upright && !document.hidden && (G.mode === 'intro' || G.mode === 'play'), () => toast('Egyszerűbb grafika – hogy gördülékenyebb legyen a játék.', 3));
+  if (!G.paused && !upright) {   // paused while the mischief journal is open (still rendered)
     tickCine(dt0);
     for (let i = 0; i < TIME_SCALE; i++) step(dt0 * cine.slow);
   }
@@ -87,6 +92,7 @@ function step(dt) {
 
 // ---------------------------------------------------------------- boot
 async function boot() {
+  if (MOBILE) document.body.classList.add('mobile');   // quality.js: phone / tablet
   buildEpisodeMenu(); showVersion();   // the 12 monthly episodes on the start screen (August playable once loaded) + the version
   initMischief();       // stars, ⭐ totals, the mischief journal
   buildWorld();

@@ -1,6 +1,6 @@
 # Terv: mobilon is jól játszható játék
 
-**Állapot:** terv (még nem kezdtük el). Becsült méret: kb. 2–4 munkamenet. Nem kell hozzá újraírás.
+**Állapot:** folyamatban (`feature/mobil` ág) – az 1. lépés kész, a 2–4. hátravan. Becsült méret: kb. 2–4 munkamenet. Nem kell hozzá újraírás.
 
 ## Ami már megvan
 
@@ -11,7 +11,8 @@
 
 ## Teendők
 
-### 1. Mobil minőség mód és fekvő elrendezés
+### 1. Mobil minőség mód és fekvő elrendezés  ✅ kész
+- **Megvalósítás:** `src/quality.js` – szintek: 2 teljes (asztal), 1 mobil (felbontás ≤ 1,25×, élsimítás ki, árnyéktérkép 1024, fele annyi részecske, max. 160 élő), 0 minimális (1×, árnyék nélkül, negyed annyi részecske). Telefonon/tableten (`pointer: coarse`, vagy érintős és a rövidebb képernyőoldal < 820 px) 1-ről indul; `watchFrame()`: ha a játék tartósan (4 mp) 25 kép/mp alatt fut, egy szinttel lejjebb vált („Egyszerűbb grafika…” felirat). `?quality=high|mobile|low` felülírja (és kikapcsolja az automatikus váltást). A `scene.js` a szint szerint állítja a renderert és az árnyékot, az `actors.js` `spawnFx` a `fxAllowed()`-dal ritkít. Állóban tartott telefonon játék közben „Fordítsd el a telefont!” (`#rotate`, `body.upright`), a játék addig áll. Fekvő telefonon (`max-height: 500px`) kisebb HUD, gombok, joystick, buborékok, panelek (a stíluslap végén).
 - Mobil minőség (automatikusan érintős / gyenge eszközön, vagy kapcsolóval):
   - kisebb felbontás (`setPixelRatio` 1–1,5 a 2 helyett), élsimítás ki,
   - egyszerűbb vagy kikapcsolt árnyék (`shadowMap`), kisebb árnyéktérkép,

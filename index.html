@@ -242,6 +242,31 @@
     background:rgba(255,122,61,.85); color:#fff; font-weight:bold; font-size:18px; box-shadow:0 6px 0 #b8501f; }
   #runBtn { position:fixed; right:150px; bottom:30px; width:76px; height:76px; border-radius:50%; z-index:11; border:0;
     background:rgba(43,45,66,.6); color:#fff; font-weight:bold; font-size:14px; }
+  /* ---------- phones (body.mobile, quality.js MOBILE) ---------- */
+  /* held upright during the game: the game waits, a notice asks to turn the phone */
+  #rotate { position:fixed; inset:0; z-index:70; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    background:rgba(21,21,21,.92); color:#fff; text-align:center; padding:24px; font-family:'Patrick Hand', 'Comic Sans MS', cursive; font-size:22px; }
+  #rotate .ph { font-size:64px; animation:rotPh 1.8s ease-in-out infinite; }
+  #rotate b { font-family:'Bangers', Impact, sans-serif; font-weight:400; font-size:34px; letter-spacing:1.5px; color:#ffd166; }
+  @keyframes rotPh { 0%, 30% { transform:rotate(0deg); } 60%, 100% { transform:rotate(-90deg); } }
+  body.upright #rotate { display:flex; }
+  /* landscape phone: everything a size smaller, so the park stays visible */
+  @media (max-height: 500px) {
+    #hud { font-size:15px; left:8px; top:6px; } #hud .chip { padding:4px 9px; border-radius:9px; }
+    #topright { top:6px; right:8px; } #topright .btn { font-size:13px; padding:5px 9px; }
+    #mini, #crumbs { top:42px; right:8px; font-size:15px; padding:2px 9px; }
+    #prompt { bottom:12px; font-size:14px; padding:5px 12px; }
+    .bubble .in { max-width:180px; font-size:15px; padding:5px 10px 4px; }
+    .bubble.shout .in { font-size:18px; }
+    #joy { left:14px; bottom:14px; width:112px; height:112px; } #joyKnob { left:33px; top:33px; width:46px; height:46px; }
+    #kickBtn { right:16px; bottom:18px; width:86px; height:86px; font-size:15px; }
+    #useBtn { right:112px; bottom:86px; width:60px; height:60px; font-size:11px; }
+    #runBtn { right:112px; bottom:14px; width:60px; height:60px; font-size:11px; }
+    #polaroids { top:42px; } #polaroids .pol { width:78px; }
+    #fishTip { top:42px; font-size:14px; }
+    #big { font-size:min(18vh, 64px); }
+    #journal .book { max-height:92vh; overflow-y:auto; }
+  }
 </style>
 </head>
 <body>
@@ -276,6 +301,7 @@
   <div id="twBar"><div id="twZone"></div><div id="twMark"></div></div>
   <div id="twHint">SZÓKÖZ vagy E – rátenni, amikor a jel a zöldben van · horkolásnál remeg!</div>
 </div>
+<div id="rotate"><div class="ph">📱</div><b>Fordítsd el a telefont!</b><div>Petyus kalandjai fekvő képernyőn játszható.</div></div>
 <div id="mini"></div>
 <div id="polaroids"></div>
 <div id="fishTip"></div>
