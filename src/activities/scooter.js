@@ -12,6 +12,7 @@ import { $, angDiff, clamp, damp, pick } from '../util.js';
 import { GX0, GX1, GZ0, GZ1, addCircleCol, collide, colliders, groundH } from '../world.js';
 import { setPrompt } from './drinking.js';
 import { sledDog, startSled } from './sled.js';
+import { raceOldie, startRace } from './race.js';
 
 // ---------- scooter
 export function mountScooter() {
@@ -38,15 +39,21 @@ function dismountScooter() {
 export function updateRiding(dt) {
   const ro = roller, a = G.petike;
   const dog = sledDog();   // 5. csibészség: „Kutyaszán” – a dog walker right here
-  if (G.usePressed) { G.usePressed = false; if (dog) return startSled(dog); dismountScooter(); return; }
-  setPrompt(dog ? 'E – Megsétáltatom a kutyát!' : 'E – leszállni a rollerről');
+  const oldie = dog ? null : raceOldie();   // 8. csibészség: „Rollerverseny a nyugdíjassal” – the old man on his bench
+  if (G.usePressed) { G.usePressed = false; if (dog) return startSled(dog); if (oldie) return startRace(oldie); dismountScooter(); return; }
+  setPrompt(dog ? 'E – Megsétáltatom a kutyát!' : oldie ? 'E – Verseny a bácsival!' : 'E – leszállni a rollerről');
+  rideStep(dt);
+}
+// the scooter's movement (also used by the race: boost = slipstream)
+export function rideStep(dt, boost = 1) {
+  const ro = roller, a = G.petike;
   let ix = 0, iy = 0;
   if (keys.KeyA || keys.ArrowLeft) ix -= 1; if (keys.KeyD || keys.ArrowRight) ix += 1;
   if (keys.KeyW || keys.ArrowUp) iy += 1; if (keys.KeyS || keys.ArrowDown) iy -= 1;
   if (touch.active) { ix = touch.x; iy = touch.y; }
   let wx = CAM_RIGHT.x * ix + CAM_FWD.x * iy, wz = CAM_RIGHT.z * ix + CAM_FWD.z * iy;
   const il = Math.min(1, Math.hypot(wx, wz));
-  const maxSp = (keys.ShiftLeft || keys.ShiftRight || touch.run) ? 5.6 : 3.8;
+  const maxSp = ((keys.ShiftLeft || keys.ShiftRight || touch.run) ? 5.6 : 3.8) * boost;
   ro.turn = 0;
   if (il > 0.1) {
     const diff = angDiff(ro.heading, Math.atan2(wx, wz));
