@@ -107,6 +107,9 @@ if __name__ == '__main__':
     write_svg(g, os.path.join(PUBLIC, 'favicon.svg'))
     write_png(g, os.path.join(PUBLIC, 'favicon-32.png'), 32)
     write_png(g, os.path.join(PUBLIC, 'apple-touch-icon.png'), 180, pad=10)   # iOS: no transparency, a little margin
+    # web app (PWA) icons for manifest.webmanifest: plenty of margin, so they also work as „maskable” (round/squircle crops)
+    write_png(g, os.path.join(PUBLIC, 'icon-192.png'), 192, pad=26)
+    write_png(g, os.path.join(PUBLIC, 'icon-512.png'), 512, pad=70)
     for row in g:
         print(''.join(row))
-    print('kész: public/favicon.svg, favicon-32.png, apple-touch-icon.png')
+    print('kész: public/favicon.svg, favicon-32.png, apple-touch-icon.png, icon-192.png, icon-512.png')

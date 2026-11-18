@@ -5,6 +5,11 @@ import { R, clamp, rand } from './util.js';
 
 // ---------------------------------------------------------------- audio
 export let actx = null, master = null, outNode = null, ambBed = null;
+// phones (iOS) suspend the audio when the page is in the background or a call comes in: resume it on the next touch / when visible
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => { if (!actx) return; if (document.hidden) actx.suspend().catch(() => {}); else actx.resume().catch(() => {}); });
+  window.addEventListener('touchend', () => { if (actx && actx.state !== 'running' && !document.hidden) actx.resume().catch(() => {}); }, { passive: true });
+}
 export function initAudio() {
   if (actx) return; try { actx = new (window.AudioContext || window.webkitAudioContext)(); master = actx.createGain(); master.gain.value = 0.5; master.connect(actx.destination); startAmbience(); } catch (e) { actx = null; }
 }

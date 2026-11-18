@@ -5,7 +5,7 @@ import { isTouch } from '../input.js';
 import { pvel } from '../player.js';
 import { G, roller } from '../state.js';
 import { say } from '../ui.js';
-import { $, R, V3, dampAngle, pick, rand } from '../util.js';
+import { $, R, V3, dampAngle, pick, rand, touchText } from '../util.js';
 import { FOUNTAIN } from '../world.js';
 import { startFountain } from './fountain.js';
 import { canChallengeDad, startDadChallenge } from './coach.js';
@@ -23,6 +23,7 @@ const DRINK = { x: 28.3, z: -12.9, stand: [28.3, -12.36] };
             // free | toDrink | drinking | riding | toFountain | ftnDrink | caught | chased | atMom
 
 export function setPrompt(txt) {
+  txt = touchText(txt);   // touch screens: the on-screen button names
   const el = $('prompt'); if (el.textContent !== txt) el.textContent = txt;
   el.style.display = txt ? 'block' : 'none';
   if (isTouch) $('useBtn').style.display = txt ? 'block' : 'none';
