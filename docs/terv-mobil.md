@@ -1,6 +1,6 @@
 # Terv: mobilon is jól játszható játék
 
-**Állapot:** folyamatban (`feature/mobil` ág) – az 1. lépés kész, a 2–4. hátravan. Becsült méret: kb. 2–4 munkamenet. Nem kell hozzá újraírás.
+**Állapot:** folyamatban (`feature/mobil` ág) – az 1–2. lépés kész, a 3–4. hátravan. Becsült méret: kb. 2–4 munkamenet. Nem kell hozzá újraírás.
 
 ## Ami már megvan
 
@@ -21,7 +21,8 @@
 - Fekvő tájolás javasolt; álló helyzetben „Fordítsd el a telefont!” üzenet.
 - Kis képernyőre igazítás: HUD-chipek, buborékok (`say`), a minijáték-panelek (`#mini`, `#crumbs`, `#tower`, `#polaroids`, `#fishTip`), a filmes csíkok és a napló. Az érintéses gombok ne takarják a buborékokat.
 
-### 2. Érintéses vezérlés csibészségenként
+### 2. Érintéses vezérlés csibészségenként  ✅ kész
+- **Megvalósítás:** `src/touchui.js` (`updateTouchUI()`, minden képkockán érintős eszközön): a három gomb felirata és láthatósága az állapottól függ – szabad játék RÚGÁS/MORZSA · HASZNÁL · FUTÁS; roller/verseny FÉK · GYORS; vízipisztoly FRÖCSKÖL + KÉSZ; pénzhalászat HALÁSZ + KÉSZ; fotóbomba **UGRÁS + GRIMASZ** (a FUTÁS gomb ilyenkor grimasz-gomb, `G.runPressed`) + GALAMB; bújócska LEVEGŐ · FUTÁS · FELADOM; lufi UGRÁS; torony RAKD!; dekázás és jelenetek alatt rejtve (dekázásnál a ← ↑ → gombsor). A HASZNÁL gomb ott is látszik, ahol a minijátékból ki lehet lépni. A feliratok, tippek és a napló billentyűnevei érintőn gombnevekre cserélődnek (`touchText()` a `util.js`-ben: Szóköz → RÚGÁS, E → HASZNÁL, WASD → joystick …).
 Átnézni és szükség szerint javítani:
 - **Fordított edzés / dekázás:** a ← → ↑ gombsor mérete és helye, az időablak érintéssel.
 - **A szundikáló apa (torony):** az időzítéses gomb.

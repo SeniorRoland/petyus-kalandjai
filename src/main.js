@@ -55,6 +55,8 @@ import './camera.js';
 import './ambience.js';
 import { initMischief } from './mischief.js';
 import { MOBILE, watchFrame } from './quality.js';
+import { updateTouchUI } from './touchui.js';
+import { IS_TOUCH } from './util.js';
 
 // ---------------------------------------------------------------- main loop
 let last = performance.now();
@@ -77,7 +79,7 @@ function step(dt) {
   tickCutscene(dt);
   if (G.mode === 'intro' || G.mode === 'play') {
     G.petya.update(dt); G.angi.update(dt);
-    if (G.mode === 'play') updatePlayer(dt); else G.petike.update(dt);
+    if (G.mode === 'play') { updatePlayer(dt); if (IS_TOUCH) updateTouchUI(); } else G.petike.update(dt);
     if ((roller.rider || roller.path) && G.pstate !== 'riding') rollerRide(dt);
     if (G.mode === 'play') { updateDad(dt); if (['follow', 'return', 'ftnRun', 'ftnChase', 'catRun', 'catCarry', 'hideSeek', 'balloon'].includes(G.petyaMode)) { collide(G.petya.pos, 0.3, 0, null, true); G.petya.sync(); } }
     updateBall(dt);

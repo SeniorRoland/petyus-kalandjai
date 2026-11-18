@@ -100,7 +100,8 @@ function startPhoto() {
   ph.shot = 0; ph.spoiled = 0; ph.pigeon = false; ph.pigShot = 2 + Math.floor(rand() * 3); ph.photos = []; ph.holding = false;
   $('polaroids').innerHTML = ''; $('polaroids').classList.add('show'); $('polaroids').classList.remove('review');
   G.viewSizeTarget = 6;
-  toast(isTouch ? 'Kattanáskor bohóckodj: <b>RÚGÁS</b> – ugrás · <b>oldalra húzva</b> – grimasz' : 'Kattanáskor bohóckodj: <b>Szóköz / ↑</b> – ugrás · <b>A / D</b> – grimasz', 5);
+  G.runPressed = false;
+  toast(isTouch ? 'Kattanáskor bohóckodj: <b>UGRÁS</b> vagy <b>GRIMASZ</b> gomb (a joystick is jó)' : 'Kattanáskor bohóckodj: <b>Szóköz / ↑</b> – ugrás · <b>A / D</b> – grimasz', 5);
   say(G.angi, 'Na, álljatok össze! Petya, karold át a gyereket!', 2.4);
   $('mini').style.display = 'block'; hud();
   nextShot(2.4);
@@ -115,6 +116,8 @@ function nextShot(delay) {
 function readPose() {
   let jump = G.kickPressed || keys.KeyW || keys.ArrowUp, face = keys.KeyA || keys.KeyD || keys.ArrowLeft || keys.ArrowRight;
   if (touch.active) { if (touch.y > 0.6) jump = true; if (Math.abs(touch.x) > 0.6) face = true; }
+  if (G.runPressed) { face = true; G.runPressed = false; ph.runTap = 0.12; }   // touch: the GRIMASZ button (a tap – held for a moment)
+  if (ph.runTap > 0) { ph.runTap -= 1 / 60; face = true; }
   G.kickPressed = G.kickReleased = false; G.qPressed = false;
   const fresh = (jump || face) && !ph.held;
   ph.held = jump || face;

@@ -51,7 +51,7 @@ export function startFish() {
   say(a, pick(['Ott csillog valami… Kell egy bot!', 'Pénz a szökőkút alján? Halászni fogok!']), 2.2);
   runSeq([[2.0, () => { if (fi.keeper) say(fi.keeper, 'Rend a parkban, rend a lelkekben…', 2.2); }]]);
   setTimeout(() => { if (fi.on) $('fishTip').classList.add('show'); }, 400);
-  $('fishTip').innerHTML = isTouch ? 'Joystick – körbe a peremen · <b>RÚGÁS</b> nyomva – halászni · ha a parkőr néz: <b>mozdulatlan!</b>'
+  $('fishTip').innerHTML = isTouch ? 'Joystick – körbe a peremen · <b>HALÁSZ</b> nyomva – halászni · ha a parkőr néz: <b>mozdulatlan!</b>'
     : '<b>A / D</b> – körbe a peremen · <b>Szóköz</b> nyomva – halászni · ha a parkőr néz: <b>mozdulatlan!</b> · <b>E</b> – abbahagyni';
   $('mini').style.display = 'block'; hud();
 }

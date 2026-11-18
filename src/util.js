@@ -20,4 +20,11 @@ export function distSeg(px, pz, ax, az, bx, bz) {
   let t = L ? ((px - ax) * dx + (pz - az) * dz) / L : 0; t = clamp(t, 0, 1);
   return Math.hypot(px - (ax + dx * t), pz - (az + dz * t));
 }
+// touch screens: key names in hints / prompts → the on-screen buttons (RÚGÁS = Space, HASZNÁL = E, FUTÁS = Shift, joystick = WASD)
+export const IS_TOUCH = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+export function touchText(s) {
+  if (!IS_TOUCH || !s) return s;
+  return s.replace(/WASD(\s*\/\s*nyilak)?|A\s*\/\s*D/g, 'joystick').replace(/Szóköz/g, 'RÚGÁS').replace(/Shift/g, 'FUTÁS')
+    .replace(/(^|[\s>(])E(?=\s*[–<)!,.]|$)/g, '$1HASZNÁL').replace(/(^|[\s>(])Q(?=\s*[–<)])/g, '$1HASZNÁL');
+}
 

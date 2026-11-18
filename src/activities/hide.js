@@ -105,7 +105,7 @@ export function updateHide(dt) {
   else if (hs.end) endTick(dt);
   if (stop && !hs.end) { say(a, 'Feladom! Itt vagyok!', 1.6); finish('quit'); }
   if (Math.floor(hs.t * 5) !== Math.floor((hs.t - dt) * 5)) hud();
-  setPrompt(hs.phase === 'seek' && !hs.end && p.pos.distanceTo(a.pos) < HEAR + 1 ? (isTouch ? 'RÚGÁS nyomva – tartsd vissza a levegőt!' : 'Szóköz nyomva – tartsd vissza a levegőt!') : '');
+  setPrompt(hs.phase === 'seek' && !hs.end && p.pos.distanceTo(a.pos) < HEAR + 1 ? (isTouch ? 'LEVEGŐ nyomva – tartsd vissza a levegőt!' : 'Szóköz nyomva – tartsd vissza a levegőt!') : '');
 }
 // dad's next hiding place to check: sometimes the one nearest to Petyus (dads have a nose for it), otherwise a near one
 function nextSpot() {

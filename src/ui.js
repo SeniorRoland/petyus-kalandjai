@@ -1,7 +1,7 @@
 // Petyus kalandjai – ui: Szövegbuborékok, toast, nagy felirat.
 import { camera } from './scene.js';
 import { G } from './state.js';
-import { $, V3, clamp, damp } from './util.js';
+import { $, V3, clamp, damp, touchText } from './util.js';
 
 // ---------------------------------------------------------------- UI helpers
 // Comic speech bubbles. Kinds: speech · shout ("!!" or capitals) · mutter (ends with "…") · sfx (animals, cars: lettering only).
@@ -118,7 +118,7 @@ function drawTail(b) {
   b.edge.setAttribute('d', `M${f(l)} L${t} L${f(r)}`);
 }
 
-export function toast(html, dur = 4) { $('toast').innerHTML = html; $('toast').classList.add('show'); G.toastT = dur; }
+export function toast(html, dur = 4) { $('toast').innerHTML = touchText(html); $('toast').classList.add('show'); G.toastT = dur; }
 
 export function bigText(txt, dur = 2) { $('big').textContent = txt; $('big').classList.add('show'); G.bigT = dur; }
 
