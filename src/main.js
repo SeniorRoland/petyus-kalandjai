@@ -74,7 +74,7 @@ function step(dt) {
     G.petya.update(dt); G.angi.update(dt);
     if (G.mode === 'play') updatePlayer(dt); else G.petike.update(dt);
     if ((roller.rider || roller.path) && G.pstate !== 'riding') rollerRide(dt);
-    if (G.mode === 'play') { updateDad(dt); if (['follow', 'return', 'ftnRun', 'ftnChase', 'catRun', 'catCarry'].includes(G.petyaMode)) { collide(G.petya.pos, 0.3, 0, null); G.petya.sync(); } }
+    if (G.mode === 'play') { updateDad(dt); if (['follow', 'return', 'ftnRun', 'ftnChase', 'catRun', 'catCarry', 'hideSeek'].includes(G.petyaMode)) { collide(G.petya.pos, 0.3, 0, null); G.petya.sync(); } }
     updateBall(dt);
     G.usePressed = false; G.qPressed = false;
   }
