@@ -153,12 +153,17 @@ function place(id, x, y, z, rot = 0, s = 1, variant = null, opts = {}) {
     else { const cs = Math.abs(Math.cos(rot)), sn = Math.abs(Math.sin(rot)); const hx = (cs * c.hx + sn * c.hz) * s, hz = (sn * c.hx + cs * c.hz) * s; addBoxCol(x - hx, z - hz, x + hx, z + hz, c.h * s); }
   }
 }
+// every placed prop instance (occlude.js makes the ones in front of Petyus see-through): mesh + index, position, size
+export const INSTANCES = [];
 function buildInstances() {
   const m4 = new THREE.Matrix4(), qq = new THREE.Quaternion(), eu = new THREE.Euler(), sc = new V3(), ps = new V3();
   for (const [K, list] of instLists) {
     const [id, v] = K.split(':'); const def = DEF[id];
-    const mesh = new THREE.InstancedMesh(getGeometry(id, +v), vcMat, list.length);
-    list.forEach((it, n) => { eu.set(0, it.rot, 0); qq.setFromEuler(eu); sc.set(it.s * it.sx, it.s, it.s); ps.set(it.x, it.y, it.z); m4.compose(ps, qq, sc); mesh.setMatrixAt(n, m4); });
+    const geo = getGeometry(id, +v); if (!geo.boundingBox) geo.computeBoundingBox();
+    const bb = geo.boundingBox, gr = Math.max(-bb.min.x, bb.max.x, -bb.min.z, bb.max.z), gh = bb.max.y;
+    const mesh = new THREE.InstancedMesh(geo, vcMat, list.length);
+    list.forEach((it, n) => { eu.set(0, it.rot, 0); qq.setFromEuler(eu); sc.set(it.s * it.sx, it.s, it.s); ps.set(it.x, it.y, it.z); m4.compose(ps, qq, sc); mesh.setMatrixAt(n, m4);
+      INSTANCES.push({ mesh, n, id, x: it.x, y: it.y, z: it.z, r: gr * it.s * Math.max(1, it.sx), h: gh * it.s, matrix: m4.clone() }); });
     mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere();
     mesh.castShadow = !def.noShadow; mesh.receiveShadow = true; scene.add(mesh);
   }

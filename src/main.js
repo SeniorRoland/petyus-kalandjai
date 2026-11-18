@@ -57,6 +57,8 @@ import { initMischief } from './mischief.js';
 import { MOBILE, watchFrame } from './quality.js';
 import { updateTouchUI } from './touchui.js';
 import { IS_TOUCH } from './util.js';
+import { setupInstall } from './install.js';
+import { updateOcclusion } from './occlude.js';
 
 // ---------------------------------------------------------------- main loop
 let last = performance.now();
@@ -86,7 +88,7 @@ function step(dt) {
     G.usePressed = false; G.qPressed = false;
   }
   updateNPCs(dt); updateAnimals(dt); updateFountain(dt); updateFx(dt);
-  updateCamera(dt); updateBubbles(dt);
+  updateCamera(dt); updateOcclusion(dt); updateBubbles(dt);
   if (G.toastT > 0) { G.toastT -= dt; if (G.toastT <= 0) $('toast').classList.remove('show'); }
   if (G.bigT > 0) { G.bigT -= dt; if (G.bigT <= 0) $('big').classList.remove('show'); }
   updateAmbience(dt);
@@ -95,7 +97,7 @@ function step(dt) {
 // ---------------------------------------------------------------- boot
 async function boot() {
   if (MOBILE) document.body.classList.add('mobile');   // quality.js: phone / tablet
-  buildEpisodeMenu(); showVersion();   // the 12 monthly episodes on the start screen (August playable once loaded) + the version
+  buildEpisodeMenu(); showVersion(); setupInstall();   // the 12 monthly episodes on the start screen (August playable once loaded) + the version
   initMischief();       // stars, ⭐ totals, the mischief journal
   buildWorld();
   makeBall();
