@@ -57,6 +57,7 @@
 ## Telepített app javítása
 
 - Android/Chrome: a telepített app fekete képernyővel indult („Internetes alkalmazás”). Javítva: robusztusabb service worker (`petyus-v2`: a gyorsítótárba írás hibája nem dobja el a jó választ, 6 mp-es hálózati időkorlát, `ignoreVary` – enélkül az első látogatás után elmentett JS-t nem találta meg), az első látogatás fájljai is elmentődnek, a manifest `display: standalone` (a teljes képernyőt az Indítás gomb kéri), külön `any`/`maskable` ikonok, `id`. A kezdőképernyő kiírja a nem kezelt hibákat (`#err`), mert telefonon nincs konzol.
+- v0.0.5 után is: az ikonról indítva semmi nem jelenik meg, a feladatlistán egy előtérbe nem hozható Chrome-példány látszik (Chrome-ban az oldal működik; telepítés: ⋮ → Alkalmazás telepítése). Az ablak meg sem nyílik → a manifest kötelező fekvő tájolása (`orientation: landscape`) a fő gyanúsított: kivéve (a fekvő zárolást az Indítás gomb kéri, állóban a „Fordítsd el a telefont!” üzenet marad).
 
 ## Később, külön lépésként
 
