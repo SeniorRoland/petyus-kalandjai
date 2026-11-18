@@ -16,7 +16,7 @@ export const G_OUT = [30, -10.9], G_IN = [30, -8.7];        // the pitch gate, o
 export const inPitch = (x, z) => x > FENCE.x0 && x < FENCE.x1 && z > FENCE.z0 && z < FENCE.z1;
 export function navTarget(p, to) {
   // stuck behind the family bench → walk round its end first
-  const B = FAMILY_BENCH; if (p.z < B.z + 0.2 && Math.abs(p.x - B.x) < 1.5 && to[1] > B.z) return [B.x + (p.x >= B.x ? 1.7 : -1.7), p.z];
+  const B = FAMILY_BENCH; if (p.z < B.z + 0.2 && Math.abs(p.x - B.x) < 1.5 && to[1] > B.z) return [B.x + (p.x >= B.x ? 2.2 : -2.2), p.z];   // wide enough to clear the scooter at the east end (LEAN)
   const a = inPitch(p.x, p.z), b = inPitch(to[0], to[1]); if (a === b) return to;
   // already in the gate passage → head for the gate point on the destination side (no flip-flopping between the two)
   if (Math.abs(p.x - (FENCE.gate0 + FENCE.gate1) / 2) < 0.9 && p.z > G_OUT[1] - 0.4 && p.z < G_IN[1] + 0.4) return b ? G_IN : G_OUT;

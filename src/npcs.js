@@ -114,7 +114,7 @@ export function updateAnimals(dt) {
       const dx = an.target.x - an.pos.x, dz = an.target.z - an.pos.z; const d = Math.hypot(dx, dz);
       if (d > 0.3) { spd = th ? 4 : an.speed; an.pos.x += dx / d * spd * dt; an.pos.z += dz / d * spd * dt; an.heading = dampAngle(an.heading, Math.atan2(dx, dz), 6, dt); moving = 1; }
       else { an.wait -= dt; if (an.wait <= 0) { an.target.set(R(-20, 20), 0, R(-9, 10)); if (Math.hypot(an.target.x, an.target.z) < 3.5) an.target.x += 6; an.wait = R(1, 4); } }
-      collide(an.pos, 0.3, 0, null);
+      collide(an.pos, 0.3, 0, null, true);
     } else if (an.type === 'cat') {
       const t = threatNear(an.pos, 2.4);
       if (t) { const dx = an.pos.x - t.x, dz = an.pos.z - t.z; const d = Math.hypot(dx, dz) || 1; an.target.set(an.pos.x + dx / d * 5, 0, an.pos.z + dz / d * 5); an.flee = 1.5; if (an.barkCd <= 0) { an.barkCd = 8; sMeow(); say({ headWorld: (v) => v.set(an.pos.x, 0.8, an.pos.z) }, 'Miaú!', 1.2, ''); } }
@@ -122,7 +122,7 @@ export function updateAnimals(dt) {
       const dx = an.target.x - an.pos.x, dz = an.target.z - an.pos.z; const d = Math.hypot(dx, dz);
       if (d > 0.2) { spd = an.flee > 0 ? 4.2 : an.speed; an.pos.x += dx / d * spd * dt; an.pos.z += dz / d * spd * dt; an.heading = dampAngle(an.heading, Math.atan2(dx, dz), 7, dt); moving = 1; }
       else { an.wait -= dt; if (an.wait <= 0) { an.target.set(clamp(an.pos.x + R(-5, 5), -21, 21), 0, clamp(an.pos.z + R(-5, 5), -9, 10)); an.wait = R(2, 8); } }
-      collide(an.pos, 0.2, 0, null);
+      collide(an.pos, 0.2, 0, null, true);
     }
     an.phase += dt * spd * (an.type === 'cat' ? 9 : 7);
     animLegs(a, an.phase, moving);

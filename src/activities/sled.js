@@ -150,7 +150,7 @@ function splash() {
   ro.group.position.set(rimX, groundH(rimX, rimZ), rimZ); ro.group.rotation.set(0, ro.heading, ro.lean, 'YXZ');
   dismount(ro.pos.x / d * 1.9, ro.pos.z / d * 1.9);
   a.setRig(rigs.foci); a.stride = 6.5; a.swing = 0.7; a.heading = Math.atan2(-ro.pos.x, -ro.pos.z);
-  addCircleCol(rimX, rimZ, 0.3, 1.0); G.rollerCol = colliders[colliders.length - 1];
+  addCircleCol(rimX, rimZ, 0.3, 1.0); G.rollerCol = colliders[colliders.length - 1]; G.rollerCol.soft = true;
   for (let i = 0; i < 70; i++) spawnFx(new V3(R(-1.6, 1.6) + an.pos.x * 0.6, 0.5, R(-1.6, 1.6) + an.pos.z * 0.6), new V3(R(-2.5, 2.5), R(2, 5), R(-2.5, 2.5)), pick([0x8fd8ff, 0xc9efff, 0x5ec2f2, 0xffffff]), 0.07, 1.1, 9.8);
   soundAt(0, 0, () => { noise(0.9, 700, 0.5, 0.5); noise(1.2, 2200, 0.6, 0.22, 0.1); }, 2);
   bigText('CSOBBANÁS!', 1.8);

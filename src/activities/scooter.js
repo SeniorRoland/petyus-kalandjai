@@ -31,7 +31,7 @@ function dismountScooter() {
   poof(G.petike.pos); G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7;
   roller.lean = 0.1; // resting on its kickstand
   roller.group.position.set(roller.pos.x, groundH(roller.pos.x, roller.pos.z), roller.pos.z); roller.group.rotation.set(0, roller.heading, roller.lean, 'YXZ');
-  addCircleCol(roller.pos.x, roller.pos.z, 0.3, 1.0); G.rollerCol = colliders[colliders.length - 1];
+  addCircleCol(roller.pos.x, roller.pos.z, 0.3, 1.0); G.rollerCol = colliders[colliders.length - 1]; G.rollerCol.soft = true;
   G.pstate = 'free'; G.viewSizeTarget = 8.5; setPrompt('');
   say(G.petike, pick(['Ennyi volt, megyek focizni!', 'Jó volt! Most foci!']), 2);
   dadReturn();
