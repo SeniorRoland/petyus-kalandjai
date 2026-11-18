@@ -40,7 +40,7 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 | `models/source/*.glb` | az **eredeti**, nem riggelt karaktermodellek (lelógó karral) – a modell-pipeline bemenete |
 | `tools/model-pipeline/` | Python: T-pose + csontváz generálása (lásd lent) |
 | `tools/ikon/make_icon.py` | a böngészőfül ikonja (pixel-art focilabda narancs csempén, 32×32-es rács) → `public/favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`, a webalkalmazás ikonjai `icon-192.png`, `icon-512.png` (Pillow kell hozzá) |
-| `public/manifest.webmanifest` · `public/sw.js` | telepíthető webalkalmazás (PWA): név, ikonok, fekvő teljes képernyő · service worker – az első látogatás után offline is indul (oldal: hálózat → gyorsítótár; minden más: gyorsítótár + háttérfrissítés); csak buildben regisztrál |
+| `public/manifest.webmanifest` · `public/sw.js` | telepíthető webalkalmazás (PWA): név, ikonok (`any` és `maskable` külön), `display: standalone`, fekvő · service worker (`petyus-v2`): az oldal hálózatról (6 mp időkorlát), különben a gyorsítótárból; minden más gyorsítótár + háttérfrissítés (`ignoreVary`); a gyorsítótárba írás hibája nem rontja el a választ; az első betöltés után az oldal átküldi a már letöltött fájlokat (`postMessage({ keep })`) → már az első látogatás után offline is indul; csak buildben regisztrál (`updateViaCache: 'none'`). Ha a service worker logikája változik, a `CACHE` nevét is emelni kell |
 
 ## A játék moduljai (`src/`)
 

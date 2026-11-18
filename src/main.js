@@ -152,5 +152,14 @@ function goFullscreen() {
   } catch (e) { /* not allowed */ }
 }
 // installable web app: works offline after the first visit (only in the built version – the dev server would cache stale files)
-if ('serviceWorker' in navigator && import.meta.env.PROD) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+// updateViaCache 'none' + update(): a new sw.js (a new release) is picked up at once, not after the HTTP cache expires
+// after the first load, the files already downloaded (JS, CSS, fonts, models, images) are handed to the service worker to keep –
+// otherwise the first visit (before the worker was running) would leave nothing for an offline / slow-network app launch
+if ('serviceWorker' in navigator && import.meta.env.PROD) window.addEventListener('load', () => {
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((r) => r.update()).catch(() => {});
+  navigator.serviceWorker.ready.then((reg) => setTimeout(() => {
+    const urls = [location.href.split('#')[0], ...performance.getEntriesByType('resource').map((e) => e.name)].filter((u) => u.startsWith(location.origin));
+    if (reg.active) reg.active.postMessage({ keep: urls });
+  }, 4000)).catch(() => {});
+});
 
