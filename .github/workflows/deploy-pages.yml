@@ -1,11 +1,13 @@
-# Petyus kalandjai – GitHub Pages: minden main-re küldött változásnál (vagy kézzel: Actions → Run workflow)
-# lebuildeli a játékot (npm run build → dist/) és kiteszi a GitHub Pagesre.
+# Petyus kalandjai – GitHub Pages kiadás. Csak akkor fut, ha a main ágra verzió-tag kerül
+# (3 jegyű verziószám, pl. v0.0.1 – lásd a CLAUDE.md „Verzió kiadása” részét):
+# ellenőrzi, hogy a tag a main ágon van, és egyezik a package.json verziójával, lebuildeli a játékot
+# (npm run build → dist/), majd kiteszi a GitHub Pagesre.
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 permissions:
   contents: read
@@ -21,6 +23,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: A tag a main ágon van, és egyezik a package.json verziójával
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::A(z) ${GITHUB_REF_NAME} tag nem a main ágon van – kiadás csak main-ről lehet."
+            exit 1
+          fi
+          PKG="v$(node -p "require('./package.json').version")"
+          if [ "$PKG" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::A tag (${GITHUB_REF_NAME}) és a package.json verziója (${PKG}) nem egyezik."
+            exit 1
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22
