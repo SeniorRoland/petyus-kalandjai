@@ -13,6 +13,7 @@ Izometrikus, voxel stílusú 3D böngészős **játéksorozat** (Three.js r187 +
 - `main`: kiadott/stabil állapot · `develop`: fejlesztési ág, a `main`-ből ágazik.
 - **Minden fejlesztés új feature ágon indul a `develop`-ból:** `git switch develop` → `git switch -c feature/<rövid-név>`, és ott commitolunk. Közvetlenül a `main`-re vagy a `develop`-ra nem commitolunk.
 - A feature ág visszaolvasztása a `develop`-ba (és a `develop` → `main`), valamint a push csak a felhasználó kérésére történik.
+- Távoli repó: `origin` = https://github.com/SeniorRoland/petyus-kalandjai. **Kiadás:** a `main`-re küldött push a `.github/workflows/deploy-pages.yml`-lel buildel és kiteszi a játékot a GitHub Pagesre: https://seniorroland.github.io/petyus-kalandjai/ (a repóban *Settings → Pages → Source: GitHub Actions* kell hozzá).
 
 ## Fájlok
 
