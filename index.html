@@ -9,6 +9,12 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#ff7a3d">
 <link rel="manifest" href="manifest.webmanifest">
+<script>
+  // phones have no console: show uncaught errors on the start screen (#err) so they can be reported
+  (function () { function show(m) { var e = document.getElementById('err'); if (e && !e.textContent) e.textContent = 'Hiba: ' + m; }
+    window.addEventListener('error', function (ev) { show((ev.message || 'ismeretlen') + (ev.filename ? ' (' + ev.filename.split('/').pop() + ':' + ev.lineno + ')' : '')); });
+    window.addEventListener('unhandledrejection', function (ev) { show(String(ev.reason && ev.reason.message || ev.reason)); }); })();
+</script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
