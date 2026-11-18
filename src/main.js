@@ -24,7 +24,7 @@ import { CFG, rigFromGLTF } from './rigs.js';
 import { rollerRide } from './roller.js';
 import { camTarget, camera, renderer, scene, updateProjection } from './scene.js';
 import { EPISODE, G, ROLLER_SCALE, SERIES, ball, rigs, roller } from './state.js';
-import { buildEpisodeMenu, setStartLabel } from './menu.js';
+import { buildEpisodeMenu, setStartLabel, showVersion } from './menu.js';
 import { say, updateBubbles } from './ui.js';
 import { $, V3 } from './util.js';
 import { TREES, buildWorld, collide } from './world.js';
@@ -87,7 +87,7 @@ function step(dt) {
 
 // ---------------------------------------------------------------- boot
 async function boot() {
-  buildEpisodeMenu();   // the 12 monthly episodes on the start screen (August playable once loaded)
+  buildEpisodeMenu(); showVersion();   // the 12 monthly episodes on the start screen (August playable once loaded) + the version
   initMischief();       // stars, ⭐ totals, the mischief journal
   buildWorld();
   makeBall();
