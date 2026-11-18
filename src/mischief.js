@@ -14,7 +14,7 @@ export const MISCHIEFS = [
   { id: 'fotobomba', title: 'Fotóbomba', hint: 'Anya fotózni készül a szökőkútnál. (ha apa és anya nyugton ül a padon)', fmt: (v, x) => `${v}/5 kép elrontva` + (x && x.pigeon ? ', galambbal' : ''), stars: (v, x) => 1 + (v >= 3) + (v >= 5 && !!x.pigeon) },
   { id: 'penzhalasz', title: 'Pénzhalászat a szökőkútból', hint: 'Valami csillog a szökőkút alján. (Szóköz a szökőkút peremén)', fmt: (v, x) => `${v} érme` + (x && x.seen === 0 ? ', lebukás nélkül' : x && x.seen ? `, ${x.seen}× lebukott` : ''), stars: (v, x) => 1 + (v >= 6) + (v >= 10 && !x.seen) },
   { id: 'rollerverseny', title: 'Rollerverseny a nyugdíjassal', hint: 'A padon ülő bácsi gyorsnak tartja magát. (rollerrel gurulj oda hozzá)', fmt: (v) => v >= 3 ? 'legyőzte a bácsit' : v === 2 ? 'félúton vezetett' : 'célba ért', stars: (v) => v },
-  { id: 'bujocska', title: 'Bújócska apával', hint: 'Apa szeret keresgélni.' },
+  { id: 'bujocska', title: 'Bújócska apával', hint: 'Apa szeret keresgélni. (szólj neki a padnál)', fmt: (v, x) => x && x.gaveUp ? `${v} mp – apa feladta` : `${v} mp rejtőzés`, stars: (v, x) => 1 + (v >= 40 || !!x.gaveUp) + (!!x.gaveUp) },
   { id: 'lufi', title: 'Lufis bácsi', hint: 'Valaki lufit árul a park szélén.' },
 ];
 export const MAX_STARS = MISCHIEFS.length * 3;

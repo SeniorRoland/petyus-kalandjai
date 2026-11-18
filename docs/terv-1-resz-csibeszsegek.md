@@ -1,7 +1,7 @@
 # 1. rész (Augusztus – Egy nap a parkban): csibészség-ötletek
 
 Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** a közös pontozó rendszer (`mischief.js` + napló) és az 1–8. csibészség kész; a 9–10. még terv (tetszés szerinti sorrendben).
+**Állapot:** a közös pontozó rendszer (`mischief.js` + napló) és az 1–9. csibészség kész; a 10. még terv (tetszés szerinti sorrendben).
 
 ## Pontozás és csibészség-napló (közös rendszer, minden csibészségre)
 
@@ -26,7 +26,7 @@ Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni
 | 6 | Fotóbomba | 1 elrontott fotó | 3 a 5-ből | mind az 5, és az egyiken galamb van a kezében | „Anya fotózni készül a szökőkútnál.” | **kész** |
 | 7 | Pénzhalászat a szökőkútból | 3 érme | 6 érme | 10 érme lebukás nélkül | „Valami csillog a szökőkút alján.” | **kész** |
 | 8 | Rollerverseny a nyugdíjassal | célba ér | félúton vezet | legyőzi a bácsit (szélárnyékból előz a turbó előtt) | „A padon ülő bácsi gyorsnak tartja magát.” | **kész** |
-| 9 | Bújócska apával | 20 mp rejtőzés | 40 mp | apa feladja („Nem láttad a gyereket?”) | „Apa szeret keresgélni.” | terv |
+| 9 | Bújócska apával | 20 mp rejtőzés | 40 mp | apa feladja („Nem láttad a gyereket?”) | „Apa szeret keresgélni.” | **kész** |
 | 10 | Lufis bácsi | felszáll a lufikkal | eléri a labdát | eléri, és egy lufi sem pukkad ki | „Valaki lufit árul a park szélén.” | terv |
 
 ---
@@ -98,12 +98,13 @@ Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni
 - **Csillagok:** ★ célba ér · ★★ félúton vezet · ★★★ megnyeri a versenyt (a bácsi szélárnyékából, a turbója előtt kell előzni).
 - **Megvalósítás** (`src/activities/race.js`): a sétány északi padján ülő kalapos bácsi mellett mentazöld moped parkol. Rolleren odagurulva **E – Verseny a bácsival!** → „Szép kis roller… de az én mopedem gyorsabb!”, a bácsi felül a mopedre, 3-2-1-RAJT (`pstate = 'race'`, a roller `scripted`, a mozgás a közös `rideStep()` a `scooter.js`-ben). Egy kör a sétányon (a sétálók köre, 96 m); a sétányról letérve nem halad (nincs levágás). A bácsi az egyeneseken gyorsabb (6 m/s; Petyus Shifttel 5,6), a kanyarokban lassít (4 m/s). **Szélárnyék:** közvetlenül mögötte (5 m-en belül, ugyanabban a sávban) Petyus 25%-kal gyorsabb, és kiállás után még 1,6 mp-ig kitart a lendület – így lehet kanyar előtt belülről előzni. Félúton és az utolsó kanyar után (turbó) dől el: ha ott a bácsi vezet, „Most jön a TURBÓ!!” és nyer – „Az én időmben is így volt!” („Ez nem ér! Neked turbód van!”); ha Petyus vezet, a turbó lefullad („TURBÓ! …Na ne! Pont most?!”). Utána a bácsi visszagurul, leparkol és visszaül a padjára. Apa ilyenkor a padon marad („Verseny?! Petyus, ÓVATOSAN!!”). `award('rollerverseny', 1|2|3)`. HUD: `#mini` (🛴 % · 🥇/🥈 · 💨 szélárnyék · 🔥 turbó).
 
-## 9. Bújócska apával
+## 9. Bújócska apával  ✅ kész
 
 - **Játék:** Petyus elbújik (bokor, fa mögé, szobor mellé), apa keres és közben kommentál. Ha a közelben jár, vissza kell tartani a levegőt (fogyó csík).
 - **Poén:** mindig tüsszentés árulja el. Ha mégis sikerül elbújni, Petya végül Angit kérdezi: „Nem láttad a gyereket?” – „Melyiket?”
 - **Mire épül:** az apa útkeresése (`navTarget`, `dad.js`), bokrok és fák (`TREES`).
 - **Csillagok:** ★ 20 mp rejtőzés · ★★ 40 mp · ★★★ apa feladja a keresést („Nem láttad a gyereket?”).
+- **Megvalósítás** (`src/activities/hide.js`): apa mellett a padnál (labda nélkül; ha apa a közelebbi, nem Angi) **E – Apa, bújócskázzunk!** → `pstate = 'hide'`. Apa feláll, eltakarja a szemét, és hangosan tízig számol (`petyaMode = 'hideCount'`); Petyus közben elbújik: **fa mögé** (a törzs legyen apa és közte) vagy **bokor mellé** – ha áll, magától leguggol. Utána apa (`hideSeek`) búvóhelyről búvóhelyre jár (a pad 30 m-es körzetének fái és bokrai, `TREES` + `BUSHES`; néha „megérzi”, merre lehet Petyus), körülnéz és kommentál. **Észreveszi**, ha Petyus előtte van takarás nélkül, vagy takarásban mozog a közelben (11 m), illetve 1,5 m-en belül mindenképp. 4 m-en belül **hallja a szuszogást**: **Szóköz** nyomva = levegő visszatartása (a 🫁 csík 6 mp alatt fogy el; ha elfogy: HAPCI! – lebukás; ha nem tartja vissza: „Hallom ám, hogy szuszogsz!”). 60 mp után apa feladja, odamegy Angihoz: „Angi, nem láttad a gyereket?” – „Melyiket?” – „ITT VAGYOK!!” **E** = feladás. `award('bujocska', mp, { gaveUp })` (20 mp alatt nincs csillag). HUD: `#mini` (🙈 számolás / rejtőzés mp · 🫁 levegő).
 
 ## 10. Lufis bácsi
 

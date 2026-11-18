@@ -169,7 +169,8 @@ function tree(x, z, type = 'round', s = 1) {
   place(id, x, 0, z, rot, s, v); TREES.push({ x, z, id, v, s, rot });
 }
 export function treeTop(t) { const g = getGeometry(t.id, t.v); if (!g.boundingBox) g.computeBoundingBox(); return g.boundingBox.max.y * t.s; }
-function bush(x, z, s = 1) { place('bush', x, 0, z, quarter(), s); }
+export const BUSHES = [];   // { x, z, s } – hiding places (activities/hide.js)
+function bush(x, z, s = 1) { place('bush', x, 0, z, quarter(), s); BUSHES.push({ x, z, s }); }
 function flowerBed(x, z, w) { place(w >= 2 ? 'bed_long' : (w >= 1.5 ? 'bed_square' : 'bed_small'), x, groundH(x, z), z, 0, 1); }
 function bench(x, z, rot) { place('bench', x, 0, z, rot, 1); }
 function bin(x, z) { place('bin', x, 0, z, quarter(), 1); }
