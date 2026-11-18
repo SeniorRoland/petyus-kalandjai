@@ -54,6 +54,10 @@
 - Telefonon a kezdőképernyő felajánlja a telepítést (`install.js`).
 - Ami Petyust kitakarja (fa, lámpa …), áttetsző lesz (`occlude.js`).
 
+## Telepített app javítása
+
+- Android/Chrome: a telepített app fekete képernyővel indult („Internetes alkalmazás”). Javítva: robusztusabb service worker (`petyus-v2`: a gyorsítótárba írás hibája nem dobja el a jó választ, 6 mp-es hálózati időkorlát, `ignoreVary` – enélkül az első látogatás után elmentett JS-t nem találta meg), az első látogatás fájljai is elmentődnek, a manifest `display: standalone` (a teljes képernyőt az Indítás gomb kéri), külön `any`/`maskable` ikonok, `id`. A kezdőképernyő kiírja a nem kezelt hibákat (`#err`), mert telefonon nincs konzol.
+
 ## Később, külön lépésként
 
 - Valódi app-boltos alkalmazás (Google Play, App Store) egy csomagoló réteggel (pl. Capacitor). Ez a fenti lépésekre épül.
