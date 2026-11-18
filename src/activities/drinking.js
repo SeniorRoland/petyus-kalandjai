@@ -16,6 +16,7 @@ import { askCrumbs, canAskCrumbs, canDump, dumpOnDad, pig } from './pigeons.js';
 import { startSquirt } from './squirt.js';
 import { canFish, startFish } from './fish.js';
 import { canHide, startHide } from './hide.js';
+import { canBalloon, startBalloon } from './balloon.js';
 
 // ---------------------------------------------------------------- play activities: drinking fountain, scooter, worried dad
 const DRINK = { x: 28.3, z: -12.9, stand: [28.3, -12.36] };
@@ -32,13 +33,13 @@ export function interactions() {
   const dDrink = Math.hypot(p.x - DRINK.x, p.z - DRINK.z), dRoll = Math.hypot(p.x - roller.pos.x, p.z - roller.pos.z);
   const dFtn = Math.hypot(p.x - FOUNTAIN.x, p.z - FOUNTAIN.z);
   const canDrink = dDrink < 1.6, canRide = dRoll < 1.5 && !roller.rider, canFtn = dFtn < FOUNTAIN.r + 1.0;
-  const canJug = canJuggle(), canCoach = canChallengeDad(), canDmp = canDump(), canTwr = canTower(), canCrumb = canAskCrumbs(), canHd = canHide();
+  const canJug = canJuggle(), canCoach = canChallengeDad(), canDmp = canDump(), canTwr = canTower(), canCrumb = canAskCrumbs(), canHd = canHide(), canBl = canBalloon();
   // the bench mischiefs win over the scooter leaning right next to dad
-  setPrompt(canDrink ? (pig.active ? 'E – inni az ivókútból' : isTouch ? 'HASZNÁL – inni · RÚGÁS – vízipisztoly!' : 'E – inni · Szóköz – vízipisztoly!') : canDmp ? 'E – Morzsa apára!' : canTwr ? 'E – Torony apa fejére (csitt!)' : canHd ? 'E – Apa, bújócskázzunk!' : canRide ? 'E – felszállni a rollerre' : canFtn ? (pig.active ? 'E – inni a szökőkútból' : isTouch ? 'HASZNÁL – inni a szökőkútból · RÚGÁS – pénzhalászat' : 'E – inni a szökőkútból · Szóköz – pénzhalászat')
+  setPrompt(canDrink ? (pig.active ? 'E – inni az ivókútból' : isTouch ? 'HASZNÁL – inni · RÚGÁS – vízipisztoly!' : 'E – inni · Szóköz – vízipisztoly!') : canDmp ? 'E – Morzsa apára!' : canTwr ? 'E – Torony apa fejére (csitt!)' : canHd ? 'E – Apa, bújócskázzunk!' : canBl ? 'E – Kérek egy lufit!' : canRide ? 'E – felszállni a rollerre' : canFtn ? (pig.active ? 'E – inni a szökőkútból' : isTouch ? 'HASZNÁL – inni a szökőkútból · RÚGÁS – pénzhalászat' : 'E – inni a szökőkútból · Szóköz – pénzhalászat')
     : canCoach ? 'E – Mutasd te, apa!' : canCrumb ? 'E – Anya, van egy kis morzsád?' : pig.active && !pig.done ? (isTouch ? 'RÚGÁS – morzsát szórni' : 'Szóköz – morzsát szórni') : canJug ? (isTouch ? 'Dekázás' : 'Q – dekázás') : '');
   if (G.qPressed) { G.qPressed = false; if (canJug) { startJuggle(); return true; } }
   if (canDrink && G.kickPressed && !pig.active) { G.kickPressed = false; startSquirt(); return true; }   // 4. csibészség: „Vízipisztoly az ivókútból”
-  const atRim = canFtn && !canDrink && !canDmp && !canTwr && !canHd && !canRide;
+  const atRim = canFtn && !canDrink && !canDmp && !canTwr && !canHd && !canBl && !canRide;
   if (atRim && G.kickPressed && !pig.active && canFish()) { G.kickPressed = false; startFish(); return true; }   // 7. csibészség: „Pénzhalászat a szökőkútból”
   if (!G.usePressed) return false;
   G.usePressed = false;
@@ -46,6 +47,7 @@ export function interactions() {
   if (canDmp) { dumpOnDad(); return true; }            // 3. csibészség: „Galambraj-vezénylés”
   if (canTwr) { startTower(); return true; }           // 2. csibészség: „A szundikáló apa”
   if (canHd) { startHide(); return true; }              // 9. csibészség: „Bújócska apával”
+  if (canBl) { startBalloon(); return true; }          // 10. csibészség: „Lufis bácsi”
   if (canRide) { mountScooter(); return true; }
   if (canFtn) { startFountain(); return true; }
   if (canCoach) { startDadChallenge(); return true; }   // 1. csibészség: „Fordított edzés”
