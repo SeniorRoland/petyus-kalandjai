@@ -24,7 +24,7 @@ npm run build      # kiadható változat a dist/ mappába
 npm run preview    # a buildelt változat kipróbálása
 ```
 
-A design terv (3D objektumkatalógus): http://localhost:5173/designterv.html
+A design terv (3D objektumkatalógus, a kezdőképernyőről nem linkelt): http://localhost:5173/designterv.html
 
 ## Irányítás
 
