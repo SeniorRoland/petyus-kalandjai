@@ -76,7 +76,7 @@ export function startBalloon() {
     [2.2, () => say(a, 'Ötöt!!', 1.2)],
     [1.2, () => { giveBalloons(); say(bl.seller, 'Kapaszkodj, kisfiam! Ezek nagyon erősek!', 2.4, 'Lufis bácsi'); }],
     [2.4, () => { say(bl.seller, 'Látod ott fent, a fán? Valakinek fennakadt a labdája…', 2.6, 'Lufis bácsi'); bl.phase = 'fly'; bl.t = 0;
-      toast(isTouch ? '<b>RÚGÁS</b> – nagy ugrás · joystick – irányítás a levegőben · szedd le a <b>labdát</b> a fáról!' : '<b>Szóköz</b> – nagy ugrás · <b>WASD</b> – irányítás a levegőben · szedd le a <b>labdát</b> a fáról!', 5); }],
+      toast(isTouch ? '<b>UGRÁS</b> – nagy ugrás · joystick – irányítás a levegőben · szedd le a <b>labdát</b> a fáról!' : '<b>Szóköz</b> – nagy ugrás · <b>WASD</b> – irányítás a levegőben · szedd le a <b>labdát</b> a fáról!', 5); }],
   ]);
   $('mini').style.display = 'block'; hud();
 }

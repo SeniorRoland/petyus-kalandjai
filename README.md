@@ -6,7 +6,7 @@ A sorozat 12 részből áll, mindegyik egy hónap (augusztustól júliusig); a k
 
 **1. rész: Augusztus – Egy nap a parkban** – Petya és Angi a parkban sétál, Petyus elektromos rollerrel megy utánuk, a focipályánál átöltözik, és focizni kezd – a játékos irányítja. Közben apa folyamatosan instruál, és Petyus 10 **csibészséget** fedezhet fel (mindegyikért max. 3 csillag, ⭐ 30; napló: **N** / 📒): fordított edzés, torony a szundikáló apa fején, galambraj-vezénylés, vízipisztoly az ivókútból, kutyaszán, fotóbomba, pénzhalászat a szökőkútból, rollerverseny a nyugdíjassal, bújócska apával, lufis bácsi.
 
-**Játszd online:** https://seniorroland.github.io/petyus-kalandjai/ (a GitHub Pages oldal, lásd lent: *Publikálás*)
+**Játszd online:** https://seniorroland.github.io/petyus-kalandjai/ (a GitHub Pages oldal, lásd lent: *Publikálás*). Telefonon fekvő képernyőn, érintéses gombokkal játszható; a böngésző menüjéből a **főképernyőre tehető**, és az első indítás után **net nélkül is** megy.
 
 ## Indítás
 

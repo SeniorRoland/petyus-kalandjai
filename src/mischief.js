@@ -3,7 +3,7 @@
 // a comic popup shows the stars. The journal (N / 📒) lists the done ones with stars and the remaining ones as "???" + hint.
 import { sCheer, tone } from './audio.js';
 import { G } from './state.js';
-import { $, clamp } from './util.js';
+import { $, clamp, touchText } from './util.js';
 
 export const MISCHIEFS = [
   { id: 'apa-dekaz', title: 'Fordított edzés', hint: 'Apa mindig okosabb… vagy mégsem? (vidd oda neki a labdát)', fmt: (v) => `apa ${v} érintést bírt`, stars: (v) => 1 + (v >= 8) + (v >= 15) },
@@ -73,7 +73,7 @@ function renderJournal() {
     const num = document.createElement('span'); num.className = 'no'; num.textContent = i + 1 + '.';
     const txt = document.createElement('span'); txt.className = 'tx';
     const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = s ? m.title : '???';
-    const info = document.createElement('span'); info.className = 'info'; info.textContent = s ? (m.fmt ? 'Legjobb: ' + m.fmt(s.best, s.x) : 'Teljesítve') : 'Tipp: ' + m.hint;
+    const info = document.createElement('span'); info.className = 'info'; info.textContent = s ? (m.fmt ? 'Legjobb: ' + m.fmt(s.best, s.x) : 'Teljesítve') : 'Tipp: ' + touchText(m.hint);
     txt.append(nm, info);
     const st = document.createElement('span'); st.className = 'stars'; st.textContent = s ? '★'.repeat(s.stars) + '☆'.repeat(3 - s.stars) : '☆☆☆';
     row.append(num, txt, st); list.appendChild(row);

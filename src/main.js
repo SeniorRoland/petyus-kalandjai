@@ -25,7 +25,7 @@ import { rollerRide } from './roller.js';
 import { camTarget, camera, renderer, scene, updateProjection } from './scene.js';
 import { EPISODE, G, ROLLER_SCALE, SERIES, ball, rigs, roller } from './state.js';
 import { buildEpisodeMenu, setStartLabel, showVersion } from './menu.js';
-import { say, updateBubbles } from './ui.js';
+import { say, toast, updateBubbles } from './ui.js';
 import { $, V3 } from './util.js';
 import { TREES, buildWorld, collide } from './world.js';
 
@@ -54,13 +54,20 @@ import './cine.js';
 import './camera.js';
 import './ambience.js';
 import { initMischief } from './mischief.js';
+import { MOBILE, watchFrame } from './quality.js';
+import { updateTouchUI } from './touchui.js';
+import { IS_TOUCH } from './util.js';
 
 // ---------------------------------------------------------------- main loop
 let last = performance.now();
 const TIME_SCALE = Math.max(1, Math.min(8, +(new URLSearchParams(location.search).get('speed') || 1)));
 function frame(now) {
-  const dt0 = Math.min(0.05, (now - last) / 1000); last = now;
-  if (!G.paused) {   // paused while the mischief journal is open (still rendered)
+  const raw = (now - last) / 1000, dt0 = Math.min(0.05, raw); last = now;
+  // phones: held upright during the game → a „turn your phone” notice and the game waits
+  const upright = MOBILE && window.innerHeight > window.innerWidth && (G.mode === 'intro' || G.mode === 'play');
+  document.body.classList.toggle('upright', upright);
+  watchFrame(Math.min(raw, 0.25), !upright && !document.hidden && (G.mode === 'intro' || G.mode === 'play'), () => toast('Egyszerűbb grafika – hogy gördülékenyebb legyen a játék.', 3));
+  if (!G.paused && !upright) {   // paused while the mischief journal is open (still rendered)
     tickCine(dt0);
     for (let i = 0; i < TIME_SCALE; i++) step(dt0 * cine.slow);
   }
@@ -72,7 +79,7 @@ function step(dt) {
   tickCutscene(dt);
   if (G.mode === 'intro' || G.mode === 'play') {
     G.petya.update(dt); G.angi.update(dt);
-    if (G.mode === 'play') updatePlayer(dt); else G.petike.update(dt);
+    if (G.mode === 'play') { updatePlayer(dt); if (IS_TOUCH) updateTouchUI(); } else G.petike.update(dt);
     if ((roller.rider || roller.path) && G.pstate !== 'riding') rollerRide(dt);
     if (G.mode === 'play') { updateDad(dt); if (['follow', 'return', 'ftnRun', 'ftnChase', 'catRun', 'catCarry', 'hideSeek', 'balloon'].includes(G.petyaMode)) { collide(G.petya.pos, 0.3, 0, null, true); G.petya.sync(); } }
     updateBall(dt);
@@ -87,6 +94,7 @@ function step(dt) {
 
 // ---------------------------------------------------------------- boot
 async function boot() {
+  if (MOBILE) document.body.classList.add('mobile');   // quality.js: phone / tablet
   buildEpisodeMenu(); showVersion();   // the 12 monthly episodes on the start screen (August playable once loaded) + the version
   initMischief();       // stars, ⭐ totals, the mischief journal
   buildWorld();
@@ -123,10 +131,24 @@ async function boot() {
   document.title = `${SERIES} – ${EPISODE.n}. rész: ${EPISODE.month}`;
   $('loadbar').classList.add('done');
   const btn = $('startBtn'); btn.disabled = false; setStartLabel('Indítás ▶'); btn.focus({ preventScroll: true });
-  btn.onclick = () => { initAudio(); $('overlay').classList.add('hide'); runIntro(); };
+  btn.onclick = () => { initAudio(); if (MOBILE) goFullscreen(); $('overlay').classList.add('hide'); runIntro(); };
   requestAnimationFrame(frame);
   window.__game = { THREE, scene, camera, renderer, petike: () => G.petike, petya: () => G.petya, angi: () => G.angi, ball, roller, keys, skipIntro, get mode() { return G.mode; }, get pstate() { return G.pstate; }, get petyaMode() { return G.petyaMode; }, use: () => { G.usePressed = true; }, roller, setZoom: (z) => { G.zoomOverride = z; G.viewSizeTarget = z; G.viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { G.kickPressed = true; setTimeout(() => { G.kickReleased = true; }, p); },
     // manual stepping (works even when the tab is hidden and rAF is paused): __game.tick(seconds)
     tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); step(dt * cine.slow); } renderer.render(scene, camera); }, cine, ftn, cev, TREES, jug, jugPress, juggle: () => { G.qPressed = true; }, say };
 }
 boot();
+
+// phones: full screen + landscape lock when the game starts (where the browser allows it – Android Chrome; iOS: add to home screen)
+function goFullscreen() {
+  const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req || document.fullscreenElement) return;
+  try {
+    const p = req.call(el, { navigationUI: 'hide' });
+    const lock = () => { try { const o = screen.orientation; if (o && o.lock) o.lock('landscape').catch(() => {}); } catch (e) { /* not supported */ } };
+    if (p && p.then) p.then(lock).catch(() => {}); else lock();
+  } catch (e) { /* not allowed */ }
+}
+// installable web app: works offline after the first visit (only in the built version – the dev server would cache stale files)
+if ('serviceWorker' in navigator && import.meta.env.PROD) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+

@@ -6,6 +6,7 @@ import { scene } from './scene.js';
 import { G } from './state.js';
 import { R, V3, clamp, damp, dampAngle, lerp, pick, rand, smooth } from './util.js';
 import { groundH, partMesh } from './world.js';
+import { fxAllowed } from './quality.js';
 
 // ---------------------------------------------------------------- Actor
 export const actors = [];
@@ -126,6 +127,7 @@ export function animLegs(a, phase, amt) {
 const fx = [];
 const fxGeo = new THREE.BoxGeometry(1, 1, 1);
 export function spawnFx(pos, vel, color, size, life, grav = 0, fade = true) {
+  if (!fxAllowed(fx.length)) return;   // quality.js: fewer particles on phones / slow devices
   const m = new THREE.Mesh(fxGeo, new THREE.MeshLambertMaterial({ color, transparent: fade }));
   m.scale.setScalar(size); m.position.copy(pos); m.rotation.set(rand() * 3, rand() * 3, 0); scene.add(m);
   fx.push({ m, vel: vel.clone(), life, max: life, grav, size, fade });
