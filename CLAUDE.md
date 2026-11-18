@@ -13,7 +13,20 @@ Izometrikus, voxel stílusú 3D böngészős **játéksorozat** (Three.js r187 +
 - `main`: kiadott/stabil állapot · `develop`: fejlesztési ág, a `main`-ből ágazik.
 - **Minden fejlesztés új feature ágon indul a `develop`-ból:** `git switch develop` → `git switch -c feature/<rövid-név>`, és ott commitolunk. Közvetlenül a `main`-re vagy a `develop`-ra nem commitolunk.
 - A feature ág visszaolvasztása a `develop`-ba (és a `develop` → `main`), valamint a push csak a felhasználó kérésére történik.
-- Távoli repó: `origin` = https://github.com/SeniorRoland/petyus-kalandjai. **Kiadás:** a `main`-re küldött push a `.github/workflows/deploy-pages.yml`-lel buildel és kiteszi a játékot a GitHub Pagesre: https://seniorroland.github.io/petyus-kalandjai/ (a repóban *Settings → Pages → Source: GitHub Actions* kell hozzá).
+- Távoli repó: `origin` = https://github.com/SeniorRoland/petyus-kalandjai · élő oldal (GitHub Pages): https://seniorroland.github.io/petyus-kalandjai/
+
+### Verzió kiadása
+
+A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflows/deploy-pages.yml`: `push: tags: v*.*.*`); a sima push a `main`-re vagy a `develop`-ra nem ad ki semmit. Verziószám: **3 jegyű, `MAJOR.MINOR.PATCH`** (pl. `0.0.1`), a tag neve `v` + verzió (pl. `v0.0.1`). Az első kiadás: **0.0.1**. Kiadás csak a felhasználó kérésére.
+
+1. **Verziószám emelése** feature ágon: `git switch develop` → `git switch -c feature/kiadas-X.Y.Z` → a `package.json` `version` mezője `X.Y.Z` (`npm version X.Y.Z --no-git-tag-version` a lockot is frissíti) → commit → merge a `develop`-ba.
+2. **develop → main:** `git switch main` → `git merge --no-ff develop -m "Kiadás: vX.Y.Z"`.
+3. **Tag a main-en:** `git tag -a vX.Y.Z -m "Petyus kalandjai X.Y.Z"` (a tag a `main` merge-commitjára kerül).
+4. **Push:** `git push origin main develop` → `git push origin vX.Y.Z` – a tag indítja a kiadást.
+5. **Ellenőrzés:** *Actions → Deploy to GitHub Pages* zöld; az élő oldal betölt. A workflow leáll, ha a tag nem a `main`-en van, vagy nem egyezik a `package.json` verziójával.
+
+- Melyik szám nő: **PATCH** – javítás, apró módosítás; **MINOR** – új tartalom (pl. új csibészség, új rész); **MAJOR** – nagy, kész állomás (pl. 1.0.0 = az első teljes rész kiadva).
+- Egyszeri GitHub-beállítások: *Settings → Pages → Source: GitHub Actions* (kész); és mivel tagről történik a kiadás: *Settings → Environments → github-pages → Deployment branches and tags* → **Add deployment branch or tag rule** → *Tag*, minta: `v*`.
 
 ## Fájlok
 

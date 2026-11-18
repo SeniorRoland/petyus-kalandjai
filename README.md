@@ -70,8 +70,8 @@ Részletes fejlesztői leírás: [CLAUDE.md](CLAUDE.md).
 
 A játék statikus oldal (a `dist/` mappa), ezért a GitHub Pages közvetlenül ki tudja szolgálni. A `vite.config.js`-ben `base: './'` van, így a projekt-alútvonalon (`/petyus-kalandjai/`) is működik.
 
-- **Automatikus kiadás:** a [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml) minden `main`-re küldött változásnál lefut (vagy kézzel: *Actions → Deploy to GitHub Pages → Run workflow*): `npm ci` → `npm run build` → a `dist/` feltöltése → kiadás.
-- **Egyszeri beállítás a repóban:** *Settings → Pages → Build and deployment → Source: **GitHub Actions***. (Az első futás előtt kell; ha a workflow már lefutott és hibát jelzett, a beállítás után futtasd újra.)
+- **Kiadás verzió-tagre:** a [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml) csak akkor fut, ha a `main` ágra verzió-tag kerül (3 jegyű verzió, pl. `v0.0.1`, egyezzen a `package.json` verziójával): `npm ci` → `npm run build` → a `dist/` feltöltése → kiadás. A lépések: [CLAUDE.md – Verzió kiadása](CLAUDE.md#verzió-kiadása).
+- **Egyszeri beállítás a repóban:** *Settings → Pages → Source: **GitHub Actions***, valamint *Settings → Environments → github-pages → Deployment branches and tags*: tag-szabály `v*` (különben a GitHub csak a `main` ágról enged kiadást).
 - **Cím:** https://seniorroland.github.io/petyus-kalandjai/ · a design terv: `…/designterv.html`
-- Ág-rend: fejlesztés `feature/*` → `develop` → kiadás: `develop` → `main` (ez indítja a kiadást).
+- Ág-rend: fejlesztés `feature/*` → `develop` → kiadás: `develop` → `main`, majd verzió-tag a `main`-en (ez indítja a kiadást).
 
