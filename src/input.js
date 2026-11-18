@@ -68,10 +68,15 @@ function panBy(dx, dy) {
 }
 export const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 if (isTouch) {
-  const joy = $('joy'), knob = $('joyKnob'); let jid = null, jcx = 0, jcy = 0;
-  joy.addEventListener('touchstart', (e) => { const t = e.changedTouches[0]; jid = t.identifier; const r = joy.getBoundingClientRect(); jcx = r.left + r.width / 2; jcy = r.top + r.height / 2; touch.active = true; e.preventDefault(); }, { passive: false });
-  window.addEventListener('touchmove', (e) => { for (const t of e.changedTouches) if (t.identifier === jid) { let dx = (t.clientX - jcx) / 55, dy = (t.clientY - jcy) / 55; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } touch.x = dx; touch.y = -dy; knob.style.left = (45 + dx * 45) + 'px'; knob.style.top = (45 - touch.y * 45) + 'px'; } }, { passive: false });
-  window.addEventListener('touchend', (e) => { for (const t of e.changedTouches) if (t.identifier === jid) { jid = null; touch.active = false; touch.x = touch.y = 0; knob.style.left = '45px'; knob.style.top = '45px'; } });
+  // the stick: centre and travel come from its actual size (the phone layout makes it smaller – index.html), not fixed pixels
+  const joy = $('joy'), knob = $('joyKnob'); let jid = null, jcx = 0, jcy = 0, home = 45, travel = 45, reach = 55;
+  const measure = () => { const w = joy.clientWidth || 140, k = knob.offsetWidth || 50; home = (w - k) / 2; travel = home; reach = w * 0.4; };
+  const release = () => { jid = null; touch.active = false; touch.x = touch.y = 0; knob.style.left = knob.style.top = ''; };   // the CSS centre (index.html) of whatever size the stick has
+  joy.addEventListener('touchstart', (e) => { const t = e.changedTouches[0]; jid = t.identifier; measure(); const r = joy.getBoundingClientRect(); jcx = r.left + r.width / 2; jcy = r.top + r.height / 2; touch.active = true; e.preventDefault(); }, { passive: false });
+  window.addEventListener('touchmove', (e) => { for (const t of e.changedTouches) if (t.identifier === jid) { let dx = (t.clientX - jcx) / reach, dy = (t.clientY - jcy) / reach; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } touch.x = dx; touch.y = -dy; knob.style.left = (home + dx * travel) + 'px'; knob.style.top = (home - touch.y * travel) + 'px'; } }, { passive: false });
+  for (const ev of ['touchend', 'touchcancel']) window.addEventListener(ev, (e) => { for (const t of e.changedTouches) if (t.identifier === jid) release(); });
+  // turning the phone changes the layout (and the stick's size): back to the CSS centre of the new size
+  window.addEventListener('resize', () => { if (jid === null) { knob.style.left = knob.style.top = ''; } });
   $('kickBtn').addEventListener('touchstart', (e) => { kickHeld = true; G.kickPressed = true; e.preventDefault(); }, { passive: false });
   $('kickBtn').addEventListener('touchend', (e) => { kickHeld = false; G.kickReleased = true; e.preventDefault(); }, { passive: false });
   $('useBtn').addEventListener('touchstart', (e) => { G.usePressed = true; e.preventDefault(); }, { passive: false });
