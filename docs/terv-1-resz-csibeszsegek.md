@@ -1,7 +1,7 @@
 # 1. rész (Augusztus – Egy nap a parkban): csibészség-ötletek
 
 Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** a közös pontozó rendszer (`mischief.js` + napló) és az 1–9. csibészség kész; a 10. még terv (tetszés szerinti sorrendben).
+**Állapot:** a közös pontozó rendszer (`mischief.js` + napló) és mind a 10 csibészség kész (tetszés szerinti sorrendben).
 
 ## Pontozás és csibészség-napló (közös rendszer, minden csibészségre)
 
@@ -27,7 +27,7 @@ Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni
 | 7 | Pénzhalászat a szökőkútból | 3 érme | 6 érme | 10 érme lebukás nélkül | „Valami csillog a szökőkút alján.” | **kész** |
 | 8 | Rollerverseny a nyugdíjassal | célba ér | félúton vezet | legyőzi a bácsit (szélárnyékból előz a turbó előtt) | „A padon ülő bácsi gyorsnak tartja magát.” | **kész** |
 | 9 | Bújócska apával | 20 mp rejtőzés | 40 mp | apa feladja („Nem láttad a gyereket?”) | „Apa szeret keresgélni.” | **kész** |
-| 10 | Lufis bácsi | felszáll a lufikkal | eléri a labdát | eléri, és egy lufi sem pukkad ki | „Valaki lufit árul a park szélén.” | terv |
+| 10 | Lufis bácsi | felszáll a lufikkal | eléri a labdát | eléri, és egy lufi sem pukkad ki | „Valaki lufit árul a park szélén.” | **kész** |
 
 ---
 
@@ -106,9 +106,10 @@ Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni
 - **Csillagok:** ★ 20 mp rejtőzés · ★★ 40 mp · ★★★ apa feladja a keresést („Nem láttad a gyereket?”).
 - **Megvalósítás** (`src/activities/hide.js`): apa mellett a padnál (labda nélkül; ha apa a közelebbi, nem Angi) **E – Apa, bújócskázzunk!** → `pstate = 'hide'`. Apa feláll, eltakarja a szemét, és hangosan tízig számol (`petyaMode = 'hideCount'`); Petyus közben elbújik: **fa mögé** (a törzs legyen apa és közte) vagy **bokor mellé** – ha áll, magától leguggol. Utána apa (`hideSeek`) búvóhelyről búvóhelyre jár (a pad 30 m-es körzetének fái és bokrai, `TREES` + `BUSHES`; néha „megérzi”, merre lehet Petyus), körülnéz és kommentál. **Észreveszi**, ha Petyus előtte van takarás nélkül, vagy takarásban mozog a közelben (11 m), illetve 1,5 m-en belül mindenképp. 4 m-en belül **hallja a szuszogást**: **Szóköz** nyomva = levegő visszatartása (a 🫁 csík 6 mp alatt fogy el; ha elfogy: HAPCI! – lebukás; ha nem tartja vissza: „Hallom ám, hogy szuszogsz!”). 60 mp után apa feladja, odamegy Angihoz: „Angi, nem láttad a gyereket?” – „Melyiket?” – „ITT VAGYOK!!” **E** = feladás. `award('bujocska', mp, { gaveUp })` (20 mp alatt nincs csillag). HUD: `#mini` (🙈 számolás / rejtőzés mp · 🫁 levegő).
 
-## 10. Lufis bácsi
+## 10. Lufis bácsi  ✅ kész
 
 - **Játék:** Petyus egy hatalmas lufi-csokrot kap, könnyebb lesz tőle: nagyokat ugrik, lassan száll le, a szél sodorja. Így kell elérni egy fára akadt labdát – ahol épp a korábban fára dobott macska ül.
 - **Poén:** Petya az utolsó pillanatban elkapja a bokáját; ha nem, a macska kipukkaszt egy lufit.
 - **Mire épül:** fák és `treeTop()`, a macskás jelenet folytatása (`activities/cat.js`, `evt = 'tree'`).
 - **Csillagok:** ★ felszáll a lufikkal · ★★ eléri a fára akadt labdát · ★★★ eléri, és egy lufi sem pukkad ki.
+- **Megvalósítás** (`src/activities/balloon.js`): a pálya melletti sétány nyugati végén (23,6; −12,2) áll a lufis bácsi egy csokor lufival. **E – Kérek egy lufit!** → „Egyet? Minek egyet! Vegyél ötöt!” – Petyus 5 lufit kap (`pstate = 'balloon'`): könnyű lesz, **Szóköz** = hatalmas ugrás (5 lufival kb. 7 m), lassan száll le (max. 2,2 m/s), a levegőben **WASD**-dal kormányozható, és a szél ide-oda sodorja (falevelek mutatják). Minden lufi kevesebb súlyt jelent: kevesebb lufival kisebbet ugrik. A fán, ahol a macska ül (ha apa már feldobott egyet, azon; különben egy macska most mászik fel a lufis bácsihoz legközelebbi tölgyre), fennakadt egy piros-fehér labda – kézzel kell elérni. A macska közelében („Psssz!”) PUKK – egy lufi kidurran. Apa már az első nagy ugrásnál kiabál; a labdával földet érve egy széllökés felkapja Petyust („Elvisz a szél!! APAAA!”), apa odarohan és az utolsó pillanatban elkapja a bokáját; a lufik elszállnak. A lufis bácsi: „A lufik ára nem tartalmazza a repülést!” `award('lufi', 1|2|3)`. HUD: `#mini` (🎈 db · 🎯 távolság · ⏱ 50 mp · ⬆ magasság). A kamera a levegőben Petyus magasságát követi (`G.petike.flyY`).

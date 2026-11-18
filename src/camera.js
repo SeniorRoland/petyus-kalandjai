@@ -16,6 +16,7 @@ export function updateCamera(dt) {
   } else if (G.mode === 'play') {
     const bw = G.pstate === 'free' || G.pstate === 'autoBall' ? 0.25 * Math.min(1, G.zoom) : 0;   // lean towards the ball only while playing football (close up: less)
     tx = G.petike.pos.x + (ball.active ? (ball.pos.x - G.petike.pos.x) * bw : 0); tz = G.petike.pos.z + (ball.active ? (ball.pos.z - G.petike.pos.z) * bw : 0);
+    const fy = G.petike.flyY || 0; if (fy > 0) { tx -= fy * 0.7 * CAM_OFF.x / CAM_OFF.y; tz -= fy * 0.7 * CAM_OFF.z / CAM_OFF.y; }   // up with the balloons: keep him in the picture
   } else { tx = 0; tz = -4; }
   const ck = cine.on ? 3.5 / Math.max(0.3, cine.slow) : 3;   // the cutscene camera keeps up even in slow motion
   camTarget.x = damp(camTarget.x, tx, ck, dt); camTarget.z = damp(camTarget.z, tz, ck, dt);
