@@ -17,7 +17,7 @@ import { setPrompt } from '../activities/drinking.js';
 import { FY, SPOTS, buildHome, lightPool, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, flushToilet, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
 import { noise, tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
-import { buildAppliances, devices, updateAppliances } from './appliances.js';
+import { buildAppliances, devices, seating, updateAppliances } from './appliances.js';
 import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, wheek } from './karcsi.js';
 import { dressPajama } from './pajama.js';
 
@@ -162,8 +162,9 @@ const look = (dx, dy) => { dx = clamp(dx, -60, 60); dy = clamp(dy, -60, 60); fp.
 }
 function updateFpsCam() {
   const a = G.petike, fx = Math.sin(fp.yaw), fz = Math.cos(fp.yaw), cp = Math.cos(fp.pitch);
-  fpsCam.position.set(a.pos.x + fx * 0.1, FY + 1.32, a.pos.z + fz * 0.1);
-  fpsCam.lookAt(fpsCam.position.x + fx * cp, FY + 1.32 + Math.sin(fp.pitch), fpsCam.position.z + fz * cp);
+  const eye = FY + 1.32 - (a.sit || 0) * 0.42;   // lower when he sits (the armchair)
+  fpsCam.position.set(a.pos.x + fx * 0.1, eye, a.pos.z + fz * 0.1);
+  fpsCam.lookAt(fpsCam.position.x + fx * cp, eye + Math.sin(fp.pitch), fpsCam.position.z + fz * cp);
 }
 
 window.addEventListener('keydown', (e) => {
@@ -191,6 +192,19 @@ const ROOM_LINES = {
 const pvel = new V3();
 function movePetyus(dt) {
   const a = G.petike;
+  // sitting in the armchair: no walking; a movement key (or the stick) stands him up again
+  if (seating.on) {
+    const moveKey = keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || (!fp.on && (keys.ArrowLeft || keys.ArrowRight)) || touch.active;
+    if (moveKey && a.sit > 0.95) seating.on = false;
+    else {
+      a.seatH = seating.seatH; a.seatBase = FY; a.sitTarget = 1;
+      a.pos.x = damp(a.pos.x, seating.x, 10, dt); a.pos.z = damp(a.pos.z, seating.z - 0.05, 10, dt);
+      if (!fp.on) a.heading = a.targetHeading = dampAngle(a.heading, seating.h, 10, dt);
+      a.animate(dt, false, 0); a.sync(); pvel.set(0, 0, 0);
+      return;
+    }
+  }
+  if (a.sitTarget) { a.sitTarget = 0; }
   let ix = 0, iy = 0, wx, wz;
   if (fp.on) {   // first person: forward / sideways relative to where he looks, ← → turn
     if (keys.KeyA) ix -= 1; if (keys.KeyD) ix += 1;

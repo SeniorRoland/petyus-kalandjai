@@ -70,9 +70,7 @@ function buildFridge(x, z, rot) {
   }));
   // what is in it (fridge side): milk, cream (TEJSZÍN), whipped cream (TEJSZÍNHAB), cheese, salami, cola, orange soda,
   // a can; apples, oranges and grapes in the crisper. Shelf tops: 0.525, 0.925, 1.325; the floor 0.075.
-  F.at(grp, F.milkCarton(), 0.1, 0.525, -0.13);
-  { const c = F.creamCarton(); c.scale.setScalar(0.75); F.at(grp, c, 0.22, 0.525, -0.02); }
-  F.at(grp, F.whippedCream(), 0.33, 0.525, 0.04);
+  { const p = F.plate(0x8ecae6, 0.09); F.at(grp, p, 0.2, 0.525, -0.08); F.at(grp, F.apple(), 0.17, 0.545, -0.09); F.at(grp, F.orange(), 0.24, 0.545, -0.06); }
   { const p = F.plate(0xf2c94c, 0.08); F.at(grp, p, 0.13, 0.925, -0.06); F.at(grp, F.cheeseWedge(), 0.13, 0.94, -0.06, 0.4); }
   F.at(grp, F.salamiLog(), 0.28, 0.925, -0.08, 0.2);
   F.at(grp, F.sodaBottle(), 0.1, 1.325, -0.16); F.at(grp, F.sodaBottle(0xf4a261, 0xf77f00, 'NARANCS', '#f77f00'), 0.2, 1.325, -0.16); F.at(grp, F.sodaCan('#c1121f', 'MÁLNA'), 0.32, 1.325, 0.0);
@@ -88,13 +86,18 @@ function buildFridge(x, z, rot) {
       if (side < 0) { B(g, s, 0.12, 0.32, 1.05, 1.35, 0.0, 0.0, 0x2c2f33); B(g, s, 0.18, 0.26, 1.15, 1.2, 0.0, 0.0, 0x7fb6e8); }   // dispenser
       // the inner side: door bins with bottles
       for (const by of [0.35, 0.85, 1.3]) {
-        B(g, s, x0 + 0.04, x1 - 0.04, by, by + 0.12, -0.13, -0.06, (x, y, z) => (z < -0.1 && y > by + 0.03 ? undefined : 0xf2f4f6));
+        B(g, s, x0 + 0.04, x1 - 0.04, by, by + 0.1, -0.16, -0.06, (x, y, z) => (y > by + 0.03 && z > -0.14 ? undefined : 0xf2f4f6));   // floor + a lip at the far edge
+        if (side > 0 && by === 0.35) continue;   // the right door's lowest bin: milk, cream, whipped cream (food.js, below)
         for (let n = 0; n < 3; n++) { const bx = x0 + 0.1 + n * 0.11; B(g, s, bx, bx + 0.03, by + 0.03, by + 0.2, -0.11, -0.08, [0xd9453a, 0xf4a261, 0x7fb6e8][(n + (side > 0 ? 1 : 0)) % 3]); }
       }
     }));
     return pv;
   };
   const L = door(-1), Rr = door(1);
+  // in the right door's lowest bin (they swing out with the door): milk, cream (TEJSZÍN), whipped cream (TEJSZÍNHAB)
+  F.at(Rr, F.milkCarton(), -0.34, 0.375, -0.1);
+  { const c = F.creamCarton(); c.scale.setScalar(0.78); F.at(Rr, c, -0.235, 0.375, -0.1); }
+  F.at(Rr, F.whippedCream(), -0.12, 0.375, -0.1);
   // the collider: the body (turned with the device)
   const c = Math.abs(Math.cos(rot)), sn = Math.abs(Math.sin(rot)), hx = c * 0.45 + sn * 0.33, hz = sn * 0.45 + c * 0.33;
   addBoxCol(x - hx, z - hz, x + hx, z + hz, 1.9);
@@ -274,10 +277,83 @@ function buildWasher(x, z, rot) {
     } });
 }
 
+// ---------------------------------------------------------------- an Xbox Series X and its controller on the TV stand
+// the console standing upright (7.5 mm voxels): matt black, the top vent with its green-tinted holes, the glowing logo button,
+// the disc slot, a USB port and the pair button on the front; the controller (5 mm voxels) lying in front of the TV:
+// two grips, two thumbsticks, the D-pad, A B X Y in their colours, the Xbox button, view / menu, bumpers and triggers
+function buildXbox(grp, x, y, z) {
+  const s = 0.0075, BLK = 0x121315, BLK2 = 0x1b1c1f;
+  const xb = vox(s, (g) => {
+    B(g, s, -0.075, 0.075, 0.006, 0.3, -0.075, 0.075, (px, py, pz) => (py > 0.292 ? undefined : ((Math.round(px / s) + Math.round(pz / s)) % 7 ? BLK : BLK2)));
+    // the top: a dish of vent holes (green inside), a rim round it
+    B(g, s, -0.075, 0.075, 0.292, 0.3, -0.075, 0.075, (px, py, pz) => {
+      const r = Math.hypot(px, pz); if (r > 0.066) return BLK;
+      const hole = (Math.round(px / s) % 2 === 0) && (Math.round(pz / s) % 2 === 0);
+      return hole ? (r < 0.05 ? 0x2e7d32 : 0x1f5d2a) : (py < 0.296 ? BLK2 : undefined);
+    });
+    B(g, s, -0.06, 0.06, 0.0, 0.006, -0.06, 0.06, 0x0a0a0b);   // the foot
+    // front (+z): disc slot, power button ring, USB port, pair button
+    B(g, s, -0.045, -0.04, 0.06, 0.24, 0.0775, 0.0775, 0x2c2f33);
+    B(g, s, 0.03, 0.06, 0.25, 0.28, 0.0775, 0.0775, 0x2c2f33);
+    B(g, s, 0.03, 0.05, 0.035, 0.045, 0.0775, 0.0775, 0x3a3d42); B(g, s, 0.055, 0.06, 0.04, 0.045, 0.0775, 0.0775, 0x6b7078);
+  });
+  xb.position.set(x, y, z); grp.add(xb);
+  const logo = new THREE.Mesh(new THREE.CircleGeometry(0.009, 16), glow(0xffffff, 0.9)); logo.position.set(x + 0.045, y + 0.265, z + 0.082); grp.add(logo);
+  return logo;
+}
+function buildController(grp, x, y, z, ry) {
+  const s = 0.005, BODY = 0x1a1b1e, GRIP = 0x141518, TOP = 0x26282c;
+  const c = vox(s, (g) => {
+    // the body: a rounded middle and two grips swept back towards the player (+z)
+    B(g, s, -0.08, 0.08, 0, 0.04, -0.035, 0.065, (px, py, pz) => {
+      const mid = (px / 0.06) ** 2 + ((pz - 0.0) / 0.035) ** 2 <= 1;
+      const grip = [-1, 1].some((sd) => ((px - sd * 0.05) / 0.028) ** 2 + ((pz - 0.032) / 0.034) ** 2 <= 1);
+      if (!mid && !grip) return undefined;
+      const h = grip && !mid ? 0.028 : 0.034; if (py > h) return undefined;
+      return py > h - 0.006 ? TOP : (grip && !mid ? GRIP : BODY);
+    });
+    const cyl = (cx, cz, r, y0, y1, col) => B(g, s, cx - r, cx + r, y0, y1, cz - r, cz + r, (px, py, pz) => (Math.hypot(px - cx, pz - cz) <= r ? col : undefined));
+    cyl(-0.035, -0.006, 0.011, 0.034, 0.042, 0x0f1012); cyl(-0.035, -0.006, 0.008, 0.042, 0.05, 0x2c2f33);   // left stick
+    cyl(0.018, 0.02, 0.011, 0.034, 0.042, 0x0f1012); cyl(0.018, 0.02, 0.008, 0.042, 0.05, 0x2c2f33);        // right stick
+    B(g, s, -0.025, -0.01, 0.034, 0.04, 0.017, 0.022, 0x3a3d42); B(g, s, -0.02, -0.015, 0.034, 0.04, 0.01, 0.03, 0x3a3d42);   // D-pad
+    for (const [bx, bz, col] of [[0.04, 0.004, 0x4caf50], [0.05, -0.006, 0xe53935], [0.03, -0.006, 0x1e88e5], [0.04, -0.016, 0xfdd835]]) cyl(bx, bz, 0.0055, 0.034, 0.042, col);   // A B X Y
+    B(g, s, -0.01, -0.005, 0.034, 0.038, -0.005, 0.0, 0x6b7078); B(g, s, 0.005, 0.01, 0.034, 0.038, -0.005, 0.0, 0x6b7078);       // view / menu
+    B(g, s, -0.07, -0.03, 0.02, 0.034, -0.04, -0.03, 0x3a3d42); B(g, s, 0.03, 0.07, 0.02, 0.034, -0.04, -0.03, 0x3a3d42);       // bumpers
+    B(g, s, -0.065, -0.04, 0.0, 0.02, -0.042, -0.033, 0x2c2f33); B(g, s, 0.04, 0.065, 0.0, 0.02, -0.042, -0.033, 0x2c2f33);     // triggers
+  });
+  c.position.set(x, y, z); c.rotation.y = ry; grp.add(c);
+  const btn = new THREE.Mesh(new THREE.CircleGeometry(0.0075, 14), glow(0xffffff, 0.85)); btn.rotation.x = -Math.PI / 2; btn.position.set(0, 0.0355, -0.02); c.add(btn);
+  return btn;
+}
+
+// ---------------------------------------------------------------- the armchair in front of the TV: E to sit down / stand up
+// ep2.js reads seating: while Petyus sits, he does not walk (any movement key stands him up)
+export const seating = { on: false, x: 0, z: 0, h: 0, seatH: 0.44 };
+function buildArmchair(x, z, rot) {
+  const s = 0.025, grp = group(x, z, rot), F1 = 0x6d8b74, F2 = 0x5a7660, WOOD = 0x7a4a24;
+  grp.add(vox(s, (g) => {
+    B(g, s, -0.42, 0.42, 0.12, 0.38, -0.4, 0.38, (px, py, pz) => (Math.abs(px) > 0.3 || pz < -0.28 ? F2 : F1));            // the base
+    B(g, s, -0.3, 0.3, 0.38, 0.46, -0.28, 0.36, (px, py, pz) => (Math.abs(px) < 0.015 ? F2 : 0x7fa086));                      // the seat cushion
+    B(g, s, -0.42, 0.42, 0.38, 0.95, -0.42, -0.28, (px, py) => (py > 0.9 && Math.abs(px) > 0.36 ? undefined : F2));         // the back
+    B(g, s, -0.3, 0.3, 0.46, 0.85, -0.28, -0.2, 0x7fa086);                                                                   // the back cushion
+    for (const sd of [-1, 1]) B(g, s, sd * 0.36, sd * 0.42, 0.38, 0.62, -0.28, 0.38, (px, py, pz) => (py > 0.58 && pz > 0.34 ? undefined : F2));   // arms
+    for (const lx of [-0.36, 0.36]) for (const lz of [-0.34, 0.32]) B(g, s, lx - 0.02, lx + 0.02, 0, 0.12, lz - 0.02, lz + 0.02, WOOD);
+    B(g, s, -0.12, 0.12, 0.46, 0.62, -0.2, -0.12, 0xf4a261);                                                                // a little cushion
+  }));
+  const c = Math.abs(Math.cos(rot)), sn = Math.abs(Math.sin(rot)), hx = c * 0.42 + sn * 0.4, hz = sn * 0.42 + c * 0.4;
+  addBoxCol(x - hx, z - hz, x + hx, z + hz, 0.95);
+  seating.x = x; seating.z = z; seating.h = rot;
+  // the hotspot is beside the armchair (in front of it is the TV's)
+  devices.push({ x: x + Math.cos(rot) * 0.65, z: z - Math.sin(rot) * 0.65, r: 0.75, label: () => (seating.on ? 'E – felállás' : 'E – leülés a fotelbe'),
+    use: () => { seating.on = !seating.on; tone('sine', seating.on ? 180 : 240, seating.on ? 120 : 300, 0.15, 0.05); } });
+}
+
 // ---------------------------------------------------------------- TV (the parents' room): a cartoon on the screen
 function buildTV(x, z, rot) {
   const grp = group(x, z, rot), scr = canvasScreen(256, 144, 1.1, 0.61);
   scr.m.position.set(0, 0.935, -0.02); grp.add(scr.m);
+  // on the stand: the console (right) and the controller (left, in front of the TV); their lights brighten with the TV
+  const xlogo = buildXbox(grp, 0.6, 0.5, -0.05), cbtn = buildController(grp, -0.52, 0.5, 0.06, 0.35);
   const st = { on: false, t: 0, frame: 0, sndT: 0 };
   const draw = () => {
     const c = scr.ctx, t = st.t;
@@ -295,7 +371,7 @@ function buildTV(x, z, rot) {
   const front = toWorld(grp, 0, 0, 0.75); front.y -= FY;
   devices.push({ x: front.x, z: front.z, r: 1.0, label: () => (st.on ? 'E – tévé kikapcsolása' : 'E – tévé bekapcsolása'),
     use: () => { st.on = !st.on; st.t = 0; click(); draw(); if (st.on) say({ headWorld: (o) => o.copy(toWorld(grp, 0, 1.4, 0)) }, '♪ Lalala-lala! ♪', 2); },
-    update: (dt) => { if (!st.on) return; st.t += dt; if ((st.frame -= dt) <= 0) { st.frame = 1 / 12; draw(); } if ((st.sndT -= dt) <= 0) { st.sndT = 0.6; tone('triangle', 520 + Math.floor(R() * 4) * 130, 520, 0.18, 0.015); } } });
+    update: (dt) => { xlogo.material.opacity = st.on ? 1 : 0.25; cbtn.material.opacity = st.on ? 0.95 : 0.2; if (!st.on) return; st.t += dt; if ((st.frame -= dt) <= 0) { st.frame = 1 / 12; draw(); } if ((st.sndT -= dt) <= 0) { st.sndT = 0.6; tone('triangle', 520 + Math.floor(R() * 4) * 130, 520, 0.18, 0.015); } } });
 }
 
 // ---------------------------------------------------------------- Petyus's computer (on his desk): monitor, keyboard, mouse, speakers, webcam, tower
@@ -387,6 +463,7 @@ export function buildAppliances() {
   buildShowerWater(0.2, 1.4, 1.74);
   buildWasher(1.45, 0.33, 0);
   buildTV(8.3, 8.95, P);
+  buildArmchair(8.3, 7.35, 0);   // facing the TV (south)
   buildComputer(15.28, 1.45, W);
 }
 export function updateAppliances(dt) { for (const d of devices) if (d.update) d.update(dt); }
