@@ -10,6 +10,8 @@ import { G } from '../state.js';
 import { say } from '../ui.js';
 import { R, V3, clamp, dampAngle, pick } from '../util.js';
 import { partMesh, vcMat } from '../world.js';
+import { getGeometry } from '../voxels.js';
+import { noise } from '../audio.js';
 import { FY, put } from './home.js';
 
 // our block: the flat (x −0.25 … 15.85) + the stairwell and the neighbours' flat to the west; ground floor + 1st floor below
@@ -225,7 +227,7 @@ export function placeOutsideProps() {
   const g = { ground: true };
   // parked cars in front of the house (some bays empty)
   [0, 1, 2, 4, 5, 7, 8].forEach((k, n) => put('car', -14 + k * 3.0, 12.4, n % 2 ? Math.PI : 0, (n * 5) % 6, g));
-  put('car', -46, -31, Math.PI / 2, 3, g); put('car', 30, 21, Math.PI / 2, 4, g);   // one in front of the garages, one on the street
+  put('car', -46, -31, Math.PI / 2, 3, g);   // one in front of the garages (the street has moving traffic: buildTraffic)
   [[-46, -18, 0], [-41, -14, Math.PI], [-46, -6, 0], [-41, 0, Math.PI], [-46, 4, 0]].forEach(([x, z, r], n) => put('car', x, z, r, (n * 3 + 1) % 6, g));   // between the blocks
   [[7, -76, 0.3], [11, -79, -0.4], [14, -75, 1.2]].forEach(([x, z, r], n) => put('car', x, z, r, (n + 2) % 6, g));   // at the far end of the meadow
   // (the woods to the east and the trees further away are simple low-poly trees: buildFarTrees)
@@ -278,6 +280,7 @@ function keepOut(p) {
 }
 let chatT = 6;
 export function updateOutside(dt) {
+  updateTraffic(dt);
   // the roof: hidden from close up (the flat must be seen), fades in as the player zooms out (and never in the first-person view)
   if (roof) { const o = G.fps ? 0 : clamp((G.zoom - 1.35) / 0.4, 0, 1); roof.material.opacity = o; roof.visible = o > 0.02; roof.material.depthWrite = o > 0.98; }
   for (const k of kids) {
@@ -338,6 +341,29 @@ function buildFarTrees(b) {
 }
 
 // the props go in with the flat's furniture (home.js buildHome(placeOutsideProps)); this builds the rest
+// ---------------------------------------------------------------- traffic on the street (right-hand: eastbound on the
+// south lane, westbound on the north lane), different speeds, back to the other end when they leave the map; a soft
+// whoosh when one passes the house
+const traffic = [];
+function buildTraffic() {
+  const lanes = [{ z: 22.2, dir: 1 }, { z: 19.8, dir: -1 }];
+  [[0, -70, 8.5], [0, -10, 7.0], [0, 45, 9.5], [1, 60, 8.0], [1, 5, 6.5], [1, -50, 9.0], [1, -85, 7.5]].forEach(([l, x, v], n) => {
+    const m = new THREE.Mesh(getGeometry('car', (n * 2 + 1) % 6), vcMat); m.receiveShadow = true;
+    const grp = new THREE.Group(); grp.add(m); grp.rotation.y = lanes[l].dir > 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(grp);
+    traffic.push({ grp, x, z: lanes[l].z, dir: lanes[l].dir, v, sound: 0 });
+  });
+}
+function updateTraffic(dt) {
+  for (const c of traffic) {
+    c.x += c.dir * c.v * dt;
+    if (c.x > 100) c.x = -100; else if (c.x < -100) c.x = 100;
+    c.grp.position.set(c.x, 0, c.z);
+    const near = Math.abs(c.x - (G.petike ? G.petike.pos.x : 0)) < 2;
+    if (near && c.sound <= 0) { noise(1.1, 260, 0.7, 0.025); c.sound = 3; }
+    c.sound -= dt;
+  }
+}
+
 export function buildOutside() {
   // separate meshes, so each is culled on its own and only what needs to casts a shadow (the shadow pass draws casters again)
   const add = (fn, cast) => { const m = partMesh(fn); m.castShadow = cast; scene.add(m); return m; };
@@ -346,6 +372,6 @@ export function buildOutside() {
   add((b) => buildNeighbours(b), false);
   add((b) => buildFence(b), false);
   add((b) => buildFarTrees(b), false);
-  buildRoof();
+  buildRoof(); buildTraffic();
   buildLife();
 }
