@@ -14,8 +14,8 @@ import { say, toast, updateBubbles } from '../ui.js';
 import { $, V3, clamp, damp, dampAngle, pick } from '../util.js';
 import { INSTANCES, collide, colliders, setGround } from '../world.js';
 import { setPrompt } from '../activities/drinking.js';
-import { FY, SPOTS, buildHome, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
-import { tone } from '../audio.js';
+import { FY, SPOTS, buildHome, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, flushToilet, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
+import { noise, tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
 import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, wheek } from './karcsi.js';
 import { dressPajama } from './pajama.js';
@@ -221,9 +221,15 @@ function interactHome() {
   { const cf = cageFront(), r = Math.hypot(p.x - cf.x, p.z - cf.z); if (r < 0.9 && r < bd) { bd = r; best = { cage: true }; } }
   { const r = Math.hypot(p.x - toiletSeat.x, p.z - (toiletSeat.z + 0.6)); if (r < 0.75 && r < bd) { bd = r; best = { seat: true }; } }
   let txt = '';
+  // next to the toilet: Space (on touch: the LEHÚZÁS button) flushes
+  const kb = $('kickBtn'); if (kb) { const on = isTouch && !!(best && best.seat); kb.style.display = on ? 'block' : 'none'; if (on && kb.textContent !== 'LEHÚZÁS') kb.textContent = 'LEHÚZÁS'; }
   if (best && best.seat) {
-    txt = toiletSeatLabel();
+    txt = toiletSeatLabel() + (isTouch ? '' : ' · Szóköz – lehúzás');
     if (G.usePressed) { toggleToiletSeat(); sClick(); }
+    if (G.kickPressed && flushToilet()) {
+      tone('square', 900, 700, 0.05, 0.05); noise(1.7, 700, 0.5, 0.3, 0.1); noise(1.2, 1600, 0.7, 0.12, 0.3); tone('sine', 260, 110, 1.3, 0.05, 0.2); noise(1.8, 2800, 1.2, 0.04, 1.6);
+      say({ headWorld: (o) => o.set(toiletSeat.x, FY + 1.1, toiletSeat.z + 0.2) }, 'HÚÚÚSSS!', 1.6);
+    }
   } else if (best && best.cage) {
     txt = cageDoorOpen() ? 'E – kalitka becsukása' : 'E – kalitka kinyitása';
     if (G.usePressed) { toggleCageDoor(); sClick(); }

@@ -174,11 +174,11 @@ function planks(b, r, cols, w) {
   let n = 0;
   for (let z = r.z0; z < r.z1 - 0.001; z += w, n++) {
     const z1 = Math.min(r.z1, z + w); let x = r.x0 - ((n * 0.77) % 1.2);
-    for (let m = 0; x < r.x1; m++) { const x1 = Math.min(r.x1, x + 1.2); const xa = Math.max(r.x0, x); if (x1 > xa) b.quad(xa, z, x1, z1 - 0.008, 0.002, cols[(n + m) % cols.length], 0.03); x += 1.2; }
+    for (let m = 0; x < r.x1; m++) { const x1 = Math.min(r.x1, x + 1.2); const xa = Math.max(r.x0, x); if (x1 > xa) b.quad(xa, z, x1, z1 - 0.008, 0.004, cols[(n + m) % cols.length], 0.03); x += 1.2; }
   }
 }
 function checker(b, r, s, c1, c2) {
-  for (let z = r.z0, j = 0; z < r.z1 - 0.001; z += s, j++) for (let x = r.x0, i = 0; x < r.x1 - 0.001; x += s, i++) b.quad(x, z, Math.min(r.x1, x + s), Math.min(r.z1, z + s), 0.002, (i + j) % 2 ? c1 : c2, 0.02);
+  for (let z = r.z0, j = 0; z < r.z1 - 0.001; z += s, j++) for (let x = r.x0, i = 0; x < r.x1 - 0.001; x += s, i++) b.quad(x, z, Math.min(r.x1, x + s), Math.min(r.z1, z + s), 0.004, (i + j) % 2 ? c1 : c2, 0.02);
 }
 
 // ---------------------------------------------------------------- furniture (voxels-home.js, instanced)
@@ -222,7 +222,7 @@ function furnish() {
   put('bed_double', 1.12, 6.8, E, 2); put('wardrobe', 4.4, 4.64, 0, 0); put('wardrobe', 5.4, 4.64, 0, 0); put('dresser', 4.6, 8.92, P, 0); put('rug', 3.4, 6.8, 0, 0);
   // the parents' room: bed on the north wall, the sofa opposite on the south wall, TV on the south wall near the sibling's
   // wall, the wardrobe strip on the sibling's wall (1 m pieces: occlude.js fades them one by one)
-  put('bed_double', 12.6, 5.4, 0, 0); put('sofa', 12.6, 8.72, P, 0); put('tv_unit', 8.3, 8.95, P, 0);
+  put('bed_double', 12.6, 5.4, 0, 0); put('nightstand', 11.5, 4.55, 0, 0); put('nightstand', 13.72, 4.55, 0, 1);   // a bedside table with a lamp on each side put('sofa', 12.6, 8.72, P, 0); put('tv_unit', 8.3, 8.95, P, 0);
   [4.92, 6.12, 7.32, 8.52].forEach((z, n) => put('sideboard', 7.17, z, E, n % 2));   // half-height drawers + doors along the whole wall
   put('floor_lamp', 11.25, 8.95);
   // the parents' plants under the east window (z 6.9 … 8.7): a plant bench with small ones on it and below, big ones on the floor
@@ -251,7 +251,8 @@ function buildFurniture() {
 function buildShell() {
   homeRoot.add(partMesh((b) => {
     // the floor slab of the flat (seen at the edges) and the two balcony slabs
-    b.bx(XE / 2, -0.32, ZS / 2, XE + 2 * TE, 0.32, ZS + 2 * TE, 0xd8d0c4, 0, 0.02);
+    // (no slab of its own: the floor stands on the block below (outside.js); a slab here lay exactly on the block's top and
+    //  its sides on the facade – coplanar faces flicker, seen through the see-through outer walls)
     b.bx(13.66, -0.22, -1.075, 3.98, 0.22, 1.65, 0xd0c7ba, 0, 0.02);
     b.bx(16.975, -0.22, 6.76, 2.25, 0.22, 4.88, 0xd0c7ba, 0, 0.02);
     // railings: posts + top rail (north balcony: north, west, east sides; east balcony: east, north, south sides)
@@ -355,8 +356,14 @@ function buildToiletSeat() {
   const mk = (geo) => { const m = new THREE.Mesh(geo, vcMat); m.castShadow = true; m.receiveShadow = true;
     const pv = new THREE.Group(); pv.position.set(toiletSeat.x, TOILET.hinge.y - 0.005, toiletSeat.z + TOILET.hinge.z); pv.add(m); homeRoot.add(pv); return pv; };
   toiletSeat.seat = mk(toiletSeatGeometry()); toiletSeat.lid = mk(toiletLidGeometry());
+  // the flush: a swirl of water in the bowl (shown while flushing)
+  const sw = new THREE.Mesh(new THREE.CylinderGeometry(1, 0.6, 0.06, 20, 1, true), new THREE.MeshLambertMaterial({ color: 0x8fd0f0, transparent: true, opacity: 0.8, side: THREE.DoubleSide }));
+  sw.position.set(toiletSeat.x, 0.27, toiletSeat.z + TOILET.cz + 0.01); sw.scale.set(TOILET.hx * 0.95, 1, TOILET.hz * 0.95); sw.visible = false; homeRoot.add(sw);
+  toiletSeat.swirl = sw;
 }
 export function toggleToiletSeat() { toiletSeat.state = (toiletSeat.state + 1) % 3; }
+// flushing (Space / the LEHÚZÁS button next to the toilet): 2.6 s of swirling water; true if it started
+export function flushToilet() { if (toiletSeat.flushT > 0) return false; toiletSeat.flushT = 2.6; return true; }
 export const toiletSeatLabel = () => ['E – WC-fedél felnyitása', 'E – ülőke felhajtása', 'E – ülőke és fedél lehajtása'][toiletSeat.state];
 
 // the ceiling: only in the first-person view (from above the flat is open); unlit – the hemisphere light would tint a downward face green
@@ -411,6 +418,11 @@ export function updateHome(dt, P, fps = false) {
     w.glass.opacity = GLASS_OP * w.o;
     if (w.extras) for (const m of w.extras) m.opacity = w.o;   // the pictures on it fade with the wall
     if (w.pics) for (const g of w.pics) g.visible = w.s > 0.9;   // a sunk wall: its pictures are put away (not squashed)
+  }
+  if (toiletSeat.swirl) {
+    const f = toiletSeat.flushT = Math.max(0, (toiletSeat.flushT || 0) - dt), sw = toiletSeat.swirl;
+    sw.visible = f > 0;
+    if (f > 0) { sw.rotation.y += dt * 9; const k = Math.sin(Math.min(1, (2.6 - f) / 2.2) * Math.PI); sw.position.y = 0.24 + 0.07 * k; sw.scale.y = 0.5 + k; sw.material.opacity = 0.5 + 0.4 * k; }
   }
   if (toiletSeat.seat) {   // up: leaning back against the tank (the lid behind the seat)
     toiletSeat.lidT = damp(toiletSeat.lidT, toiletSeat.state >= 1 ? 1 : 0, 8, dt); toiletSeat.seatT = damp(toiletSeat.seatT, toiletSeat.state === 2 ? 1 : 0, 8, dt);

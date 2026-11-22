@@ -430,6 +430,22 @@ function plantShelf(seed) {   // a low white plant bench 1.6 × 0.35 × 0.45 m w
   return g;
 }
 
+// ---------------------------------------------------------------- the parents' bedside tables (lamp on top)
+function nightstand(seed) {   // 0.46 × 0.4 × 0.5 m: a drawer, an open shelf, a table lamp, a book / a glass of water
+  const g = grid(seed);
+  bx(g, -0.23, 0.05, -0.2, 0.23, 0.5, 0.15, C.wood);
+  bx(g, -0.2, 0.3, 0.15, 0.2, 0.45, 0.2, C.woodLight); bx(g, -0.05, 0.35, 0.2, 0.05, 0.4, 0.25, C.dark);   // the drawer + its knob
+  hole(g, -0.2, 0.1, -0.15, 0.2, 0.25, 0.15); bx(g, -0.15, 0.1, -0.1, 0.1, 0.15, 0.1, 0xd9534f);           // the open shelf, a book in it
+  for (const x of [-0.2, 0.15]) for (const z of [-0.15, 0.1]) bx(g, x, 0, z, x + 0.05, 0.05, z + 0.05, C.woodDark);
+  // the lamp: a round base, a stem, a warm fabric shade
+  g.disc(seed === 1 ? 2 : -2, -1, 1.6, vi(0.5), vi(0.5), 0xc9a227);
+  const lx = seed === 1 ? 0.1 : -0.1;
+  bx(g, lx - 0.0, 0.55, -0.05, lx + 0.05, 0.75, 0.0, 0xc9a227);
+  g.disc(vi(lx), -1, 3.2, vi(0.75), vi(0.9), (i, j, k) => ((i - vi(lx)) ** 2 + (k + 1) ** 2 > 4 || j === vi(0.9) ? 0xf6e1b0 : 0xffe9a8));
+  if (seed === 1) bx(g, -0.15, 0.5, -0.05, -0.05, 0.6, 0.05, 0xbfe6f7); else bx(g, 0.05, 0.5, -0.1, 0.2, 0.55, 0.1, 0x4f8fd6);   // a glass of water / a book
+  return g;
+}
+
 export const HOME_CATALOG = [
   { id: 'bed_single', name: 'Egyszemélyes ágy', cat: 'Lakás', variants: 3, build: bedSingle, collider: { hx: 0.47, hz: 1.05, h: 0.6 }, desc: 'Fa keret, csíkos paplan, párna. Az 1. változaton plüssmaci.', use: 'Petyus szobája' },
   { id: 'bed_double', name: 'Franciaágy', cat: 'Lakás', variants: 3, build: bedDouble, collider: { hx: 0.82, hz: 1.06, h: 0.6 }, desc: '160 × 200 cm, magas fejtámla, két párna.', use: 'A szülők szobája, a testvér szobája' },
@@ -452,6 +468,7 @@ export const HOME_CATALOG = [
   { id: 'wall_coat_hanger', name: 'Fali fogas', cat: 'Lakás', variants: 1, build: wallCoatHanger, collider: null, desc: 'Fali fogasléc kalappolccal, rajta öt kabát, sál, kalap és sapka.', use: 'Előszoba' },
   { id: 'shoe_cabinet', name: 'Cipősszekrény', cat: 'Lakás', variants: 1, build: shoeCabinet, collider: { hx: 0.5, hz: 0.18, h: 0.95 }, desc: 'Két billenőajtós cipősszekrény; a tetején kulcsok, pénztárca, tálca, kis növény.', use: 'Előszoba' },
   { id: 'sideboard', name: 'Fiókos szekrény', cat: 'Lakás', variants: 2, build: sideboard, collider: { hx: 0.6, hz: 0.26, h: 1.1 }, desc: 'Fél magas (1,05 m) szekrényelem fiókokkal és két ajtóval; egymás mellé rakva egy egész falat beborít. A tetején váza, könyvek, fénykép, növény.', use: 'A szülők szobája, a testvér szobájának falán' },
+  { id: 'nightstand', name: 'Éjjeliszekrény', cat: 'Lakás', variants: 2, build: nightstand, collider: { hx: 0.23, hz: 0.2, h: 0.55 }, desc: 'Fiókos éjjeliszekrény nyitott polccal, rajta asztali lámpa meleg ernyővel; mellette egy pohár víz vagy egy könyv.', use: 'A szülők franciaágya két oldalán' },
   { id: 'sofa', name: 'Kanapé', cat: 'Lakás', variants: 3, build: sofa, collider: { hx: 1.0, hz: 0.45, h: 0.9 }, desc: 'Háromszemélyes kanapé karfákkal és díszpárnákkal.', use: 'A szülők szobája (nappali rész)' },
   { id: 'tv_unit', name: 'TV-szekrény', cat: 'Lakás', variants: 1, build: tvUnit, collider: { hx: 0.8, hz: 0.2, h: 1.3 }, desc: 'Alacsony szekrény lapos tévével.', use: 'Nappali' },
   { id: 'floor_lamp', name: 'Állólámpa', cat: 'Lakás', variants: 1, build: floorLamp, collider: { r: 0.18, h: 1.7 }, desc: 'Kerek talp, vékony szár, vászon ernyő meleg fényű izzóval.', use: 'Nappali' },
