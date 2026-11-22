@@ -35,6 +35,8 @@ function vox(s, build, seed = 3) {
 }
 function group(x, z, rot, y = 0) { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rot; homeRoot.add(g); return g; }
 const toWorld = (grp, x, y, z) => grp.localToWorld(new V3(x, y, z));   // a point of a device in the world (FY included)
+// the point to look at in the first-person view (the flat's frame: y from its floor) – an interaction there needs it aimed at
+const loc = (grp, x, y, z) => { grp.updateMatrixWorld(true); const v = toWorld(grp, x, y, z); v.y -= FY; return v; };
 const glow = (color, opacity = 1) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false });
 function canvasScreen(w, h, pw, ph) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -105,7 +107,7 @@ function buildFridge(x, z, rot) {
   addBoxCol(x - hx, z - hz, x + hx, z + hz, 1.9);
   const st = { open: false, t: 0 };
   const front = toWorld(grp, 0, 0, 0.7); front.y -= FY;
-  devices.push({ x: front.x, z: front.z, r: 0.75, label: () => (st.open ? 'E – hűtő becsukása' : 'E – hűtő kinyitása'),
+  devices.push({ aim: loc(grp, 0, 1.0, 0.3), size: 0.45, x: front.x, z: front.z, r: 0.75, label: () => (st.open ? 'E – hűtő becsukása' : 'E – hűtő kinyitása'),
     use: () => { st.open = !st.open; tone('sine', st.open ? 220 : 160, st.open ? 180 : 120, 0.12, 0.08); if (!st.open) noise(0.08, 400, 1, 0.12); },
     update: (dt) => { st.t = damp(st.t, st.open ? 1 : 0, 6, dt); L.rotation.y = -st.t * 1.9; Rr.rotation.y = st.t * 1.9; } });
   fx.fridge = { grp, door: Rr, isOpen: () => st.open && st.t > 0.6 }; fx.dairy = { milk, cream, whip };
@@ -163,7 +165,7 @@ function buildMicrowave(x, z, rot, y) {
   const drawDisp = (txt) => { const d = disp.ctx; d.fillStyle = '#0b1a10'; d.fillRect(0, 0, 64, 24); d.fillStyle = '#5dff8a'; d.font = 'bold 18px monospace'; d.textAlign = 'center'; d.fillText(txt, 32, 18); disp.tex.needsUpdate = true; };
   drawDisp('6:00');
   const front = toWorld(grp, 0, 0, 0.65); front.y -= FY;
-  devices.push({ x: front.x, z: front.z, r: 0.7,
+  devices.push({ aim: loc(grp, 0, 0.15, 0.18), size: 0.2, x: front.x, z: front.z, r: 0.7,
     label: () => (st.open ? 'E – mikró becsukása' : st.run > 0 ? 'E – (fut)' : 'E – mikró kinyitása'),
     use: () => { if (st.run > 0) { st.run = 0; tone('sine', 880, 880, 0.08, 0.05); } st.open = !st.open; click(); noise(0.06, 900, 1, 0.08); },
     alt: {
@@ -203,7 +205,7 @@ function buildKettle(x, z, rot, y) {
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.075, 0.088, 24), glow(0x3aa0ff, 0)); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.021; grp.add(ring);
   const st = { on: false, t: 0, steamT: 0 };
   const front = toWorld(grp, 0, 0, 0.6); front.y -= FY;
-  devices.push({ x: front.x, z: front.z, r: 0.6, label: () => (st.on ? 'E – vízforraló kikapcsolása' : 'E – vízforraló bekapcsolása'),
+  devices.push({ aim: loc(grp, 0, 0.14, 0), x: front.x, z: front.z, r: 0.6, label: () => (st.on ? 'E – vízforraló kikapcsolása' : 'E – vízforraló bekapcsolása'),
     use: () => { st.on = !st.on; st.t = 0; click(); },
     update: (dt) => {
       ring.material.opacity = st.on ? 0.95 : 0;
@@ -222,7 +224,7 @@ function buildCooktop(x, z, rot, y) {
   }
   const st = { on: true, heat: 1, steamT: 0 };
   const front = toWorld(grp, 0, 0, 0.75); front.y -= FY;
-  devices.push({ x: front.x, z: front.z, r: 0.8, label: () => (st.on ? 'E – tűzhely kikapcsolása' : 'E – tűzhely bekapcsolása'),
+  devices.push({ aim: loc(grp, 0, 0.02, 0), size: 0.25, x: front.x, z: front.z, r: 0.8, label: () => (st.on ? 'E – tűzhely kikapcsolása' : 'E – tűzhely bekapcsolása'),
     use: () => { st.on = !st.on; click(); if (!st.on && G.angi) say(G.angi, 'Hé! Most főzök!', 2.2); },
     update: (dt) => {
       st.heat = damp(st.heat, st.on ? 1 : 0, 1.2, dt);
@@ -236,7 +238,7 @@ function buildTap(x, z, rot, y, name, len, hot) {
   const grp = group(x, z, rot, y), jet = stream(len); grp.add(jet);
   const st = { on: false, sndT: 0 };
   const front = toWorld(grp, hot.x, 0, hot.z); front.y -= FY;
-  devices.push({ x: front.x, z: front.z, r: hot.r, label: () => (st.on ? `E – ${name} elzárása` : `E – ${name} megnyitása`),
+  devices.push({ aim: null, x: front.x, z: front.z, r: hot.r, label: () => (st.on ? `E – ${name} elzárása` : `E – ${name} megnyitása`),
     use: () => { st.on = !st.on; click(); },
     update: (dt) => {
       jet.visible = st.on;
@@ -248,7 +250,7 @@ function buildShowerWater(x, z, y) {   // the head over the bath: falling drops 
   const mat = glow(0x8fd0f0, 0.85), geo = new THREE.BoxGeometry(0.014, 0.11, 0.014);
   for (let i = 0; i < 36; i++) { const d = new THREE.Mesh(geo, mat); d.userData = { ox: (R() - 0.5) * 0.12, oz: (R() - 0.5) * 0.12, t: R() }; d.visible = false; grp.add(d); drops.push(d); }
   const st = { on: false, sndT: 0 };
-  devices.push({ x: 1.05, z: 1.3, r: 0.5, label: () => (st.on ? 'E – zuhany elzárása' : 'E – zuhany megnyitása'),
+  devices.push({ aim: new V3(0.2, 1.78, 1.4), size: 0.15, x: 1.05, z: 1.3, r: 0.5, label: () => (st.on ? 'E – zuhany elzárása' : 'E – zuhany megnyitása'),
     use: () => { st.on = !st.on; click(); },
     update: (dt) => {
       for (const d of drops) {
@@ -270,7 +272,7 @@ function buildWasher(x, z, rot) {
   const drum = new THREE.Mesh(new THREE.CircleGeometry(0.17, 28), new THREE.MeshLambertMaterial({ map: tex })); drum.position.set(0, 0.425, 0.33); grp.add(drum);
   const st = { on: false, sndT: 0 };
   const front = toWorld(grp, 0, 0, 0.62); front.y -= FY;
-  devices.push({ x: front.x, z: front.z, r: 0.55, label: () => (st.on ? 'E – mosógép leállítása' : 'E – mosógép indítása'),
+  devices.push({ aim: loc(grp, 0, 0.45, 0.3), size: 0.25, x: front.x, z: front.z, r: 0.55, label: () => (st.on ? 'E – mosógép leállítása' : 'E – mosógép indítása'),
     use: () => { st.on = !st.on; tone('sine', 660, 990, 0.12, 0.06); },
     update: (dt) => {
       if (!st.on) return;
@@ -348,7 +350,7 @@ function buildArmchair(x, z, rot) {
   addBoxCol(x - hx, z - hz, x + hx, z + hz, 0.95);
   seating.x = x; seating.z = z; seating.h = rot;
   // the hotspot is beside the armchair (in front of it is the TV's)
-  devices.push({ x: x + Math.cos(rot) * 0.65, z: z - Math.sin(rot) * 0.65, r: 0.75, label: () => (seating.on ? 'E – felállás' : 'E – leülés a fotelbe'),
+  devices.push({ aim: new V3(x, 0.5, z), size: 0.35, x: x + Math.cos(rot) * 0.65, z: z - Math.sin(rot) * 0.65, r: 0.75, label: () => (seating.on ? 'E – felállás' : 'E – leülés a fotelbe'),
     use: () => { seating.on = !seating.on; tone('sine', seating.on ? 180 : 240, seating.on ? 120 : 300, 0.15, 0.05); } });
 }
 
@@ -408,7 +410,7 @@ function buildTV(x, z, rot) {
   };
   draw();
   const front = toWorld(grp, 0, 0, 0.75); front.y -= FY;
-  devices.push({ x: front.x, z: front.z, r: 1.0, label: () => (st.on ? 'E – tévé kikapcsolása' : 'E – tévé bekapcsolása'),
+  devices.push({ aim: loc(grp, -0.025, 0.95, -0.02), size: 0.4, x: front.x, z: front.z, r: 1.0, label: () => (st.on ? 'E – tévé kikapcsolása' : 'E – tévé bekapcsolása'),
     use: () => { st.on = !st.on; st.t = 0; click(); draw(); if (st.on && !xb.on) say({ headWorld: (o) => o.copy(toWorld(grp, 0, 1.4, 0)) }, '♪ Lalala-lala! ♪', 2); },
     update: (dt) => {
       xlogo.material.opacity = xb.on ? 1 : 0.12; cbtn.material.opacity = xb.on ? 0.95 : 0.12;
@@ -423,7 +425,7 @@ function buildTV(x, z, rot) {
   // the console: its own button (E next to it); the start chime; the TV shows it when both are on
   fx.tv = { grp, controller: ctl.c, xboxOn: () => xb.on };
   const xf = toWorld(grp, 0.6, 0, 0.6); xf.y -= FY;
-  devices.push({ x: xf.x, z: xf.z, r: 0.6, label: () => (xb.on ? 'E – Xbox kikapcsolása' : 'E – Xbox bekapcsolása'),
+  devices.push({ aim: loc(grp, 0.6, 0.65, -0.05), x: xf.x, z: xf.z, r: 0.6, label: () => (xb.on ? 'E – Xbox kikapcsolása' : 'E – Xbox bekapcsolása'),
     use: () => {
       xb.on = !xb.on; xb.t = 0; click();
       if (xb.on) { for (const [f, d] of [[392, 0], [523, 0.12], [659, 0.24], [784, 0.36]]) tone('sine', f, f, 0.6, 0.04, d); if (!st.on) { st.on = true; st.t = 0; } }   // the TV comes on with it
@@ -497,7 +499,7 @@ function buildComputer(x, z, rot) {
   };
   draw();
   const front = toWorld(grp, 0, 0, 0.6); front.y -= FY;
-  devices.push({ x: front.x, z: front.z, r: 0.8, label: () => (st.on ? 'E – számítógép kikapcsolása' : 'E – számítógép bekapcsolása'),
+  devices.push({ aim: loc(grp, 0, 1.07, -0.13), size: 0.25, x: front.x, z: front.z, r: 0.8, label: () => (st.on ? 'E – számítógép kikapcsolása' : 'E – számítógép bekapcsolása'),
     use: () => { st.on = !st.on; st.t = 0; click(); if (st.on) tone('sine', 523, 784, 0.5, 0.05, 0.2); draw();
       if (st.on && G.petya) setTimeout(() => say(G.petya, 'Petyus! Reggel nincs gépezés!', 2.6), 2500); },
     update: (dt) => {
@@ -514,9 +516,9 @@ export function buildAppliances() {
   buildMicrowave(6.45, 0.25, 0, 0.93);
   buildKettle(9.3, 0.22, 0, 0.93);
   buildCooktop(7.6, 0.31, 0, 0.93);
-  buildTap(8.6, 0.31, 0, 0, 'mosogatócsap', 0.36, { x: 0, z: 0.65, r: 0.7 });
+  buildTap(8.6, 0.31, 0, 0, 'mosogatócsap', 0.36, { x: 0, z: 0.65, r: 0.7 }); devices[devices.length - 1].aim = new V3(8.6, 1.0, 0.2);
   { const t = homeRoot.children[homeRoot.children.length - 1]; t.children[0].position.set(0, 1.15, -0.1); }   // the kitchen jet: from the spout into the basin
-  buildTap(0.4, 1.15, E, 0, 'kádcsap', 0.42, { x: -0.7, z: 0.65, r: 0.5 });
+  buildTap(0.4, 1.15, E, 0, 'kádcsap', 0.42, { x: -0.7, z: 0.65, r: 0.5 }); devices[devices.length - 1].aim = new V3(0.4, 0.65, 1.88);
   { const t = homeRoot.children[homeRoot.children.length - 1]; t.children[0].position.set(-0.72, 0.72, 0); }   // the bath jet (the tap's end, in the bath's frame)
   buildShowerWater(0.2, 1.4, 1.74);
   buildWasher(1.45, 0.33, 0);

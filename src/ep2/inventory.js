@@ -114,6 +114,17 @@ function drawMug() {
 
 // ---------------------------------------------------------------- picking up (E) – called by ep2.js interactHome
 // the nearest item within reach (not in a closed fridge / microwave; not the controller while it is in Petyus's hands)
+// every item that can be picked up now, with its world position (the first-person view picks among them by aim)
+export function pickables(p) {
+  const out = [];
+  for (const id in items) {
+    const it = items[id]; if (!it.place) continue;
+    const pl = places[it.place]; if (pl.open && !pl.open()) continue;
+    if (id === 'controller' && holding) continue;
+    const w = worldXZ(it.obj); out.push({ item: it, w, d: Math.hypot(p.x - w.x, p.z - w.z) });
+  }
+  return out;
+}
 export function pickCandidate(p) {
   let best = null, bd = 0.75;
   for (const id in items) {
@@ -134,18 +145,21 @@ export const pickLabel = (it) => `E – ${it.name} felvétele`;
 
 // ---------------------------------------------------------------- the F action: pour / fill / empty / put down
 const reachOf = (id, p) => { const it = items[id]; if (inv.list.includes(id)) return 0; if (!it.place) return 99; const pl = places[it.place]; if (pl.open && !pl.open()) return 99; const w = worldXZ(it.obj); return Math.hypot(p.x - w.x, p.z - w.z); };
-export function invAction(p) {
+export function invAction(p, look = null) {
   const id = inv.list[inv.sel]; if (!id) return null;
+  // a source / spot counts when it is near (top view) – or, in the first-person view, when it is looked at
+  const at = (x, y, z, r) => (look ? look(new THREE.Vector3(x, y + FY, z)) : Math.hypot(p.x - x, p.z - z) < r);
   const it = items[id];
   const fill = (what) => () => { if (inv.mug[what]) { toast(`Már van benne ${DRINK[what]}.`, 1.6); return; } inv.mug[what] = true; drawMug(); renderHud(); noise(0.5, 900, 0.8, 0.06); tone('sine', 700, 500, 0.3, 0.02); if (what === 'hab') { noise(0.4, 4000, 0.6, 0.08); say(G.petike, 'Pssszt! Hab!', 1.4); } };
   // the mug: tea from the teapot, coffee from the machine, empty it at the sink
   if (id === 'mug') {
-    if (Math.hypot(p.x - 11.22, p.z - 2.78) < 0.85) return { label: 'tea töltése a bögrébe', short: 'TEA', run: fill('tea') };
-    if (Math.hypot(p.x - 9.75, p.z - 0.85) < 0.7) return { label: 'kávé a bögrébe', short: 'KÁVÉ', run: () => { fill('kave')(); tone('square', 200, 180, 0.6, 0.02); if (G.petya) say(G.petya, 'Az az én kávém, Petyus!', 2.2); } };
-    if (Math.hypot(p.x - 8.6, p.z - 0.95) < 0.7 && Object.values(inv.mug).some(Boolean)) return { label: 'bögre kiöntése', short: 'KIÖNT', run: () => { inv.mug = {}; drawMug(); renderHud(); noise(0.6, 600, 0.5, 0.08); } };
+    if (at(11.22, 0.82, 2.78, 0.85)) return { label: 'tea töltése a bögrébe', short: 'TEA', run: fill('tea') };
+    if (look ? at(9.75, 1.05, 0.22) : Math.hypot(p.x - 9.75, p.z - 0.85) < 0.7) return { label: 'kávé a bögrébe', short: 'KÁVÉ', run: () => { fill('kave')(); tone('square', 200, 180, 0.6, 0.02); if (G.petya) say(G.petya, 'Az az én kávém, Petyus!', 2.2); } };
+    if (at(8.6, 0.85, 0.31, 0.7) && Object.values(inv.mug).some(Boolean)) return { label: 'bögre kiöntése', short: 'KIÖNT', run: () => { inv.mug = {}; drawMug(); renderHud(); noise(0.6, 600, 0.5, 0.08); } };
   }
   // milk / cream / whipped cream into the mug (the mug carried, or within reach)
-  if ((id === 'milk' || id === 'cream' || id === 'whip') && reachOf('mug', p) < 0.9) {
+  const mugOk = inv.list.includes('mug') ? true : (look ? (items.mug.place && (!places[items.mug.place].open || places[items.mug.place].open()) && look(worldXZ(items.mug.obj))) : reachOf('mug', p) < 0.9);
+  if ((id === 'milk' || id === 'cream' || id === 'whip') && mugOk) {
     const what = { milk: 'tej', cream: 'tejszin', whip: 'hab' }[id];
     return { label: `${it.name} a bögrébe`, short: 'TÖLT', run: fill(what) };
   }
@@ -153,7 +167,9 @@ export function invAction(p) {
   // (an open place wins over a closed one – a closed fridge / microwave only gives the hint when nothing else is in reach)
   let best = null, bd = 0, bestOpen = true;
   for (const pid of ACCEPT[id]) {
-    const pl = places[pid], d = pl.hot(p); if (d > 0) continue;
+    const pl = places[pid];
+    // top view: the place's area; first-person view: one of its slots looked at
+    const d = look ? (pl.slots.some((s) => { s.parent.updateMatrixWorld(true); return look(s.parent.localToWorld(s.pos.clone())); }) ? -1 : 1) : pl.hot(p); if (d > 0) continue;
     const si = pl.slots.findIndex((s) => !s.item && (!s.only || s.only === id));
     const anyFree = si >= 0 ? si : pl.slots.findIndex((s) => !s.item && !s.only);
     if (anyFree < 0) continue;

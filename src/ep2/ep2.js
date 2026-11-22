@@ -18,7 +18,7 @@ import { FY, SPOTS, buildHome, lightPool, ceiling, cutWalls, doors, switches, to
 import { noise, tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
 import { buildAppliances, devices, seating, updateAppliances } from './appliances.js';
-import { buildInventory, cycleItem, holdingController, invAction, pickCandidate, pickLabel, pickUp, selectItem, updateInventory } from './inventory.js';
+import { buildInventory, cycleItem, holdingController, invAction, pickLabel, pickUp, pickables, selectItem, updateInventory } from './inventory.js';
 import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, wheek } from './karcsi.js';
 import { dressPajama } from './pajama.js';
 
@@ -132,6 +132,8 @@ const fpsCam = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerH
 const fp = { on: false, yaw: 0, pitch: -0.1, mx: null, my: null, tid: null };
 export function toggleFps(on = !fp.on) {
   fp.on = on; G.fps = on;
+  let xh = $('xhair'); if (!xh) { xh = document.createElement('div'); xh.id = 'xhair'; xh.style.cssText = 'position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.65);z-index:14;pointer-events:none;'; document.body.appendChild(xh); }
+  xh.style.display = on ? 'block' : 'none';
   ceiling.visible = on; G.petike.rig.root.visible = !on;
   if (on) {
     fp.yaw = G.petike.heading; fp.pitch = -0.1;
@@ -160,6 +162,15 @@ const look = (dx, dy) => { dx = clamp(dx, -60, 60); dy = clamp(dy, -60, 60); fp.
   app.addEventListener('touchstart', (e) => { if (fp.on && e.touches.length === 1) { const t = e.touches[0]; fp.tid = t.identifier; fp.mx = t.clientX; fp.my = t.clientY; } }, { passive: true });
   app.addEventListener('touchmove', (e) => { if (!fp.on) return; for (const t of e.changedTouches) if (t.identifier === fp.tid) { look((t.clientX - fp.mx) * 2, (t.clientY - fp.my) * 2); fp.mx = t.clientX; fp.my = t.clientY; } }, { passive: true });
   app.addEventListener('touchend', () => { fp.tid = null; fp.mx = null; });
+}
+// first person: how far off the centre of the view a world point is (radians) – Infinity when it is not aimed at
+// (outside the object's size seen from here) or further than ~1.9 m from the eyes
+const _dir = new THREE.Vector3(), _to = new THREE.Vector3();
+function lookAngle(w, size = 0.12) {
+  _to.copy(w).sub(fpsCam.position); const dist = _to.length(); if (dist > 1.9 || dist < 0.05) return Infinity;
+  fpsCam.getWorldDirection(_dir); const a = _dir.angleTo(_to.divideScalar(dist));
+  const cone = Math.min(0.5, Math.max(0.06, Math.atan(size / dist)));   // the object's size seen from here (small things need exact aim)
+  return a < cone ? a : Infinity;
 }
 function updateFpsCam() {
   const a = G.petike, fx = Math.sin(fp.yaw), fz = Math.cos(fp.yaw), cp = Math.cos(fp.pitch);
@@ -249,16 +260,25 @@ function movePetyus(dt) {
 const door = { knockT: 0 };
 function interactHome() {
   const p = G.petike.pos;
-  // the nearest thing within reach: a door (open / close, knock, leave) or a light switch
-  let best = null, bd = 1e9;
-  for (const d of doors) { const r = Math.hypot(p.x - d.x, p.z - d.z); if (r < 1.0 && r < bd) { bd = r; best = { d }; } }
-  for (const sw of switches) { const r = Math.hypot(p.x - sw.x, p.z - sw.z); if (r < 0.85 && r < bd) { bd = r; best = { sw }; } }
-  { const cf = cageFront(), r = Math.hypot(p.x - cf.x, p.z - cf.z); if (r < 0.9 && r < bd) { bd = r; best = { cage: true }; } }
-  { const r = Math.hypot(p.x - toiletSeat.x, p.z - (toiletSeat.z + 0.6)); if (r < 0.75 && r < bd) { bd = r; best = { seat: true }; } }
-  for (const dv of devices) { const r = Math.hypot(p.x - dv.x, p.z - dv.z); if (r < dv.r && r < bd) { bd = r; best = { dev: dv }; } }
-  // things to pick up win against a device up to 20 cm further (on the counter they stand right next to the machines)
-  { const pc = pickCandidate(p); if (pc && pc.d - 0.2 < bd) { bd = pc.d - 0.2; best = { item: pc.item }; } }
-  const act = invAction(p);   // what F would do with the selected thing here
+  // everything that can be used, with where it is (aim: a point of it in the flat's frame, y from the floor). Top view: the
+  // nearest within reach wins (things to pick up up to 20 cm further). First-person view: only what the dot in the middle
+  // of the screen points at (and not further than ~1.9 m from the eyes) – the best aimed one wins.
+  const cands = [];
+  for (const d of doors) cands.push({ o: { d }, r: Math.hypot(p.x - d.x, p.z - d.z), reach: 1.0, aim: new V3(d.x, 1.05, d.z), size: 0.45 });
+  for (const sw of switches) cands.push({ o: { sw }, r: Math.hypot(p.x - sw.x, p.z - sw.z), reach: 0.85, aim: new V3(sw.x, 1.05, sw.z), size: 0.07 });
+  { const cf = cageFront(); cands.push({ o: { cage: true }, r: Math.hypot(p.x - cf.x, p.z - cf.z), reach: 0.9, aim: new V3(14.3, 1.0, 0.32), size: 0.3 }); }
+  cands.push({ o: { seat: true }, r: Math.hypot(p.x - toiletSeat.x, p.z - (toiletSeat.z + 0.6)), reach: 0.75, aim: new V3(toiletSeat.x, 0.45, toiletSeat.z + 0.1), size: 0.25 });
+  for (const dv of devices) cands.push({ o: { dev: dv }, r: Math.hypot(p.x - dv.x, p.z - dv.z), reach: dv.r, aim: dv.aim || new V3(dv.x, 0.9, dv.z), size: dv.size || 0.14 });
+  for (const pc of pickables(p)) cands.push({ o: { item: pc.item }, r: pc.d - 0.2, reach: 0.55, aimW: pc.w, size: 0.08 });
+  let best = null;
+  if (fp.on) {
+    let ba = 1e9;
+    for (const c of cands) { const a = lookAngle(c.aimW || new V3(c.aim.x, c.aim.y + FY, c.aim.z), c.size); if (a < ba) { ba = a; best = c.o; } }
+  } else {
+    let bd = 1e9;
+    for (const c of cands) if (c.r < c.reach && c.r < bd) { bd = c.r; best = c.o; }
+  }
+  const act = invAction(p, fp.on ? (w) => lookAngle(w, 0.1) < 1e8 : null);   // what F would do with the selected thing here (aimed in first person)
   let txt = '';
   // next to the toilet: Space (on touch: the LEHÚZÁS button) flushes
   // (a device with a second action – the microwave – uses Space too; on touch the RÚGÁS button shows that action's name)
