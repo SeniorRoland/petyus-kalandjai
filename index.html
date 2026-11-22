@@ -109,6 +109,15 @@
     background:rgba(43,45,66,.65); color:#fff; }
   .btn:hover { background:rgba(43,45,66,.85); }
   #skipBtn { display:none; }
+  #menuBtn { display:none; }
+  /* back to the main menu: a small confirmation (backmenu.js) */
+  #backDlg { position:fixed; inset:0; z-index:70; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.5); padding:16px; }
+  #backDlg.open { display:flex; }
+  #backDlg .box { background:#fffdf3; color:#222; border:3px solid #151515; border-radius:16px; padding:18px 22px 16px; max-width:430px; box-shadow:0 10px 0 rgba(0,0,0,.35); font-family:'Patrick Hand', 'Comic Sans MS', cursive; font-size:20px; line-height:1.25; }
+  #backDlg h3 { margin:0 0 8px; font-family:'Bangers', Impact, sans-serif; font-weight:normal; letter-spacing:1px; font-size:28px; }
+  #backDlg .row { display:flex; gap:10px; justify-content:flex-end; margin-top:14px; }
+  #backDlg .row .btn { font-size:17px; }
+  #backDlg #backYes { background:#ff7a3d; }
 
   #charge { position:fixed; left:50%; bottom:34px; transform:translateX(-50%); width:220px; height:16px; z-index:10;
     background:rgba(43,45,66,.55); border-radius:9px; padding:3px; display:none; }
@@ -343,6 +352,7 @@
 </div>
 <div id="topright">
   <button class="btn" id="skipBtn">Kihagyás ⏭</button>
+  <button class="btn" id="menuBtn" title="Vissza a főmenübe">🏠</button>
   <button class="btn" id="journalBtn" title="Csibészség-napló (N)">📒</button>
   <button class="btn" id="muteBtn">🔊</button>
 </div>
@@ -363,6 +373,7 @@
 <div id="charge"><div></div></div>
 <div id="big">GÓÓÓL!</div>
 <div id="toast"></div>
+<div id="backDlg" role="dialog" aria-label="Vissza a főmenübe"><div class="box"><h3>Vissza a főmenübe?</h3><div id="backTxt"></div><div class="row"><button class="btn" id="backNo" type="button">Mégse</button><button class="btn" id="backYes" type="button">Igen, főmenü</button></div></div></div>
 <div id="prompt"></div>
 
 <div id="touch">

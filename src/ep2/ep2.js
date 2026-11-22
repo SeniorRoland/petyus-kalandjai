@@ -30,6 +30,29 @@ export const ep2DevStart = () => import.meta.env.DEV && new URLSearchParams(loca
 const DAY0 = new Date(2026, 8, 2), DAYS = 29;   // 2026. szeptember 2. (szerda) … 30. (szerda)
 const WEEKDAYS = ['vasárnap', 'hétfő', 'kedd', 'szerda', 'csütörtök', 'péntek', 'szombat'];
 export const ep2 = { day: 0, min: 6 * 60, room: null, talkT: 6, seen: new Set(), momT: 9, momAt: 'cook', petyusLine: 0 };
+
+// ---------------------------------------------------------------- saving the day's state (before going back to the menu, on leaving)
+// part 1's mischief results are saved on their own (mischief.js); part 2 keeps where the player is: the day, the clock,
+// Petyus's place, the doors, the lights, the wall view, Karcsi's cage door. The September tile then says „Folytatás”.
+const SAVE_KEY = 'petyus.r2.allapot';
+export function ep2HasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
+function saveEp2() {
+  const p = G.petike, st = { v: 1, day: ep2.day, min: ep2.min, x: p.pos.x, z: p.pos.z, h: p.heading,
+    doors: doors.filter((d) => d.pivot).map((d) => d.open), lights: switches.map((s) => s.on), walls: wallView.mode, cage: cageDoorOpen() };
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(st)); } catch (e) { /* storage blocked */ }
+}
+function loadEp2() {
+  let st = null; try { st = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { st = null; }
+  if (!st || st.v !== 1) return false;
+  ep2.day = clamp(st.day | 0, 0, DAYS - 1); ep2.min = clamp(+st.min || 6 * 60, 6 * 60, MORNING_END);
+  G.petike.place(st.x, st.z, st.h); G.petike.pos.y = FY;
+  doors.filter((d) => d.pivot).forEach((d, i) => { if (typeof st.doors?.[i] === 'boolean' && d.open !== st.doors[i]) { toggleDoor(d); d.t = d.open ? 1 : 0; } });
+  switches.forEach((s, i) => { if (typeof st.lights?.[i] === 'boolean' && s.on !== st.lights[i]) toggleSwitch(s); });
+  if (st.walls === 'fade' || st.walls === 'sink') wallView.mode = st.walls;
+  if (typeof st.cage === 'boolean' && st.cage !== cageDoorOpen()) toggleCageDoor();
+  return true;
+}
+window.addEventListener('pagehide', () => { if (G.episode === 2 && G.mode === 'play') saveEp2(); });
 const MORNING_END = 7 * 60 + 30, MIN_PER_SEC = 90 / 600;   // the 90 morning minutes take 10 real minutes (to be tuned)
 export function dateText(d = ep2.day) { const t = new Date(DAY0); t.setDate(t.getDate() + d); return `2026. szeptember ${t.getDate()}., ${WEEKDAYS[t.getDay()]}`; }
 const clockText = (m) => `${Math.floor(m / 60)}:${String(Math.floor(m % 60)).padStart(2, '0')}`;
@@ -54,6 +77,8 @@ export function startEp2() {
   G.petya.path = null; G.petya.place(s.dadChair.x, s.dadChair.z, s.dadChair.h); G.petya.seatH = 0.45; G.petya.seatBase = FY; G.petya.sit = G.petya.sitTarget = 1;
   G.angi.path = null; G.angi.sit = G.angi.sitTarget = 0; G.angi.place(s.momCook.x, s.momCook.z, s.momCook.h);
   for (const a of [G.petike, G.petya, G.angi]) a.pos.y = FY;   // occlude.js measures from here
+  G.saveHook = saveEp2;
+  const resumed = loadEp2();   // where the player left off (back to the menu / closed the page)
   G.mode = 'play'; G.pstate = 'home'; G.petyaMode = 'home';
   // the base framing (zoom 1) shows most of the flat; zooming out stops at 2× (the house and the yard), zooming in is free
   G.viewSizeTarget = G.viewSize = 8; G.zoom = 1; G.zoomMax = 2;   // starts at zoom 1; out to 2× (the house and its surroundings)
@@ -71,7 +96,8 @@ export function startEp2() {
     $('topright').insertBefore(b, $('journalBtn'));
   }
   $('e2Date').textContent = dateText(); hudClock(true);
-  setTimeout(() => say(G.angi, 'Jó reggelt, Petyus! Kelj fel, mosd meg a fogad!', 3.6), 900);
+  if (resumed) toast(`Folytatás: <b>${dateText()}</b>, ${clockText(ep2.min)}`, 3);
+  else setTimeout(() => say(G.angi, 'Jó reggelt, Petyus! Kelj fel, mosd meg a fogad!', 3.6), 900);
 }
 let shownMin = -1;
 function hudClock(force) { const m = Math.floor(ep2.min); if (m !== shownMin || force) { shownMin = m; $('e2Clock').textContent = clockText(m); } }
