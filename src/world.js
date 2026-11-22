@@ -47,7 +47,10 @@ export const GX0 = -52, GX1 = 62, GZ0 = -38, GZ1 = 32, GW = GX1 - GX0, GH = GZ1 
 const T = { GRASS: 0, PARK: 1, PATH: 2, PITCH: 3, ROAD: 4, SIDEWALK: 5, PLAZA: 6 };
 const tiles = new Uint8Array(GW * GH);
 function tileAt(x, z) { const i = Math.floor(x) - GX0, j = Math.floor(z) - GZ0; if (i < 0 || j < 0 || i >= GW || j >= GH) return T.GRASS; return tiles[j * GW + i]; }
-export function groundH(x, z) { const t = tileAt(x, z); return t === T.PATH ? 0.06 : t === T.SIDEWALK ? 0.12 : t === T.PLAZA ? 0.08 : 0; }
+// another episode (2. rész: the flat) has its own floor: setGround(fn) replaces the park tiles
+let groundFn = null;
+export function setGround(fn) { groundFn = fn; }
+export function groundH(x, z) { if (groundFn) return groundFn(x, z); const t = tileAt(x, z); return t === T.PATH ? 0.06 : t === T.SIDEWALK ? 0.12 : t === T.PLAZA ? 0.08 : 0; }
 
 // pitch geometry (x along length)
 export const PITCH = { x0: 25.5, x1: 51.5, z0: -8.5, z1: 8.5, cx: 38.5, cz: 0 };
@@ -83,7 +86,7 @@ for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++) {
 
 // ---------------------------------------------------------------- colliders
 export const colliders = [];
-function addBoxCol(x0, z0, x1, z1, h = 5, e = 0.6) { colliders.push({ box: true, e, x0: Math.min(x0, x1), z0: Math.min(z0, z1), x1: Math.max(x0, x1), z1: Math.max(z0, z1), h }); }
+export function addBoxCol(x0, z0, x1, z1, h = 5, e = 0.6) { colliders.push({ box: true, e, x0: Math.min(x0, x1), z0: Math.min(z0, z1), x1: Math.max(x0, x1), z1: Math.max(z0, z1), h }); }
 export function addCircleCol(x, z, r, h = 5, e = 0.6) { colliders.push({ box: false, x, z, r, h, e }); }
 // pushes p (x,z) out of colliders; returns callback normal. skipSoft: ignore „soft” colliders (the parked scooter: it only
 // stops Petyus and the ball – dad, passers-by and animals walk round it, they would get stuck on it)

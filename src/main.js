@@ -59,6 +59,7 @@ import { updateTouchUI } from './touchui.js';
 import { IS_TOUCH } from './util.js';
 import { setupInstall } from './install.js';
 import { updateOcclusion } from './occlude.js';
+import { ep2DevStart, ep2Unlocked, startEp2, stepEp2 } from './ep2/ep2.js';
 
 // ---------------------------------------------------------------- main loop
 let last = performance.now();
@@ -71,7 +72,7 @@ function frame(now) {
   watchFrame(Math.min(raw, 0.25), !upright && !document.hidden && (G.mode === 'intro' || G.mode === 'play'), () => toast('Egyszerűbb grafika – hogy gördülékenyebb legyen a játék.', 3));
   if (!G.paused && !upright) {   // paused while the mischief journal is open (still rendered)
     tickCine(dt0);
-    for (let i = 0; i < TIME_SCALE; i++) step(dt0 * cine.slow);
+    for (let i = 0; i < TIME_SCALE; i++) (G.episode === 2 ? stepEp2 : step)(dt0 * cine.slow);
   }
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
@@ -134,10 +135,14 @@ async function boot() {
   $('loadbar').classList.add('done');
   const btn = $('startBtn'); btn.disabled = false; setStartLabel('Indítás ▶'); btn.focus({ preventScroll: true });
   btn.onclick = () => { initAudio(); if (MOBILE) goFullscreen(); $('overlay').classList.add('hide'); runIntro(); };
+  // 2. rész: Szeptember – its tile opens once part 1 has 15 ⭐ (always on the dev server); the park is swapped for the flat
+  const b2 = $('ep2Btn');
+  if (b2 && ep2Unlocked()) { b2.disabled = false; setStartLabel('Indítás ▶', b2); b2.onclick = () => { initAudio(); if (MOBILE) goFullscreen(); $('overlay').classList.add('hide'); startEp2(); }; }
+  if (ep2DevStart()) { $('overlay').classList.add('hide'); startEp2(); }   // dev only: ?resz=2
   requestAnimationFrame(frame);
   window.__game = { THREE, scene, camera, renderer, petike: () => G.petike, petya: () => G.petya, angi: () => G.angi, ball, roller, keys, skipIntro, get mode() { return G.mode; }, get pstate() { return G.pstate; }, get petyaMode() { return G.petyaMode; }, use: () => { G.usePressed = true; }, roller, setZoom: (z) => { G.zoomOverride = z; G.viewSizeTarget = z; G.viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { G.kickPressed = true; setTimeout(() => { G.kickReleased = true; }, p); },
     // manual stepping (works even when the tab is hidden and rAF is paused): __game.tick(seconds)
-    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); step(dt * cine.slow); } renderer.render(scene, camera); }, cine, ftn, cev, TREES, jug, jugPress, juggle: () => { G.qPressed = true; }, say };
+    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); (G.episode === 2 ? stepEp2 : step)(dt * cine.slow); } renderer.render(scene, camera); }, cine, ftn, cev, TREES, jug, jugPress, juggle: () => { G.qPressed = true; }, say };
 }
 boot();
 

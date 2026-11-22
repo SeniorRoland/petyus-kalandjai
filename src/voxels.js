@@ -4,6 +4,7 @@
 //  és a design terv (designterv.html) ugyanezt a modult használja.
 // =====================================================================
 import * as THREE from 'three';
+import { HOME_CATALOG } from './voxels-home.js';
 
 export function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 export function hash3(i, j, k, seed = 0) {
@@ -351,6 +352,7 @@ export const CATALOG = [
   { id: 'fencepost', name: 'Kerítésoszlop', cat: 'Pálya', variants: 1, build: fencePost, collider: null, desc: 'Záróoszlop a kerítésvonal végére.', use: 'Focipálya' },
   { id: 'car', name: 'Személyautó', cat: 'Utca', variants: 6, build: car, collider: null, desc: 'Karosszéria övvonallal, üvegezett utastér oszlopokkal, kerekek agytárcsával, lámpák, lökhárító, rendszám, tükrök.', use: 'Az úton közlekedik' },
 ];
+CATALOG.push(...HOME_CATALOG);   // the flat's furniture (2. rész) – voxels-home.js
 const geoCache = new Map();
 export function getGeometry(id, variant = 0) {
   const K = id + ':' + variant; if (geoCache.has(K)) return geoCache.get(K);
