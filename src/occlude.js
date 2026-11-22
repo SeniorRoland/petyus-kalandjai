@@ -10,7 +10,9 @@ import { G } from './state.js';
 import { V3, damp } from './util.js';
 import { INSTANCES, vcMat } from './world.js';
 
-const DIR = CAM_OFF.clone().normalize(), HL = Math.hypot(DIR.x, DIR.z), DH = [DIR.x / HL, DIR.z / HL];
+// the view direction (the camera can turn in part 2: recomputed every frame from CAM_OFF)
+const DIR = CAM_OFF.clone().normalize(), DH = [0, 0]; let HL = 1;
+function viewDir() { DIR.copy(CAM_OFF).normalize(); HL = Math.hypot(DIR.x, DIR.z); DH[0] = DIR.x / HL; DH[1] = DIR.z / HL; }
 const MIN_H = 1.1, NEAR = 16, FADE = 0.32;
 const ghosts = new Map();   // instance → { mesh, op, on }
 const zero = new THREE.Matrix4().makeScale(0, 0, 0);
@@ -46,6 +48,7 @@ function release(it, g) {
 }
 // every frame (main.js), in play
 export function updateOcclusion(dt) {
+  viewDir();
   const P = G.petike && G.petike.pos;
   const active = P && G.mode === 'play';
   if (active) {

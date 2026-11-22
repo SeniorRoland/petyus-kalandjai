@@ -7,12 +7,12 @@ import { totalStars } from '../mischief.js';
 import { updateOcclusion } from '../occlude.js';
 import { CAM_FWD, CAM_RIGHT } from '../player.js';
 import { EPISODES, G, SERIES, ball, rigs, roller } from '../state.js';
-import { SUN_OFF, camTarget, scene, sun } from '../scene.js';
-import { say, updateBubbles } from '../ui.js';
+import { CAM_OFF, SUN_OFF, camTarget, scene, sun } from '../scene.js';
+import { say, toast, updateBubbles } from '../ui.js';
 import { $, V3, clamp, damp, dampAngle, pick } from '../util.js';
 import { INSTANCES, collide, colliders, setGround } from '../world.js';
 import { setPrompt } from '../activities/drinking.js';
-import { SPOTS, buildHome, doors, updateHome } from './home.js';
+import { SPOTS, buildHome, cutWalls, doors, updateHome, wallView } from './home.js';
 import { dressPajama } from './pajama.js';
 
 // ---------------------------------------------------------------- unlocking
@@ -55,15 +55,40 @@ export function startEp2() {
   const ep = EPISODES[1];
   document.title = `${SERIES} – ${ep.n}. rész: ${ep.month}`;
   $('hud').innerHTML = '<span class="chip">📅 <span id="e2Date"></span></span> <span class="chip">🕕 <span id="e2Clock"></span></span> <span class="chip" id="e2RoomChip">📍 <span id="e2Room"></span></span>';
-  $('help').innerHTML = '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
+  $('help').innerHTML = '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat</dd><dt>Q / R</dt><dd>nézet forgatása</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
   for (const id of ['kickBtn', 'runBtn']) { const el = $(id); if (el) el.style.display = id === 'kickBtn' ? 'none' : ''; }
   $('skipBtn').style.display = 'none'; $('hud').style.display = 'block'; $('help').style.display = isTouch ? 'none' : 'block';
   if (isTouch) $('touch').style.display = 'block';
+  for (const [t, ttl, fn] of [['⟲', 'Nézet forgatása (Q)', () => turnView(1)], ['⟳', 'Nézet forgatása (R)', () => turnView(-1)], ['🧱', 'Falak: átlátszó / lesüllyedő (T)', toggleWalls]]) {
+    const b = document.createElement('button'); b.className = 'btn'; b.textContent = t; b.title = ttl; b.onclick = (e) => { fn(); e.currentTarget.blur(); };
+    $('topright').insertBefore(b, $('journalBtn'));
+  }
   $('e2Date').textContent = dateText(); hudClock(true);
   setTimeout(() => say(G.angi, 'Jó reggelt, Petyus! Kelj fel, mosd meg a fogad!', 3.6), 900);
 }
 let shownMin = -1;
 function hudClock(force) { const m = Math.floor(ep2.min); if (m !== shownMin || force) { shownMin = m; $('e2Clock').textContent = clockText(m); } }
+
+// ---------------------------------------------------------------- turning the view (Q / R, or the ⟲ ⟳ buttons): 90° steps
+// CAM_OFF (scene.js) and the screen-relative walking directions CAM_FWD / CAM_RIGHT (player.js) turn together; the walls
+// (home.js), the fading props (occlude.js) and dragging the view (input.js) read them every frame.
+const CAM_R = Math.hypot(40, 40), view = { yaw: Math.PI / 4, want: Math.PI / 4 };
+function applyYaw(y) {
+  const sy = Math.sin(y), cy = Math.cos(y);
+  CAM_OFF.set(sy * CAM_R, 34, cy * CAM_R); CAM_FWD.set(-sy, 0, -cy); CAM_RIGHT.set(cy, 0, -sy);
+}
+if (import.meta.env.DEV) window.__ep2 = { view, cutWalls, wallView, CAM_OFF };   // debugging (dev server only)
+export function turnView(dir) { view.want += dir * Math.PI / 2; }
+export function toggleWalls() {
+  wallView.mode = wallView.mode === 'fade' ? 'sink' : 'fade';
+  toast(wallView.mode === 'fade' ? 'Falak: <b>átlátszók</b> (T)' : 'Falak: <b>lesüllyednek</b> (T)', 2);
+}
+window.addEventListener('keydown', (e) => {
+  if (G.episode !== 2 || G.mode !== 'play' || e.repeat) return;
+  if (e.code === 'KeyQ') turnView(1);
+  if (e.code === 'KeyR') turnView(-1);
+  if (e.code === 'KeyT') toggleWalls();
+});
 
 // ---------------------------------------------------------------- lines
 const DAD_LINES = ['Petyus! Fogmosás!', 'Öltözz fel, mert elkésünk!', 'Hol a tolltartód?', 'Bepakoltál a táskádba?', 'Ne rohangálj pizsamában!', 'Reggeliztél már?', 'Petyus, a cipőd hol van?', 'Ez a kávé még túl forró…'];
@@ -164,6 +189,7 @@ export function stepEp2(dt) {
     ep2.min = Math.min(MORNING_END, ep2.min + dt * MIN_PER_SEC); hudClock();
     G.usePressed = false; G.qPressed = false; G.kickPressed = G.kickReleased = false;
   }
+  view.yaw = damp(view.yaw, view.want, 7, dt); applyYaw(view.yaw);
   updateFx(dt); updateCamera(dt); updateOcclusion(dt); updateBubbles(dt);
   if (G.toastT > 0) { G.toastT -= dt; if (G.toastT <= 0) $('toast').classList.remove('show'); }
   if (G.bigT > 0) { G.bigT -= dt; if (G.bigT <= 0) $('big').classList.remove('show'); }

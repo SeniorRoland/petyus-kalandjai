@@ -1,9 +1,8 @@
 // Petyus kalandjai – 2. rész: a lakás (az alaprajz alapján). Falak, ajtók, ablakok, padlók, bútorok, ütközők, erkélyek.
 // Coordinates: 1 unit = 1 m, the inner north-west corner of the flat is (0, 0), x grows east, z south (as on the floor plan).
 // The rooms are ~1.3× the floor plan's size, so that the three of them (and the camera) have room to move.
-// Dollhouse view: the camera looks from the south-east, so the outer south and east walls are cut at mid-window height
-// (sill, glass, frames show); the inner walls are full height. Walls between the camera and Petyus (inner ones: also his
-// room) sink down (cutaway, updateHome).
+// Dollhouse view: every wall is full height; the ones between the camera and Petyus or his room become see-through
+// (WALL_MODE 'fade') or sink down ('sink') – updateHome, T switches. The camera can turn (ep2.js), so this works from any side.
 import * as THREE from 'three';
 import { CAM_OFF, scene } from '../scene.js';
 import { damp } from '../util.js';
@@ -11,7 +10,8 @@ import { CATALOG, getGeometry } from '../voxels.js';
 import { INSTANCES, addBoxCol, addCircleCol, partMesh, vcMat } from '../world.js';
 
 export const WALL_H = 2.6;
-const TE = 0.25, FRONT_H = 1.6, CUT = 0.17, CUT_FRONT = 0.3;   // outer wall thickness, the cut front walls, a sunk wall's height (× its height)
+const TE = 0.25, CUT = 0.17, FADE = 0.16;   // outer wall thickness, a sunk wall's height (× WALL_H), a see-through wall's opacity
+export const wallView = { mode: 'fade' };   // 'fade' | 'sink'
 const XE = 15.6, ZS = 9.2;   // the flat's inner east and south edges
 
 // ---------------------------------------------------------------- rooms (inner floor areas)
@@ -30,7 +30,7 @@ export function roomAt(x, z) { return ROOMS.find((r) => x >= r.x0 - 0.06 && x <=
 
 // places in the flat the game uses
 export const SPOTS = {
-  petyusWake: { x: 13.9, z: 1.7, h: Math.PI * 0.75 },     // next to his bed
+  petyusWake: { x: 13.1, z: 1.8, h: Math.PI * 0.75 },     // next to his bed
   dadChair: { x: 10.3, z: 1.95, h: Math.PI / 2 },          // at the table (west side), facing it
   momCook: { x: 7.6, z: 1.0, h: Math.PI },                 // at the cooktop
   momFridge: { x: 5.95, z: 1.05 },
@@ -38,18 +38,18 @@ export const SPOTS = {
 
 // ---------------------------------------------------------------- walls
 // a wall: an axis-aligned box (x0..x1, z0..z1); openings along its length: doors { a, b, leaf } and windows { a, b, y0, y1 }.
-// kind: 'back' (outer north / west, full height), 'front' (outer south / east, cut at FRONT_H), 'in' (inner, cutaway).
+// kind: 'out' (outer) or 'in' (inner); both full height.
 const DOOR_H = 2.1;
 const WIN = (a, b, y0 = 0.85, y1 = 2.2) => ({ a, b, y0, y1 });
 const WALLS = [
   // outer north: bathroom, WC, kitchen ×2 windows; Petyus's room: the door to the north balcony + a window
-  { kind: 'back', x0: -TE, z0: -TE, x1: XE + TE, z1: 0, open: [WIN(1.3, 2.3, 1.5), WIN(4.2, 4.9, 1.6, 2.1), WIN(6.4, 8.0, 1.05), WIN(8.6, 10.2, 1.05), { a: 12.2, b: 13.1, glass: true }, WIN(13.6, 15.0)] },
+  { kind: 'out', x0: -TE, z0: -TE, x1: XE + TE, z1: 0, open: [WIN(1.3, 2.3, 1.5), WIN(4.2, 4.9, 1.6, 2.1), WIN(6.4, 8.0, 1.05), WIN(8.6, 10.2, 1.05), { a: 12.2, b: 13.1, glass: true }, WIN(13.6, 15.0)] },
   // outer west: the front door (hallway), the sibling's window
-  { kind: 'back', x0: -TE, z0: 0, x1: 0, z1: ZS + TE, open: [{ a: 2.85, b: 3.8, leaf: 'front' }, WIN(5.6, 7.8)] },
+  { kind: 'out', x0: -TE, z0: 0, x1: 0, z1: ZS + TE, open: [{ a: 2.85, b: 3.8, leaf: 'front' }, WIN(5.6, 7.8)] },
   // outer south: two windows in each of the south rooms
-  { kind: 'front', x0: -TE, z0: ZS, x1: XE + TE, z1: ZS + TE, open: [WIN(1.0, 3.0, 0.7), WIN(3.8, 5.8, 0.7), WIN(8.0, 10.2, 0.7), WIN(11.6, 14.6, 0.7)] },
+  { kind: 'out', x0: -TE, z0: ZS, x1: XE + TE, z1: ZS + TE, open: [WIN(1.0, 3.0), WIN(3.8, 5.8), WIN(8.0, 10.2), WIN(11.6, 14.6)] },
   // outer east: Petyus's window; the parents' room: the door to the east balcony + a window
-  { kind: 'front', x0: XE, z0: -TE, x1: XE + TE, z1: ZS, open: [WIN(1.0, 3.0, 0.7), { a: 5.4, b: 6.4, glass: true }, WIN(6.9, 8.7, 0.7)] },
+  { kind: 'out', x0: XE, z0: -TE, x1: XE + TE, z1: ZS, open: [WIN(1.0, 3.0), { a: 5.4, b: 6.4, glass: true }, WIN(6.9, 8.7)] },
   // inner
   { kind: 'in', x0: 0, z0: 2.3, x1: 5.42, z1: 2.42, open: [{ a: 2.2, b: 3.1 }, { a: 4.1, b: 4.9 }] },   // bathroom + WC | hallway
   { kind: 'in', x0: 3.6, z0: 0, x1: 3.72, z1: 2.3 },                                                   // bathroom | WC
@@ -59,15 +59,15 @@ const WALLS = [
   { kind: 'in', x0: 6.8, z0: 4.32, x1: 6.92, z1: ZS },                                                 // sibling | parents
 ];
 const COL = { wall: 0xf4efe6, wallIn: 0xece6da, front: 0xeee7db, trim: 0x8a6a4a, frame: 0xffffff, door: 0xb98b58, doorDark: 0x8a6238, sill: 0xdcd4c6 };
-const glassMat = new THREE.MeshLambertMaterial({ color: 0x9fd4ef, transparent: true, opacity: 0.45, depthWrite: false });
-export const cutWalls = [];   // { body, lintels: [], box: [x0, z0, x1, z1], front, s }
+const GLASS_OP = 0.45;
+export const cutWalls = [];   // { body, mat, glass, lintels: [], box: [x0, z0, x1, z1], s, o }
 export const doors = [];      // closed door leaves { x, z, kind }
 
 function buildWall(w) {
-  const alongX = w.x1 - w.x0 > w.z1 - w.z0, front = w.kind === 'front';
+  const alongX = w.x1 - w.x0 > w.z1 - w.z0;
   const a0 = alongX ? w.x0 : w.z0, a1 = alongX ? w.x1 : w.z1, t0 = alongX ? w.z0 : w.x0, t1 = alongX ? w.z1 : w.x1;
-  const tm = (t0 + t1) / 2, tw = t1 - t0, H = front ? FRONT_H : WALL_H;
-  const color = w.kind === 'in' ? COL.wallIn : front ? COL.front : COL.wall;
+  const tm = (t0 + t1) / 2, tw = t1 - t0, H = WALL_H;
+  const color = w.kind === 'in' ? COL.wallIn : COL.wall;
   // a box along the wall from a to bb, y0..y1 (clipped to the wall's height), in the wall's own frame
   const piece = (b, a, bb, y0, y1, c = color, inset = 0, maxY = H) => {
     y1 = Math.min(y1, maxY); const cx = (a + bb) / 2, len = bb - a, h = y1 - y0;
@@ -98,23 +98,24 @@ function buildWall(w) {
           doors.push({ kind: o.leaf, x: alongX ? (o.a + o.b) / 2 : tm, z: alongX ? tm : (o.a + o.b) / 2 });
         }
         if (o.glass) piece(b, o.a, o.b, 0, 0.03, COL.sill, -0.04, 1);   // balcony door (open): just the threshold
-        if (!front) lintels.push(o);
+        lintels.push(o);
       }
       x = o.b;
     }
     piece(b, x, a1, 0, H); solid(x, a1);
-    if (front) piece(b, a0, a1, H, H + 0.05, COL.sill, -0.06, H + 0.05);   // the cut edge of the front wall
   });
-  main.castShadow = true; main.receiveShadow = true;
+  // each wall has its own material: it can fade on its own (see-through mode)
+  const mat = vcMat.clone(), glass = new THREE.MeshLambertMaterial({ color: 0x9fd4ef, transparent: true, opacity: GLASS_OP, depthWrite: false });
+  main.material = mat; main.castShadow = true; main.receiveShadow = true;
   const group = new THREE.Group(), body = new THREE.Group(); group.add(body); body.add(main); scene.add(group);
   for (const [a, bb, y0, y1] of panes) {   // the glass of the windows (see-through)
-    const len = bb - a - 0.08, h = y1 - y0 - 0.04, g = new THREE.Mesh(new THREE.BoxGeometry(alongX ? len : 0.03, h, alongX ? 0.03 : len), glassMat);
+    const len = bb - a - 0.08, h = y1 - y0 - 0.04, g = new THREE.Mesh(new THREE.BoxGeometry(alongX ? len : 0.03, h, alongX ? 0.03 : len), glass);
     if (alongX) g.position.set((a + bb) / 2, y0 + 0.02 + h / 2, tm); else g.position.set(tm, y0 + 0.02 + h / 2, (a + bb) / 2);
     g.renderOrder = 3; body.add(g);
   }
-  const lin = lintels.map((o) => { const m = partMesh((b) => piece(b, o.a - 0.05, o.b + 0.05, 0, WALL_H - DOOR_H, color, 0, 9)); m.position.y = DOOR_H; group.add(m); return m; });
+  const lin = lintels.map((o) => { const m = partMesh((b) => piece(b, o.a - 0.05, o.b + 0.05, 0, WALL_H - DOOR_H, color, 0, 9)); m.material = mat; m.position.y = DOOR_H; group.add(m); return m; });
   for (const [x0, z0, x1, z1] of cols) addBoxCol(x0, z0, x1, z1, WALL_H);
-  if (w.kind !== 'back') cutWalls.push({ body, lintels: lin, box: [w.x0, w.z0, w.x1, w.z1], h: H, front, s: 1 });
+  cutWalls.push({ body, mat, glass, lintels: lin, box: [w.x0, w.z0, w.x1, w.z1], s: 1, o: 1 });
 }
 
 // ---------------------------------------------------------------- floors
@@ -151,8 +152,8 @@ function put(id, x, z, rot = 0, v = 0, o = {}) {
 }
 function furnish() {
   const P = Math.PI, E = P / 2, W = -P / 2;   // facing: 0 = south (+z, towards the camera side), P = north, E = east, W = west
-  // bathroom
-  put('bathtub', 0.92, 0.43, 0); put('bath_sink', 3.0, 0.27, 0); put('rug', 1.3, 1.6, 0, 0, { sx: 0.6 });
+  // bathroom: tub on the west wall, washing machine + shelf on the north wall, the basin on the east wall
+  put('bathtub', 0.4, 1.15, E); put('washing_machine', 1.45, 0.33, 0); put('shelf', 2.45, 0.2, 0); put('bath_sink', 3.35, 1.05, W); put('rug', 1.9, 1.55, 0, 0, { sx: 0.6 });
   // WC
   put('toilet', 4.5, 0.37, 0);
   // hallway: coats, shoes by the front door
@@ -165,15 +166,16 @@ function furnish() {
   for (const z of [1.35, 1.95, 2.55]) put('chair', 10.3, z, E, 0);
   put('chair', 10.95, 0.78, 0, 0);
   put('potted_plant', 5.8, 3.9);
-  // Petyus's room: bed by the east wall, desk with the monitor by the south wall, wardrobe, play rug, school bag
-  put('bed_single', 15.1, 1.3, 0, 0); put('desk', 13.6, 3.88, P, 0); put('chair', 13.6, 3.3, 0, 2);
-  put('wardrobe', 12.03, 1.05, E, 0, { sx: 0.9 }); put('rug', 13.5, 1.6, 0, 2); put('schoolbag', 12.2, 3.85, E);
+  // Petyus's room: bed on the kitchen wall, desk with the monitor by the east window, wardrobe on the south wall, play rug, school bag
+  put('bed_single', 12.22, 1.95, 0, 0); put('desk', 15.28, 1.45, W, 0); put('chair', 14.7, 1.45, E, 2);
+  put('wardrobe', 14.3, 3.88, P, 0); put('rug', 13.7, 2.2, 0, 2); put('schoolbag', 13.25, 3.95, P);
   // the sibling's room (locked): double bed, built-in wardrobe, dresser
   put('bed_double', 1.12, 6.8, E, 2); put('wardrobe', 4.4, 4.64, 0, 0); put('wardrobe', 5.4, 4.64, 0, 0); put('dresser', 4.6, 8.92, P, 0); put('rug', 3.4, 6.8, 0, 0);
-  // the parents' room: bed + wardrobe strip (west), sofa, TV, floor lamp, rug (east)
-  put('bed_double', 8.0, 7.0, E, 0); put('wardrobe', 7.45, 4.63, 0, 1); put('wardrobe', 8.45, 4.63, 0, 1);   // the wardrobe strip: 1 m pieces (occlude.js fades them one by one)
-  put('floor_lamp', 7.25, 8.9); put('dresser', 10.6, 8.95, P, 1);
-  put('sofa', 13.0, 4.8, 0, 0); put('tv_unit', 13.0, 8.95, P, 0); put('rug', 13.0, 6.9, 0, 1);
+  // the parents' room: bed on the north wall, the sofa opposite on the south wall, TV on the south wall near the sibling's
+  // wall, the wardrobe strip on the sibling's wall (1 m pieces: occlude.js fades them one by one)
+  put('bed_double', 12.6, 5.4, 0, 0); put('sofa', 12.6, 8.72, P, 0); put('tv_unit', 8.3, 8.95, P, 0);
+  for (const z of [5.0, 6.0, 7.0]) put('wardrobe', 7.24, z, E, 1);
+  put('floor_lamp', 14.3, 8.9); put('dresser', 10.3, 8.95, P, 1); put('rug', 12.6, 7.4, 0, 1);
   // balconies
   put('potted_plant', 12.1, -1.55); put('potted_plant', 15.2, -1.55); put('potted_plant', 17.7, 4.7); put('chair', 17.3, 8.3, W, 1);
 }
@@ -216,12 +218,14 @@ export function buildHome() {
   furnish(); buildFurniture(); buildShell();
 }
 
-// ---------------------------------------------------------------- cutaway: walls between the camera and Petyus sink down
-const DIR = CAM_OFF.clone().normalize();
-function rayHits(px, py, pz, bx, h) {   // ray from (px, py, pz) towards the camera vs the wall's box (0 … h)
+// ---------------------------------------------------------------- walls between the camera and Petyus / his room
+// fade: see-through (each wall its own material); sink: down to CUT × height. The camera may turn: the ray follows CAM_OFF.
+const DIR = new THREE.Vector3();
+function rayHits(px, py, pz, bx) {   // ray from (px, py, pz) towards the camera vs the wall's box (0 … WALL_H)
   let t0 = 0.05, t1 = 60;
-  const lo = [bx[0], 0, bx[1]], hi = [bx[2], h, bx[3]], o = [px, py, pz], d = [DIR.x, DIR.y, DIR.z];
+  const lo = [bx[0], 0, bx[1]], hi = [bx[2], WALL_H, bx[3]], o = [px, py, pz], d = [DIR.x, DIR.y, DIR.z];
   for (let k = 0; k < 3; k++) {
+    if (Math.abs(d[k]) < 1e-6) { if (o[k] < lo[k] || o[k] > hi[k]) return false; continue; }
     const a = (lo[k] - o[k]) / d[k], b = (hi[k] - o[k]) / d[k];
     t0 = Math.max(t0, Math.min(a, b)); t1 = Math.min(t1, Math.max(a, b));
     if (t0 > t1) return false;
@@ -230,18 +234,23 @@ function rayHits(px, py, pz, bx, h) {   // ray from (px, py, pz) towards the cam
 }
 let curRoom = null;
 export function updateHome(dt, P) {
+  DIR.copy(CAM_OFF).normalize();
   const r = roomAt(P.x, P.z); if (r) curRoom = r;
-  const me = [[P.x, 0.2, P.z], [P.x, 0.9, P.z], [P.x, 1.5, P.z]], pts = me.slice();
-  if (curRoom) {   // the whole room he is in should be visible: its far corners and centre too
+  const pts = [[P.x, 0.2, P.z], [P.x, 0.9, P.z], [P.x, 1.5, P.z]];
+  if (curRoom) {   // the whole room he is in should be visible: its corners and centre too
     const R = curRoom, i = 0.35;
-    pts.push([(R.x0 + R.x1) / 2, 0.3, (R.z0 + R.z1) / 2], [R.x0 + i, 0.3, R.z0 + i], [R.x1 - i, 0.3, R.z0 + i], [R.x0 + i, 0.3, R.z1 - i]);
+    pts.push([(R.x0 + R.x1) / 2, 0.3, (R.z0 + R.z1) / 2], [R.x0 + i, 0.3, R.z0 + i], [R.x1 - i, 0.3, R.z0 + i], [R.x0 + i, 0.3, R.z1 - i], [R.x1 - i, 0.3, R.z1 - i]);
   }
+  const fade = wallView.mode === 'fade';
   for (const w of cutWalls) {
-    // the front (outer) walls only sink when they hide Petyus himself – otherwise their windows stay in the picture
-    const hit = (w.front ? me : pts).some((p) => rayHits(p[0], p[1], p[2], w.box, w.h));
-    w.s = damp(w.s, hit ? (w.front ? CUT_FRONT : CUT) : 1, hit ? 9 : 4, dt);
+    const hit = pts.some((p) => rayHits(p[0], p[1], p[2], w.box));
+    w.s = damp(w.s, hit && !fade ? CUT : 1, hit ? 9 : 4, dt);
+    w.o = damp(w.o, hit && fade ? FADE : 1, hit ? 9 : 4, dt);
     w.body.scale.y = w.s;
-    for (const l of w.lintels) { l.visible = w.s > 0.9; }
+    for (const l of w.lintels) l.visible = w.s > 0.9;
+    const see = w.o < 0.985;
+    w.mat.opacity = w.o; w.mat.transparent = see; w.mat.depthWrite = !see;
+    w.glass.opacity = GLASS_OP * w.o;
   }
   return curRoom;
 }

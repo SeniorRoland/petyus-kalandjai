@@ -6,6 +6,7 @@ import { skipIntro } from './intro.js';
 import { G } from './state.js';
 import { $, clamp } from './util.js';
 import { journalOpen, toggleJournal } from './mischief.js';
+import { CAM_FWD, CAM_RIGHT } from './player.js';
 
 // ---------------------------------------------------------------- input
 export const keys = {};
@@ -25,7 +26,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Equal' || e.code === 'NumpadAdd' || e.key === '+') zoomBy(0.85);
   if (e.code === 'Minus' || e.code === 'NumpadSubtract' || e.key === '-') zoomBy(1 / 0.85);
   if (e.code === 'Digit0' || e.code === 'Numpad0') G.zoom = 1;
-  if (e.code === 'KeyR' && G.pstate !== 'juggle') resetBallToPlayer();
+  if (e.code === 'KeyR' && G.pstate !== 'juggle' && G.episode !== 2) resetBallToPlayer();
   if (e.code === 'KeyE') G.usePressed = true;
   if (e.code === 'KeyH') { const h = $('help'); h.style.display = h.style.display === 'none' ? 'block' : 'none'; }
 });
@@ -41,10 +42,11 @@ $('skipBtn').onclick = () => skipIntro();
 // touch joystick
 // looking around (panning): drag the game view with the mouse (desktop) or one finger (touch – not on the joystick / buttons).
 // Screen pixels → ground metres: the orthographic view is 2·viewSize tall; the ground is seen at an angle (CAM_OFF: sin ≈ 0.52).
-const PAN_R = [1 / Math.SQRT2, -1 / Math.SQRT2], PAN_F = [-1 / Math.SQRT2, -1 / Math.SQRT2], PAN_SIN = 34 / Math.hypot(40, 34, 40), PAN_MAX = 28;
+// screen right / forward on the ground: CAM_RIGHT / CAM_FWD (player.js – they turn with the camera in part 2)
+const PAN_SIN = 34 / Math.hypot(40, 34, 40), PAN_MAX = 28;
 function panBy(dx, dy) {
   const u = 2 * G.viewSize / window.innerHeight;
-  let x = G.pan.x - (PAN_R[0] * dx - PAN_F[0] * dy / PAN_SIN) * u, z = G.pan.z - (PAN_R[1] * dx - PAN_F[1] * dy / PAN_SIN) * u;
+  let x = G.pan.x - (CAM_RIGHT.x * dx - CAM_FWD.x * dy / PAN_SIN) * u, z = G.pan.z - (CAM_RIGHT.z * dx - CAM_FWD.z * dy / PAN_SIN) * u;
   const l = Math.hypot(x, z); if (l > PAN_MAX) { x *= PAN_MAX / l; z *= PAN_MAX / l; }
   G.pan.x = x; G.pan.z = z; G.pan.t = 0;
 }

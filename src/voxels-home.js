@@ -228,6 +228,24 @@ function pottedPlant(seed) {
   return g;
 }
 
+// ---------------------------------------------------------------- bathroom: washing machine, shelf
+function washingMachine(seed) {   // front loader 0.6 × 0.6 × 0.85 m, door on +z
+  const g = grid(seed);
+  bx(g, -0.3, 0, -0.3, 0.3, 0.85, 0.3, C.white);
+  bx(g, -0.28, 0.7, 0.3, 0.28, 0.82, 0.31, C.white2); bx(g, 0.12, 0.74, 0.3, 0.2, 0.78, 0.32, C.dark); bx(g, -0.22, 0.74, 0.3, 0.0, 0.78, 0.31, 0x7fb6e8);
+  for (let i = -5; i <= 5; i++) for (let j = 3; j <= 13; j++) { const d = i * i + (j - 8) * (j - 8); if (d <= 26) g.set(i, j, vi(0.3), d <= 13 ? 0x7f9fb4 : C.steelDark); }   // round door with glass
+  return g;
+}
+function shelf(seed) {   // standing shelf 0.8 × 0.35 × 1.4 m with towels, bottles and a basket
+  const g = grid(seed);
+  for (const x of [-0.4, 0.36]) bx(g, x, 0, -0.17, x + 0.04, 1.4, 0.17, C.white2);
+  for (const y of [0.05, 0.5, 0.95, 1.36]) bx(g, -0.4, y, -0.17, 0.4, y + 0.04, 0.17, C.white);
+  bx(g, -0.32, 0.54, -0.12, -0.02, 0.74, 0.14, 0x7fb7be); bx(g, 0.02, 0.54, -0.12, 0.32, 0.7, 0.14, 0xf3a9c0);   // folded towels
+  for (const [x, c] of [[-0.3, 0x5fae6a], [-0.18, 0xffc24d], [-0.06, 0x4f8fd6]]) bx(g, x, 0.99, -0.05, x + 0.08, 1.2, 0.05, c);   // bottles
+  bx(g, 0.05, 0.09, -0.13, 0.35, 0.3, 0.14, 0xb07a45);   // laundry basket
+  return g;
+}
+
 export const HOME_CATALOG = [
   { id: 'bed_single', name: 'Egyszemélyes ágy', cat: 'Lakás', variants: 3, build: bedSingle, collider: { hx: 0.47, hz: 1.05, h: 0.6 }, desc: 'Fa keret, csíkos paplan, párna. Az 1. változaton plüssmaci.', use: 'Petyus szobája' },
   { id: 'bed_double', name: 'Franciaágy', cat: 'Lakás', variants: 3, build: bedDouble, collider: { hx: 0.82, hz: 1.06, h: 0.6 }, desc: '160 × 200 cm, magas fejtámla, két párna.', use: 'A szülők szobája, a testvér szobája' },
@@ -241,6 +259,8 @@ export const HOME_CATALOG = [
   { id: 'coffee_maker', name: 'Kávéfőző', cat: 'Lakás', variants: 1, build: coffeeMaker, collider: null, desc: 'Kis presszógép csészével – apa reggeli kávéja.', use: 'Konyhapult' },
   { id: 'bathtub', name: 'Kád', cat: 'Lakás', variants: 1, build: bathtub, collider: { hx: 0.85, hz: 0.38, h: 0.6 }, desc: 'Kád vízzel, csapteleppel és gumikacsával a peremén.', use: 'Fürdőszoba' },
   { id: 'bath_sink', name: 'Mosdó tükörrel', cat: 'Lakás', variants: 1, build: bathSink, collider: { hx: 0.33, hz: 0.24, h: 0.9 }, desc: 'Mosdószekrény, csap, fogmosó pohár, tükör a falon.', use: 'Fürdőszoba (reggeli fogmosás)' },
+  { id: 'washing_machine', name: 'Mosógép', cat: 'Lakás', variants: 1, build: washingMachine, collider: { hx: 0.3, hz: 0.3, h: 0.9 }, desc: 'Elöltöltős mosógép kerek üvegajtóval és kezelőpanellel.', use: 'Fürdőszoba' },
+  { id: 'shelf', name: 'Polc', cat: 'Lakás', variants: 1, build: shelf, collider: { hx: 0.4, hz: 0.18, h: 1.4 }, desc: 'Álló fürdőszobapolc törölközőkkel, flakonokkal és szennyeskosárral.', use: 'Fürdőszoba' },
   { id: 'toilet', name: 'WC', cat: 'Lakás', variants: 1, build: toilet, collider: { hx: 0.2, hz: 0.33, h: 0.8 }, desc: 'Álló WC tartállyal és öblítőgombbal.', use: 'WC' },
   { id: 'sofa', name: 'Kanapé', cat: 'Lakás', variants: 3, build: sofa, collider: { hx: 1.0, hz: 0.45, h: 0.9 }, desc: 'Háromszemélyes kanapé karfákkal és díszpárnákkal.', use: 'A szülők szobája (nappali rész)' },
   { id: 'tv_unit', name: 'TV-szekrény', cat: 'Lakás', variants: 1, build: tvUnit, collider: { hx: 0.8, hz: 0.2, h: 1.3 }, desc: 'Alacsony szekrény lapos tévével.', use: 'Nappali' },
