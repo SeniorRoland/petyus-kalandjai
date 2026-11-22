@@ -63,8 +63,12 @@ export class Actor {
       this.point -= dt; const k = Math.min(1, this.point * 3); const w = Math.sin(G.clockT * 10) * 0.18;
       r.sh[1].rotation.x = lerp(r.sh[1].rotation.x, -1.6 + w, k); r.sh[1].rotation.z = lerp(r.sh[1].rotation.z, 0.12, k);
     }
+    // elbows (skinned models): slightly bent at rest, more when the arm swings forward (walking, pointing, sitting)
+    // (an arm held up front – pointing – bends little: 'forward' is upwards then, the hand would reach the face)
+    if (r.elbow) for (let i = 0; i < 2; i++) { const f = -r.sh[i].rotation.x; r.elbow[i] = 0.16 + (f > 0 ? Math.min(f, 0.6) * 0.5 - Math.max(0, f - 1.0) * 0.35 : 0); if (r.elbow[i] < 0.08) r.elbow[i] = 0.08; }
   }
-  sync() { if (this.rig.apply) this.rig.apply(); this.rig.root.position.set(this.pos.x, this.riding ? 0 : (this.sit > 0 ? 0 : groundH(this.pos.x, this.pos.z)), this.pos.z); this.rig.root.rotation.y = this.heading; }
+  // seatBase: the floor under a seated actor (part 2: the flat is upstairs)
+  sync() { if (this.rig.apply) this.rig.apply(); this.rig.root.position.set(this.pos.x, this.riding ? 0 : (this.sit > 0 ? this.seatBase || 0 : groundH(this.pos.x, this.pos.z)), this.pos.z); this.rig.root.rotation.y = this.heading; }
 }
 
 // ---------------------------------------------------------------- animals

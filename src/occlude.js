@@ -10,7 +10,9 @@ import { G } from './state.js';
 import { V3, damp } from './util.js';
 import { INSTANCES, vcMat } from './world.js';
 
-const DIR = CAM_OFF.clone().normalize(), HL = Math.hypot(DIR.x, DIR.z), DH = [DIR.x / HL, DIR.z / HL];
+// the view direction (the camera can turn in part 2: recomputed every frame from CAM_OFF)
+const DIR = CAM_OFF.clone().normalize(), DH = [0, 0]; let HL = 1;
+function viewDir() { DIR.copy(CAM_OFF).normalize(); HL = Math.hypot(DIR.x, DIR.z); DH[0] = DIR.x / HL; DH[1] = DIR.z / HL; }
 const MIN_H = 1.1, NEAR = 16, FADE = 0.32;
 const ghosts = new Map();   // instance → { mesh, op, on }
 const zero = new THREE.Matrix4().makeScale(0, 0, 0);
@@ -23,7 +25,7 @@ function covers(it, P) {
     if (t <= 0.2) return false;                                   // behind him (or level with him)
     const ex = ox - DH[0] * t, ez = oz - DH[1] * t;
     if (Math.hypot(ex, ez) > it.r * 0.8) continue;
-    const y = py + t * DIR.y / HL;                                // height of the ray there
+    const y = P.y + py + t * DIR.y / HL;                          // height of the ray there (P.y: part 2's flat is upstairs)
     if (y > it.y && y < it.y + it.h) return true;
   }
   return false;
@@ -46,8 +48,9 @@ function release(it, g) {
 }
 // every frame (main.js), in play
 export function updateOcclusion(dt) {
+  viewDir();
   const P = G.petike && G.petike.pos;
-  const active = P && G.mode === 'play';
+  const active = P && G.mode === 'play' && !G.fps;   // not in part 2's first-person view
   if (active) {
     // the nearby tall props in front of him: re-listed a few times a second (cheap), tested every frame
     if ((scanT -= dt) <= 0) { scanT = 0.25; candidates = INSTANCES.filter((it) => it.h >= MIN_H && Math.abs(it.x - P.x) < NEAR && Math.abs(it.z - P.z) < NEAR); }

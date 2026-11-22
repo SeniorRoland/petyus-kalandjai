@@ -24,7 +24,9 @@ export function updateProjection() {
   camera.updateProjectionMatrix();
 }
 updateProjection();
-window.addEventListener('resize', () => { renderer.setSize(window.innerWidth, window.innerHeight); updateProjection(); });
+// the camera the picture is rendered with (and the speech bubbles are placed by): the ortho one, or part 2's first-person view
+export const view = { cam: camera };
+window.addEventListener('resize', () => { renderer.setSize(window.innerWidth, window.innerHeight); updateProjection(); if (view.cam.isPerspectiveCamera) { view.cam.aspect = window.innerWidth / window.innerHeight; view.cam.updateProjectionMatrix(); } });
 
 const hemi = new THREE.HemisphereLight(0xe8f6ff, 0x6f8f4a, 1.35);
 scene.add(hemi);
@@ -39,7 +41,7 @@ scene.add(sun, sun.target);
 // the quality level (quality.js) sets the resolution and the shadow map; it may step down while playing
 onQualityChange((q) => {
   renderer.setPixelRatio(q.pixelRatio); renderer.setSize(window.innerWidth, window.innerHeight);
-  sun.castShadow = q.shadowSize > 0;
+  sun.castShadow = q.shadowSize > 0 && G.episode !== 2;   // part 2: the flat's lamps cast the shadows, not the sun
   if (q.shadowSize && sun.shadow.mapSize.x !== q.shadowSize) { sun.shadow.mapSize.set(q.shadowSize, q.shadowSize); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
 });
 
