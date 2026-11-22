@@ -22,10 +22,11 @@
 ## Napok, naptár, váltás a helyszínek között
 
 - **Kör:** otthon reggel → iskola → otthon délután. Csak előre lehet lépni, vissza nem. Egy teljes kör = egy nap; utána a következő nap reggele jön.
-- **Naptár:** a HUD-on (és váltáskor nagyban) látszik az aktuális nap: „2026. szeptember 2., szerda”. Indulás: **2026. szeptember 2.** (szerda).
+- **Naptár:** a HUD-on (és váltáskor nagyban) látszik az aktuális nap: „2026. szeptember 2., szerda”. Indulás: **2026. szeptember 2.** (szerda), utolsó nap: **2026. szeptember 30.** (szerda) – összesen 29 nap.
+- **Hétvégék:** benne vannak, de szombaton és vasárnap nincs iskola: csak az otthon reggel és az otthon délután játszható, a köztük lévő program (iskola) kimarad – helyette egy átvezető képernyő („Szombat – kirándulás a nagymamánál…” jellegű kép + szöveg), majd jön az otthoni délután.
 - **Vége:** az utolsó nap után lejár a hónap. Ilyenkor a hónapot csak elölről lehet kezdeni (újra szept. 2-től), de a **csibészségek eredményei megmaradnak** (a legjobb eredmény számít, mint eddig).
-- **Váltás:** a helyszín végén (pl. az iskolatáska és a cipő felvétele után az ajtóban, vagy ha lejár a napszak ideje) egy rövid átvezető / áttűnés visz a következő helyszínre; közben a naptár és az óra mutatja az időugrást.
-- **Óra:** a játékidő gyorsítva telik (pl. 1 valós mp = 1 játékperc körül – hangolandó); a napszak végén figyelmeztetés („Indulni kell!”).
+- **Váltás:** a **játékos dönti el**, mikor indul tovább (pl. az iskolatáskával és cipőben az ajtónál: „E – Indulás az iskolába”); egy rövid átvezető / áttűnés visz a következő helyszínre, közben a naptár és az óra mutatja az időugrást.
+- **Óra:** a játékidő gyorsítva telik (hangolandó); a napszak végéhez közeledve apa/anya sürget („Elkésel!”), de a váltást akkor is a játékos indítja. (Hogy a késésnek legyen-e következménye, később döntjük el.)
 
 ## Helyszín: Otthon (a lakás)
 
@@ -40,8 +41,8 @@ A lakás egyszintes, nagyjából **13 m × 7,5 m**, téglafalakkal, két erkéll
 | Konyha–étkező | 21 m² (4,65 m széles + a folyosó vége) | konyhapult mosogatóval és főzőlappal az északi ablakok alatt, 6 személyes étkezőasztal, radiátor | reggeli, vacsora, családi jelenetek |
 | Kis szoba | 10 m² (2,98 × 3,20 m) | íróasztal monitorral, egyszemélyes ágy; ajtó az északi erkélyre | **Petyus szobája** |
 | Előtér / folyosó | kb. 1,28 m széles, 3,83 m hosszú (a fürdő/WC alatt, a konyháig) | bejárati ajtó a nyugati falon | cipő, iskolatáska, indulás |
-| Nagy hálószoba | 20 m² (5,18 × 3,70 m) | beépített gardrób, franciaágy, TV-szekrény / komód | (nyitott kérdés, lásd lent) |
-| Nappali–háló | 26 m² (kb. 7 × 3,7 m) | franciaágy, állólámpa, kanapé, TV-szekrény, gardróbsáv (84 cm) | **szülők** szobája / nappali; ajtó a keleti erkélyre |
+| Testvér szobája | 20 m² (5,18 × 3,70 m) | beépített gardrób, franciaágy, TV-szekrény / komód | **a testvéré** (később érkező szereplő) – egyelőre **zárva**, nem lehet bemenni (csukott ajtó, „Zárva” buborék) |
+| Nappali–háló | 26 m² (kb. 7 × 3,7 m) | franciaágy, állólámpa, kanapé, TV-szekrény, gardróbsáv (84 cm) | **a szülők** szobája (háló + nappali); ajtó a keleti erkélyre |
 | Erkély (észak) | kb. 3 m × 1,5 m | | a kis szobából nyílik |
 | Erkély (kelet) | kb. 1,8 m × 4 m | | a nappaliból nyílik |
 
@@ -64,7 +65,7 @@ A lakás egyszintes, nagyjából **13 m × 7,5 m**, téglafalakkal, két erkéll
 - **Petyus:** az ágyából kel a kis szobában, a játékos irányítja.
 - **Petya (apa):** a konyhában kávét főz / újságot olvas az asztalnál, közben instruál („Fogmosás! Öltözz! Hol a tolltartód?”).
 - **Angi (anya):** reggelit készít, uzsonnát csomagol, a folyosón keresi a kulcsot.
-- A ruhák: Petyus pizsamában indul, öltözés után iskolai ruhában (új rig-változat vagy színcsere – külön döntés).
+- **Ruhák:** reggel **mindhárman pizsamában** vannak; később átöltöznek – Petyus iskolai ruhába, Petya és Angi munkaruhába. Megvalósítás: a meglévő modellek színezett változatai (a ruha anyagszíneinek cseréje, esetleg minta), vagy új modellváltozatok a modell-pipeline-nal – az első lépésben a pizsama kell.
 
 ## Helyszín: Iskola
 
@@ -87,10 +88,10 @@ Később részletezzük (osztályterem, folyosó, udvar/tornaterem, ebédlő?). 
 
 A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (`?resz=2`) betölthető lakás az alaprajz szerint, berendezve, reggeli fényekkel, a három szereplővel; Petyus irányítható, a falak és bútorok ütköznek. A megnyitási feltétel (15 ⭐) és a kezdőképernyő-csempe ugyanebben a körben.
 
-## Nyitott kérdések
+## Döntések (a kérdésekre adott válaszok)
 
-1. **Utolsó nap:** a leírás szerint „2026. szeptember 30. hétfő” – de 2026. szeptember 30. **szerda**, a hétfő szeptember 28. Melyik legyen az utolsó nap?
-2. **Hétvégék:** szeptember 2-től 30-ig 29 nap, ebből 21 hétköznap. Hétvégén nincs iskola – kimaradnak a hétvégék (csak hétköznapok, 21 kör), vagy hétvégén más a menet (pl. egész nap otthon / kirándulás)?
-3. **A 20 m²-es szoba** (franciaágy, gardrób) kié – a szülőké, és a 26 m²-es nappali–háló a nappali? Vagy a később érkező három szereplő (pl. nagyszülők, testvér?) egyikéé?
-4. **A napszak ideje:** a napszak végén automatikusan vált (pl. 7:30-kor indulás), vagy a játékos dönti el, mikor indul (és a csibészségekhez van elég idő)?
-5. **Öltözés / ruhák:** kell-e pizsamás és iskolai ruhás Petyus (új modell / színváltozat), és apa–anya otthoni ruhában legyen?
+1. **Utolsó nap:** 2026. szeptember 30. (szerda).
+2. **Hétvégék:** benne vannak; szombaton–vasárnap csak otthon reggel és otthon délután, a köztes program helyett átvezető képernyő.
+3. **Szobák:** a 20 m²-es a testvéré (egyelőre zárva), a 26 m²-es a szülőké.
+4. **Indulás:** a játékos dönti el, mikor indul.
+5. **Ruhák:** reggel pizsama mindhármuknak; később átöltözés iskolai (Petyus) és munkaruhába (Petya, Angi).
