@@ -105,24 +105,56 @@ function buildRoof() {
   roof = mesh; scene.add(mesh);
 }
 
-// the neighbouring blocks and the garage row (west)
+// the neighbourhood (after the aerial photo): across the street to the south a row of family houses with orange tiled roofs
+// and gardens; to the west two long four-storey blocks (flat roofs, balconies on the east side) with parking between them;
+// behind them (north-west) the garage row; north of our yard a long meadow with a track and a few cars at its far end,
+// small houses beyond it; to the east a dense strip of trees, and past it (north-east) a ploughed field.
+function familyHouse(b, cx, cz, w, d, roofCol, wall = 0xf1ece2) {
+  b.bx(cx, 0, cz, w, 3.0, d, wall, 0, 0.02); b.bx(cx, 0, cz, w + 0.06, 0.45, d + 0.06, 0xb7a596, 0, 0.02);
+  for (const x of [-w / 3, 0, w / 3]) {   // windows on the street side (north) and the garden side (south)
+    for (const s of [-1, 1]) { b.bx(cx + x, 0.95, cz + s * (d / 2 + 0.03), 1.0, 1.15, 0.06, 0xf8f7f3, 0, 0); b.bx(cx + x, 1.0, cz + s * (d / 2 + 0.06), 0.85, 1.0, 0.04, C.glass, 0, 0.03); }
+  }
+  b.bx(cx + w / 3 + 0.9, 0, cz - d / 2 - 0.04, 0.95, 2.1, 0.08, 0x7a4a32, 0, 0);   // the front door
+  for (let n = 0; ; n++) {   // gable roof (ridge along x), stepped tile courses
+    const dd = d + 0.8 - 2 * n * 0.42;
+    if (dd < 0.5) { b.bx(cx, 3.0 + n * 0.3, cz, w + 0.8, 0.18, 0.4, 0x8a3a22, 0, 0); break; }
+    b.bx(cx, 3.0 + n * 0.3, cz, w + 0.8, 0.3, dd, n % 2 ? roofCol : (roofCol & 0xfefefe) - 0x0a0604, 0, 0.03);
+  }
+  b.bx(cx - w / 4, 3.8, cz + 0.8, 0.5, 2.0, 0.5, C.brick, 0, 0.04);
+}
 function buildNeighbours(b) {
-  block(b, -12, -52, 30, -40, 0, 5, 0xd9c8a8, {});
-  block(b, 46, -24, 58, 18, 0, 4, 0xcfd6cf, {});
-  block(b, -22, 30, 12, 40, 0, 4, 0xe3cfc2, {});
-  block(b, 24, 30, 50, 40, 0, 4, 0xd6d0bd, {});
-  block(b, -70, -14, -48, 14, 0, 5, 0xe8977a, {});   // the orange one with green balconies (west, as on the photo)
-  for (let f = 1; f < 5; f++) b.bx(-47.6, f * FLOOR, 0, 0.8, 1.0, 26, 0x5fa86a, 0, 0.02);
-  // garages: a row facing east, coloured metal doors, a flat roof
-  const GC = [0x8a9aa8, 0x6f8f6f, 0xa8805e, 0x7b7fa6, 0xb05a4f, 0x8f8f8f, 0x5f7f99, 0xa69b6e, 0x6f6f6f];
-  b.bx(-34, 0, -2, 6, 2.6, 27, 0xcac3b6, 0, 0.02); b.bx(-34, 2.6, -2, 6.3, 0.18, 27.3, 0x777068, 0, 0);
-  for (let n = 0; n < 9; n++) { const z = -14.2 + n * 3.0; b.bx(-30.97, 0.05, z, 0.06, 2.15, 2.4, GC[n], 0, 0.04); for (let k = 1; k < 6; k++) b.bx(-30.93, 0.05 + k * 0.36, z, 0.03, 0.03, 2.4, 0x555555, 0, 0); }
+  // family houses south of the street (gardens with a low fence along the sidewalk)
+  const ROOFS = [0xd9662f, 0xc9552a, 0xe0743a, 0xb84f2c];
+  [[-58, 33, 9, 10], [-40, 32, 10, 9], [-22, 33, 9, 9], [-4, 32, 10, 10], [14, 33, 9, 9], [32, 32, 11, 10], [50, 33, 9, 9], [68, 32, 10, 9]]
+    .forEach(([x, z, w, d], n) => familyHouse(b, x, z, w, d, ROOFS[n % 4], n % 3 ? 0xf1ece2 : 0xe9e1cf));
+  for (let x = -70; x < 80; x += 2) if ((x + 70) % 18 > 3) { b.bx(x, 0, 25.6, 0.08, 1.1, 0.08, 0x6b4f35, 0, 0); b.bx(x + 1, 0.8, 25.6, 2, 0.06, 0.04, 0x8a6a4a, 0, 0); }
+  // the two long blocks to the west: white, flat grey roofs with vents, orange balcony strips on the east side
+  for (const [x0, x1] of [[-36, -29], [-58, -51]]) {
+    block(b, x0, -26, x1, 8, 0, 4, 0xeeeeea, { roofCol: 0x8d8d8a, step: 2.4 });
+    for (let f = 1; f < 4; f++) { b.bx(x1 + 0.5, f * FLOOR, -9, 1.0, 0.1, 31, 0xbdb6aa, 0, 0); b.bx(x1 + 0.98, f * FLOOR + 0.1, -9, 0.06, 0.95, 31, 0xd9732f, 0, 0.03); }
+    for (let z = -22; z < 6; z += 6) b.bx((x0 + x1) / 2, 12.25, z, 1.2, 0.6, 1.2, 0x6f6f6c, 0, 0);
+  }
+  // the garage row behind them (north-west), doors facing south
+  const GC = [0xb24a3a, 0xf1f1ee, 0xb24a3a, 0x8a9aa8, 0xf1f1ee, 0xb24a3a, 0x6f8f6f, 0xf1f1ee, 0xa8805e, 0xb24a3a, 0xf1f1ee];
+  b.bx(-44, 0, -37, 33, 2.6, 6, 0xeeebe4, 0, 0.02); b.bx(-44, 2.6, -37, 33.4, 0.18, 6.3, 0x9a948a, 0, 0);
+  for (let n = 0; n < 11; n++) { const x = -58.5 + n * 2.95; b.bx(x, 0.05, -33.97, 2.4, 2.15, 0.06, GC[n], 0, 0.04); for (let k = 1; k < 6; k++) b.bx(x, 0.05 + k * 0.36, -33.93, 2.4, 0.03, 0.03, 0x555555, 0, 0); }
+  // small houses beyond the meadow (north-west)
+  [[-48, -62, 9, 9], [-30, -64, 10, 9], [-12, -68, 9, 8]].forEach(([x, z, w, d], n) => familyHouse(b, x, z, w, d, ROOFS[(n + 1) % 4]));
 }
 
 // ---------------------------------------------------------------- ground, parking, fence
 function buildGround(b) {
   // grass everywhere, in patches of three greens
-  for (let x = -90; x < 95; x += 5) for (let z = -75; z < 60; z += 5) b.quad(x, z, x + 5, z + 5, -0.005, pick(C.grass), 0.05);
+  for (let x = -100; x < 135; x += 5) for (let z = -105; z < 60; z += 5) {
+    const meadow = z < -22 && x >= -24 && x < 34, woods = x >= 36 && x < 60 && z < 18, field = x >= 62 && z < -8;
+    if (field) continue;
+    b.quad(x, z, x + 5, z + 5, -0.005, woods ? pick([0x5f8f45, 0x588a40]) : meadow ? pick([0x9dc46a, 0xa6ca72, 0x94bd62]) : pick(C.grass), 0.05);
+  }
+  // the ploughed field (north-east): brown, furrows along x
+  b.bx(98, -0.02, -56.5, 72, 0.02, 97, 0x8a5a3a, 0, 0.02);
+  for (let z = -104; z < -8; z += 1.2) b.bx(98, 0, z, 72, 0.05, 0.45, 0x74482c, 0, 0.05);
+  // the track across the meadow to the cars at its end
+  b.bx(9, 0, -53, 3, 0.02, 62, 0xc9b58f, 0, 0.05);
   // the street south of the fence, sidewalks, the parking lot in front of the house, the drive to the garages, paths
   b.bx(0, 0, 21, 190, 0.02, 5, C.asphalt, 0, 0.02);
   for (let x = -90; x < 95; x += 4) b.bx(x + 1, 0.02, 21, 2, 0.01, 0.15, C.line, 0, 0);
@@ -130,7 +162,10 @@ function buildGround(b) {
   // the parking lot in front of the house (z 10.6 … 16.6): gravelled concrete in patches, concrete curbs marking the bays
   for (let x = -17; x < 13; x += 1.5) for (let z = 10.6; z < 16.6; z += 1.5) b.bx(x + 0.75, 0, z + 0.75, 1.5, 0.03, 1.5, pick([C.gravel, C.gravel2, 0xb9b3a8]), 0, 0.03);
   for (let k = 0; k <= 9; k++) b.bx(-15.5 + k * 3.0, 0.03, 15.9, 0.25, 0.08, 1.0, C.curb, 0, 0.02);
-  b.bx(-27.5, 0, -2, 5, 0.03, 30, C.asphalt, 0, 0.02);    // in front of the garages
+  b.bx(-26.4, 0, -6.6, 3.6, 0.03, 49, C.asphalt, 0, 0.02);  // the lane west of our fence: street → garages
+  b.bx(-44, 0, -31.5, 36, 0.03, 5, C.asphalt, 0, 0.02);       // in front of the garages
+  b.bx(-43.5, 0, -8, 13, 0.03, 30, C.gravel2, 0, 0.03);       // parking between the two blocks
+  b.bx(-43.5, 0, 13.5, 4, 0.03, 11, C.asphalt, 0, 0.02);      // its drive from the street
   b.bx(-22, 0, 13.6, 10, 0.03, 4.2, C.gravel2, 0, 0.02);  // drive: parking → garages
   b.bx(DOOR_X, 0, 10.0, 1.6, 0.05, 1.3, C.path, 0, 0.03);
   b.bx(-16.5, 0, 17, 5, 0.035, 1.2, C.asphalt, 0, 0.02);  // the gate for cars
@@ -190,10 +225,16 @@ export function placeOutsideProps() {
   const g = { ground: true };
   // parked cars in front of the house (some bays empty)
   [0, 1, 2, 4, 5, 7, 8].forEach((k, n) => put('car', -14 + k * 3.0, 12.4, n % 2 ? Math.PI : 0, (n * 5) % 6, g));
-  put('car', -27.6, -9, Math.PI / 2, 3, g); put('car', 30, 21, Math.PI / 2, 4, g);   // one in front of the garages (x −29.4 … −25.8: between the garage doors and the fence), one on the street
+  put('car', -46, -31, Math.PI / 2, 3, g); put('car', 30, 21, Math.PI / 2, 4, g);   // one in front of the garages, one on the street
+  [[-46, -18, 0], [-41, -14, Math.PI], [-46, -6, 0], [-41, 0, Math.PI], [-46, 4, 0]].forEach(([x, z, r], n) => put('car', x, z, r, (n * 3 + 1) % 6, g));   // between the blocks
+  [[7, -76, 0.3], [11, -79, -0.4], [14, -75, 1.2]].forEach(([x, z, r], n) => put('car', x, z, r, (n + 2) % 6, g));   // at the far end of the meadow
+  // the woods to the east (dense, big trees) and a few trees round the blocks and in the gardens across the street
+  for (let x = 38; x < 60; x += 4.2) for (let z = -78; z < 16; z += 4.4) { const k = Math.round(x * 3 + z); put(k % 3 ? 'oak' : 'pine', x + R(-1.2, 1.2), z + R(-1.2, 1.2), k, Math.abs(k) % 4, { ground: true, s: R(1.4, 2.1) }); }
+  for (const [id, x, z] of [['oak', -27, -18], ['oak', -27, 4], ['birch', -38, 10], ['oak', -60, 12], ['oak', -50, 42], ['birch', -30, 41], ['oak', 0, 42], ['oak', 22, 41], ['birch', 42, 42], ['oak', 60, 41], ['pine', -66, -50], ['oak', -40, -55]])
+    put(id, x, z, x, Math.abs(Math.round(x)) % 4, { ground: true, s: 1.2 });
   // trees in the yard and outside
   const T = [['oak', -18, -12], ['oak', -20, 5], ['birch', -13, -18], ['pine', -21, -19], ['oak', 2, -17], ['birch', 9, -19], ['oak', 22, -16], ['pine', 30, -19],
-    ['oak', 27, -5], ['birch', 30, 6], ['oak', 25, 13], ['birch', -16, 0], ['pine', 32, 14], ['oak', -8, 26], ['oak', 18, 26], ['pine', 40, -30], ['oak', -40, 22], ['birch', 40, 12]];
+    ['oak', 27, -5], ['birch', 30, 6], ['oak', 25, 13], ['birch', -16, 0], ['pine', 32, 14]];
   T.forEach(([id, x, z], n) => put(id, x, z, n * 1.7, n % 4, { ground: true, s: 0.9 + (n % 3) * 0.12 }));
   for (const [x, z] of [[-10, -5], [-8, 14.5], [3, 14.6], [20, -10], [26, 0], [-22, 12]]) put('bush', x, z, x, Math.abs(x) % 4, g);
   // the trampoline behind the house (north), a bench and a bin by the door
