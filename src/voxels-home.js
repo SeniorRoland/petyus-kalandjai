@@ -68,10 +68,10 @@ function diningTable(seed) {   // 1.8 × 0.9 m, h 0.76
   const g = grid(seed);
   bx(g, -0.9, 0.71, -0.45, 0.9, 0.77, 0.45, (i, j, k) => (Math.abs(k) % 4 === 0 ? C.woodLight : C.wood));
   for (const x of [-0.85, 0.8]) for (const z of [-0.4, 0.35]) bx(g, x, 0, z, x + 0.05, 0.71, z + 0.05, C.woodDark);
-  // breakfast on the table: plates, mugs, a basket of bread
-  for (const x of [-0.5, 0.0, 0.5]) { bx(g, x - 0.1, 0.77, -0.3, x + 0.1, 0.78, -0.1, C.white); bx(g, x - 0.1, 0.77, 0.1, x + 0.1, 0.78, 0.3, C.white); }
-  bx(g, 0.62, 0.77, -0.05, 0.7, 0.87, 0.03, 0xd9534f); bx(g, -0.72, 0.77, -0.05, -0.64, 0.87, 0.03, 0x4f8fd6);
-  bx(g, -0.15, 0.77, -0.06, 0.15, 0.85, 0.06, 0xb07a45); bx(g, -0.12, 0.85, -0.04, 0.12, 0.88, 0.04, 0xe0b070);
+  // breakfast on the table: plates, mugs, a basket of bread (variant 1; the game's table is variant 2 – detailed things on it)
+  if (seed === 1) for (const x of [-0.5, 0.0, 0.5]) { bx(g, x - 0.1, 0.77, -0.3, x + 0.1, 0.78, -0.1, C.white); bx(g, x - 0.1, 0.77, 0.1, x + 0.1, 0.78, 0.3, C.white); }
+  if (seed === 1) { bx(g, 0.62, 0.77, -0.05, 0.7, 0.87, 0.03, 0xd9534f); bx(g, -0.72, 0.77, -0.05, -0.64, 0.87, 0.03, 0x4f8fd6);
+    bx(g, -0.15, 0.77, -0.06, 0.15, 0.85, 0.06, 0xb07a45); bx(g, -0.12, 0.85, -0.04, 0.12, 0.88, 0.04, 0xe0b070); }
   return g;
 }
 const WARDROBES = [C.white, C.wood];
@@ -451,7 +451,7 @@ export const HOME_CATALOG = [
   { id: 'bed_double', name: 'Franciaágy', cat: 'Lakás', variants: 3, build: bedDouble, collider: { hx: 0.82, hz: 1.06, h: 0.6 }, desc: '160 × 200 cm, magas fejtámla, két párna.', use: 'A szülők szobája, a testvér szobája' },
   { id: 'desk', name: 'Íróasztal', cat: 'Lakás', variants: 2, build: desk, collider: { hx: 0.6, hz: 0.3, h: 0.8 }, desc: 'Fiókos íróasztal; az 1. változaton monitor, billentyűzet, egér és lámpa.', use: 'Petyus szobája' },
   { id: 'chair', name: 'Szék', cat: 'Lakás', variants: 3, build: chair, collider: { hx: 0.21, hz: 0.21, h: 0.5 }, desc: 'Ülésmagasság 45 cm; fa, fehér és piros változat.', use: 'Étkező, íróasztal' },
-  { id: 'dining_table', name: 'Étkezőasztal', cat: 'Lakás', variants: 1, build: diningTable, collider: { hx: 0.9, hz: 0.45, h: 0.8 }, desc: '6 személyes asztal megterítve: tányérok, bögrék, kenyereskosár.', use: 'Konyha–étkező' },
+  { id: 'dining_table', name: 'Étkezőasztal', cat: 'Lakás', variants: 2, build: diningTable, collider: { hx: 0.9, hz: 0.45, h: 0.8 }, desc: '6 személyes asztal megterítve: tányérok, bögrék, kenyereskosár.', use: 'Konyha–étkező' },
   { id: 'wardrobe', name: 'Szekrény', cat: 'Lakás', variants: 2, build: wardrobe, collider: { hx: 0.5, hz: 0.3, h: 2.1 }, desc: 'Kétajtós ruhásszekrény (100 cm); hosszában nyújtva gardróbsor.', use: 'Szobák' },
   { id: 'dresser', name: 'Komód', cat: 'Lakás', variants: 2, build: dresser, collider: { hx: 0.6, hz: 0.25, h: 0.9 }, desc: 'Háromfiókos komód; az 1. változaton virág és könyv.', use: 'A testvér szobája, nappali' },
   { id: 'kitchen_unit', name: 'Konyhaszekrény', cat: 'Lakás', variants: 4, build: kitchenUnit, collider: { hx: 0.5, hz: 0.3, h: 0.95 }, desc: '1 m-es elem munkalappal: 1 ajtós, 2 mosogató csappal, 3 főzőlap lábassal, 4 fiókos.', use: 'Konyha, az északi ablakok alatt' },

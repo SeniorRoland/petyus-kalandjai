@@ -13,6 +13,7 @@ import { V3, damp } from '../util.js';
 import { VoxelGrid } from '../voxels.js';
 import { addBoxCol, vcMat } from '../world.js';
 import { FY, homeRoot } from './home.js';
+import * as F from './food.js';
 
 export const devices = [];
 
@@ -60,18 +61,22 @@ function buildFridge(x, z, rot) {
     // the inside: walls lighter (the shell above is the outer colour; repaint the inner faces' voxels next to the cavity)
     B(g, s, -0.41, 0.41, 0.06, 0.07, -0.28, 0.25, WALL); B(g, s, -0.41, 0.41, 1.78, 1.8, -0.28, 0.25, WALL); B(g, s, -0.41, 0.41, 0.07, 1.78, -0.3, -0.28, WALL);
     B(g, s, 0.1, 0.32, 1.74, 1.77, -0.15, 0.0, 0xfff3c0);                                  // the lamp
-    // fridge side (x > 0): milk, cheese, eggs, jam, bottles, a crisper with vegetables
-    B(g, s, 0.08, 0.14, 0.92, 1.1, -0.12, -0.06, (x, y) => (y > 1.05 ? 0x3a86ff : 0xffffff));
-    B(g, s, 0.2, 0.32, 0.92, 0.97, -0.1, 0.02, 0xffd23f); B(g, s, 0.22, 0.38, 0.52, 0.58, -0.18, -0.04, 0xd9c7a3);
-    for (const ex of [0.24, 0.28, 0.32, 0.36]) B(g, s, ex, ex, 0.58, 0.6, -0.15, -0.08, 0xf3efe6);
-    B(g, s, 0.08, 0.12, 0.52, 0.62, -0.05, 0.0, 0xc62828);
-    for (const [bx, c] of [[0.1, 0x2f7d3a], [0.18, 0x7a4a24], [0.26, 0x9fd0ea]]) B(g, s, bx, bx + 0.04, 1.32, 1.55, -0.2, -0.16, c);
-    B(g, s, 0.05, 0.38, 0.08, 0.3, -0.25, 0.12, (x, y, z) => (y > 0.28 || Math.abs(z - 0.12) < 0.013 || Math.abs(x - 0.05) < 0.013 || Math.abs(x - 0.38) < 0.013 ? 0xdbeaf2 : (Math.floor(x * 30 + z * 20) % 3 ? 0xd9453a : 0x58ab4c)));
+    // fridge side (x > 0): the crisper's frame (the food on the shelves and in it: food.js, below)
+    B(g, s, 0.05, 0.38, 0.08, 0.3, -0.25, 0.12, (x, y, z) => (y > 0.28 || Math.abs(z - 0.12) < 0.013 || Math.abs(x - 0.05) < 0.013 || Math.abs(x - 0.38) < 0.013 ? 0xdbeaf2 : undefined));
     // freezer side (x < 0): two drawers, ice cream, peas
     for (const [y0, y1] of [[0.08, 0.5], [0.55, 0.95]]) B(g, s, -0.38, -0.05, y0, y1, -0.25, 0.12, (x, y, z) => (z > 0.1 || y > y1 - 0.02 ? 0xbfe0ef : undefined));
     B(g, s, -0.3, -0.12, 0.1, 0.25, -0.2, -0.02, 0xf3a9c0); B(g, s, -0.3, -0.12, 0.57, 0.65, -0.15, 0.05, 0x5fae6a);
     B(g, s, -0.35, -0.1, 1.2, 1.26, -0.2, 0.05, 0xcfe8f3);
   }));
+  // what is in it (fridge side): milk, cream (TEJSZÍN), whipped cream (TEJSZÍNHAB), cheese, salami, cola, orange soda,
+  // a can; apples, oranges and grapes in the crisper. Shelf tops: 0.525, 0.925, 1.325; the floor 0.075.
+  F.at(grp, F.milkCarton(), 0.1, 0.525, -0.13);
+  { const c = F.creamCarton(); c.scale.setScalar(0.75); F.at(grp, c, 0.22, 0.525, -0.02); }
+  F.at(grp, F.whippedCream(), 0.33, 0.525, 0.04);
+  { const p = F.plate(0xf2c94c, 0.08); F.at(grp, p, 0.13, 0.925, -0.06); F.at(grp, F.cheeseWedge(), 0.13, 0.94, -0.06, 0.4); }
+  F.at(grp, F.salamiLog(), 0.28, 0.925, -0.08, 0.2);
+  F.at(grp, F.sodaBottle(), 0.1, 1.325, -0.16); F.at(grp, F.sodaBottle(0xf4a261, 0xf77f00, 'NARANCS', '#f77f00'), 0.2, 1.325, -0.16); F.at(grp, F.sodaCan('#c1121f', 'MÁLNA'), 0.32, 1.325, 0.0);
+  for (const [fx, fz, f] of [[0.1, -0.15, F.apple()], [0.18, -0.05, F.apple(0x8ac926)], [0.26, -0.16, F.orange()], [0.32, 0.0, F.orange()], [0.12, 0.05, F.grapes()]]) F.at(grp, f, fx, 0.075, fz);
   // the doors: hinged at the outer edges, opening outwards
   const door = (side) => {
     const pv = new THREE.Group(); pv.position.set(side * 0.45, 0, 0.33); grp.add(pv);

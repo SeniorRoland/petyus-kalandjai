@@ -14,7 +14,7 @@ import { say, toast, updateBubbles } from '../ui.js';
 import { $, V3, clamp, damp, dampAngle, pick } from '../util.js';
 import { INSTANCES, collide, colliders, setGround } from '../world.js';
 import { setPrompt } from '../activities/drinking.js';
-import { FY, SPOTS, buildHome, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, flushToilet, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
+import { FY, SPOTS, buildHome, lightPool, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, flushToilet, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
 import { noise, tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
 import { buildAppliances, devices, updateAppliances } from './appliances.js';
@@ -70,6 +70,7 @@ export function startEp2() {
   scene.background.set(0xcde8f5);
   // bright morning: the sun is low in the east (through the east windows), cool sky light
   SUN_OFF.set(30, 26, -4); sun.color.set(0xfff3dc); sun.intensity = 2.3;
+  sun.castShadow = false;   // the shadows in the flat come from its ceiling lamps (home.js lightPool), not the sun
   // the sky light's ground colour was the park's grass (green): indoors every downward face (a fridge's ceiling, the underside
   // of a shelf) would look green – a warm neutral instead
   scene.traverse((o) => { if (o.isHemisphereLight) o.groundColor.set(0xb9ab98); });
@@ -105,7 +106,9 @@ export function startEp2() {
   // compile every material now (also the hidden ones: ceiling, lamps, the WC's water), so nothing stalls the game later when it
   // first shows up (a shader compiled on first use is a visible hitch)
   { const hidden = []; scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
-    try { renderer.compile(scene, camera); renderer.compile(scene, fpsCam); } catch (e) { /* best effort */ }
+    const pool = lightPool();
+    try { for (const on of [true, false]) { pool.forEach((l) => { l.visible = on; }); renderer.compile(scene, camera); renderer.compile(scene, fpsCam); } } catch (e) { /* best effort */ }
+    pool.forEach((l) => { l.visible = false; });
     for (const o of hidden) o.visible = false; }
   if (resumed) toast(`Folytatás: <b>${dateText()}</b>, ${clockText(ep2.min)}`, 3);
   else setTimeout(() => say(G.angi, 'Jó reggelt, Petyus! Kelj fel, mosd meg a fogad!', 3.6), 900);

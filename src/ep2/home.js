@@ -9,6 +9,8 @@ import { CAM_OFF, scene } from '../scene.js';
 import { damp } from '../util.js';
 import { CATALOG, getGeometry } from '../voxels.js';
 import { TOILET, toiletLidGeometry, toiletSeatGeometry } from '../voxels-home.js';
+import { Q } from '../quality.js';
+import * as F from './food.js';
 import { INSTANCES, addBoxCol, addCircleCol, colliders, partMesh, vcMat } from '../world.js';
 
 export const WALL_H = 2.6;
@@ -91,9 +93,11 @@ function buildWall(w) {
       piece(b, x, o.a, 0, H); solid(x, o.a);
       if (o.y0 !== undefined) {   // window: wall below (and above), sill, frame, glass
         piece(b, o.a, o.b, 0, o.y0); piece(b, o.a, o.b, o.y1, H); solid(o.a, o.b);
-        piece(b, o.a - 0.05, o.b + 0.05, o.y0 - 0.04, o.y0, COL.sill, -0.1);
-        piece(b, o.a, o.a + 0.06, o.y0, o.y1, COL.frame, 0.02); piece(b, o.b - 0.06, o.b, o.y0, o.y1, COL.frame, 0.02); piece(b, o.a, o.b, o.y1 - 0.06, o.y1, COL.frame, 0.02);
-        for (let k = 1, n = Math.max(1, Math.round((o.b - o.a) / 0.8)); k < n; k++) { const m = o.a + (o.b - o.a) * k / n; piece(b, m - 0.03, m + 0.03, o.y0, o.y1, COL.frame, 0.02); }
+        // sill and frame: no two faces in one plane (they would flicker, close up in the first-person view): the sill's top is
+        // 1 cm above the wall below, the posts stop under the top bar, the frame is 2 cm thinner than the wall
+        piece(b, o.a - 0.05, o.b + 0.05, o.y0 - 0.04, o.y0 + 0.01, COL.sill, -0.1);
+        piece(b, o.a, o.a + 0.06, o.y0 + 0.01, o.y1 - 0.06, COL.frame, 0.02); piece(b, o.b - 0.06, o.b, o.y0 + 0.01, o.y1 - 0.06, COL.frame, 0.02); piece(b, o.a, o.b, o.y1 - 0.06, o.y1, COL.frame, 0.02);
+        for (let k = 1, n = Math.max(1, Math.round((o.b - o.a) / 0.8)); k < n; k++) { const m = o.a + (o.b - o.a) * k / n; piece(b, m - 0.03, m + 0.03, o.y0 + 0.01, o.y1 - 0.06, COL.frame, 0.025); }
         panes.push([o.a, o.b, o.y0, Math.min(o.y1, H)]);
         if (w.n) {   // roller blind outside the window, half pulled up (slats over the upper half) + its box on top
           const sg = alongX ? w.n[1] : w.n[0], off = sg * (tw / 2 + 0.025);
@@ -211,7 +215,7 @@ function furnish() {
   put('kitchen_unit', 5.73, 0.5, E, 3);   // (the wide fridge itself opens: appliances.js)
   put('kitchen_unit', 6.6, 0.31, 0, 0); put('kitchen_unit', 7.6, 0.31, 0, 2); put('kitchen_unit', 8.6, 0.31, 0, 1); put('kitchen_unit', 9.6, 0.31, 0, 3);
   put('coffee_maker', 9.75, 0.22, 0, 0, { y: 0.93 });
-  put('dining_table', 10.95, 1.95, E);
+  put('dining_table', 10.95, 1.95, E, 1);   // (the breakfast on it: buildBreakfast)
   for (const z of [1.35, 1.95, 2.55]) put('chair', 10.3, z, E, 0);
   put('chair', 10.95, 0.78, 0, 0);
   put('potted_plant', 5.8, 3.9);
@@ -288,12 +292,25 @@ export const switches = [];
 // Every point light costs on every pixel of every lit surface, switched on or not (and adding / removing one recompiles all
 // shaders): a fixed pool of two lights goes to the switched-on rooms nearest Petyus; with all lights off they are dark.
 const LIGHT_POOL = [];
-function updateLights(P) {
-  if (!LIGHT_POOL.length) for (let i = 0; i < 2; i++) { const l = new THREE.PointLight(0xffd9a0, 0, 9, 2); homeRoot.add(l); LIGHT_POOL.push(l); }
-  const on = switches.filter((s) => s.on).sort((a, b) => Math.hypot(a.light.position.x - P.x, a.light.position.z - P.z) - Math.hypot(b.light.position.x - P.x, b.light.position.z - P.z));
-  LIGHT_POOL.forEach((l, i) => { const s = on[i]; l.intensity = s ? LIGHT_ON : 0; if (s) l.position.copy(s.light.position); });
+// The pool's lights are spot lights under the ceiling lamps pointing down: they cast the flat's shadows (the sun casts none
+// in part 2). A light that is not needed is hidden (no shadow pass for it); both states are compiled in advance (ep2.js).
+export function lightPool() {
+  if (!LIGHT_POOL.length) for (let i = 0; i < 2; i++) {
+    const l = new THREE.SpotLight(0xffd9a0, LIGHT_ON, 9, 1.25, 0.55, 1.6);
+    l.castShadow = Q.shadowSize > 0; l.shadow.mapSize.set(Q.level >= 2 ? 1024 : 512, Q.level >= 2 ? 1024 : 512);
+    l.shadow.bias = -0.0008; l.shadow.normalBias = 0.02; l.shadow.camera.near = 0.2; l.shadow.camera.far = 9;
+    l.visible = false; homeRoot.add(l, l.target); LIGHT_POOL.push(l);
+  }
+  return LIGHT_POOL;
 }
-const LIGHT_ON = 14;
+function updateLights(P) {
+  const on = switches.filter((s) => s.on).sort((a, b) => Math.hypot(a.light.position.x - P.x, a.light.position.z - P.z) - Math.hypot(b.light.position.x - P.x, b.light.position.z - P.z));
+  lightPool().forEach((l, i) => {
+    const s = on[i]; l.visible = !!s;
+    if (s) { l.position.set(s.light.position.x, WALL_H - 0.12, s.light.position.z); l.target.position.set(s.light.position.x, 0, s.light.position.z); l.target.updateMatrixWorld(); }
+  });
+}
+const LIGHT_ON = 9;
 function buildSwitches() {
   for (const sd of SWITCHES) {
     const r = ROOMS.find((q) => q.id === sd.room), cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;
@@ -348,6 +365,30 @@ function buildPictures() {
   }
 }
 
+// ---------------------------------------------------------------- breakfast on the kitchen table (food.js)
+// the table: x 10.5 … 11.4, z 1.05 … 2.85, top at 0.75; chairs on its west side (z 1.35 Petyus, 1.95 dad, 2.55 mum) and at
+// its north end; the shared things in the middle / east half
+function buildBreakfast() {
+  const t = new THREE.Group(); t.position.y = 0.75; homeRoot.add(t);
+  const H = Math.PI / 2;
+  // Petyus: muesli with milk, a glass of milk
+  F.at(t, F.muesliBowl(), 10.68, 0, 1.35); F.at(t, F.glass(0xfafaf6, 0.75), 10.84, 0, 1.18);
+  // dad: a plate with buttered bread and salami, tea in his mug, knife and fork
+  F.at(t, F.plate(0x2a9d8f), 10.68, 0, 1.95); F.at(t, F.cutlery(1), 10.68, 0, 1.95, H);
+  { const sl = F.salamiSlices(3); F.at(t, sl, 10.67, 0.02, 1.97); } F.at(t, F.mug(0x3a86ff, 0x9b5a1a), 10.86, 0, 2.17);
+  // mum: a plate with a slice of bread, tea
+  F.at(t, F.plate(0xe76f51), 10.68, 0, 2.55); F.at(t, F.cutlery(1), 10.68, 0, 2.55, H); F.at(t, F.mug(0xffffff, 0xa8641a), 10.86, 0, 2.76);
+  // the north end: a plate and a glass of orange juice
+  F.at(t, F.plate(0xffca3a), 10.95, 0, 1.2); F.at(t, F.glass(0xf8961e, 0.7), 11.18, 0, 1.18);
+  // in the middle: bread on its board, salami, fruit, milk, muesli box, tea pot, butter, honey, napkins
+  F.at(t, F.breadBoard(), 11.12, 0, 1.62, H);
+  { const p = F.plate(0xc1121f, 0.1); F.at(t, p, 11.18, 0, 2.06); F.at(t, F.salamiSlices(7), 11.18, 0.02, 2.06); }
+  F.at(t, F.fruitBowl(), 11.15, 0, 2.48);
+  F.at(t, F.milkCarton(), 11.3, 0, 1.3); F.at(t, F.muesliBox(), 11.27, 0, 1.12, H);
+  F.at(t, F.teapot(), 11.22, 0, 2.78);
+  F.at(t, F.butterDish(), 10.93, 0, 2.3, H); F.at(t, F.honeyJar(), 10.92, 0, 1.64); F.at(t, F.napkins(), 10.95, 0, 2.86);
+}
+
 // ---------------------------------------------------------------- the shower over the bath (west wall) and its curtain
 function buildShower() {
   homeRoot.add(partMesh((b) => {
@@ -391,7 +432,7 @@ export function buildHome(outside) {
   homeRoot.add(partMesh((b) => { for (const r of ROOMS) FLOORS[r.floor](b, r); }));
   for (const w of WALLS) buildWall(w);
   furnish(); if (outside) outside(); buildFurniture(); buildShell();
-  buildPictures(); buildShower(); buildToiletSeat();
+  buildPictures(); buildShower(); buildToiletSeat(); buildBreakfast();
 }
 
 // ---------------------------------------------------------------- walls between the camera and Petyus / his room
