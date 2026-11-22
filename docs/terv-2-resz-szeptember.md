@@ -96,6 +96,8 @@ Később részletezzük (osztályterem, folyosó, udvar/tornaterem, ebédlő?). 
 - **Udvar:** kavicsos-betonos parkoló betonszegélyekkel, homokozó, ruhaszárító ruhákkal, három fekete kuka a kapunál, lépőkövek a trambulinhoz, virágágyások, sövény a kerítés mentén, kerti asztal, kerékpártámasz, kövek, fűcsomók és vadvirágok, virágzó fák a ház előtt.
 - **FPS egér:** kattintásra egérzár (mint a lövöldözős játékokban), Esc-re elenged; ahol nincs egérzár, húzással megy.
 - **Berendezés:** a szülőknél a franciaágy az északi falon, szemben a déli falon a kanapé, a tévé a déli falon a testvér szobája felé, a gardrób a testvér szobájának falán. Petyusnál az ágy a konyha falán, az íróasztal a keleti ablaknál, a gardrób a déli falon. A fürdőben a kád a nyugati falon, az északi falon mosógép és polc, a mosdó a keleti falon.
+- **Ajtók, kapcsolók, redőnyök:** minden szobának nyitható-csukható ajtaja van (E), az erkélyeknek üvegajtaja; csukott ajtón nem lehet átmenni. A testvér szobája zárva (kopogás), a bejárati ajtó egyelőre az indulásé. Kapcsolók (E) a fürdő és a WC ajtaja mellett a folyosón, a bejáratnál, a konyhában, Petyus és a szülők szobájában; mindegyik a saját szobája lámpáját kapcsolja (meleg fény, FPS-ben a mennyezeti lámpa is világít). Reggel minden lámpa le van kapcsolva. Az ablakokon kívül redőny, félig felhúzva.
+- **Konyha:** széles, kétajtós hűtő a nyugati falon, mellette L alakban fordul a pult (egy elem a nyugati falon, négy az északin).
 - **Még nincs:** átöltözés, iskolatáska/cipő és indulás az iskolába, a napok léptetése, „Új rész nyílt meg!” jelzés, telefonos gombok finomhangolása, a csibészségek.
 
 ## Első lépés (eredeti leírás)

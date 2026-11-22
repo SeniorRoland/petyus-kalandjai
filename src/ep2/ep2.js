@@ -13,7 +13,8 @@ import { say, toast, updateBubbles } from '../ui.js';
 import { $, V3, clamp, damp, dampAngle, pick } from '../util.js';
 import { INSTANCES, collide, colliders, setGround } from '../world.js';
 import { setPrompt } from '../activities/drinking.js';
-import { FY, SPOTS, buildHome, ceiling, cutWalls, doors, updateHome, wallView } from './home.js';
+import { FY, SPOTS, buildHome, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, updateHome, wallView } from './home.js';
+import { tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
 import { dressPajama } from './pajama.js';
 
@@ -60,7 +61,7 @@ export function startEp2() {
   const ep = EPISODES[1];
   document.title = `${SERIES} – ${ep.n}. rész: ${ep.month}`;
   $('hud').innerHTML = '<span class="chip">📅 <span id="e2Date"></span></span> <span class="chip">🕕 <span id="e2Clock"></span></span> <span class="chip" id="e2RoomChip">📍 <span id="e2Room"></span></span>';
-  $('help').innerHTML = '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat</dd><dt>Q / R</dt><dd>nézet forgatása</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
+  $('help').innerHTML = '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat: ajtó nyitása / csukása, villany, kopogás</dd><dt>Q / R</dt><dd>nézet forgatása</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
   for (const id of ['kickBtn', 'runBtn']) { const el = $(id); if (el) el.style.display = id === 'kickBtn' ? 'none' : ''; }
   $('skipBtn').style.display = 'none'; $('hud').style.display = 'block'; $('help').style.display = isTouch ? 'none' : 'block';
   if (isTouch) $('touch').style.display = 'block';
@@ -188,9 +189,16 @@ function movePetyus(dt) {
 const door = { knockT: 0 };
 function interactHome() {
   const p = G.petike.pos;
+  // the nearest thing within reach: a door (open / close, knock, leave) or a light switch
+  let best = null, bd = 1e9;
+  for (const d of doors) { const r = Math.hypot(p.x - d.x, p.z - d.z); if (r < 1.0 && r < bd) { bd = r; best = { d }; } }
+  for (const sw of switches) { const r = Math.hypot(p.x - sw.x, p.z - sw.z); if (r < 0.85 && r < bd) { bd = r; best = { sw }; } }
   let txt = '';
-  for (const d of doors) {
-    if (Math.hypot(p.x - d.x, p.z - d.z) > 0.95) continue;
+  if (best && best.sw) {
+    const sw = best.sw; txt = sw.on ? 'E – villany le' : 'E – villany fel';
+    if (G.usePressed) { toggleSwitch(sw); sClick(); }
+  } else if (best) {
+    const d = best.d;
     if (d.kind === 'locked') {
       txt = 'E – kopogás';
       if (G.usePressed && door.knockT <= 0) {
@@ -202,10 +210,15 @@ function interactHome() {
     } else if (d.kind === 'front') {
       txt = 'E – indulás';
       if (G.usePressed) say(G.angi, 'Pizsamában?! Előbb öltözz fel, és reggelizz!', 3.2);
+    } else {
+      txt = d.open ? 'E – ajtó becsukása' : 'E – ajtó kinyitása';
+      if (G.usePressed) { toggleDoor(d); sClick(); }
     }
   }
   setPrompt(txt);
 }
+// a short click (switch, door handle)
+function sClick() { tone('square', 1400, 900, 0.03, 0.04); }
 
 // ---------------------------------------------------------------- the parents
 function updateParents(dt) {
@@ -217,7 +230,7 @@ function updateParents(dt) {
     ep2.momT = 10 + Math.random() * 8;
     if (ep2.momAt === 'cook') { m.walkTo([[SPOTS.momFridge.x, SPOTS.momFridge.z]], 1.2); ep2.momAt = 'fridge'; } else { m.walkTo([[SPOTS.momCook.x, SPOTS.momCook.z]], 1.2); ep2.momAt = 'cook'; }
   }
-  if (!m.path) m.targetHeading = Math.PI;   // facing the counter
+  if (!m.path) m.targetHeading = ep2.momAt === 'fridge' ? -Math.PI / 2 : Math.PI;   // facing the fridge (west) or the counter (north)
   m.update(dt);
   // talking: dad (and now and then mum), more often when Petyus is close
   ep2.talkT -= dt;

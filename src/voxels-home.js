@@ -118,6 +118,15 @@ function fridge(seed) {   // 0.6 × 0.65 × 1.85 m
   bx(g, -0.2, 1.5, 0.32, -0.1, 1.6, 0.33, 0xffc24d); bx(g, -0.05, 1.42, 0.32, 0.05, 1.5, 0.33, 0x4f8fd6);   // magnets
   return g;
 }
+function fridgeWide(seed) {   // side-by-side fridge 0.9 × 0.65 × 1.85 m, two doors, a water dispenser
+  const g = grid(seed);
+  bx(g, -0.45, 0, -0.32, 0.45, 1.85, 0.32, (i, j, k) => (i === 0 && k === vi(0.32) - 1 ? C.grey : 0xdfe3e6));
+  for (const x of [-0.07, 0.04]) bx(g, x, 0.6, 0.32, x + 0.03, 1.5, 0.36, C.steelDark);
+  bx(g, -0.32, 1.05, 0.32, -0.12, 1.35, 0.33, C.dark); bx(g, -0.27, 1.1, 0.33, -0.17, 1.14, 0.34, 0x7fb6e8);
+  bx(g, 0.2, 1.5, 0.32, 0.3, 1.6, 0.33, 0xffc24d); bx(g, 0.3, 1.38, 0.32, 0.38, 1.46, 0.33, 0x4f8fd6); bx(g, 0.15, 1.2, 0.32, 0.3, 1.32, 0.33, 0xf3f1ec);   // magnets, a drawing
+  bx(g, -0.45, 0, -0.32, 0.45, 0.06, 0.33, C.dark);
+  return g;
+}
 function coffeeMaker(seed) {   // a small espresso machine for dad
   const g = grid(seed);
   bx(g, -0.12, 0, -0.15, 0.12, 0.32, 0.12, C.dark); hole(g, -0.08, 0.04, 0.02, 0.08, 0.16, 0.12);
@@ -276,6 +285,7 @@ export const HOME_CATALOG = [
   { id: 'dresser', name: 'Komód', cat: 'Lakás', variants: 2, build: dresser, collider: { hx: 0.6, hz: 0.25, h: 0.9 }, desc: 'Háromfiókos komód; az 1. változaton virág és könyv.', use: 'A testvér szobája, nappali' },
   { id: 'kitchen_unit', name: 'Konyhaszekrény', cat: 'Lakás', variants: 4, build: kitchenUnit, collider: { hx: 0.5, hz: 0.3, h: 0.95 }, desc: '1 m-es elem munkalappal: 1 ajtós, 2 mosogató csappal, 3 főzőlap lábassal, 4 fiókos.', use: 'Konyha, az északi ablakok alatt' },
   { id: 'fridge', name: 'Hűtő', cat: 'Lakás', variants: 1, build: fridge, collider: { hx: 0.3, hz: 0.32, h: 1.85 }, desc: 'Kombinált hűtő hűtőmágnesekkel.', use: 'Konyha' },
+  { id: 'fridge_wide', name: 'Széles hűtő', cat: 'Lakás', variants: 1, build: fridgeWide, collider: { hx: 0.45, hz: 0.33, h: 1.85 }, desc: 'Kétajtós (side-by-side) hűtő vízadagolóval, hűtőmágnesekkel, egy rajzzal.', use: 'Konyha, a nyugati falon' },
   { id: 'coffee_maker', name: 'Kávéfőző', cat: 'Lakás', variants: 1, build: coffeeMaker, collider: null, desc: 'Kis presszógép csészével – apa reggeli kávéja.', use: 'Konyhapult' },
   { id: 'bathtub', name: 'Kád', cat: 'Lakás', variants: 1, build: bathtub, collider: { hx: 0.85, hz: 0.38, h: 0.6 }, desc: 'Kád vízzel, csapteleppel és gumikacsával a peremén.', use: 'Fürdőszoba' },
   { id: 'bath_sink', name: 'Mosdó tükörrel', cat: 'Lakás', variants: 1, build: bathSink, collider: { hx: 0.33, hz: 0.24, h: 0.9 }, desc: 'Mosdószekrény, csap, fogmosó pohár, tükör a falon.', use: 'Fürdőszoba (reggeli fogmosás)' },

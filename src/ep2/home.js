@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { CAM_OFF, scene } from '../scene.js';
 import { damp } from '../util.js';
 import { CATALOG, getGeometry } from '../voxels.js';
-import { INSTANCES, addBoxCol, addCircleCol, partMesh, vcMat } from '../world.js';
+import { INSTANCES, addBoxCol, addCircleCol, colliders, partMesh, vcMat } from '../world.js';
 
 export const WALL_H = 2.6;
 // the flat is on the 2nd floor of a block of flats (outside.js builds the rest): its floor is at FY; the home meshes live in
@@ -38,35 +38,36 @@ export const SPOTS = {
   petyusWake: { x: 13.1, z: 1.8, h: Math.PI * 0.75 },     // next to his bed
   dadChair: { x: 10.3, z: 1.95, h: Math.PI / 2 },          // at the table (west side), facing it
   momCook: { x: 7.6, z: 1.0, h: Math.PI },                 // at the cooktop
-  momFridge: { x: 5.95, z: 1.05 },
+  momFridge: { x: 6.55, z: 1.5 },                          // in front of the wide fridge (west wall)
 };
 
 // ---------------------------------------------------------------- walls
 // a wall: an axis-aligned box (x0..x1, z0..z1); openings along its length: doors { a, b, leaf } and windows { a, b, y0, y1 }.
+// A door with swing (±1: towards +/− across the wall) has a leaf that opens and closes (E); start: 'open' → open at first.
 // kind: 'out' (outer) or 'in' (inner); both full height.
 const DOOR_H = 2.1;
 const WIN = (a, b, y0 = 0.85, y1 = 2.2) => ({ a, b, y0, y1 });
 const WALLS = [
   // outer north: bathroom, WC, kitchen ×2 windows; Petyus's room: the door to the north balcony + a window
-  { kind: 'out', n: [0, -1], x0: -TE, z0: -TE, x1: XE + TE, z1: 0, open: [WIN(1.3, 2.3, 1.5), WIN(4.2, 4.9, 1.6, 2.1), WIN(6.4, 8.0, 1.05), WIN(8.6, 10.2, 1.05), { a: 12.2, b: 13.1, glass: true }, WIN(13.6, 15.0)] },
+  { kind: 'out', n: [0, -1], x0: -TE, z0: -TE, x1: XE + TE, z1: 0, open: [WIN(1.3, 2.3, 1.5), WIN(4.2, 4.9, 1.6, 2.1), WIN(6.4, 8.0, 1.05), WIN(8.6, 10.2, 1.05), { a: 12.2, b: 13.1, glass: true, swing: 1 }, WIN(13.6, 15.0)] },
   // outer west: the front door (hallway), the sibling's window
   { kind: 'out', n: [-1, 0], x0: -TE, z0: 0, x1: 0, z1: ZS + TE, open: [{ a: 2.85, b: 3.8, leaf: 'front' }, WIN(5.6, 7.8)] },
   // outer south: two windows in each of the south rooms
   { kind: 'out', n: [0, 1], x0: -TE, z0: ZS, x1: XE + TE, z1: ZS + TE, open: [WIN(1.0, 3.0), WIN(3.8, 5.8), WIN(8.0, 10.2), WIN(11.6, 14.6)] },
   // outer east: Petyus's window; the parents' room: the door to the east balcony + a window
-  { kind: 'out', n: [1, 0], x0: XE, z0: -TE, x1: XE + TE, z1: ZS, open: [WIN(1.0, 3.0), { a: 5.4, b: 6.4, glass: true }, WIN(6.9, 8.7)] },
+  { kind: 'out', n: [1, 0], x0: XE, z0: -TE, x1: XE + TE, z1: ZS, open: [WIN(1.0, 3.0), { a: 5.4, b: 6.4, glass: true, swing: -1 }, WIN(6.9, 8.7)] },
   // inner
-  { kind: 'in', x0: 0, z0: 2.3, x1: 5.42, z1: 2.42, open: [{ a: 2.2, b: 3.1 }, { a: 4.1, b: 4.9 }] },   // bathroom + WC | hallway
+  { kind: 'in', x0: 0, z0: 2.3, x1: 5.42, z1: 2.42, open: [{ a: 2.2, b: 3.1, swing: -1, start: 'open' }, { a: 4.1, b: 4.9, swing: -1 }] },   // bathroom + WC | hallway
   { kind: 'in', x0: 3.6, z0: 0, x1: 3.72, z1: 2.3 },                                                   // bathroom | WC
   { kind: 'in', x0: 5.3, z0: 0, x1: 5.42, z1: 2.3 },                                                   // WC | kitchen
-  { kind: 'in', x0: 11.6, z0: 0, x1: 11.72, z1: 4.2, open: [{ a: 3.05, b: 3.95 }] },                     // kitchen | Petyus's room
-  { kind: 'in', x0: 0, z0: 4.2, x1: XE, z1: 4.32, open: [{ a: 2.6, b: 3.5, leaf: 'locked' }, { a: 9.4, b: 10.3 }] },   // north row | south row
+  { kind: 'in', x0: 11.6, z0: 0, x1: 11.72, z1: 4.2, open: [{ a: 3.05, b: 3.95, swing: 1 }] },           // kitchen | Petyus's room
+  { kind: 'in', x0: 0, z0: 4.2, x1: XE, z1: 4.32, open: [{ a: 2.6, b: 3.5, leaf: 'locked' }, { a: 9.4, b: 10.3, swing: 1, start: 'open' }] },   // north row | south row
   { kind: 'in', x0: 6.8, z0: 4.32, x1: 6.92, z1: ZS },                                                 // sibling | parents
 ];
 const COL = { wall: 0xf4efe6, wallIn: 0xece6da, front: 0xeee7db, trim: 0x8a6a4a, frame: 0xffffff, door: 0xb98b58, doorDark: 0x8a6238, sill: 0xdcd4c6 };
 const GLASS_OP = 0.45;
 export const cutWalls = [];   // { body, mat, glass, lintels: [], box: [x0, z0, x1, z1], s, o }
-export const doors = [];      // closed door leaves { x, z, kind }
+export const doors = [];      // { kind: 'front' | 'locked' | 'room' | 'balcony', x, z } (+ open, t, pivot, col for the ones that open)
 
 function buildWall(w) {
   const alongX = w.x1 - w.x0 > w.z1 - w.z0;
@@ -93,6 +94,12 @@ function buildWall(w) {
         piece(b, o.a, o.a + 0.06, o.y0, o.y1, COL.frame, 0.02); piece(b, o.b - 0.06, o.b, o.y0, o.y1, COL.frame, 0.02); piece(b, o.a, o.b, o.y1 - 0.06, o.y1, COL.frame, 0.02);
         for (let k = 1, n = Math.max(1, Math.round((o.b - o.a) / 0.8)); k < n; k++) { const m = o.a + (o.b - o.a) * k / n; piece(b, m - 0.03, m + 0.03, o.y0, o.y1, COL.frame, 0.02); }
         panes.push([o.a, o.b, o.y0, Math.min(o.y1, H)]);
+        if (w.n) {   // roller blind outside the window, half pulled up (slats over the upper half) + its box on top
+          const sg = alongX ? w.n[1] : w.n[0], off = sg * (tw / 2 + 0.025);
+          const slab = (a, bb, y0, y1, c, o2, th) => { const cx = (a + bb) / 2; if (alongX) b.bx(cx, y0, tm + o2, bb - a, y1 - y0, th, c, 0, 0.01); else b.bx(tm + o2, y0, cx, th, y1 - y0, bb - a, c, 0, 0.01); };
+          for (let y = (o.y0 + o.y1) / 2, k = 0; y < o.y1 - 0.001; y += 0.07, k++) slab(o.a + 0.02, o.b - 0.02, y, Math.min(o.y1, y + 0.07), k % 2 ? 0xd8d2c4 : 0xc6bfaf, off, 0.04);
+          slab(o.a - 0.03, o.b + 0.03, o.y1, o.y1 + 0.18, 0xd8d2c4, off + sg * 0.05, 0.14);
+        }
       } else {   // door: frame (+ the lintel, a separate mesh: it is hidden when the wall sinks)
         piece(b, o.a - 0.05, o.a, 0, DOOR_H + 0.05, COL.trim, -0.03); piece(b, o.b, o.b + 0.05, 0, DOOR_H + 0.05, COL.trim, -0.03);
         if (o.leaf) {   // a closed door (the front door, the sibling's room): leaf + handle; it blocks the way
@@ -119,6 +126,30 @@ function buildWall(w) {
     const len = bb - a - 0.08, h = y1 - y0 - 0.04, g = new THREE.Mesh(new THREE.BoxGeometry(alongX ? len : 0.03, h, alongX ? 0.03 : len), glass);
     if (alongX) g.position.set((a + bb) / 2, y0 + 0.02 + h / 2, tm); else g.position.set(tm, y0 + 0.02 + h / 2, (a + bb) / 2);
     g.renderOrder = 3; body.add(g);
+  }
+  // doors that open and close: a leaf on a hinge (pivot) at the opening's start; its collider is switched off while open
+  for (const o of opens) {
+    if (!o.swing) continue;
+    const wd = o.b - o.a;
+    const leaf = partMesh((b) => {
+      if (o.glass) {   // balcony door: white frame, glass
+        for (const [y, h] of [[0, 0.1], [DOOR_H - 0.12, 0.1], [0.95, 0.06]]) b.bx(wd / 2, y, 0, wd - 0.02, h, 0.06, COL.frame, 0, 0);
+        b.bx(0.05, 0, 0, 0.08, DOOR_H - 0.02, 0.06, COL.frame, 0, 0); b.bx(wd - 0.05, 0, 0, 0.08, DOOR_H - 0.02, 0.06, COL.frame, 0, 0);
+        b.bx(wd / 2, 0.1, 0, wd - 0.18, DOOR_H - 0.24, 0.02, 0xb7dcef, 0, 0);
+      } else {   // room door: white leaf with two panels
+        b.bx(wd / 2, 0, 0, wd - 0.02, DOOR_H - 0.02, 0.045, 0xf3f0ea, 0, 0.01);
+        b.bx(wd / 2, 1.15, 0, wd - 0.26, 0.75, 0.055, 0xe6e1d6, 0, 0); b.bx(wd / 2, 0.2, 0, wd - 0.26, 0.75, 0.055, 0xe6e1d6, 0, 0);
+      }
+      b.bx(wd - 0.12, 0.98, 0, 0.13, 0.03, 0.13, 0xc9a227, 0, 0); b.bx(wd - 0.07, 0.93, 0, 0.04, 0.12, 0.075, 0xc9a227, 0, 0);   // handles (both sides)
+    });
+    leaf.material = mat; leaf.castShadow = true; leaf.receiveShadow = true;
+    const pivot = new THREE.Group(); if (alongX) pivot.position.set(o.a, 0, tm); else pivot.position.set(tm, 0, o.a);
+    pivot.add(leaf); body.add(pivot);
+    const closedR = alongX ? 0 : -Math.PI / 2, openR = alongX ? (o.swing > 0 ? -Math.PI / 2 : Math.PI / 2) : (o.swing > 0 ? 0 : -Math.PI);
+    if (alongX) addBoxCol(o.a, t0, o.b, t1, WALL_H); else addBoxCol(t0, o.a, t1, o.b, WALL_H);
+    const d = { kind: o.glass ? 'balcony' : 'room', x: alongX ? (o.a + o.b) / 2 : tm, z: alongX ? tm : (o.a + o.b) / 2, open: o.start === 'open', pivot, closedR, openR, col: colliders[colliders.length - 1] };
+    d.t = d.open ? 1 : 0; d.col.h = d.open ? -1 : WALL_H; pivot.rotation.y = d.open ? openR : closedR;
+    doors.push(d);
   }
   const lin = lintels.map((o) => { const m = partMesh((b) => piece(b, o.a - 0.05, o.b + 0.05, 0, WALL_H - DOOR_H, color, 0, 9)); m.material = mat; m.position.y = DOOR_H; group.add(m); return m; });
   for (const [x0, z0, x1, z1] of cols) addBoxCol(x0, z0, x1, z1, WALL_H);
@@ -168,7 +199,8 @@ function furnish() {
   // hallway: coats, shoes by the front door
   put('coat_rack', 1.4, 2.7); put('shoes', 0.45, 3.85, E, 0); put('shoes', 0.45, 2.65, E, 1); put('shoes', 0.8, 3.95, E, 2);
   // kitchen: fridge + the counter under the north windows; the table along the wall to Petyus's room (the middle stays free)
-  put('fridge', 5.78, 0.34, 0);
+  // the wide fridge on the west wall, the counter beside it turning the corner (L): one unit on the west wall, four on the north
+  put('fridge_wide', 5.76, 1.5, E); put('kitchen_unit', 5.73, 0.5, E, 3);
   put('kitchen_unit', 6.6, 0.31, 0, 0); put('kitchen_unit', 7.6, 0.31, 0, 2); put('kitchen_unit', 8.6, 0.31, 0, 1); put('kitchen_unit', 9.6, 0.31, 0, 3);
   put('coffee_maker', 9.75, 0.22, 0, 0, { y: 0.93 });
   put('dining_table', 10.95, 1.95, E);
@@ -221,12 +253,51 @@ function buildShell() {
   for (const [x0, z0, x1, z1] of [[11.65, -1.95, XE + 0.05, -1.85], [11.65, -1.95, 11.75, -0.25], [XE - 0.05, -1.95, XE + 0.05, -0.25], [18.05, 4.25, 18.15, ZS + 0.1], [XE + TE, 4.25, 18.15, 4.35], [XE + TE, ZS, 18.15, ZS + 0.1]]) addBoxCol(x0, z0, x1, z1, 1.0);
 }
 
+// ---------------------------------------------------------------- light switches (E next to one) and the room lights
+// each switch: a plate on the wall at 1.05 m (n: the wall face it sits on), its room's light (a point light without shadows,
+// off in the morning) and a lamp under the ceiling (seen in the first-person view)
+const SWITCHES = [
+  { room: 'furdo', x: 1.95, z: 2.42, n: [0, 1] },     // outside the bathroom door, in the hallway
+  { room: 'wc', x: 3.85, z: 2.42, n: [0, 1] },        // outside the WC door
+  { room: 'eloter', x: 0, z: 2.6, n: [1, 0] },        // by the front door
+  { room: 'konyha', x: 5.9, z: 4.2, n: [0, -1] },     // the kitchen, by the hallway
+  { room: 'kisszoba', x: 11.72, z: 2.8, n: [1, 0] },  // inside Petyus's room, by the door
+  { room: 'szulok', x: 10.55, z: 4.32, n: [0, 1] },   // inside the parents' room, by the door
+];
+export const switches = [];
+const LIGHT_ON = 14;
+function buildSwitches() {
+  for (const sd of SWITCHES) {
+    const r = ROOMS.find((q) => q.id === sd.room), cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;
+    const alongX = sd.n[1] !== 0;   // the plate lies in a wall running along x
+    const plate = partMesh((b) => b.bx(0, -0.07, 0, alongX ? 0.09 : 0.016, 0.14, alongX ? 0.016 : 0.09, 0xf7f7f4, 0, 0));
+    plate.position.set(sd.x + sd.n[0] * 0.008, 1.05, sd.z + sd.n[1] * 0.008); homeRoot.add(plate);
+    const rocker = new THREE.Mesh(new THREE.BoxGeometry(alongX ? 0.05 : 0.02, 0.07, alongX ? 0.02 : 0.05), new THREE.MeshLambertMaterial({ color: 0xdedbd2 }));
+    rocker.position.set(sd.x + sd.n[0] * 0.02, 1.05, sd.z + sd.n[1] * 0.02); homeRoot.add(rocker);
+    const light = new THREE.PointLight(0xffd9a0, 0, 9, 2); light.position.set(cx, 2.35, cz); homeRoot.add(light);
+    const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.2, 0.14, 12), new THREE.MeshBasicMaterial({ color: 0xdedad2 }));
+    lamp.position.set(cx, WALL_H - 0.07, cz); ceiling.add(lamp);
+    switches.push({ ...sd, on: false, rocker, light, lamp, alongX, name: r.name });
+  }
+}
+export function toggleSwitch(sw) {
+  sw.on = !sw.on;
+  sw.light.intensity = sw.on ? LIGHT_ON : 0;
+  sw.lamp.material.color.set(sw.on ? 0xfff1c4 : 0xdedad2);
+  sw.rocker.material.color.set(sw.on ? 0xffc24d : 0xdedbd2);
+  if (sw.alongX) sw.rocker.rotation.x = sw.on ? -0.35 : 0; else sw.rocker.rotation.z = sw.on ? 0.35 : 0;
+}
+// doors that open: E toggles; the collider is off while open (h −1: collide() skips it)
+export function toggleDoor(d) { d.open = !d.open; d.col.h = d.open ? -1 : WALL_H; }
+
 // the ceiling: only in the first-person view (from above the flat is open); unlit – the hemisphere light would tint a downward face green
 export let ceiling = null;
 export function buildHome(outside) {
   scene.add(homeRoot);
-  ceiling = new THREE.Mesh(new THREE.PlaneGeometry(XE + 2 * TE, ZS + 2 * TE), new THREE.MeshBasicMaterial({ color: 0xe9e5dd, side: THREE.DoubleSide }));
-  ceiling.rotation.x = Math.PI / 2; ceiling.position.set(XE / 2, WALL_H, ZS / 2); ceiling.visible = false; ceiling.receiveShadow = false; homeRoot.add(ceiling);
+  ceiling = new THREE.Group(); ceiling.visible = false; homeRoot.add(ceiling);
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(XE + 2 * TE, ZS + 2 * TE), new THREE.MeshBasicMaterial({ color: 0xe9e5dd, side: THREE.DoubleSide }));
+  plane.rotation.x = Math.PI / 2; plane.position.set(XE / 2, WALL_H, ZS / 2); ceiling.add(plane);
+  buildSwitches();
   homeRoot.add(partMesh((b) => { for (const r of ROOMS) FLOORS[r.floor](b, r); }));
   for (const w of WALLS) buildWall(w);
   furnish(); if (outside) outside(); buildFurniture(); buildShell();
@@ -269,5 +340,6 @@ export function updateHome(dt, P, fps = false) {
     w.mat.opacity = see ? w.o : 1; w.mat.depthWrite = !see;
     w.glass.opacity = GLASS_OP * w.o;
   }
+  for (const d of doors) if (d.pivot) { d.t = damp(d.t, d.open ? 1 : 0, 7, dt); d.pivot.rotation.y = d.closedR + (d.openR - d.closedR) * d.t; }
   return curRoom;
 }

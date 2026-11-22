@@ -38,10 +38,10 @@ function block(b, x0, z0, x1, z1, y0, floors, col, opt = {}) {
       const bl = opt.blinds ? 0.22 : 0;   // the roller-blind box above the window (some blinds half down)
       if (alongX) {
         b.bx(cx, wy - 0.05, cz + out * 0.03, ww + 0.12, wh + 0.1, 0.08, C.frame, 0, 0); b.bx(cx, wy, cz + out * 0.05, ww, wh, 0.06, C.glass, 0, 0.03);
-        if (bl) { b.bx(cx, wy + wh + 0.05, cz + out * 0.06, ww + 0.12, bl, 0.1, C.blind, 0, 0); if ((cx * 7 + f) % 3 < 1) b.bx(cx, wy + wh * 0.45, cz + out * 0.08, ww, wh * 0.55, 0.03, 0x8a5a40, 0, 0.02); }
+        if (bl) { b.bx(cx, wy + wh + 0.05, cz + out * 0.06, ww + 0.12, bl, 0.1, C.blind, 0, 0); b.bx(cx, wy + wh * 0.5, cz + out * 0.08, ww, wh * 0.5, 0.03, 0x8a5a40, 0, 0.02); }   // blinds half down
       } else {
         b.bx(cx + out * 0.03, wy - 0.05, cz, 0.08, wh + 0.1, ww + 0.12, C.frame, 0, 0); b.bx(cx + out * 0.05, wy, cz, 0.06, wh, ww, C.glass, 0, 0.03);
-        if (bl) b.bx(cx + out * 0.06, wy + wh + 0.05, cz, 0.1, bl, ww + 0.12, C.blind, 0, 0);
+        if (bl) { b.bx(cx + out * 0.06, wy + wh + 0.05, cz, 0.1, bl, ww + 0.12, C.blind, 0, 0); b.bx(cx + out * 0.08, wy + wh * 0.5, cz, 0.03, wh * 0.5, ww, 0x8a5a40, 0, 0.02); }
       }
     };
     for (let x = x0 + step / 2 + 0.3; x < x1 - 0.6; x += step) { win(x, z0, true, -1); win(x, z1, true, 1); }
