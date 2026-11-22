@@ -4,19 +4,23 @@
 // Coordinates: as in home.js (the flat's inner NW corner is (0, 0)); the ground is y = 0.
 import { Actor, animLegs, makeCat, makeDog } from '../actors.js';
 import { makePerson } from '../rigs.js';
+import * as THREE from 'three';
 import { scene } from '../scene.js';
 import { G } from '../state.js';
 import { say } from '../ui.js';
 import { R, V3, clamp, dampAngle, pick } from '../util.js';
-import { partMesh } from '../world.js';
+import { partMesh, vcMat } from '../world.js';
 import { FY, put } from './home.js';
 
 // our block: the flat (x −0.25 … 15.85) + the stairwell and the neighbours' flat to the west; ground floor + 1st floor below
 const HB = { x0: -6.25, x1: 15.85, z0: -0.25, z1: 9.45 }, FLOOR = 3;
 const DOOR_X = -3.2;   // the entrance (south side, ground floor)
 const FENCE = { x0: -24, x1: 34, z0: -22, z1: 17 };
-const C = { facade: 0xe9dcb8, facade2: 0xdccb9f, plinth: 0x9b958b, band: 0xf4ecd6, glass: 0x5b7c99, frame: 0xf6f4ee, roofCut: 0xb7aea0,
-  grass: [0x7db556, 0x86bd5c, 0x78b052], asphalt: 0x5d6066, line: 0xf2f2f2, walk: 0xcfc8bb, path: 0xd9c7a3 };
+// the house after the photo: white render, a pinkish-brown plinth, white windows with brown roller-blind boxes,
+// a red tiled hipped roof with dormers and brick chimneys, a dark-framed glass entrance
+const C = { facade: 0xeeece6, facade2: 0xe6e3dc, plinth: 0xb49a8c, band: 0xf7f6f2, glass: 0x4d6a85, frame: 0xf8f7f3, blind: 0x7a4a32, roofCut: 0xb7aea0,
+  tile: [0xa3402e, 0x963a2a, 0xae4733], brick: 0xa9503a, doorFrame: 0x3b2f2a,
+  grass: [0x7db556, 0x86bd5c, 0x78b052], asphalt: 0x5d6066, line: 0xf2f2f2, walk: 0xcfc8bb, path: 0xd9c7a3, gravel: 0xb3ada2, gravel2: 0xa6a094, curb: 0xd6d2ca };
 
 // ---------------------------------------------------------------- buildings
 // a block with window rows on every side; skip(side, x) → no window there (the entrance)
@@ -31,8 +35,14 @@ function block(b, x0, z0, x1, z1, y0, floors, col, opt = {}) {
     const win = (cx, cz, alongX, out) => {
       if (opt.skip && opt.skip(cx, cz, f)) return;
       const ww = opt.winW || 1.1, wh = 1.3, wy = fy + 0.9;
-      if (alongX) { b.bx(cx, wy - 0.05, cz + out * 0.03, ww + 0.12, wh + 0.1, 0.08, C.frame, 0, 0); b.bx(cx, wy, cz + out * 0.05, ww, wh, 0.06, C.glass, 0, 0.03); }
-      else { b.bx(cx + out * 0.03, wy - 0.05, cz, 0.08, wh + 0.1, ww + 0.12, C.frame, 0, 0); b.bx(cx + out * 0.05, wy, cz, 0.06, wh, ww, C.glass, 0, 0.03); }
+      const bl = opt.blinds ? 0.22 : 0;   // the roller-blind box above the window (some blinds half down)
+      if (alongX) {
+        b.bx(cx, wy - 0.05, cz + out * 0.03, ww + 0.12, wh + 0.1, 0.08, C.frame, 0, 0); b.bx(cx, wy, cz + out * 0.05, ww, wh, 0.06, C.glass, 0, 0.03);
+        if (bl) { b.bx(cx, wy + wh + 0.05, cz + out * 0.06, ww + 0.12, bl, 0.1, C.blind, 0, 0); if ((cx * 7 + f) % 3 < 1) b.bx(cx, wy + wh * 0.45, cz + out * 0.08, ww, wh * 0.55, 0.03, 0x8a5a40, 0, 0.02); }
+      } else {
+        b.bx(cx + out * 0.03, wy - 0.05, cz, 0.08, wh + 0.1, ww + 0.12, C.frame, 0, 0); b.bx(cx + out * 0.05, wy, cz, 0.06, wh, ww, C.glass, 0, 0.03);
+        if (bl) b.bx(cx + out * 0.06, wy + wh + 0.05, cz, 0.1, bl, ww + 0.12, C.blind, 0, 0);
+      }
     };
     for (let x = x0 + step / 2 + 0.3; x < x1 - 0.6; x += step) { win(x, z0, true, -1); win(x, z1, true, 1); }
     for (let z = z0 + step / 2 + 0.3; z < z1 - 0.6; z += step) { win(x0, z, false, -1); win(x1, z, false, 1); }
@@ -41,9 +51,9 @@ function block(b, x0, z0, x1, z1, y0, floors, col, opt = {}) {
 }
 function buildHouse(b) {
   // ground floor + 1st floor under the flat and the stairwell part (no roof: the flat sits on it)
-  block(b, HB.x0, HB.z0, HB.x1, HB.z1, 0, 2, C.facade, { roof: false, skip: (x, z, f) => f === 0 && z === HB.z1 && Math.abs(x - DOOR_X) < 1.6 });
+  block(b, HB.x0, HB.z0, HB.x1, HB.z1, 0, 2, C.facade, { roof: false, blinds: true, skip: (x, z, f) => f === 0 && z === HB.z1 && Math.abs(x - DOOR_X) < 1.6 });
   // 2nd floor west of the flat: the stairwell and the neighbours' flat, cut open at the top like the rest of the floor
-  block(b, HB.x0, HB.z0, -0.25, HB.z1, FY, 1, C.facade2, { roof: false, step: 2.2 });
+  block(b, HB.x0, HB.z0, -0.25, HB.z1, FY, 1, C.facade2, { roof: false, step: 2.2, blinds: true });
   b.bx((HB.x0 - 0.25) / 2, FY + 2.6, (HB.z0 + HB.z1) / 2, -0.25 - HB.x0, 0.08, HB.z1 - HB.z0, C.roofCut, 0, 0);
   // stacked balconies below ours (1st floor): north and east
   const balc = (cx, cz, w, d, y, rails) => {
@@ -56,19 +66,53 @@ function buildHouse(b) {
   };
   balc(13.66, -1.075, 3.98, 1.65, FLOOR, [[11.7, -1.9, 15.6, -1.9], [11.7, -1.9, 11.7, -0.3], [15.6, -1.9, 15.6, -0.3]]);
   balc(16.975, 6.76, 2.25, 4.88, FLOOR, [[18.1, 4.3, 18.1, 9.25], [15.9, 4.3, 18.1, 4.3], [15.9, 9.25, 18.1, 9.25]]);
-  // the entrance: glass door, canopy, steps, the house number
-  b.bx(DOOR_X, 0, HB.z1 + 0.04, 1.5, 2.4, 0.1, C.frame, 0, 0); b.bx(DOOR_X, 0.05, HB.z1 + 0.1, 1.3, 2.25, 0.05, 0x7fa6c2, 0, 0);
+  // the entrance: a two-wing glass door in a dark frame with glass side panels, canopy, steps, the house number, a downpipe
+  b.bx(DOOR_X, 0, HB.z1 + 0.04, 2.6, 2.5, 0.1, C.doorFrame, 0, 0);
+  for (const [x, w] of [[-0.95, 0.55], [-0.33, 0.6], [0.33, 0.6], [0.95, 0.55]]) b.bx(DOOR_X + x, 0.08, HB.z1 + 0.1, w - 0.06, 2.3, 0.04, 0x5f7f99, 0, 0.02);
+  b.bx(DOOR_X - 0.06, 0.95, HB.z1 + 0.13, 0.04, 0.3, 0.04, 0xc9a227, 0, 0); b.bx(DOOR_X + 0.06, 0.95, HB.z1 + 0.13, 0.04, 0.3, 0.04, 0xc9a227, 0, 0);
+  for (const x of [HB.x0 + 0.15, 4.6, HB.x1 - 0.15]) b.bx(x, 0, HB.z1 + 0.1, 0.1, 9.0, 0.1, 0x8c8c8c, 0, 0);
   b.bx(DOOR_X, 2.6, HB.z1 + 0.7, 2.4, 0.15, 1.4, 0x6d6a66, 0, 0);
   for (let i = 0; i < 3; i++) b.bx(DOOR_X, 0, HB.z1 + 0.5 + i * 0.32, 2.2, 0.16 - i * 0.05, 0.36, 0xbdb6aa, 0, 0);
   b.bx(DOOR_X + 1.2, 2.0, HB.z1 + 0.06, 0.35, 0.3, 0.04, 0x2f5f9e, 0, 0); b.bx(DOOR_X + 1.2, 2.06, HB.z1 + 0.09, 0.12, 0.18, 0.02, 0xffffff, 0, 0);
 }
+// the roof (after the photo): red tiled, hipped (stepped tile courses), dormers on the long sides, brick chimneys, an aerial.
+// From close up it would hide the flat: it fades in only when zoomed out (updateOutside).
+const RY = FY + 2.6 + 0.35;   // the eaves, on top of the 2nd floor
+export let roof = null;
+function buildRoof() {
+  const mesh = partMesh((b) => {
+    const x0 = HB.x0 - 0.5, x1 = HB.x1 + 0.5, z0 = HB.z0 - 0.5, z1 = HB.z1 + 0.5, step = 0.42, rise = 0.32;
+    b.bx((HB.x0 + HB.x1) / 2, FY + 2.6, (HB.z0 + HB.z1) / 2, HB.x1 - HB.x0, 0.35, HB.z1 - HB.z0, C.facade, 0, 0);   // the wall top under the eaves
+    b.bx((x0 + x1) / 2, RY - 0.12, (z0 + z1) / 2, x1 - x0 + 0.1, 0.12, z1 - z0 + 0.1, 0x6e4a36, 0, 0);               // the eaves board
+    for (let n = 0; ; n++) {
+      const ix = n * step, w = x1 - x0 - 2 * ix, d = z1 - z0 - 2 * ix;
+      if (d < 0.5) { b.bx((x0 + x1) / 2, RY + n * rise, (z0 + z1) / 2, w, 0.2, 0.4, 0x7a2f22, 0, 0); break; }   // the ridge
+      b.bx((x0 + x1) / 2, RY + n * rise, (z0 + z1) / 2, w, rise, d, C.tile[n % 3], 0, 0.03);
+    }
+    // dormers: white front, small window, a red cap – three on the south side, three on the north side
+    for (const x of [-2.5, 4.8, 12.0]) for (const s of [1, -1]) {
+      const zf = s > 0 ? z1 - 1.4 : z0 + 1.4;
+      b.bx(x, RY + 0.3, zf, 1.6, 1.25, 1.4, C.facade, 0, 0);
+      b.bx(x, RY + 0.55, zf + s * 0.71, 1.0, 0.75, 0.04, C.glass, 0, 0); b.bx(x, RY + 0.5, zf + s * 0.72, 1.12, 0.06, 0.04, C.frame, 0, 0);
+      b.bx(x, RY + 1.5, zf, 1.9, 0.18, 1.7, C.tile[0], 0, 0); b.bx(x, RY + 1.68, zf - s * 0.1, 1.3, 0.16, 1.4, C.tile[1], 0, 0);
+    }
+    // chimneys and the aerial
+    for (const [x, z, h] of [[0.5, 3.0, 4.0], [6.5, 5.5, 3.6], [11.0, 3.8, 3.8]]) { b.bx(x, RY, z, 0.6, h, 0.6, C.brick, 0, 0.04); b.bx(x, RY + h, z, 0.75, 0.12, 0.75, 0x8d8d8d, 0, 0); }
+    b.bx(3.0, RY + 2.5, 4.6, 0.06, 3.2, 0.06, 0x9a9a9a, 0, 0);
+    for (let k = 0; k < 4; k++) b.bx(3.0, RY + 4.2 + k * 0.35, 4.6, 0.9 - k * 0.15, 0.04, 0.04, 0x9a9a9a, 0, 0);
+  });
+  mesh.material = vcMat.clone(); mesh.material.transparent = true; mesh.material.opacity = 0; mesh.visible = false;
+  roof = mesh; scene.add(mesh);
+}
+
 // the neighbouring blocks and the garage row (west)
 function buildNeighbours(b) {
   block(b, -12, -52, 30, -40, 0, 5, 0xd9c8a8, {});
   block(b, 46, -24, 58, 18, 0, 4, 0xcfd6cf, {});
   block(b, -22, 30, 12, 40, 0, 4, 0xe3cfc2, {});
   block(b, 24, 30, 50, 40, 0, 4, 0xd6d0bd, {});
-  block(b, -70, -14, -48, 14, 0, 5, 0xc9d1d9, {});
+  block(b, -70, -14, -48, 14, 0, 5, 0xe8977a, {});   // the orange one with green balconies (west, as on the photo)
+  for (let f = 1; f < 5; f++) b.bx(-47.6, f * FLOOR, 0, 0.8, 1.0, 26, 0x5fa86a, 0, 0.02);
   // garages: a row facing east, coloured metal doors, a flat roof
   const GC = [0x8a9aa8, 0x6f8f6f, 0xa8805e, 0x7b7fa6, 0xb05a4f, 0x8f8f8f, 0x5f7f99, 0xa69b6e, 0x6f6f6f];
   b.bx(-34, 0, -2, 6, 2.6, 27, 0xcac3b6, 0, 0.02); b.bx(-34, 2.6, -2, 6.3, 0.18, 27.3, 0x777068, 0, 0);
@@ -83,10 +127,11 @@ function buildGround(b) {
   b.bx(0, 0, 21, 190, 0.02, 5, C.asphalt, 0, 0.02);
   for (let x = -90; x < 95; x += 4) b.bx(x + 1, 0.02, 21, 2, 0.01, 0.15, C.line, 0, 0);
   b.bx(0, 0, 18, 190, 0.1, 1.2, C.walk, 0, 0.02); b.bx(0, 0, 24.1, 190, 0.1, 1.2, C.walk, 0, 0.02);
-  b.bx(-2, 0, 13.6, 30, 0.03, 6.0, C.asphalt, 0, 0.02);   // parking lot z 10.6 … 16.6
-  for (let k = 0; k <= 9; k++) b.bx(-15.5 + k * 3.0, 0.035, 12.2, 0.1, 0.01, 2.6, C.line, 0, 0);
+  // the parking lot in front of the house (z 10.6 … 16.6): gravelled concrete in patches, concrete curbs marking the bays
+  for (let x = -17; x < 13; x += 1.5) for (let z = 10.6; z < 16.6; z += 1.5) b.bx(x + 0.75, 0, z + 0.75, 1.5, 0.03, 1.5, pick([C.gravel, C.gravel2, 0xb9b3a8]), 0, 0.03);
+  for (let k = 0; k <= 9; k++) b.bx(-15.5 + k * 3.0, 0.03, 15.9, 0.25, 0.08, 1.0, C.curb, 0, 0.02);
   b.bx(-27.5, 0, -2, 5, 0.03, 30, C.asphalt, 0, 0.02);    // in front of the garages
-  b.bx(-22, 0, 13.6, 10, 0.03, 4.2, C.asphalt, 0, 0.02);  // drive: parking → garages
+  b.bx(-22, 0, 13.6, 10, 0.03, 4.2, C.gravel2, 0, 0.02);  // drive: parking → garages
   b.bx(DOOR_X, 0, 10.0, 1.6, 0.05, 1.3, C.path, 0, 0.03);
   b.bx(-16.5, 0, 17, 5, 0.035, 1.2, C.asphalt, 0, 0.02);  // the gate for cars
   b.bx(DOOR_X, 0, 17, 1.6, 0.05, 1.2, C.path, 0, 0.03);   // the gate for people
@@ -94,6 +139,26 @@ function buildGround(b) {
   b.bx((HB.x0 + HB.x1) / 2, 0, HB.z0 - 0.6, HB.x1 - HB.x0 + 2.4, 0.03, 1.2, C.path, 0, 0.04);
   b.bx(HB.x0 - 0.6, 0, (HB.z0 + HB.z1) / 2, 1.2, 0.03, HB.z1 - HB.z0, C.path, 0, 0.04);
   b.bx(HB.x1 + 0.6 + 2.3, 0, (HB.z0 + HB.z1) / 2, 1.2, 0.03, HB.z1 - HB.z0, C.path, 0, 0.04);
+}
+// the yard's details: sandbox, clothes dryer, bins, stepping stones to the trampoline, a garden table, flower edging
+function buildYard(b) {
+  // sandbox (2 × 2 m, wooden frame, a bucket and a spade)
+  const sx = -14, sz = -6;
+  for (const [x, z, w, d] of [[0, -1, 2.1, 0.12], [0, 1, 2.1, 0.12], [-1, 0, 0.12, 2.1], [1, 0, 0.12, 2.1]]) b.bx(sx + x, 0, sz + z, w, 0.28, d, 0xb5793f, 0, 0.04);
+  b.bx(sx, 0, sz, 1.9, 0.18, 1.9, 0xe8d39a, 0, 0.05); b.bx(sx + 0.4, 0.18, sz - 0.3, 0.6, 0.12, 0.5, 0xdcc488, 0, 0.05);
+  b.bx(sx - 0.4, 0.18, sz + 0.3, 0.18, 0.2, 0.18, 0xe63946, 0, 0); b.bx(sx - 0.1, 0.18, sz + 0.45, 0.06, 0.03, 0.4, 0x3a86ff, 0, 0);
+  // clothes dryer: two T-posts, four lines, washing on it
+  const cx = 20, cz = -12;
+  for (const x of [-2, 2]) { b.bx(cx + x, 0, cz, 0.08, 1.8, 0.08, 0x6b7378, 0, 0); b.bx(cx + x, 1.8, cz, 0.08, 0.08, 1.4, 0x6b7378, 0, 0); }
+  for (const z of [-0.6, -0.2, 0.2, 0.6]) b.bx(cx, 1.84, cz + z, 4, 0.015, 0.015, 0xdddddd, 0, 0);
+  const cl = [0xffffff, 0x4f8fd6, 0xe63946, 0xffca3a, 0x8ac926, 0xf3a9c0];
+  [[-1.4, -0.6, 0.5, 0.6], [-0.5, -0.6, 0.7, 0.4], [0.6, -0.2, 0.4, 0.5], [1.3, -0.2, 0.5, 0.7], [-1.0, 0.2, 0.9, 0.5], [0.4, 0.6, 0.5, 0.6]].forEach(([x, z, w, h], n) => b.bx(cx + x, 1.84 - h, cz + z, w, h, 0.03, cl[n], 0, 0.03));
+  // three black wheelie bins by the gate (as on the photo)
+  for (let n = 0; n < 3; n++) { const x = -7.4 + n * 0.75; b.bx(x, 0, 16.2, 0.6, 1.0, 0.7, 0x26282b, 0, 0.03); b.bx(x, 1.0, 16.17, 0.64, 0.06, 0.76, 0x1c1d20, 0, 0); b.bx(x, 0.12, 16.58, 0.5, 0.08, 0.06, 0x3a86ff, 0, 0); }
+  // stepping stones from the back of the house to the trampoline
+  for (let n = 0; n < 8; n++) b.bx(6 + Math.sin(n * 0.9) * 0.25, 0, -2.6 - n * 0.75, 0.5, 0.04, 0.4, pick([0xbdb6aa, 0xc8c2b6, 0xb0a99c]), n * 0.4, 0.04);
+  // a low brick edging round the flower beds along the house's east side
+  b.bx(19.4, 0, 2.0, 0.1, 0.15, 5.5, 0xa9503a, 0, 0.04);
 }
 // wire fence round the yard: posts, top and bottom wires, a wire mesh grid; two openings on the south side
 function buildFence(b) {
@@ -135,6 +200,15 @@ export function placeOutsideProps() {
   put('trampoline', 6, -9, 0, 0, g);
   put('bench', -6.2, 10.4, Math.PI, 0, g); put('bin', -0.8, 10.3, 0, 0, g);
   put('lamp', -9, 10.2, 0, 0, g); put('lamp', 6, 10.2, 0, 0, g);
+  // blossoming trees in front of the house (as on the photo), flower beds, hedges along the fence, a garden table, bike rack
+  put('birch', 12.8, 12.2, 0.4, 1, { ground: true, s: 1.15 }); put('oak', -10.2, 10.3, 1.1, 2, { ground: true, s: 0.85 }); put('birch', 17.5, 11.5, 2.0, 3, { ground: true, s: 1.05 });
+  put('bed_long', 19.0, 0.6, Math.PI / 2, 0, g); put('bed_long', 19.0, 3.6, Math.PI / 2, 1, g); put('bed_square', -8.5, -3.0, 0, 2, g); put('bed_small', 8.0, 10.05, 0, 0, g);
+  for (let x = -21; x <= 31; x += 3.4) put('bush', x, -21.2, x, Math.abs(Math.round(x)) % 4, { ground: true, s: 0.8 });
+  for (let z = -18; z <= 12; z += 3.6) { put('bush', 33.2, z, z, Math.abs(Math.round(z)) % 4, { ground: true, s: 0.8 }); put('bush', -23.2, z + 1.8, z, Math.abs(Math.round(z + 1)) % 4, { ground: true, s: 0.8 }); }
+  put('picnic', -16, 8, 0.3, 0, g); put('bikerack', -5.6, 10.1, 0, 0, g);
+  for (const [x, z] of [[-12, -15], [24, -3], [-19, -1]]) put('rock', x, z, x, Math.abs(x) % 4, g);
+  // grass tufts and wild flowers on the lawns (seeded, so the same every time)
+  for (let n = 0; n < 340; n++) { const a = AREAS[n % 3], x = R(a.x0, a.x1), z = R(a.z0, a.z1); put(n % 6 ? 'grass' : 'wildflower', x, z, n, n % 6, { ground: true, s: R(0.8, 1.3) }); }
 }
 
 // ---------------------------------------------------------------- life in the yard: children, dogs, cats
@@ -142,10 +216,11 @@ const AREAS = [{ x0: -22, x1: -9, z0: -20, z1: 15 }, { x0: -5, x1: 32, z0: -20, 
 const randIn = () => { const a = pick(AREAS); return new V3(R(a.x0, a.x1), 0, R(a.z0, a.z1)); };
 const TRAMP = { x: 6, z: -9 };
 const kids = [], pets = [];
-function buildLife() {
+// kids: only when they are out (not in the early morning – part 2 starts at 6:00)
+function buildLife(withKids = false) {
   // two on the trampoline, two playing tag on the lawn
   const looks = [{ shirt: 0xe63946, pants: 0x1d3557, hair: 0x5a3825 }, { shirt: 0xffca3a, pants: 0x3d405b, hair: 0xd8b45c, dress: true }, { shirt: 0x8ac926, pants: 0x264653, hair: 0x2b1d14 }, { shirt: 0xff70a6, pants: 0x6b705c, hair: 0x8a5a2b, longHair: true }];
-  looks.forEach((o, n) => {
+  if (withKids) looks.forEach((o, n) => {
     const a = new Actor(makePerson({ ...o, scale: 0.68, hat: false, glasses: false }), ['Bence', 'Lili', 'Marci', 'Zsófi'][n]); a.stride = 7;
     if (n < 2) { a.place(TRAMP.x + (n ? 0.6 : -0.6), TRAMP.z + (n ? 0.3 : -0.2), n ? -2 : 1); kids.push({ a, tramp: true, ph: n * 1.7 }); }
     else { const p = randIn(); a.place(p.x, p.z, 0); kids.push({ a, tramp: false, target: randIn(), wait: R(0, 2), it: n === 2 }); }
@@ -165,6 +240,8 @@ function keepOut(p) {
 }
 let chatT = 6;
 export function updateOutside(dt) {
+  // the roof: hidden from close up (the flat must be seen), fades in as the player zooms out (and never in the first-person view)
+  if (roof) { const o = G.fps ? 0 : clamp((G.zoom - 1.35) / 0.4, 0, 1); roof.material.opacity = o; roof.visible = o > 0.02; roof.material.depthWrite = o > 0.98; }
   for (const k of kids) {
     const a = k.a;
     if (k.tramp) {   // bouncing: up and down on the mat (0.6 m), arms up at the top
@@ -189,7 +266,7 @@ export function updateOutside(dt) {
   for (const p of pets) {
     const dx = p.target.x - p.pos.x, dz = p.target.z - p.pos.z, d = Math.hypot(dx, dz); let moving = 0;
     if (d > 0.3) { p.pos.x += dx / d * p.speed * dt; p.pos.z += dz / d * p.speed * dt; p.heading = dampAngle(p.heading, Math.atan2(dx, dz), 6, dt); moving = 1; }
-    else { p.wait -= dt; if (p.wait <= 0) { p.target = p.type === 'dog' && Math.random() < 0.4 ? kids[2 + (Math.random() < 0.5 ? 0 : 1)].a.pos.clone() : randIn(); p.wait = p.type === 'cat' ? R(4, 10) : R(1, 4); } }
+    else { p.wait -= dt; if (p.wait <= 0) { p.target = p.type === 'dog' && kids.length > 2 && Math.random() < 0.4 ? kids[2 + (Math.random() < 0.5 ? 0 : 1)].a.pos.clone() : randIn(); p.wait = p.type === 'cat' ? R(4, 10) : R(1, 4); } }
     p.pos.x = clamp(p.pos.x, FENCE.x0 + 0.5, FENCE.x1 - 0.5); p.pos.z = clamp(p.pos.z, FENCE.z0 + 0.5, FENCE.z1 - 0.5); keepOut(p.pos);
     p.phase += dt * p.speed * (p.type === 'cat' ? 9 : 7); animLegs(p.a, p.phase, moving);
     p.a.tail.rotation.z = Math.sin(G.clockT * (p.type === 'cat' ? 2 : 12)) * (p.type === 'cat' ? 0.25 : 0.5);
@@ -207,6 +284,7 @@ export function updateOutside(dt) {
 // the props go in with the flat's furniture (home.js buildHome(placeOutsideProps)); this builds the rest
 export function buildOutside() {
   scene.add(partMesh((b) => buildGround(b)));
-  scene.add(partMesh((b) => { buildHouse(b); buildNeighbours(b); buildFence(b); }));
+  scene.add(partMesh((b) => { buildHouse(b); buildNeighbours(b); buildFence(b); buildYard(b); }));
+  buildRoof();
   buildLife();
 }

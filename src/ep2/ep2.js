@@ -236,7 +236,8 @@ export function stepEp2(dt) {
     movePetyus(dt);
     interactHome();
     updateParents(dt); updateOutside(dt);
-    const r = updateHome(dt, G.petike.pos, fp.on);
+    // walls solid in the first-person view and when zoomed far out (the roof is on then: the house looks whole)
+    const r = updateHome(dt, G.petike.pos, fp.on || G.zoom > 1.55);
     if (r !== ep2.room) {
       ep2.room = r; $('e2Room').textContent = r ? r.name : '';
       const l = r && ROOM_LINES[r.id];
