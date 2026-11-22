@@ -30,6 +30,7 @@ function rigFromSkinned(gltf, cfg) {
   rig.armBones = [bone('RightArm'), bone('LeftArm')]; rig.foreBones = [bone('RightForeArm'), bone('LeftForeArm')];
   rig.handBones = [bone('RightHand'), bone('LeftHand')];
   rig.armBase = [1.5, -1.5];                      // T-pose → arms down (slightly away from the body)
+  liftShoulders(sm, rig, bone('Neck'));
   rig.sh = [new THREE.Object3D(), new THREE.Object3D()];
   rig.elbow = [0, 0];                              // optional elbow bend (radians, forward)
   rig.apply = () => {
@@ -66,6 +67,68 @@ function rigidArms(sm) {
   }
   si.needsUpdate = true; sw.needsUpdate = true;
   if (g !== sm.geometry) { sm.geometry.dispose(); sm.geometry = g; }
+  capArms(sm, arm, names);
+}
+// The voxel shell is open where an arm meets the body (those faces were inside the T-pose model). With the arm down, the
+// open end shows: you can look into the hollow arm from above, and into the body's side. Two caps per side close them:
+// one on the arm's end (moves with the arm), one on the body's side (moves with the chest), each in its own colour.
+function capArms(sm, arm, names) {
+  const g = sm.geometry, P = g.attributes.position, C = g.attributes.color, si = g.attributes.skinIndex;
+  const caps = [];
+  for (const side of [1, -1]) {
+    // the arm's root ring: the innermost arm vertices on this side; the cross-section and colour around it
+    let ring = 1e9, armBone = -1;
+    for (let i = 0; i < P.count; i++) { const x = P.getX(i) * side; if (x > 0.05 && arm.has(si.getX(i)) && /(Left|Right)Arm$/.test(names[si.getX(i)]) && x < ring) { ring = x; armBone = si.getX(i); } }
+    if (armBone < 0) continue;
+    let y0 = 1e9, y1 = -1e9, z0 = 1e9, z1 = -1e9, ac = [0, 0, 0], an = 0, bodyBone = -1, bc = [0, 0, 0], bn = 0;
+    for (let i = 0; i < P.count; i++) {
+      const x = P.getX(i) * side, b = si.getX(i);
+      if (b === armBone && x < ring + 0.06) { y0 = Math.min(y0, P.getY(i)); y1 = Math.max(y1, P.getY(i)); z0 = Math.min(z0, P.getZ(i)); z1 = Math.max(z1, P.getZ(i)); if (C) { ac[0] += C.getX(i); ac[1] += C.getY(i); ac[2] += C.getZ(i); } an++; }
+      else if (!arm.has(b) && Math.abs(x - ring) < 0.03) { bodyBone = b; if (C) { bc[0] += C.getX(i); bc[1] += C.getY(i); bc[2] += C.getZ(i); } bn++; }
+    }
+    if (!an) continue;
+    // the winding must agree with the normal (this order faces +x): a reversed one would be lit from below (greenish)
+    const quad = (x, nx, bone, col) => { const v = [[x, y0, z0], [x, y1, z0], [x, y1, z1], [x, y0, z0], [x, y1, z1], [x, y0, z1]]; caps.push({ v: nx > 0 ? v : v.reverse(), n: [nx, 0, 0], bone, col }); };
+    quad(side * (ring + 0.006), -side, armBone, ac.map((c) => c / an));
+    if (bodyBone >= 0) quad(side * (ring - 0.006), side, bodyBone, bn ? bc.map((c) => c / bn) : ac.map((c) => c / an));
+  }
+  if (!caps.length) return;
+  // append the cap triangles to every attribute (unknown ones get zeros)
+  const add = caps.length * 6, n0 = P.count;
+  for (const name of Object.keys(g.attributes)) {
+    const a = g.attributes[name], arr = new a.array.constructor((n0 + add) * a.itemSize); arr.set(a.array);
+    const na = new THREE.BufferAttribute(arr, a.itemSize, a.normalized);
+    let k = n0;
+    for (const c of caps) for (const v of c.v) {
+      if (name === 'position') na.setXYZ(k, v[0], v[1], v[2]);
+      else if (name === 'normal') na.setXYZ(k, c.n[0], c.n[1], c.n[2]);
+      else if (name === 'color') { if (a.itemSize === 4) na.setXYZW(k, c.col[0], c.col[1], c.col[2], 1); else na.setXYZ(k, c.col[0], c.col[1], c.col[2]); }
+      else if (name === 'skinIndex') na.setXYZW(k, c.bone, 0, 0, 0);
+      else if (name === 'skinWeight') na.setXYZW(k, 1, 0, 0, 0);
+      k++;
+    }
+    g.setAttribute(name, na);
+  }
+  g.computeBoundingSphere();
+}
+// Some models (Petya) have the arm's pivot well below the shoulder line: hanging down, the arm's top is ~12 cm under the top
+// of the shoulders, so it looks (and swings) as if it came out of the chest. The arm bone is raised until the hanging arm's
+// top meets the shoulder line (just under the neck); a model that already fits (Angi) is left alone.
+function liftShoulders(sm, rig, neck) {
+  sm.updateMatrixWorld(true);
+  const toMesh = (b) => new THREE.Vector3().setFromMatrixPosition(sm.skeleton.boneInverses[sm.skeleton.bones.indexOf(b)].clone().invert());
+  const neckY = toMesh(neck).y, P = sm.geometry.attributes.position, si = sm.geometry.attributes.skinIndex;
+  for (const ab of rig.armBones) {
+    const a = toMesh(ab), side = Math.sign(a.x), bi = sm.skeleton.bones.indexOf(ab);
+    let ring = 1e9; for (let i = 0; i < P.count; i++) if (si.getX(i) === bi) ring = Math.min(ring, P.getX(i) * side);
+    const top = a.y + (a.x * side - ring);          // the hanging arm's top: pivot + the stub between the ring and the pivot
+    const dy = neckY - 0.03 - top;
+    if (dy < 0.02) continue;
+    const w = new THREE.Vector3(); ab.getWorldPosition(w);
+    const up = sm.localToWorld(new THREE.Vector3(0, dy, 0)).sub(sm.localToWorld(new THREE.Vector3()));
+    ab.position.copy(ab.parent.worldToLocal(w.add(up)));
+    ab.updateMatrixWorld(true);
+  }
 }
 export function rigFromGLTF(gltf, cfg) {
   let isSkinned = false; gltf.scene.traverse((o) => { if (o.isSkinnedMesh) isSkinned = true; });
