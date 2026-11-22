@@ -154,22 +154,61 @@ function bathSink(seed) {   // vanity unit + basin + mirror on the wall (back at
   bx(g, 0.15, 0.88, -0.2, 0.21, 1.0, -0.14, 0x5fae6a); bx(g, 0.17, 1.0, -0.18, 0.19, 1.08, -0.16, 0xffc24d);   // cup + toothbrush
   return g;
 }
-function toilet(seed) {   // tank at −z; variant 2: without the seat (the game adds a seat that flips up and down)
-  const g = grid(seed);
-  bx(g, -0.16, 0, -0.12, 0.16, 0.38, 0.28, C.white);
-  hole(g, -0.1, 0.25, -0.06, 0.1, 0.38, 0.22); bx(g, -0.1, 0.25, -0.06, 0.1, 0.27, 0.22, 0x9fd0ea);   // the bowl
-  if (seed === 1) bx(g, -0.19, 0.38, -0.12, 0.19, 0.42, 0.32, (i, j, k) => (Math.abs(i) < 2 && k > -1 && k < 4 ? undefined : C.white2));
-  bx(g, -0.21, 0.35, -0.34, 0.21, 0.8, -0.14, C.white);
-  bx(g, -0.19, 0.8, -0.33, 0.19, 1.15, -0.29, C.white2);   // the lid, up against the tank
-  bx(g, -0.05, 0.8, -0.27, 0.05, 0.82, -0.2, C.chrome);
+// ---------------------------------------------------------------- the WC (2.5 cm voxels) and its two hinged parts
+// shape in metres (the bowl's rim is an ellipse; the seat and the lid are cut to the same ellipse, so they sit exactly on it);
+// the game puts the seat and the lid on separately (toiletSeatGeometry / toiletLidGeometry) and flips them on TOILET.hinge.
+const TS = 0.025;
+export const TOILET = { rim: 0.40, cz: 0.1, rx: 0.18, rz: 0.22, hx: 0.11, hz: 0.15, hinge: { y: 0.405, z: -0.08 } };
+// fill every voxel whose centre (x, y, z in metres) the function gives a colour to
+function fill(g, s, x0, x1, y0, y1, z0, z1, fn) {
+  for (let i = Math.floor(x0 / s); i <= Math.ceil(x1 / s); i++) for (let j = Math.floor(y0 / s); j <= Math.ceil(y1 / s); j++) for (let k = Math.floor(z0 / s); k <= Math.ceil(z1 / s); k++) {
+    const c = fn(i * s, (j + 0.5) * s, k * s); if (c !== undefined) g.set(i, j, k, c);
+  }
+}
+const ell = (x, z, cz, rx, rz) => (x / rx) ** 2 + ((z - cz) / rz) ** 2;
+function toilet(seed) {   // tank at −z; variant 1: with the seat and the lid down (catalogue), variant 2: without them (the game)
+  const g = new VoxelGrid(TS, seed), T = TOILET, W = 0xf7f7f4, W2 = 0xe9ebee, SH = 0xdfe3e6;
+  // the bowl: a pedestal widening into the rim (an ellipse), hollow, water at the bottom
+  fill(g, TS, -0.22, 0.22, 0, T.rim, -0.16, 0.34, (x, y, z) => {
+    const t = Math.min(1, y / 0.3), rx = 0.1 + (T.rx - 0.1) * Math.sqrt(t), rz = 0.13 + (T.rz - 0.13) * Math.sqrt(t), cz = 0.06 + (T.cz - 0.06) * t;
+    const e = ell(x, z, cz, rx, rz);
+    if (e > 1) return undefined;
+    if (y > 0.2 && ell(x, z, T.cz + 0.01, T.hx, T.hz) < 1) return y < 0.24 ? 0x9fd0ea : undefined;   // the hole (water below)
+    return y > T.rim - TS ? W : (y < 0.05 ? SH : W);
+  });
+  // the back of the bowl up to the tank, the tank (rounded top edge), its lid and the two-part flush button
+  fill(g, TS, -0.13, 0.13, 0.25, T.rim, -0.16, -0.08, () => W);
+  fill(g, TS, -0.21, 0.21, 0.42, 0.82, -0.34, -0.14, (x, y, z) => (y > 0.78 && (Math.abs(x) > 0.19 || z < -0.32 || z > -0.16) ? undefined : W));
+  fill(g, TS, -0.22, 0.22, 0.8, 0.84, -0.35, -0.13, (x, y, z) => (Math.abs(x) > 0.2 && (z < -0.33 || z > -0.15) ? undefined : W2));
+  fill(g, TS, -0.06, 0.06, 0.84, 0.87, -0.27, -0.21, (x) => (Math.abs(x) < 0.01 ? 0xa9b0b7 : x < 0 ? 0xd9dee3 : 0xc4cbd2));
+  // the hinges at the back of the rim
+  for (const hx of [-0.1, 0.1]) fill(g, TS, hx - 0.02, hx + 0.02, T.rim, T.rim + 0.03, -0.1, -0.06, () => 0xd9dee3);
+  if (seed === 1) { addSeat(g, T.rim, 0); addLid(g, T.rim + TS, 0); }
   return g;
 }
-function toiletPaper(seed) {   // wall holder with a roll (back at −z on the wall) + two spare rolls on a little shelf above
-  const g = grid(seed);
-  bx(g, -0.08, 0.7, -0.03, 0.08, 0.74, 0.0, C.chrome); bx(g, -0.08, 0.6, -0.03, -0.06, 0.74, 0.12, C.chrome); bx(g, 0.06, 0.6, -0.03, 0.08, 0.74, 0.12, C.chrome);
-  bx(g, -0.06, 0.6, 0.0, 0.06, 0.72, 0.12, 0xf8f8f4); bx(g, -0.02, 0.57, 0.1, 0.02, 0.62, 0.13, 0xf8f8f4);   // the roll and its loose end
-  bx(g, -0.14, 1.05, -0.03, 0.14, 1.07, 0.1, C.white2);
-  for (const x of [-0.07, 0.07]) bx(g, x - 0.055, 1.07, 0.0, x + 0.055, 1.18, 0.1, 0xf8f8f4);
+// the seat (a ring) and the lid (a full ellipse, slightly domed), in the hinge's frame when placed separately
+function addSeat(g, y0, dz) {
+  const T = TOILET;
+  fill(g, TS, -0.2, 0.2, y0, y0 + TS * 0.9, -0.14 + dz, 0.34 + dz, (x, y, z) => { const e = ell(x, z - dz, T.cz, T.rx, T.rz); return e <= 1 && ell(x, z - dz, T.cz + 0.01, T.hx, T.hz) > 1 ? 0xf4f4f0 : undefined; });
+}
+function addLid(g, y0, dz) {
+  const T = TOILET;
+  fill(g, TS, -0.2, 0.2, y0, y0 + TS * 1.9, -0.14 + dz, 0.34 + dz, (x, y, z) => { const e = ell(x, z - dz, T.cz, T.rx - 0.005, T.rz - 0.005); return e <= 1 && (y < y0 + TS || e < 0.45) ? 0xfbfbf8 : undefined; });
+}
+export function toiletSeatGeometry() { const g = new VoxelGrid(TS, 7); addSeat(g, 0, -TOILET.hinge.z); return g.toGeometry(0.02); }
+export function toiletLidGeometry() { const g = new VoxelGrid(TS, 8); addLid(g, TS, -TOILET.hinge.z); return g.toGeometry(0.02); }
+
+function toiletPaper(seed) {   // 1.25 cm voxels: wall plate + arm, a roll with its cardboard core and a loose sheet; a shelf with two spare rolls
+  const s = 0.0125, g = new VoxelGrid(s, seed), CH = 0xd9dee3, CH2 = 0xb8bfc6, P = 0xfafaf6, P2 = 0xeeeee8, CORE = 0xb8915e;
+  fill(g, s, -0.09, 0.09, 0.64, 0.74, -0.012, 0.0, (x, y) => (Math.abs(x) > 0.08 && (y < 0.65 || y > 0.73) ? undefined : CH2));   // the wall plate
+  fill(g, s, 0.07, 0.085, 0.68, 0.7, 0.0, 0.08, () => CH);                                                                       // the arm
+  fill(g, s, -0.065, 0.07, 0.68, 0.7, 0.06, 0.08, (x) => (x > -0.06 ? CH : undefined));
+  // the roll: a cylinder along x (radius 5.5 cm) round the arm, the core showing at the end
+  fill(g, s, -0.06, 0.06, 0.63, 0.75, 0.015, 0.125, (x, y, z) => { const d = Math.hypot(y - 0.69, z - 0.07); if (d > 0.055) return undefined; if (d < 0.02 && Math.abs(x) > 0.05) return d < 0.012 ? undefined : CORE; return Math.abs(x) > 0.055 ? P2 : P; });
+  fill(g, s, -0.055, 0.055, 0.56, 0.69, 0.12, 0.13, (x, y) => (Math.abs(y - 0.6) < 0.004 ? P2 : P));   // the loose sheet (perforation line)
+  // a little shelf and two spare rolls standing on it
+  fill(g, s, -0.15, 0.15, 1.04, 1.06, -0.012, 0.11, () => 0xe9e5dc);
+  for (const cx of [-0.075, 0.075]) fill(g, s, cx - 0.06, cx + 0.06, 1.06, 1.17, -0.01, 0.11, (x, y, z) => { const d = Math.hypot(x - cx, z - 0.05); if (d > 0.055) return undefined; if (d < 0.02 && y > 1.15) return d < 0.012 ? undefined : CORE; return y > 1.155 ? P2 : P; });
   return g;
 }
 function plunger(seed) {   // WC pumpa: red rubber cup, wooden handle, standing in its holder
@@ -407,8 +446,8 @@ export const HOME_CATALOG = [
   { id: 'bath_sink', name: 'Mosdó tükörrel', cat: 'Lakás', variants: 1, build: bathSink, collider: { hx: 0.33, hz: 0.24, h: 0.9 }, desc: 'Mosdószekrény, csap, fogmosó pohár, tükör a falon.', use: 'Fürdőszoba (reggeli fogmosás)' },
   { id: 'washing_machine', name: 'Mosógép', cat: 'Lakás', variants: 1, build: washingMachine, collider: { hx: 0.3, hz: 0.3, h: 0.9 }, desc: 'Elöltöltős mosógép kerek üvegajtóval és kezelőpanellel.', use: 'Fürdőszoba' },
   { id: 'shelf', name: 'Polc', cat: 'Lakás', variants: 1, build: shelf, collider: { hx: 0.4, hz: 0.18, h: 1.4 }, desc: 'Álló fürdőszobapolc törölközőkkel, flakonokkal és szennyeskosárral.', use: 'Fürdőszoba' },
-  { id: 'toilet', name: 'WC', cat: 'Lakás', variants: 2, build: toilet, collider: { hx: 0.2, hz: 0.33, h: 0.8 }, desc: 'Álló WC tartállyal, öblítőgombbal, felhajtott fedéllel; a 2. változat ülőke nélkül (a játékban külön, fel- és lehajtható ülőke kerül rá).', use: 'WC' },
-  { id: 'toilet_paper', name: 'WC-papír-tartó', cat: 'Lakás', variants: 1, build: toiletPaper, collider: null, desc: 'Falra szerelt tartó tekerccsel, fölötte kis polc két tartalék tekerccsel.', use: 'WC' },
+  { id: 'toilet', name: 'WC', cat: 'Lakás', variants: 2, build: toilet, collider: { hx: 0.2, hz: 0.33, h: 0.8 }, desc: 'Finomabb (2,5 cm-es) voxelekből: ívelt csésze vízzel, tartály kétrészes öblítőgombbal, zsanérok. Az 1. változaton lehajtott ülőke és fedél; a 2. változat nélkülük – a játékban az ülőke és a fedél külön, fel- és lehajtható (E).', use: 'WC' },
+  { id: 'toilet_paper', name: 'WC-papír-tartó', cat: 'Lakás', variants: 1, build: toiletPaper, collider: null, desc: 'Finom (1,25 cm-es) voxelekből: fali tartó, tekercs papírhengerrel és lelógó, perforált lappal; fölötte polc két álló tartalék tekerccsel.', use: 'WC' },
   { id: 'plunger', name: 'WC-pumpa', cat: 'Lakás', variants: 1, build: plunger, collider: null, desc: 'Piros gumifejű pumpa fa nyéllel, a tartójában.', use: 'WC, a sarokban' },
   { id: 'wall_coat_hanger', name: 'Fali fogas', cat: 'Lakás', variants: 1, build: wallCoatHanger, collider: null, desc: 'Fali fogasléc kalappolccal, rajta öt kabát, sál, kalap és sapka.', use: 'Előszoba' },
   { id: 'shoe_cabinet', name: 'Cipősszekrény', cat: 'Lakás', variants: 1, build: shoeCabinet, collider: { hx: 0.5, hz: 0.18, h: 0.95 }, desc: 'Két billenőajtós cipősszekrény; a tetején kulcsok, pénztárca, tálca, kis növény.', use: 'Előszoba' },

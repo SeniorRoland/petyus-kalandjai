@@ -14,7 +14,7 @@ import { say, toast, updateBubbles } from '../ui.js';
 import { $, V3, clamp, damp, dampAngle, pick } from '../util.js';
 import { INSTANCES, collide, colliders, setGround } from '../world.js';
 import { setPrompt } from '../activities/drinking.js';
-import { FY, SPOTS, buildHome, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, toggleToiletSeat, toiletSeat, updateHome, wallView } from './home.js';
+import { FY, SPOTS, buildHome, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
 import { tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
 import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, wheek } from './karcsi.js';
@@ -39,7 +39,7 @@ const SAVE_KEY = 'petyus.r2.allapot';
 export function ep2HasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
 function saveEp2() {
   const p = G.petike, st = { v: 1, day: ep2.day, min: ep2.min, x: p.pos.x, z: p.pos.z, h: p.heading,
-    doors: doors.filter((d) => d.pivot).map((d) => d.open), seat: toiletSeat.up, lights: switches.map((s) => s.on), walls: wallView.mode, cage: cageDoorOpen() };
+    doors: doors.filter((d) => d.pivot).map((d) => d.open), seat: toiletSeat.state, lights: switches.map((s) => s.on), walls: wallView.mode, cage: cageDoorOpen() };
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(st)); } catch (e) { /* storage blocked */ }
 }
 function loadEp2() {
@@ -51,7 +51,7 @@ function loadEp2() {
   switches.forEach((s, i) => { if (typeof st.lights?.[i] === 'boolean' && s.on !== st.lights[i]) toggleSwitch(s); });
   if (st.walls === 'fade' || st.walls === 'sink') wallView.mode = st.walls;
   if (typeof st.cage === 'boolean' && st.cage !== cageDoorOpen()) toggleCageDoor();
-  if (typeof st.seat === 'boolean') { toiletSeat.up = st.seat; toiletSeat.t = st.seat ? 1 : 0; }
+  if (typeof st.seat === 'number') { toiletSeat.state = clamp(st.seat | 0, 0, 2); toiletSeat.lidT = toiletSeat.state >= 1 ? 1 : 0; toiletSeat.seatT = toiletSeat.state === 2 ? 1 : 0; }
   return true;
 }
 window.addEventListener('pagehide', () => { if (G.episode === 2 && G.mode === 'play') saveEp2(); });
@@ -222,7 +222,7 @@ function interactHome() {
   { const r = Math.hypot(p.x - toiletSeat.x, p.z - (toiletSeat.z + 0.6)); if (r < 0.75 && r < bd) { bd = r; best = { seat: true }; } }
   let txt = '';
   if (best && best.seat) {
-    txt = toiletSeat.up ? 'E – ülőke lehajtása' : 'E – ülőke felhajtása';
+    txt = toiletSeatLabel();
     if (G.usePressed) { toggleToiletSeat(); sClick(); }
   } else if (best && best.cage) {
     txt = cageDoorOpen() ? 'E – kalitka becsukása' : 'E – kalitka kinyitása';

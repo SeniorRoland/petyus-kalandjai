@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { CAM_OFF, scene } from '../scene.js';
 import { damp } from '../util.js';
 import { CATALOG, getGeometry } from '../voxels.js';
+import { TOILET, toiletLidGeometry, toiletSeatGeometry } from '../voxels-home.js';
 import { INSTANCES, addBoxCol, addCircleCol, colliders, partMesh, vcMat } from '../world.js';
 
 export const WALL_H = 2.6;
@@ -347,19 +348,16 @@ function buildShower() {
   }));
 }
 
-// ---------------------------------------------------------------- the WC seat: E next to the toilet flips it up / down
-export const toiletSeat = { x: 4.5, z: 0.37, up: false, t: 0, pivot: null };
+// ---------------------------------------------------------------- the WC seat and lid: E next to the toilet steps through
+// closed (both down) → lid up → seat up too → closed. Both are cut to the bowl's rim (voxels-home.js TOILET) and turn on its hinge.
+export const toiletSeat = { x: 4.5, z: 0.37, state: 0, seatT: 0, lidT: 0, seat: null, lid: null };
 function buildToiletSeat() {
-  const pv = new THREE.Group(); pv.position.set(toiletSeat.x, 0.42, toiletSeat.z - 0.13); homeRoot.add(pv);
-  pv.add(partMesh((b) => {   // a ring round the bowl (hinged at its back edge), in the pivot's frame: z 0 … 0.45
-    const c = 0xf7f7f4;
-    b.bx(0, -0.04, 0.05, 0.38, 0.04, 0.1, c, 0, 0); b.bx(0, -0.04, 0.4, 0.3, 0.04, 0.1, c, 0, 0);
-    b.bx(-0.14, -0.04, 0.22, 0.1, 0.04, 0.3, c, 0, 0); b.bx(0.14, -0.04, 0.22, 0.1, 0.04, 0.3, c, 0, 0);
-    b.bx(-0.12, -0.03, 0.0, 0.05, 0.03, 0.04, 0xd9dee3, 0, 0); b.bx(0.12, -0.03, 0.0, 0.05, 0.03, 0.04, 0xd9dee3, 0, 0);   // hinges
-  }));
-  toiletSeat.pivot = pv;
+  const mk = (geo) => { const m = new THREE.Mesh(geo, vcMat); m.castShadow = true; m.receiveShadow = true;
+    const pv = new THREE.Group(); pv.position.set(toiletSeat.x, TOILET.hinge.y - 0.005, toiletSeat.z + TOILET.hinge.z); pv.add(m); homeRoot.add(pv); return pv; };
+  toiletSeat.seat = mk(toiletSeatGeometry()); toiletSeat.lid = mk(toiletLidGeometry());
 }
-export function toggleToiletSeat() { toiletSeat.up = !toiletSeat.up; }
+export function toggleToiletSeat() { toiletSeat.state = (toiletSeat.state + 1) % 3; }
+export const toiletSeatLabel = () => ['E – WC-fedél felnyitása', 'E – ülőke felhajtása', 'E – ülőke és fedél lehajtása'][toiletSeat.state];
 
 // the ceiling: only in the first-person view (from above the flat is open); unlit – the hemisphere light would tint a downward face green
 export let ceiling = null;
@@ -414,7 +412,10 @@ export function updateHome(dt, P, fps = false) {
     if (w.extras) for (const m of w.extras) m.opacity = w.o;   // the pictures on it fade with the wall
     if (w.pics) for (const g of w.pics) g.visible = w.s > 0.9;   // a sunk wall: its pictures are put away (not squashed)
   }
-  if (toiletSeat.pivot) { toiletSeat.t = damp(toiletSeat.t, toiletSeat.up ? 1 : 0, 8, dt); toiletSeat.pivot.rotation.x = -toiletSeat.t * Math.PI * 0.47; }
+  if (toiletSeat.seat) {   // up: leaning back against the tank (the lid behind the seat)
+    toiletSeat.lidT = damp(toiletSeat.lidT, toiletSeat.state >= 1 ? 1 : 0, 8, dt); toiletSeat.seatT = damp(toiletSeat.seatT, toiletSeat.state === 2 ? 1 : 0, 8, dt);
+    toiletSeat.lid.rotation.x = -toiletSeat.lidT * Math.PI * 0.49; toiletSeat.seat.rotation.x = -toiletSeat.seatT * Math.PI * 0.46;
+  }
   for (const d of doors) if (d.pivot) { d.t = damp(d.t, d.open ? 1 : 0, 7, dt); d.pivot.rotation.y = d.closedR + (d.openR - d.closedR) * d.t; }
   return curRoom;
 }
