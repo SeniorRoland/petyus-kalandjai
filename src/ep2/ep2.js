@@ -11,7 +11,7 @@ import { turnView, updateViewTurn, viewTurn } from '../viewturn.js';
 import { EPISODES, G, SERIES, ball, rigs, roller } from '../state.js';
 import { CAM_OFF, SUN_OFF, camTarget, camera, renderer, scene, sun, view as screen } from '../scene.js';
 import { say, toast, updateBubbles } from '../ui.js';
-import { $, V3, clamp, damp, dampAngle, pick } from '../util.js';
+import { $, V3, clamp, damp, dampAngle, lerp, pick } from '../util.js';
 import { INSTANCES, collide, colliders, setGround } from '../world.js';
 import { setPrompt } from '../activities/drinking.js';
 import { FY, SPOTS, buildHome, lightPool, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, flushToilet, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
@@ -198,9 +198,13 @@ function movePetyus(dt) {
     if (moveKey && a.sit > 0.95) seating.on = false;
     else {
       a.seatH = seating.seatH; a.seatBase = FY; a.sitTarget = 1;
-      a.pos.x = damp(a.pos.x, seating.x, 10, dt); a.pos.z = damp(a.pos.z, seating.z - 0.05, 10, dt);
+      a.pos.x = damp(a.pos.x, seating.x, 10, dt); a.pos.z = damp(a.pos.z, seating.z + 0.06, 10, dt);   // a little forward: a child's legs reach out over the edge
       if (!fp.on) a.heading = a.targetHeading = dampAngle(a.heading, seating.h, 10, dt);
-      a.animate(dt, false, 0); a.sync(); pvel.set(0, 0, 0);
+      a.animate(dt, false, 0);
+      // in the armchair the legs are stretched out in front, slightly raised (knees straight – the feet point up, over the seat's edge)
+      const r = a.rig, k = a.sit * a.sit * (3 - 2 * a.sit);
+      for (let i = 0; i < 2; i++) { r.hip[i].rotation.x = lerp(r.hip[i].rotation.x, -1.62, k); r.knee[i].rotation.x = lerp(r.knee[i].rotation.x, 0.04, k); if (r.foot) r.foot[i].rotation.x = lerp(r.foot[i].rotation.x, 0, k); }
+      a.sync(); pvel.set(0, 0, 0);
       return;
     }
   }
