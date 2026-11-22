@@ -336,7 +336,8 @@ function buildArmchair(x, z, rot) {
     B(g, s, -0.3, 0.3, 0.38, 0.46, -0.28, 0.36, (px, py, pz) => (Math.abs(px) < 0.015 ? F2 : 0x7fa086));                      // the seat cushion
     B(g, s, -0.42, 0.42, 0.38, 0.95, -0.42, -0.28, (px, py) => (py > 0.9 && Math.abs(px) > 0.36 ? undefined : F2));         // the back
     B(g, s, -0.3, 0.3, 0.46, 0.85, -0.28, -0.2, 0x7fa086);                                                                   // the back cushion
-    for (const sd of [-1, 1]) B(g, s, sd * 0.36, sd * 0.42, 0.38, 0.62, -0.28, 0.38, (px, py, pz) => (py > 0.58 && pz > 0.34 ? undefined : F2));   // arms
+    // the two arms (the box needs x0 < x1 on both sides)
+    for (const sd of [-1, 1]) B(g, s, Math.min(sd * 0.36, sd * 0.42), Math.max(sd * 0.36, sd * 0.42), 0.38, 0.62, -0.28, 0.38, (px, py, pz) => (py > 0.58 && pz > 0.34 ? undefined : F2));
     for (const lx of [-0.36, 0.36]) for (const lz of [-0.34, 0.32]) B(g, s, lx - 0.02, lx + 0.02, 0, 0.12, lz - 0.02, lz + 0.02, WOOD);
     B(g, s, -0.12, 0.12, 0.46, 0.62, -0.2, -0.12, 0xf4a261);                                                                // a little cushion
   }));
@@ -352,26 +353,77 @@ function buildArmchair(x, z, rot) {
 function buildTV(x, z, rot) {
   const grp = group(x, z, rot), scr = canvasScreen(256, 144, 1.1, 0.61);
   scr.m.position.set(0, 0.935, -0.02); grp.add(scr.m);
-  // on the stand: the console (right) and the controller (left, in front of the TV); their lights brighten with the TV
+  // on the stand: the console (right) and the controller (left, in front of the TV)
   const xlogo = buildXbox(grp, 0.6, 0.5, -0.05), cbtn = buildController(grp, -0.52, 0.5, 0.06, 0.35);
-  const st = { on: false, t: 0, frame: 0, sndT: 0 };
-  const draw = () => {
-    const c = scr.ctx, t = st.t;
-    if (!st.on) { c.fillStyle = '#0c0f14'; c.fillRect(0, 0, 256, 144); scr.tex.needsUpdate = true; return; }
+  const st = { on: false, t: 0, frame: 0, sndT: 0 }, xb = { on: false, t: 0 };
+  const cartoon = (c, t) => {
     c.fillStyle = '#8fd3ff'; c.fillRect(0, 0, 256, 144);
     c.fillStyle = '#ffd23f'; c.beginPath(); c.arc(215, 28, 16, 0, 7); c.fill();
     c.fillStyle = '#fff'; for (let i = 0; i < 3; i++) { const cx = ((t * 18 + i * 95) % 300) - 30; c.beginPath(); c.ellipse(cx, 25 + i * 12, 22, 8, 0, 0, 7); c.fill(); }
     c.fillStyle = '#5fbf4a'; c.beginPath(); c.moveTo(0, 144); for (let x = 0; x <= 256; x += 8) c.lineTo(x, 108 + Math.sin(x / 30 + t * 0.4) * 8); c.lineTo(256, 144); c.fill();
     const bx = 128 + Math.sin(t * 1.3) * 90, by = 100 - Math.abs(Math.sin(t * 3)) * 55;   // a bouncing red ball with a face
     c.fillStyle = '#e63946'; c.beginPath(); c.arc(bx, by, 13, 0, 7); c.fill(); c.fillStyle = '#111'; c.fillRect(bx - 5, by - 4, 3, 3); c.fillRect(bx + 3, by - 4, 3, 3);
-    c.fillStyle = '#ffffffcc'; c.font = 'bold 13px sans-serif'; c.fillText('MESE', 8, 136);
+    c.fillStyle = '#ffffffcc'; c.font = 'bold 13px sans-serif'; c.textAlign = 'left'; c.fillText('MESE', 8, 136);
+  };
+  const console_ = (c, t) => {
+    if (t < 2.5) {   // the start: black, a green orb growing, the name
+      c.fillStyle = '#000'; c.fillRect(0, 0, 256, 144);
+      const r = Math.min(1, t / 1.2) * 26; const gr = c.createRadialGradient(128, 66, 2, 128, 66, r + 1); gr.addColorStop(0, '#d8ffd0'); gr.addColorStop(0.5, '#3fbf3f'); gr.addColorStop(1, '#0b3d0b');
+      c.fillStyle = gr; c.beginPath(); c.arc(128, 66, r, 0, 7); c.fill();
+      if (t > 1.3) { c.fillStyle = '#fff'; c.font = 'bold 15px sans-serif'; c.textAlign = 'center'; c.fillText('XBOX', 128, 118); }
+      return;
+    }
+    if (t < 4.5) {   // the home screen: tiles
+      c.fillStyle = '#107c10'; c.fillRect(0, 0, 256, 144);
+      const tiles = ['#1e88e5', '#e53935', '#fdd835', '#8e24aa', '#00897b', '#f4511e'];
+      tiles.forEach((col, i) => { c.fillStyle = col; c.fillRect(16 + (i % 3) * 78, 30 + Math.floor(i / 3) * 52, 70, 44); });
+      c.fillStyle = '#fff'; c.font = 'bold 12px sans-serif'; c.textAlign = 'left'; c.fillText('Szia, Petyus!', 16, 20); c.fillText('FOCI 25', 22, 66);
+      return;
+    }
+    // the game: a football pitch from above, two teams, the ball, the score
+    const k = t - 4.5;
+    c.fillStyle = '#2e7d32'; c.fillRect(0, 0, 256, 144);
+    for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#2e7d32' : '#338a37'; c.fillRect(i * 32, 0, 32, 144); }
+    c.strokeStyle = '#fff'; c.lineWidth = 2; c.strokeRect(8, 8, 240, 128); c.beginPath(); c.moveTo(128, 8); c.lineTo(128, 136); c.stroke(); c.beginPath(); c.arc(128, 72, 18, 0, 7); c.stroke();
+    c.strokeRect(8, 46, 22, 52); c.strokeRect(226, 46, 22, 52);
+    const ballX = 128 + Math.sin(k * 0.9) * 95, ballY = 72 + Math.sin(k * 1.7) * 45;
+    for (let i = 0; i < 5; i++) {
+      const hx = 60 + i * 14 + Math.sin(k + i) * 20, hy = 30 + i * 22, ax = 196 - i * 14 + Math.cos(k * 1.1 + i) * 20, ay = 112 - i * 22;
+      c.fillStyle = '#e53935'; c.beginPath(); c.arc(hx + (ballX - hx) * 0.15, hy + (ballY - hy) * 0.15, 4, 0, 7); c.fill();
+      c.fillStyle = '#1e88e5'; c.beginPath(); c.arc(ax + (ballX - ax) * 0.15, ay + (ballY - ay) * 0.15, 4, 0, 7); c.fill();
+    }
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(ballX, ballY, 3, 0, 7); c.fill();
+    c.fillStyle = '#000000aa'; c.fillRect(96, 0, 64, 14); c.fillStyle = '#fff'; c.font = 'bold 11px monospace'; c.textAlign = 'center';
+    c.fillText(`${Math.floor(k / 9) % 4} - ${Math.floor(k / 13) % 3}`, 128, 11);
+  };
+  const draw = () => {
+    const c = scr.ctx;
+    if (!st.on) { c.fillStyle = '#0c0f14'; c.fillRect(0, 0, 256, 144); }
+    else if (xb.on) console_(c, xb.t); else cartoon(c, st.t);
     scr.tex.needsUpdate = true;
   };
   draw();
   const front = toWorld(grp, 0, 0, 0.75); front.y -= FY;
   devices.push({ x: front.x, z: front.z, r: 1.0, label: () => (st.on ? 'E – tévé kikapcsolása' : 'E – tévé bekapcsolása'),
-    use: () => { st.on = !st.on; st.t = 0; click(); draw(); if (st.on) say({ headWorld: (o) => o.copy(toWorld(grp, 0, 1.4, 0)) }, '♪ Lalala-lala! ♪', 2); },
-    update: (dt) => { xlogo.material.opacity = st.on ? 1 : 0.25; cbtn.material.opacity = st.on ? 0.95 : 0.2; if (!st.on) return; st.t += dt; if ((st.frame -= dt) <= 0) { st.frame = 1 / 12; draw(); } if ((st.sndT -= dt) <= 0) { st.sndT = 0.6; tone('triangle', 520 + Math.floor(R() * 4) * 130, 520, 0.18, 0.015); } } });
+    use: () => { st.on = !st.on; st.t = 0; click(); draw(); if (st.on && !xb.on) say({ headWorld: (o) => o.copy(toWorld(grp, 0, 1.4, 0)) }, '♪ Lalala-lala! ♪', 2); },
+    update: (dt) => {
+      xlogo.material.opacity = xb.on ? 1 : 0.12; cbtn.material.opacity = xb.on ? 0.95 : 0.12;
+      if (xb.on) xb.t += dt;
+      if (!st.on) return; st.t += dt; if ((st.frame -= dt) <= 0) { st.frame = 1 / 12; draw(); }
+      if ((st.sndT -= dt) <= 0) {
+        st.sndT = 0.6;
+        if (!xb.on) tone('triangle', 520 + Math.floor(R() * 4) * 130, 520, 0.18, 0.015);
+        else if (xb.t > 4.5) noise(0.5, 900, 0.5, 0.02);   // the crowd
+      }
+    } });
+  // the console: its own button (E next to it); the start chime; the TV shows it when both are on
+  const xf = toWorld(grp, 0.6, 0, 0.6); xf.y -= FY;
+  devices.push({ x: xf.x, z: xf.z, r: 0.6, label: () => (xb.on ? 'E – Xbox kikapcsolása' : 'E – Xbox bekapcsolása'),
+    use: () => {
+      xb.on = !xb.on; xb.t = 0; click();
+      if (xb.on) { for (const [f, d] of [[392, 0], [523, 0.12], [659, 0.24], [784, 0.36]]) tone('sine', f, f, 0.6, 0.04, d); if (!st.on) say(G.petike, 'Be kéne kapcsolni a tévét is…', 2.2); }
+      draw();
+    } });
 }
 
 // ---------------------------------------------------------------- Petyus's computer (on his desk): monitor, keyboard, mouse, speakers, webcam, tower

@@ -446,6 +446,32 @@ function nightstand(seed) {   // 0.46 × 0.4 × 0.5 m: a drawer, an open shelf, 
   return g;
 }
 
+// ---------------------------------------------------------------- a bookshelf (2.5 cm voxels): four shelves of books, a plant, a photo, boxes
+function bookshelf(seed) {   // 1.0 × 0.32 × 1.8 m, back at −z
+  const s = 0.025, g = new VoxelGrid(s, seed), W = 0xf3f1ec, W2 = 0xe2ded5;
+  fill(g, s, -0.5, 0.5, 0, 1.8, -0.16, 0.15, (x, y, z) => {
+    const side = Math.abs(x) > 0.47, back = z < -0.13, board = [0, 0.43, 0.86, 1.29, 1.77].some((b) => y >= b && y < b + 0.03);
+    return side || back || board ? (side || board ? W : W2) : undefined;
+  });
+  const BOOK = [0xc1121f, 0x1d3557, 0x2a9d8f, 0xe9c46a, 0x6a4c93, 0xf4a261, 0x264653, 0x8ac926, 0xe76f51, 0x457b9d];
+  let n = seed * 3;
+  for (const by of [0.03, 0.46, 0.89, 1.32]) {
+    let x = -0.45;
+    while (x < 0.4) {
+      const w = 0.025 * (1 + (n % 3)), h = 0.22 + ((n * 7) % 5) * 0.03, col = BOOK[n % BOOK.length]; n++;
+      if (n % 9 === 0) { x += 0.15; continue; }   // a gap (for the things below)
+      fill(g, s, x, x + w - 0.001, by, by + h, -0.12, 0.1, (px, py) => (py > by + h - 0.03 && (n % 2) ? 0xf3e9d2 : col));
+      x += w;
+    }
+  }
+  // a small plant, a photo frame, two boxes, a globe
+  fill(g, s, 0.25, 0.38, 0.46, 0.56, -0.08, 0.05, () => 0xc0643c); g.ellipsoid(Math.round(0.315 / s), Math.round(0.62 / s), -1, 3, 3, 3, () => 0x4a9c42, 0.6);
+  fill(g, s, -0.35, -0.2, 0.89, 1.05, -0.05, -0.02, (x, y) => (Math.abs(x + 0.275) < 0.05 && Math.abs(y - 0.97) < 0.05 ? 0x8ecae6 : 0x2c2f33));
+  fill(g, s, 0.05, 0.4, 1.32, 1.47, -0.12, 0.1, () => 0xd9c7a3); fill(g, s, -0.15, 0.05, 1.32, 1.42, -0.12, 0.1, () => 0xb5651d);
+  g.ellipsoid(Math.round(0.3 / s), Math.round(1.92 / s), -1, 3.5, 3.5, 3.5, (i, j, k) => ((i + j) % 3 ? 0x3a86ff : 0x5fae6a), 0.2); fill(g, s, 0.28, 0.32, 1.8, 1.85, -0.04, 0.0, () => 0xc9a227);
+  return g;
+}
+
 export const HOME_CATALOG = [
   { id: 'bed_single', name: 'Egyszemélyes ágy', cat: 'Lakás', variants: 3, build: bedSingle, collider: { hx: 0.47, hz: 1.05, h: 0.6 }, desc: 'Fa keret, csíkos paplan, párna. Az 1. változaton plüssmaci.', use: 'Petyus szobája' },
   { id: 'bed_double', name: 'Franciaágy', cat: 'Lakás', variants: 3, build: bedDouble, collider: { hx: 0.82, hz: 1.06, h: 0.6 }, desc: '160 × 200 cm, magas fejtámla, két párna.', use: 'A szülők szobája, a testvér szobája' },
@@ -469,6 +495,7 @@ export const HOME_CATALOG = [
   { id: 'shoe_cabinet', name: 'Cipősszekrény', cat: 'Lakás', variants: 1, build: shoeCabinet, collider: { hx: 0.5, hz: 0.18, h: 0.95 }, desc: 'Két billenőajtós cipősszekrény; a tetején kulcsok, pénztárca, tálca, kis növény.', use: 'Előszoba' },
   { id: 'sideboard', name: 'Fiókos szekrény', cat: 'Lakás', variants: 2, build: sideboard, collider: { hx: 0.6, hz: 0.26, h: 1.1 }, desc: 'Fél magas (1,05 m) szekrényelem fiókokkal és két ajtóval; egymás mellé rakva egy egész falat beborít. A tetején váza, könyvek, fénykép, növény.', use: 'A szülők szobája, a testvér szobájának falán' },
   { id: 'nightstand', name: 'Éjjeliszekrény', cat: 'Lakás', variants: 2, build: nightstand, collider: { hx: 0.23, hz: 0.2, h: 0.55 }, desc: 'Fiókos éjjeliszekrény nyitott polccal, rajta asztali lámpa meleg ernyővel; mellette egy pohár víz vagy egy könyv.', use: 'A szülők franciaágya két oldalán' },
+  { id: 'bookshelf', name: 'Könyvespolc', cat: 'Lakás', variants: 2, build: bookshelf, collider: { hx: 0.5, hz: 0.16, h: 1.9 }, desc: 'Fehér polc öt deszkával: különböző magas, színes könyvek, egy kis növény, fénykép, dobozok, a tetején földgömb.', use: 'A szülők szobája, a franciaágy mellett' },
   { id: 'sofa', name: 'Kanapé', cat: 'Lakás', variants: 3, build: sofa, collider: { hx: 1.0, hz: 0.45, h: 0.9 }, desc: 'Háromszemélyes kanapé karfákkal és díszpárnákkal.', use: 'A szülők szobája (nappali rész)' },
   { id: 'tv_unit', name: 'TV-szekrény', cat: 'Lakás', variants: 1, build: tvUnit, collider: { hx: 0.8, hz: 0.2, h: 1.3 }, desc: 'Alacsony szekrény lapos tévével.', use: 'Nappali' },
   { id: 'floor_lamp', name: 'Állólámpa', cat: 'Lakás', variants: 1, build: floorLamp, collider: { r: 0.18, h: 1.7 }, desc: 'Kerek talp, vékony szár, vászon ernyő meleg fényű izzóval.', use: 'Nappali' },

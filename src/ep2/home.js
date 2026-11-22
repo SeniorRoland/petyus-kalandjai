@@ -230,6 +230,7 @@ function furnish() {
   // a bedside table with a lamp on each side of the bed
   put('bed_double', 12.6, 5.4, 0, 0); put('nightstand', 11.5, 4.55, 0, 0); put('nightstand', 13.72, 4.55, 0, 1);
   put('sofa', 12.6, 8.72, P, 0); put('tv_unit', 8.3, 8.95, P, 0);
+  put('bookshelf', 14.95, 4.49, 0, 0);   // on the north wall, right of the bed, by the balcony door
   [4.92, 6.12, 7.32, 8.52].forEach((z, n) => put('sideboard', 7.17, z, E, n % 2));   // half-height drawers + doors along the whole wall
   put('floor_lamp', 11.25, 8.95);
   // the parents' plants under the east window (z 6.9 … 8.7): a plant bench with small ones on it and below, big ones on the floor
