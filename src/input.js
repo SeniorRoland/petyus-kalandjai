@@ -6,6 +6,7 @@ import { skipIntro } from './intro.js';
 import { G } from './state.js';
 import { $, clamp } from './util.js';
 import { journalOpen, toggleJournal } from './mischief.js';
+import { CAM_FWD, CAM_RIGHT } from './player.js';
 
 // ---------------------------------------------------------------- input
 export const keys = {};
@@ -25,7 +26,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Equal' || e.code === 'NumpadAdd' || e.key === '+') zoomBy(0.85);
   if (e.code === 'Minus' || e.code === 'NumpadSubtract' || e.key === '-') zoomBy(1 / 0.85);
   if (e.code === 'Digit0' || e.code === 'Numpad0') G.zoom = 1;
-  if (e.code === 'KeyR' && G.pstate !== 'juggle') resetBallToPlayer();
+  if (e.code === 'KeyR' && G.pstate !== 'juggle' && G.episode !== 2) resetBallToPlayer();
   if (e.code === 'KeyE') G.usePressed = true;
   if (e.code === 'KeyH') { const h = $('help'); h.style.display = h.style.display === 'none' ? 'block' : 'none'; }
 });
@@ -33,7 +34,8 @@ window.addEventListener('keyup', (e) => { keys[e.code] = false; if (e.code === '
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 // zoom: wheel, + / − (0 = back to normal), two-finger pinch on touch screens. Range ≈ 3× closer … 2.6× further than normal.
 export const ZOOM_MIN = 0.3, ZOOM_MAX = 2.6;
-export function zoomBy(f) { G.zoom = clamp(G.zoom * f, ZOOM_MIN, ZOOM_MAX); }
+// G.zoomMax: a scene may forbid zooming out past its own framing (part 2: 1 = the overview is the furthest)
+export function zoomBy(f) { G.zoom = clamp(G.zoom * f, ZOOM_MIN, G.zoomMax || ZOOM_MAX); }
 window.addEventListener('wheel', (e) => { if (journalOpen()) return; zoomBy(Math.pow(1.0015, clamp(e.deltaY, -240, 240))); }, { passive: true });
 function toggleMute() { G.muted = !G.muted; $('muteBtn').textContent = G.muted ? '🔇' : '🔊'; if (ambBed) ambBed.gain.value = G.muted ? 0 : 1; }
 $('muteBtn').onclick = toggleMute;
@@ -41,20 +43,21 @@ $('skipBtn').onclick = () => skipIntro();
 // touch joystick
 // looking around (panning): drag the game view with the mouse (desktop) or one finger (touch – not on the joystick / buttons).
 // Screen pixels → ground metres: the orthographic view is 2·viewSize tall; the ground is seen at an angle (CAM_OFF: sin ≈ 0.52).
-const PAN_R = [1 / Math.SQRT2, -1 / Math.SQRT2], PAN_F = [-1 / Math.SQRT2, -1 / Math.SQRT2], PAN_SIN = 34 / Math.hypot(40, 34, 40), PAN_MAX = 28;
+// screen right / forward on the ground: CAM_RIGHT / CAM_FWD (player.js – they turn with the camera in part 2)
+const PAN_SIN = 34 / Math.hypot(40, 34, 40), PAN_MAX = 28;
 function panBy(dx, dy) {
   const u = 2 * G.viewSize / window.innerHeight;
-  let x = G.pan.x - (PAN_R[0] * dx - PAN_F[0] * dy / PAN_SIN) * u, z = G.pan.z - (PAN_R[1] * dx - PAN_F[1] * dy / PAN_SIN) * u;
+  let x = G.pan.x - (CAM_RIGHT.x * dx - CAM_FWD.x * dy / PAN_SIN) * u, z = G.pan.z - (CAM_RIGHT.z * dx - CAM_FWD.z * dy / PAN_SIN) * u;
   const l = Math.hypot(x, z); if (l > PAN_MAX) { x *= PAN_MAX / l; z *= PAN_MAX / l; }
   G.pan.x = x; G.pan.z = z; G.pan.t = 0;
 }
 {
   const app = $('app'); let mx = null, my = null, tid = null, tx = 0, ty = 0;
   app.addEventListener('mousedown', (e) => { if (e.button !== 0 && e.button !== 1) return; mx = e.clientX; my = e.clientY; app.classList.add('panning'); });
-  window.addEventListener('mousemove', (e) => { if (mx === null) return; panBy(e.clientX - mx, e.clientY - my); mx = e.clientX; my = e.clientY; });
+  window.addEventListener('mousemove', (e) => { if (mx === null || G.fps) return; panBy(e.clientX - mx, e.clientY - my); mx = e.clientX; my = e.clientY; });
   window.addEventListener('mouseup', () => { mx = null; app.classList.remove('panning'); });
   app.addEventListener('touchstart', (e) => { if (e.touches.length === 1) { const t = e.touches[0]; tid = t.identifier; tx = t.clientX; ty = t.clientY; } else tid = null; }, { passive: true });
-  app.addEventListener('touchmove', (e) => { if (e.touches.length !== 1 || tid === null) return; const t = e.touches[0]; if (t.identifier !== tid) return; panBy(t.clientX - tx, t.clientY - ty); tx = t.clientX; ty = t.clientY; }, { passive: true });
+  app.addEventListener('touchmove', (e) => { if (e.touches.length !== 1 || tid === null) return; const t = e.touches[0]; if (t.identifier !== tid || G.fps) return; panBy(t.clientX - tx, t.clientY - ty); tx = t.clientX; ty = t.clientY; }, { passive: true });
   app.addEventListener('touchend', () => { tid = null; });
 }
 // two-finger pinch on the game view
@@ -63,7 +66,7 @@ function panBy(dx, dy) {
   const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
   const app = $('app');
   app.addEventListener('touchstart', (e) => { if (e.touches.length === 2) { d0 = dist(e.touches); z0 = G.zoom; } }, { passive: true });
-  app.addEventListener('touchmove', (e) => { if (e.touches.length === 2 && d0 > 0) { G.zoom = clamp(z0 * d0 / Math.max(10, dist(e.touches)), ZOOM_MIN, ZOOM_MAX); e.preventDefault(); } }, { passive: false });
+  app.addEventListener('touchmove', (e) => { if (e.touches.length === 2 && d0 > 0) { G.zoom = clamp(z0 * d0 / Math.max(10, dist(e.touches)), ZOOM_MIN, G.zoomMax || ZOOM_MAX); e.preventDefault(); } }, { passive: false });
   app.addEventListener('touchend', (e) => { if (e.touches.length < 2) d0 = 0; });
 }
 export const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;

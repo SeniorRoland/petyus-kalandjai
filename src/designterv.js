@@ -12,7 +12,7 @@ const CHARS = [
   { id: 'petike-foci', name: 'Petyus (focista ruha)', file: 'petike_foci.glb', scale: 0.833, desc: 'Riggelt T-pose modell; ebben a ruhában irányítja a játékos: fut, cselez és rúg.', use: 'Játékmenet' },
   { id: 'roller', name: 'Elektromos roller', file: 'roller_kicsi.glb', scale: 0.84, rotY: Math.PI / 2, desc: 'Gyerekméretű elektromos roller. A nyitójelenet végén Petyus a padhoz támasztja.', use: 'Nyitójelenet, a pad mellett' },
 ];
-const ORDER = ['Növények', 'Utcabútor', 'Park', 'Pálya', 'Utca', 'Karakterek'];
+const ORDER = ['Növények', 'Utcabútor', 'Park', 'Pálya', 'Utca', 'Lakás', 'Karakterek'];
 const items = [...CATALOG.map((d) => ({ ...d, kind: 'voxel' })), ...CHARS.map((c) => ({ ...c, cat: 'Karakterek', kind: 'glb', variants: 1 }))];
 const slug = (id) => id.replace(/_/g, '-');
 const fmt = (n, d = 2) => n.toLocaleString('hu-HU', { minimumFractionDigits: d, maximumFractionDigits: d });
