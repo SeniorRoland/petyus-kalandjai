@@ -190,7 +190,7 @@ export function placeOutsideProps() {
   const g = { ground: true };
   // parked cars in front of the house (some bays empty)
   [0, 1, 2, 4, 5, 7, 8].forEach((k, n) => put('car', -14 + k * 3.0, 12.4, n % 2 ? Math.PI : 0, (n * 5) % 6, g));
-  put('car', -25, -9, Math.PI / 2, 3, g); put('car', 30, 21, Math.PI / 2, 4, g);   // one by the garages, one on the street
+  put('car', -27.6, -9, Math.PI / 2, 3, g); put('car', 30, 21, Math.PI / 2, 4, g);   // one in front of the garages (x −29.4 … −25.8: between the garage doors and the fence), one on the street
   // trees in the yard and outside
   const T = [['oak', -18, -12], ['oak', -20, 5], ['birch', -13, -18], ['pine', -21, -19], ['oak', 2, -17], ['birch', 9, -19], ['oak', 22, -16], ['pine', 30, -19],
     ['oak', 27, -5], ['birch', 30, 6], ['oak', 25, 13], ['birch', -16, 0], ['pine', 32, 14], ['oak', -8, 26], ['oak', 18, 26], ['pine', 40, -30], ['oak', -40, 22], ['birch', 40, 12]];
