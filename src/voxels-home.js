@@ -472,6 +472,25 @@ function bookshelf(seed) {   // 1.0 × 0.32 × 1.8 m, back at −z
   return g;
 }
 
+// ---------------------------------------------------------------- bougainvillea in a pot (4 cm voxels): woody stems, a dense
+// crown of small green leaves and paper-thin coloured bracts, a few branches hanging over the pot's rim
+const BOUGAIN = [[0xd61f8c, 0xe83e9e, 0xb5176f], [0xf27aa8, 0xf59ac0, 0xe0608f], [0xa020a8, 0xb83cc0, 0x8a1a90], [0xf26b3a, 0xf58a5c, 0xe0502a], [0xfbe3ee, 0xf5c2d6, 0xffffff]];
+function bougainvillea(seed) {
+  const s = 0.04, g = new VoxelGrid(s, seed), r = g.r, br = BOUGAIN[(seed - 1) % BOUGAIN.length];
+  const LEAF = [0x2f7d3a, 0x3f8f3a, 0x4a9c42], STEM = 0x6b4a2b, POT = seed % 2 ? 0xc0643c : 0xb5552f;
+  g.disc(0, 0, 4.5, 0, 6, (i, j) => (j === 6 ? 0xd27a4f : POT)); g.disc(0, 0, 5.2, 6, 6, 0xd27a4f, 4.2); g.disc(0, 0, 3.6, 6, 6, 0x4e3524);   // the pot, its rim, soil
+  const tops = [];
+  for (let n = 0; n < 5; n++) { const a = n / 5 * Math.PI * 2 + r(), d = 2 + r() * 4, h = 14 + Math.floor(r() * 9); const t = [Math.round(Math.cos(a) * d), h, Math.round(Math.sin(a) * d)]; g.line([0, 6, 0], t, STEM); tops.push(t); }
+  const crown = (cx, cy, cz, rx, ry, rz) => g.ellipsoid(cx, cy, cz, rx, ry, rz, () => (r() < 0.58 ? br[Math.floor(r() * 3)] : LEAF[Math.floor(r() * 3)]), 1.1);
+  for (const t of tops) crown(t[0], t[1], t[2], 3.5 + r() * 1.5, 3 + r(), 3.5 + r() * 1.5);
+  crown(0, 18, 0, 6, 4, 6);
+  for (let n = 0; n < 4; n++) {   // branches hanging over the rim, flowering at their tips
+    const a = n / 4 * Math.PI * 2 + 0.7, x0 = Math.round(Math.cos(a) * 4), z0 = Math.round(Math.sin(a) * 4), x1 = Math.round(Math.cos(a) * 7), z1 = Math.round(Math.sin(a) * 7);
+    g.line([0, 8, 0], [x0, 9, z0], STEM); g.line([x0, 9, z0], [x1, 4, z1], LEAF[1]); g.ellipsoid(x1, 4, z1, 1.6, 1.6, 1.6, () => br[Math.floor(r() * 3)], 0.8);
+  }
+  return g;
+}
+
 export const HOME_CATALOG = [
   { id: 'bed_single', name: 'Egyszemélyes ágy', cat: 'Lakás', variants: 3, build: bedSingle, collider: { hx: 0.47, hz: 1.05, h: 0.6 }, desc: 'Fa keret, csíkos paplan, párna. Az 1. változaton plüssmaci.', use: 'Petyus szobája' },
   { id: 'bed_double', name: 'Franciaágy', cat: 'Lakás', variants: 3, build: bedDouble, collider: { hx: 0.82, hz: 1.06, h: 0.6 }, desc: '160 × 200 cm, magas fejtámla, két párna.', use: 'A szülők szobája, a testvér szobája' },
@@ -507,5 +526,6 @@ export const HOME_CATALOG = [
   { id: 'trampoline', name: 'Trambulin', cat: 'Lakás', variants: 1, build: trampoline, collider: { r: 1.55, h: 2.1 }, desc: '3 m átmérőjű trambulin kék párnázással és védőhálóval.', use: 'A ház mögött, az északi füves részen' },
   { id: 'house_plant', name: 'Szobanövény', cat: 'Lakás', variants: 7, build: housePlant, collider: { r: 0.25, h: 1.0 }, desc: '1 monstera, 2 fikusz (fa), 3 anyósnyelv, 4 páfrány, 5 kaktusz és pozsgás, 6 flamingóvirág, 7 csüngő futóka (polcra).', use: 'A szülők szobája, a keleti ablak alatt' },
   { id: 'plant_shelf', name: 'Virágpolc', cat: 'Lakás', variants: 1, build: plantShelf, collider: { hx: 0.8, hz: 0.18, h: 0.5 }, desc: 'Alacsony fehér virágtartó pad alsó polccal.', use: 'A szülők szobája, a keleti ablak alatt' },
+  { id: 'bougainvillea', name: 'Bougainvillea', cat: 'Lakás', variants: 5, build: bougainvillea, collider: { r: 0.22, h: 1.0 }, desc: 'Cserepes bougainvillea: fás szárak, sűrű lomb apró zöld levelekkel és papírvékony színes murvalevelekkel, a cserép peremén átlógó virágos ágak. Színek: bíbor, rózsaszín, lila, narancs, fehér-rózsaszín.', use: 'Petyus erkélye' },
   { id: 'potted_plant', name: 'Cserepes növény', cat: 'Lakás', variants: 1, build: pottedPlant, collider: { r: 0.18, h: 0.9 }, desc: 'Terrakotta cserép dús lombbal.', use: 'Szobák, erkély' },
 ];

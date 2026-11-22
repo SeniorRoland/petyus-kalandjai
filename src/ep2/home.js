@@ -239,7 +239,11 @@ function furnish() {
   put('house_plant', 15.38, 7.45, 0.5, 4, { y: 0.15, noCol: true }); put('house_plant', 15.38, 8.15, 2.1, 6, { y: 0.15, noCol: true });
   put('house_plant', 14.95, 6.75, 0.3, 0); put('house_plant', 14.85, 7.6, 1.2, 2); put('house_plant', 14.9, 8.4, 0.8, 3); put('house_plant', 15.15, 8.95, 2.2, 1); put('dresser', 10.2, 8.95, P, 1); put('rug', 12.6, 7.4, 0, 1);
   // balconies
-  put('potted_plant', 12.1, -1.55); put('potted_plant', 15.2, -1.55); put('potted_plant', 17.7, 4.7); put('chair', 17.3, 8.3, W, 1);
+  // Petyus's balcony (north): bougainvilleas in pots all along the railing and on both sides, of different sizes and colours
+  // (the way from the balcony door, x 12.2 … 13.1, stays free)
+  [[11.95, -1.62, 1.15, 0], [12.45, -1.68, 0.9, 1], [12.95, -1.62, 1.25, 2], [13.45, -1.68, 1.0, 0], [13.95, -1.62, 1.2, 3], [14.45, -1.68, 0.95, 1], [14.95, -1.62, 1.3, 0], [15.35, -1.55, 1.05, 4],
+    [11.98, -1.05, 0.85, 1], [11.98, -0.6, 1.1, 2], [15.35, -1.05, 1.0, 3], [15.35, -0.6, 0.85, 0], [14.2, -1.1, 0.75, 4]].forEach(([x, z, sc, v], n) => put('bougainvillea', x, z, n * 1.3, v, { s: sc }));
+  put('potted_plant', 17.7, 4.7); put('chair', 17.3, 8.3, W, 1);
 }
 function buildFurniture() {
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), ps = new THREE.Vector3();
