@@ -18,6 +18,7 @@ import { FY, SPOTS, buildHome, lightPool, ceiling, cutWalls, doors, switches, to
 import { noise, tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
 import { buildAppliances, devices, seating, updateAppliances } from './appliances.js';
+import { buildInventory, cycleItem, holdingController, invAction, pickCandidate, pickLabel, pickUp, selectItem, updateInventory } from './inventory.js';
 import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, wheek } from './karcsi.js';
 import { dressPajama } from './pajama.js';
 
@@ -74,7 +75,7 @@ export function startEp2() {
   // the sky light's ground colour was the park's grass (green): indoors every downward face (a fridge's ceiling, the underside
   // of a shelf) would look green – a warm neutral instead
   scene.traverse((o) => { if (o.isHemisphereLight) o.groundColor.set(0xb9ab98); });
-  buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances();
+  buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances(); buildInventory();
   // the three of them in pajamas (Petyus: the football kit's model – the walking one)
   dressPajama(rigs.foci, 'petyus'); dressPajama(rigs.petya, 'petya'); dressPajama(rigs.angi, 'angi');
   G.petike.riding = false; G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7;
@@ -94,7 +95,7 @@ export function startEp2() {
   const ep = EPISODES[1];
   document.title = `${SERIES} – ${ep.n}. rész: ${ep.month}`;
   $('hud').innerHTML = '<span class="chip">📅 <span id="e2Date"></span></span> <span class="chip">🕕 <span id="e2Clock"></span></span> <span class="chip" id="e2RoomChip">📍 <span id="e2Room"></span></span>';
-  $('help').innerHTML = '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat: ajtó nyitása / csukása, villany, kopogás</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
+  $('help').innerHTML = '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat: ajtó nyitása / csukása, villany, kopogás</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>E · F</dt><dd>tárgy felvétele · a kiválasztott lerakása / bögre töltése</dd><dt>1–6 · Tab</dt><dd>tárgy kiválasztása</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
   for (const id of ['kickBtn', 'runBtn']) { const el = $(id); if (el) el.style.display = id === 'kickBtn' ? 'none' : ''; }
   $('skipBtn').style.display = 'none'; $('hud').style.display = 'block'; $('help').style.display = isTouch ? 'none' : 'block';
   if (isTouch) $('touch').style.display = 'block';
@@ -170,6 +171,9 @@ function updateFpsCam() {
 window.addEventListener('keydown', (e) => {
   if (G.episode !== 2 || G.mode !== 'play' || e.repeat) return;
   if (e.code === 'KeyV') toggleFps();
+  if (e.code === 'KeyF') G.invPressed = true;
+  if (/^Digit[1-6]$/.test(e.code)) selectItem(+e.code.slice(5) - 1);
+  if (e.code === 'Tab') { e.preventDefault(); cycleItem(); }
   if (fp.on) return;
   if (e.code === 'KeyQ') turnView(1);
   if (e.code === 'KeyR') turnView(-1);
@@ -204,6 +208,7 @@ function movePetyus(dt) {
       // in the armchair the legs are stretched out in front, slightly raised (knees straight – the feet point up, over the seat's edge)
       const r = a.rig, k = a.sit * a.sit * (3 - 2 * a.sit);
       for (let i = 0; i < 2; i++) { r.hip[i].rotation.x = lerp(r.hip[i].rotation.x, -1.62, k); r.knee[i].rotation.x = lerp(r.knee[i].rotation.x, 0.04, k); if (r.foot) r.foot[i].rotation.x = lerp(r.foot[i].rotation.x, 0, k); }
+      if (holdingController()) for (let i = 0; i < 2; i++) { r.sh[i].rotation.x = -0.85; r.sh[i].rotation.z = i === 0 ? 0.3 : -0.3; if (r.elbow) r.elbow[i] = 0.95; }
       a.sync(); pvel.set(0, 0, 0);
       return;
     }
@@ -251,12 +256,19 @@ function interactHome() {
   { const cf = cageFront(), r = Math.hypot(p.x - cf.x, p.z - cf.z); if (r < 0.9 && r < bd) { bd = r; best = { cage: true }; } }
   { const r = Math.hypot(p.x - toiletSeat.x, p.z - (toiletSeat.z + 0.6)); if (r < 0.75 && r < bd) { bd = r; best = { seat: true }; } }
   for (const dv of devices) { const r = Math.hypot(p.x - dv.x, p.z - dv.z); if (r < dv.r && r < bd) { bd = r; best = { dev: dv }; } }
+  // things to pick up win against a device up to 20 cm further (on the counter they stand right next to the machines)
+  { const pc = pickCandidate(p); if (pc && pc.d - 0.2 < bd) { bd = pc.d - 0.2; best = { item: pc.item }; } }
+  const act = invAction(p);   // what F would do with the selected thing here
   let txt = '';
   // next to the toilet: Space (on touch: the LEHÚZÁS button) flushes
   // (a device with a second action – the microwave – uses Space too; on touch the RÚGÁS button shows that action's name)
-  const kb = $('kickBtn');
-  if (kb) { const lbl = isTouch ? (best && best.seat ? 'LEHÚZÁS' : best && best.dev && best.dev.alt ? best.dev.alt.short() : '') : ''; kb.style.display = lbl ? 'block' : 'none'; if (lbl && kb.textContent !== lbl) kb.textContent = lbl; }
-  if (best && best.dev) {
+  const kb = $('kickBtn'), altBusy = !!(best && (best.seat || (best.dev && best.dev.alt)));
+  if (kb) { const lbl = isTouch ? (best && best.seat ? 'LEHÚZÁS' : best && best.dev && best.dev.alt ? best.dev.alt.short() : act ? act.short : '') : ''; kb.style.display = lbl ? 'block' : 'none'; if (lbl && kb.textContent !== lbl) kb.textContent = lbl; }
+  if (act && (G.invPressed || (isTouch && G.kickPressed && !altBusy))) act.run();
+  if (best && best.item) {
+    txt = pickLabel(best.item);
+    if (G.usePressed) pickUp(best.item);
+  } else if (best && best.dev) {
     const dv = best.dev; txt = dv.label() + (dv.alt && !isTouch ? ' · ' + dv.alt.label() : '');
     if (G.usePressed) dv.use();
     if (G.kickPressed && dv.alt) dv.alt.use();
@@ -291,6 +303,7 @@ function interactHome() {
       if (G.usePressed) { toggleDoor(d); sClick(); }
     }
   }
+  if (act && !isTouch) txt += (txt ? ' · ' : '') + 'F – ' + act.label;
   setPrompt(txt);
 }
 // a short click (switch, door handle)
@@ -324,7 +337,7 @@ export function stepEp2(dt) {
   if (G.mode === 'play') {
     movePetyus(dt);
     interactHome();
-    updateParents(dt); updateOutside(dt); updateKarcsi(dt); updateAppliances(dt);
+    updateParents(dt); updateOutside(dt); updateKarcsi(dt); updateAppliances(dt); updateInventory();
     // walls solid in the first-person view and when zoomed far out (the roof is on then: the house looks whole)
     const r = updateHome(dt, G.petike.pos, fp.on || G.zoom > 1.55);
     if (r !== ep2.room) {
@@ -333,7 +346,7 @@ export function stepEp2(dt) {
       if (l && !ep2.seen.has(r.id)) { ep2.seen.add(r.id); say(l[0](G), l[1], 3); ep2.talkT = Math.max(ep2.talkT, 5); }
     }
     ep2.min = Math.min(MORNING_END, ep2.min + dt * MIN_PER_SEC); hudClock();
-    G.usePressed = false; G.qPressed = false; G.kickPressed = G.kickReleased = false;
+    G.usePressed = false; G.qPressed = false; G.kickPressed = G.kickReleased = false; G.invPressed = false;
   }
   updateViewTurn(dt);
   updateFx(dt); updateCamera(dt); if (fp.on) updateFpsCam(); updateOcclusion(dt); updateBubbles(dt);

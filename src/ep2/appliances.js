@@ -16,6 +16,8 @@ import { FY, homeRoot } from './home.js';
 import * as F from './food.js';
 
 export const devices = [];
+// handles for inventory.js (filled while building): fridge, micro, tv, desk, controller, mug, dairy
+export const fx = {};
 
 // ---------------------------------------------------------------- helpers
 // a box of voxels: every voxel whose centre lies in x0…x1, y0…y1, z0…z1 (metres); c: colour, null (remove) or (x, y, z) => colour
@@ -95,9 +97,9 @@ function buildFridge(x, z, rot) {
   };
   const L = door(-1), Rr = door(1);
   // in the right door's lowest bin (they swing out with the door): milk, cream (TEJSZÍN), whipped cream (TEJSZÍNHAB)
-  F.at(Rr, F.milkCarton(), -0.34, 0.375, -0.1);
-  { const c = F.creamCarton(); c.scale.setScalar(0.78); F.at(Rr, c, -0.235, 0.375, -0.1); }
-  F.at(Rr, F.whippedCream(), -0.12, 0.375, -0.1);
+  const milk = F.at(Rr, F.milkCarton(), -0.34, 0.375, -0.1);
+  const cream = (() => { const c = F.creamCarton(); c.scale.setScalar(0.78); return F.at(Rr, c, -0.235, 0.375, -0.1); })();
+  const whip = F.at(Rr, F.whippedCream(), -0.12, 0.375, -0.1);
   // the collider: the body (turned with the device)
   const c = Math.abs(Math.cos(rot)), sn = Math.abs(Math.sin(rot)), hx = c * 0.45 + sn * 0.33, hz = sn * 0.45 + c * 0.33;
   addBoxCol(x - hx, z - hz, x + hx, z + hz, 1.9);
@@ -106,6 +108,7 @@ function buildFridge(x, z, rot) {
   devices.push({ x: front.x, z: front.z, r: 0.75, label: () => (st.open ? 'E – hűtő becsukása' : 'E – hűtő kinyitása'),
     use: () => { st.open = !st.open; tone('sine', st.open ? 220 : 160, st.open ? 180 : 120, 0.12, 0.08); if (!st.open) noise(0.08, 400, 1, 0.12); },
     update: (dt) => { st.t = damp(st.t, st.open ? 1 : 0, 6, dt); L.rotation.y = -st.t * 1.9; Rr.rotation.y = st.t * 1.9; } });
+  fx.fridge = { grp, door: Rr, isOpen: () => st.open && st.t > 0.6 }; fx.dairy = { milk, cream, whip };
 }
 
 // ---------------------------------------------------------------- the microwave (on the counter): door, turntable, display, a cup and a plate
@@ -150,11 +153,13 @@ function buildMicrowave(x, z, rot, y) {
   const rim = new THREE.Mesh(new THREE.TorusGeometry(0.088, 0.006, 6, 24), new THREE.MeshLambertMaterial({ color: 0x3a86ff })); rim.rotation.x = Math.PI / 2; rim.position.y = 0.008; plate.add(rim);
   const cup = new THREE.Group();
   const cupBody = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.03, 0.085, 18, 1, true), new THREE.MeshLambertMaterial({ color: 0xd9453a, side: THREE.DoubleSide })); cupBody.position.y = 0.0425; cup.add(cupBody);
-  const cupIn = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), new THREE.MeshLambertMaterial({ color: 0x6b3a1e })); cupIn.rotation.x = -Math.PI / 2; cupIn.position.y = 0.06; cup.add(cupIn);   // cocoa
+  const cupIn = new THREE.Mesh(new THREE.CircleGeometry(0.031, 16), new THREE.MeshLambertMaterial({ color: 0x6b3a1e })); cupIn.rotation.x = -Math.PI / 2; cupIn.position.y = 0.06; cupIn.visible = false; cup.add(cupIn);   // the drink (inventory.js)
+  const foam = new THREE.Mesh(new THREE.SphereGeometry(0.03, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0xfffdf7 })); foam.position.y = 0.083; foam.scale.y = 0.9; foam.visible = false; cup.add(foam);   // whipped cream on top
   const handle = new THREE.Mesh(new THREE.TorusGeometry(0.022, 0.006, 6, 12, Math.PI), new THREE.MeshLambertMaterial({ color: 0xd9453a })); handle.rotation.z = -Math.PI / 2; handle.position.set(0.036, 0.045, 0); cup.add(handle);
-  const onCounter = () => { grp.add(plate); plate.position.set(0.4, 0.008, 0.02); grp.add(cup); cup.position.set(0.4, 0.016, 0.02); };
-  onCounter();
-  const st = { open: false, t: 0, items: 0, run: 0, done: 0, hum: 0 };   // items: 0 none inside, 1 plate, 2 plate + cup
+  const onCounter = () => { grp.add(plate); plate.position.set(0.4, 0.008, 0.02); };
+  onCounter(); grp.add(cup); cup.position.set(0.4, 0.016, 0.16);
+  const st = { open: false, t: 0, items: 0, run: 0, done: 0, hum: 0 };   // items: 0 the plate outside, 1 the plate inside (the cup: inventory.js)
+  fx.micro = { grp, tt, isOpen: () => st.open && st.t > 0.6 }; fx.mug = { obj: cup, drink: cupIn, foam };
   const drawDisp = (txt) => { const d = disp.ctx; d.fillStyle = '#0b1a10'; d.fillRect(0, 0, 64, 24); d.fillStyle = '#5dff8a'; d.font = 'bold 18px monospace'; d.textAlign = 'center'; d.fillText(txt, 32, 18); disp.tex.needsUpdate = true; };
   drawDisp('6:00');
   const front = toWorld(grp, 0, 0, 0.65); front.y -= FY;
@@ -162,14 +167,12 @@ function buildMicrowave(x, z, rot, y) {
     label: () => (st.open ? 'E – mikró becsukása' : st.run > 0 ? 'E – (fut)' : 'E – mikró kinyitása'),
     use: () => { if (st.run > 0) { st.run = 0; tone('sine', 880, 880, 0.08, 0.05); } st.open = !st.open; click(); noise(0.06, 900, 1, 0.08); },
     alt: {
-      label: () => (st.open ? ['Szóköz – tányér berakása', 'Szóköz – pohár berakása', 'Szóköz – tányér és pohár kivétele'][st.items] : st.run > 0 ? 'Szóköz – leállítás' : 'Szóköz – indítás (10 mp)'),
-      short: () => (st.open ? (st.items < 2 ? 'BERAK' : 'KIVESZ') : st.run > 0 ? 'STOP' : 'START'),
+      label: () => (st.open ? (st.items ? 'Szóköz – tányér kivétele' : 'Szóköz – tányér berakása') : st.run > 0 ? 'Szóköz – leállítás' : 'Szóköz – indítás (10 mp)'),
+      short: () => (st.open ? (st.items ? 'KIVESZ' : 'BERAK') : st.run > 0 ? 'STOP' : 'START'),
       use: () => {
         if (st.open) {
-          st.items = (st.items + 1) % 3; click();
-          if (st.items === 1) { tt.add(plate); plate.position.set(0, 0.012, 0); }
-          else if (st.items === 2) { plate.add(cup); cup.position.set(0.0, 0.008, 0.0); }
-          else onCounter();
+          st.items = (st.items + 1) % 2; click();
+          if (st.items === 1) { tt.add(plate); plate.position.set(0, 0.012, 0); } else onCounter();
         } else if (st.run > 0) { st.run = 0; tone('sine', 700, 700, 0.1, 0.05); drawDisp('STOP'); }
         else { st.run = 10; st.done = 0; tone('sine', 1000, 1000, 0.08, 0.06); }
       },
@@ -323,7 +326,7 @@ function buildController(grp, x, y, z, ry) {
   });
   c.position.set(x, y, z); c.rotation.y = ry; grp.add(c);
   const btn = new THREE.Mesh(new THREE.CircleGeometry(0.0075, 14), glow(0xffffff, 0.85)); btn.rotation.x = -Math.PI / 2; btn.position.set(0, 0.0355, -0.02); c.add(btn);
-  return btn;
+  return { c, btn };
 }
 
 // ---------------------------------------------------------------- the armchair in front of the TV: E to sit down / stand up
@@ -351,10 +354,11 @@ function buildArmchair(x, z, rot) {
 
 // ---------------------------------------------------------------- TV (the parents' room): a cartoon on the screen
 function buildTV(x, z, rot) {
-  const grp = group(x, z, rot), scr = canvasScreen(256, 144, 1.1, 0.61);
-  scr.m.position.set(0, 0.935, -0.02); grp.add(scr.m);
+  // the picture covers just the screen's voxels (x −0.575 … 0.525, y 0.65 … 1.25), a little inside them
+  const grp = group(x, z, rot), scr = canvasScreen(256, 144, 1.06, 0.56);
+  scr.m.position.set(-0.025, 0.95, -0.02); grp.add(scr.m);
   // on the stand: the console (right) and the controller (left, in front of the TV)
-  const xlogo = buildXbox(grp, 0.6, 0.5, -0.05), cbtn = buildController(grp, -0.52, 0.5, 0.06, 0.35);
+  const xlogo = buildXbox(grp, 0.6, 0.5, -0.05), ctl = buildController(grp, -0.52, 0.5, 0.06, 0.35), cbtn = ctl.btn;
   const st = { on: false, t: 0, frame: 0, sndT: 0 }, xb = { on: false, t: 0 };
   const cartoon = (c, t) => {
     c.fillStyle = '#8fd3ff'; c.fillRect(0, 0, 256, 144);
@@ -417,11 +421,12 @@ function buildTV(x, z, rot) {
       }
     } });
   // the console: its own button (E next to it); the start chime; the TV shows it when both are on
+  fx.tv = { grp, controller: ctl.c, xboxOn: () => xb.on };
   const xf = toWorld(grp, 0.6, 0, 0.6); xf.y -= FY;
   devices.push({ x: xf.x, z: xf.z, r: 0.6, label: () => (xb.on ? 'E – Xbox kikapcsolása' : 'E – Xbox bekapcsolása'),
     use: () => {
       xb.on = !xb.on; xb.t = 0; click();
-      if (xb.on) { for (const [f, d] of [[392, 0], [523, 0.12], [659, 0.24], [784, 0.36]]) tone('sine', f, f, 0.6, 0.04, d); if (!st.on) say(G.petike, 'Be kéne kapcsolni a tévét is…', 2.2); }
+      if (xb.on) { for (const [f, d] of [[392, 0], [523, 0.12], [659, 0.24], [784, 0.36]]) tone('sine', f, f, 0.6, 0.04, d); if (!st.on) { st.on = true; st.t = 0; } }   // the TV comes on with it
       draw();
     } });
 }
@@ -429,6 +434,7 @@ function buildTV(x, z, rot) {
 // ---------------------------------------------------------------- Petyus's computer (on his desk): monitor, keyboard, mouse, speakers, webcam, tower
 function buildComputer(x, z, rot) {
   const s = 0.0125, grp = group(x, z, rot), D = 0x1c1e22, D2 = 0x2c2f33, KEY = 0x4a4f57, KEYT = 0x6b7078;
+  fx.desk = grp;
   grp.add(vox(s, (g) => {
     // monitor: base, neck, a thin-bezel screen; webcam on top; power LED (dark until on – the glow is separate)
     B(g, s, -0.1, 0.1, 0.77, 0.78, -0.22, -0.08, D2);
