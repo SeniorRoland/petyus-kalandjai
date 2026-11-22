@@ -25,7 +25,7 @@ function covers(it, P) {
     if (t <= 0.2) return false;                                   // behind him (or level with him)
     const ex = ox - DH[0] * t, ez = oz - DH[1] * t;
     if (Math.hypot(ex, ez) > it.r * 0.8) continue;
-    const y = py + t * DIR.y / HL;                                // height of the ray there
+    const y = P.y + py + t * DIR.y / HL;                          // height of the ray there (P.y: part 2's flat is upstairs)
     if (y > it.y && y < it.y + it.h) return true;
   }
   return false;

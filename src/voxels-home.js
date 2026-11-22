@@ -246,6 +246,26 @@ function shelf(seed) {   // standing shelf 0.8 × 0.35 × 1.4 m with towels, bot
   return g;
 }
 
+// ---------------------------------------------------------------- garden: trampoline with a safety net (0.1 m voxels)
+function trampoline(seed) {   // Ø 3 m, mat at 0.6 m, net up to 2.1 m
+  const g = new VoxelGrid(0.1, seed), R = 15;
+  for (let n = 0; n < 6; n++) { const a = n / 6 * Math.PI * 2, i = Math.round(Math.cos(a) * (R - 1)), k = Math.round(Math.sin(a) * (R - 1)); g.box(i, 0, k, i, 5, k, 0x3a3f44); }
+  g.disc(0, 0, R, 5, 5, 0x3a3f44, R - 1.5);
+  g.disc(0, 0, R - 1.5, 5, 5, 0x1c1c1e);
+  g.disc(0, 0, R, 6, 6, 0x3a86ff, R - 2);
+  for (let i = -R - 1; i <= R + 1; i++) for (let k = -R - 1; k <= R + 1; k++) {
+    const d = Math.hypot(i, k); if (Math.abs(d - R) > 0.55) continue;
+    const ang = Math.round((Math.atan2(k, i) + Math.PI) / (Math.PI * 2) * 96);
+    for (let j = 7; j <= 20; j++) {
+      const post = ang % 16 === 0;
+      if (j === 20) g.set(i, j, k, 0x3a86ff);
+      else if (post) g.set(i, j, k, 0x3a3f44);
+      else if (j % 3 === 0 || ang % 3 === 0) g.set(i, j, k, 0x2b2b2b);
+    }
+  }
+  return g;
+}
+
 export const HOME_CATALOG = [
   { id: 'bed_single', name: 'Egyszemélyes ágy', cat: 'Lakás', variants: 3, build: bedSingle, collider: { hx: 0.47, hz: 1.05, h: 0.6 }, desc: 'Fa keret, csíkos paplan, párna. Az 1. változaton plüssmaci.', use: 'Petyus szobája' },
   { id: 'bed_double', name: 'Franciaágy', cat: 'Lakás', variants: 3, build: bedDouble, collider: { hx: 0.82, hz: 1.06, h: 0.6 }, desc: '160 × 200 cm, magas fejtámla, két párna.', use: 'A szülők szobája, a testvér szobája' },
@@ -270,5 +290,6 @@ export const HOME_CATALOG = [
   { id: 'schoolbag', name: 'Iskolatáska', cat: 'Lakás', variants: 1, build: schoolbag, collider: null, desc: 'Kék iskolatáska narancs fedéllel és fényvisszaverőkkel.', use: 'Petyus szobája / előtér' },
   { id: 'shoes', name: 'Cipő', cat: 'Lakás', variants: 3, build: shoes, collider: null, noShadow: true, desc: 'Egy pár cipő: piros (Petyus), fekete (apa), fehér (anya).', use: 'Előtér' },
   { id: 'radiator', name: 'Radiátor', cat: 'Lakás', variants: 1, build: radiator, collider: { hx: 0.45, hz: 0.06, h: 0.7 }, desc: 'Bordás lapradiátor az ablak alatt.', use: 'Szobák, konyha' },
+  { id: 'trampoline', name: 'Trambulin', cat: 'Lakás', variants: 1, build: trampoline, collider: { r: 1.55, h: 2.1 }, desc: '3 m átmérőjű trambulin kék párnázással és védőhálóval.', use: 'A ház mögött, az északi füves részen' },
   { id: 'potted_plant', name: 'Cserepes növény', cat: 'Lakás', variants: 1, build: pottedPlant, collider: { r: 0.18, h: 0.9 }, desc: 'Terrakotta cserép dús lombbal.', use: 'Szobák, erkély' },
 ];

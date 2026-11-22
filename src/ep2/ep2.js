@@ -13,7 +13,8 @@ import { say, toast, updateBubbles } from '../ui.js';
 import { $, V3, clamp, damp, dampAngle, pick } from '../util.js';
 import { INSTANCES, collide, colliders, setGround } from '../world.js';
 import { setPrompt } from '../activities/drinking.js';
-import { SPOTS, buildHome, ceiling, cutWalls, doors, updateHome, wallView } from './home.js';
+import { FY, SPOTS, buildHome, ceiling, cutWalls, doors, updateHome, wallView } from './home.js';
+import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
 import { dressPajama } from './pajama.js';
 
 // ---------------------------------------------------------------- unlocking
@@ -35,29 +36,31 @@ const clockText = (m) => `${Math.floor(m / 60)}:${String(Math.floor(m % 60)).pad
 export function startEp2() {
   G.episode = 2;
   for (const o of [...scene.children]) if (!o.isLight && o !== sun.target) scene.remove(o);   // part 1's world (built at boot)
-  colliders.length = 0; INSTANCES.length = 0; setGround(() => 0);
+  colliders.length = 0; INSTANCES.length = 0;
+  setGround((x, z) => (x > -0.4 && x < 18.3 && z > -2.1 && z < 9.6 ? FY : 0));   // the flat (and its balconies) is upstairs, the yard on the ground
   ball.active = false; roller.rider = null; roller.path = null;
   scene.background.set(0xcde8f5);
   // bright morning: the sun is low in the east (through the east windows), cool sky light
   SUN_OFF.set(30, 26, -4); sun.color.set(0xfff3dc); sun.intensity = 2.3;
-  buildHome();
+  buildHome(placeOutsideProps); buildOutside();
   // the three of them in pajamas (Petyus: the football kit's model – the walking one)
   dressPajama(rigs.foci, 'petyus'); dressPajama(rigs.petya, 'petya'); dressPajama(rigs.angi, 'angi');
   G.petike.riding = false; G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7;
   scene.add(G.petya.rig.root, G.angi.rig.root);
   const s = SPOTS;
   G.petike.place(s.petyusWake.x, s.petyusWake.z, s.petyusWake.h);
-  G.petya.path = null; G.petya.place(s.dadChair.x, s.dadChair.z, s.dadChair.h); G.petya.seatH = 0.45; G.petya.sit = G.petya.sitTarget = 1;
+  G.petya.path = null; G.petya.place(s.dadChair.x, s.dadChair.z, s.dadChair.h); G.petya.seatH = 0.45; G.petya.seatBase = FY; G.petya.sit = G.petya.sitTarget = 1;
   G.angi.path = null; G.angi.sit = G.angi.sitTarget = 0; G.angi.place(s.momCook.x, s.momCook.z, s.momCook.h);
+  for (const a of [G.petike, G.petya, G.angi]) a.pos.y = FY;   // occlude.js measures from here
   G.mode = 'play'; G.pstate = 'home'; G.petyaMode = 'home';
-  // the base framing is the overview (most of the flat): zooming out stops there, zooming in is free
-  G.viewSizeTarget = G.viewSize = 8; G.zoom = 1; G.zoomMax = 1;
-  camTarget.set(G.petike.pos.x, 0, G.petike.pos.z);
+  // the base framing (zoom 1) shows most of the flat; zooming out stops at 2× (the house and the yard), zooming in is free
+  G.viewSizeTarget = G.viewSize = 8; G.zoom = 1; G.zoomMax = 2;   // starts at zoom 1; out to 2× (the house and its surroundings)
+  camTarget.set(G.petike.pos.x, FY, G.petike.pos.z);
   // HUD, help, tab title
   const ep = EPISODES[1];
   document.title = `${SERIES} – ${ep.n}. rész: ${ep.month}`;
   $('hud').innerHTML = '<span class="chip">📅 <span id="e2Date"></span></span> <span class="chip">🕕 <span id="e2Clock"></span></span> <span class="chip" id="e2RoomChip">📍 <span id="e2Room"></span></span>';
-  $('help').innerHTML = '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat</dd><dt>Q / R</dt><dd>nézet forgatása</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); húzással körülnéz</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
+  $('help').innerHTML = '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat</dd><dt>Q / R</dt><dd>nézet forgatása</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
   for (const id of ['kickBtn', 'runBtn']) { const el = $(id); if (el) el.style.display = id === 'kickBtn' ? 'none' : ''; }
   $('skipBtn').style.display = 'none'; $('hud').style.display = 'block'; $('help').style.display = isTouch ? 'none' : 'block';
   if (isTouch) $('touch').style.display = 'block';
@@ -96,14 +99,24 @@ export function toggleFps(on = !fp.on) {
   if (on) {
     fp.yaw = G.petike.heading; fp.pitch = -0.1;
     fpsCam.aspect = window.innerWidth / window.innerHeight; fpsCam.updateProjectionMatrix(); screen.cam = fpsCam;
-    toast('Belső nézet – <b>V</b>: vissza a felülnézetbe', 2.5);
-  } else screen.cam = camera;
+    toast(isTouch ? 'Belső nézet – húzással körülnézel' : 'Belső nézet – <b>kattints a képre</b>, és az egérrel nézel körül · Esc: egér vissza · <b>V</b>: felülnézet', 4);
+  } else { screen.cam = camera; if (document.pointerLockElement) document.exitPointerLock(); }
 }
 const look = (dx, dy) => { fp.yaw -= dx * 0.006; fp.pitch = clamp(fp.pitch - dy * 0.004, -1.0, 0.8); };
 {
   const app = $('app');
-  app.addEventListener('mousedown', (e) => { if (fp.on) { fp.mx = e.clientX; fp.my = e.clientY; } });
-  window.addEventListener('mousemove', (e) => { if (!fp.on || fp.mx === null) return; look(e.clientX - fp.mx, e.clientY - fp.my); fp.mx = e.clientX; fp.my = e.clientY; });
+  // mouse: a click locks the pointer (then just moving the mouse looks round, like in FPS games; Esc frees it);
+  // where pointer lock is not available, dragging with the button held works too
+  app.addEventListener('mousedown', (e) => {
+    if (!fp.on) return;
+    fp.mx = e.clientX; fp.my = e.clientY;
+    if (!document.pointerLockElement && app.requestPointerLock) { try { const r = app.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (err) { /* not allowed here */ } }
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!fp.on) return;
+    if (document.pointerLockElement) { look(e.movementX || 0, e.movementY || 0); return; }
+    if (fp.mx === null) return; look(e.clientX - fp.mx, e.clientY - fp.my); fp.mx = e.clientX; fp.my = e.clientY;
+  });
   window.addEventListener('mouseup', () => { fp.mx = null; });
   app.addEventListener('touchstart', (e) => { if (fp.on && e.touches.length === 1) { const t = e.touches[0]; fp.tid = t.identifier; fp.mx = t.clientX; fp.my = t.clientY; } }, { passive: true });
   app.addEventListener('touchmove', (e) => { if (!fp.on) return; for (const t of e.changedTouches) if (t.identifier === fp.tid) { look(t.clientX - fp.mx, t.clientY - fp.my); fp.mx = t.clientX; fp.my = t.clientY; } }, { passive: true });
@@ -111,8 +124,8 @@ const look = (dx, dy) => { fp.yaw -= dx * 0.006; fp.pitch = clamp(fp.pitch - dy 
 }
 function updateFpsCam() {
   const a = G.petike, fx = Math.sin(fp.yaw), fz = Math.cos(fp.yaw), cp = Math.cos(fp.pitch);
-  fpsCam.position.set(a.pos.x + fx * 0.1, 1.32, a.pos.z + fz * 0.1);
-  fpsCam.lookAt(fpsCam.position.x + fx * cp, 1.32 + Math.sin(fp.pitch), fpsCam.position.z + fz * cp);
+  fpsCam.position.set(a.pos.x + fx * 0.1, FY + 1.32, a.pos.z + fz * 0.1);
+  fpsCam.lookAt(fpsCam.position.x + fx * cp, FY + 1.32 + Math.sin(fp.pitch), fpsCam.position.z + fz * cp);
 }
 
 window.addEventListener('keydown', (e) => {
@@ -182,8 +195,8 @@ function interactHome() {
       txt = 'E – kopogás';
       if (G.usePressed && door.knockT <= 0) {
         door.knockT = 3;
-        say({ headWorld: (o) => o.set(d.x, 2.0, d.z) }, 'KOPP-KOPP', 1.4);
-        setTimeout(() => say({ name: 'Tesó', headWorld: (o) => o.set(d.x, 1.7, d.z + 0.6) }, 'Zárva! Hagyj aludni…', 2.6, ''), 900);
+        say({ headWorld: (o) => o.set(d.x, FY + 2.0, d.z) }, 'KOPP-KOPP', 1.4);
+        setTimeout(() => say({ name: 'Tesó', headWorld: (o) => o.set(d.x, FY + 1.7, d.z + 0.6) }, 'Zárva! Hagyj aludni…', 2.6, ''), 900);
         setTimeout(() => say(G.petike, 'Jó, jó…', 2), 2600);
       }
     } else if (d.kind === 'front') {
@@ -222,7 +235,7 @@ export function stepEp2(dt) {
   if (G.mode === 'play') {
     movePetyus(dt);
     interactHome();
-    updateParents(dt);
+    updateParents(dt); updateOutside(dt);
     const r = updateHome(dt, G.petike.pos, fp.on);
     if (r !== ep2.room) {
       ep2.room = r; $('e2Room').textContent = r ? r.name : '';

@@ -64,7 +64,8 @@ export class Actor {
       r.sh[1].rotation.x = lerp(r.sh[1].rotation.x, -1.6 + w, k); r.sh[1].rotation.z = lerp(r.sh[1].rotation.z, 0.12, k);
     }
   }
-  sync() { if (this.rig.apply) this.rig.apply(); this.rig.root.position.set(this.pos.x, this.riding ? 0 : (this.sit > 0 ? 0 : groundH(this.pos.x, this.pos.z)), this.pos.z); this.rig.root.rotation.y = this.heading; }
+  // seatBase: the floor under a seated actor (part 2: the flat is upstairs)
+  sync() { if (this.rig.apply) this.rig.apply(); this.rig.root.position.set(this.pos.x, this.riding ? 0 : (this.sit > 0 ? this.seatBase || 0 : groundH(this.pos.x, this.pos.z)), this.pos.z); this.rig.root.rotation.y = this.heading; }
 }
 
 // ---------------------------------------------------------------- animals

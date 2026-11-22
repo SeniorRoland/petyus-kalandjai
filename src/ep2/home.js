@@ -11,6 +11,10 @@ import { CATALOG, getGeometry } from '../voxels.js';
 import { INSTANCES, addBoxCol, addCircleCol, partMesh, vcMat } from '../world.js';
 
 export const WALL_H = 2.6;
+// the flat is on the 2nd floor of a block of flats (outside.js builds the rest): its floor is at FY; the home meshes live in
+// homeRoot (local y from 0), the furniture instances and INSTANCES carry the absolute height
+export const FY = 6;
+export const homeRoot = new THREE.Group(); homeRoot.position.y = FY;
 const TE = 0.25, CUT = 0.17, FADE = 0.16, FADE_OUT = 0.2;   // outer wall thickness, a sunk wall's height (× WALL_H), a see-through (inner / outer) wall's opacity
 export const wallView = { mode: 'fade' };   // 'fade' | 'sink'
 const XE = 15.6, ZS = 9.2;   // the flat's inner east and south edges
@@ -110,7 +114,7 @@ function buildWall(w) {
   const mat = vcMat.clone(); mat.transparent = true;
   const glass = new THREE.MeshLambertMaterial({ color: 0x9fd4ef, transparent: true, opacity: GLASS_OP, depthWrite: false });
   main.material = mat; main.castShadow = true; main.receiveShadow = true;
-  const group = new THREE.Group(), body = new THREE.Group(); group.add(body); body.add(main); scene.add(group);
+  const group = new THREE.Group(), body = new THREE.Group(); group.add(body); body.add(main); homeRoot.add(group);
   for (const [a, bb, y0, y1] of panes) {   // the glass of the windows (see-through)
     const len = bb - a - 0.08, h = y1 - y0 - 0.04, g = new THREE.Mesh(new THREE.BoxGeometry(alongX ? len : 0.03, h, alongX ? 0.03 : len), glass);
     if (alongX) g.position.set((a + bb) / 2, y0 + 0.02 + h / 2, tm); else g.position.set(tm, y0 + 0.02 + h / 2, (a + bb) / 2);
@@ -144,9 +148,11 @@ function checker(b, r, s, c1, c2) {
 // ---------------------------------------------------------------- furniture (voxels-home.js, instanced)
 const DEF = Object.fromEntries(CATALOG.map((d) => [d.id, d]));
 const lists = new Map();
-function put(id, x, z, rot = 0, v = 0, o = {}) {
+// a voxel prop: in the flat (y from its floor, with a collider) or outside ({ ground: true }: on the ground, no collider)
+export function put(id, x, z, rot = 0, v = 0, o = {}) {
+  if (o.ground) o.noCol = true;
   const K = id + ':' + v; if (!lists.has(K)) lists.set(K, []);
-  lists.get(K).push({ x, y: o.y || 0, z, rot, sx: o.sx || 1 });
+  lists.get(K).push({ x, y: (o.y || 0) + (o.ground ? 0 : FY), z, rot, sx: o.sx || 1, s: o.s || 1 });
   const c = DEF[id].collider;
   if (c && !o.noCol) {
     if (c.r !== undefined) addCircleCol(x, z, c.r, c.h);
@@ -189,8 +195,8 @@ function buildFurniture() {
     const geo = getGeometry(id, +v); if (!geo.boundingBox) geo.computeBoundingBox();
     const bb = geo.boundingBox, gr = Math.max(-bb.min.x, bb.max.x, -bb.min.z, bb.max.z), gh = bb.max.y;
     const mesh = new THREE.InstancedMesh(geo, vcMat, list.length);
-    list.forEach((it, n) => { e.set(0, it.rot, 0); q.setFromEuler(e); sc.set(it.sx, 1, 1); ps.set(it.x, it.y, it.z); m4.compose(ps, q, sc); mesh.setMatrixAt(n, m4);
-      INSTANCES.push({ mesh, n, id, x: it.x, y: it.y, z: it.z, r: gr * it.sx, h: gh, matrix: m4.clone() }); });   // occlude.js: tall ones in front of Petyus fade
+    list.forEach((it, n) => { e.set(0, it.rot, 0); q.setFromEuler(e); sc.set(it.sx * it.s, it.s, it.s); ps.set(it.x, it.y, it.z); m4.compose(ps, q, sc); mesh.setMatrixAt(n, m4);
+      INSTANCES.push({ mesh, n, id, x: it.x, y: it.y, z: it.z, r: gr * it.sx * it.s, h: gh * it.s, matrix: m4.clone() }); });   // occlude.js: tall ones in front of Petyus fade
     mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere();
     mesh.castShadow = !def.noShadow; mesh.receiveShadow = true; scene.add(mesh);
   }
@@ -198,7 +204,7 @@ function buildFurniture() {
 
 // ---------------------------------------------------------------- balconies (railings), the building's slab
 function buildShell() {
-  scene.add(partMesh((b) => {
+  homeRoot.add(partMesh((b) => {
     // the floor slab of the flat (seen at the edges) and the two balcony slabs
     b.bx(XE / 2, -0.32, ZS / 2, XE + 2 * TE, 0.32, ZS + 2 * TE, 0xd8d0c4, 0, 0.02);
     b.bx(13.66, -0.22, -1.075, 3.98, 0.22, 1.65, 0xd0c7ba, 0, 0.02);
@@ -217,12 +223,13 @@ function buildShell() {
 
 // the ceiling: only in the first-person view (from above the flat is open); unlit – the hemisphere light would tint a downward face green
 export let ceiling = null;
-export function buildHome() {
+export function buildHome(outside) {
+  scene.add(homeRoot);
   ceiling = new THREE.Mesh(new THREE.PlaneGeometry(XE + 2 * TE, ZS + 2 * TE), new THREE.MeshBasicMaterial({ color: 0xe9e5dd, side: THREE.DoubleSide }));
-  ceiling.rotation.x = Math.PI / 2; ceiling.position.set(XE / 2, WALL_H, ZS / 2); ceiling.visible = false; ceiling.receiveShadow = false; scene.add(ceiling);
-  scene.add(partMesh((b) => { for (const r of ROOMS) FLOORS[r.floor](b, r); }));
+  ceiling.rotation.x = Math.PI / 2; ceiling.position.set(XE / 2, WALL_H, ZS / 2); ceiling.visible = false; ceiling.receiveShadow = false; homeRoot.add(ceiling);
+  homeRoot.add(partMesh((b) => { for (const r of ROOMS) FLOORS[r.floor](b, r); }));
   for (const w of WALLS) buildWall(w);
-  furnish(); buildFurniture(); buildShell();
+  furnish(); if (outside) outside(); buildFurniture(); buildShell();
 }
 
 // ---------------------------------------------------------------- walls between the camera and Petyus / his room
@@ -240,6 +247,7 @@ function rayHits(px, py, pz, bx) {   // ray from (px, py, pz) towards the camera
   return true;
 }
 let curRoom = null;
+// (the rays work in the flat's own frame: Petyus's point and the walls both measured from the flat's floor)
 export function updateHome(dt, P, fps = false) {
   DIR.copy(CAM_OFF).normalize();
   const r = roomAt(P.x, P.z); if (r) curRoom = r;
