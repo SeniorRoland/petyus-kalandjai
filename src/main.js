@@ -61,6 +61,7 @@ import { setupInstall } from './install.js';
 import { updateOcclusion } from './occlude.js';
 import { ep2DevStart, ep2HasSave, ep2Unlocked, startEp2, stepEp2 } from './ep2/ep2.js';
 import { setupBackToMenu, updateBackButton } from './backmenu.js';
+import { setupTurnButtons, updateViewTurn } from './viewturn.js';
 
 // ---------------------------------------------------------------- main loop
 let last = performance.now();
@@ -91,7 +92,7 @@ function step(dt) {
     G.usePressed = false; G.qPressed = false;
   }
   updateNPCs(dt); updateAnimals(dt); updateFountain(dt); updateFx(dt);
-  updateCamera(dt); updateOcclusion(dt); updateBubbles(dt);
+  updateViewTurn(dt); updateCamera(dt); updateOcclusion(dt); updateBubbles(dt);
   if (G.toastT > 0) { G.toastT -= dt; if (G.toastT <= 0) $('toast').classList.remove('show'); }
   if (G.bigT > 0) { G.bigT -= dt; if (G.bigT <= 0) $('big').classList.remove('show'); }
   updateAmbience(dt);
@@ -100,7 +101,7 @@ function step(dt) {
 // ---------------------------------------------------------------- boot
 async function boot() {
   if (MOBILE) document.body.classList.add('mobile');   // quality.js: phone / tablet
-  buildEpisodeMenu(); showVersion(); setupInstall(); setupBackToMenu();   // the 12 monthly episodes on the start screen (August playable once loaded) + the version
+  buildEpisodeMenu(); showVersion(); setupInstall(); setupBackToMenu(); setupTurnButtons();   // the 12 monthly episodes on the start screen (August playable once loaded) + the version
   initMischief();       // stars, ⭐ totals, the mischief journal
   buildWorld();
   makeBall();

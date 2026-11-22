@@ -58,6 +58,7 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 | `audio.js` · `ambience.js` | szintetizált hangok, `soundAt` · környezeti hangok |
 | `menu.js` | kezdőképernyő: a 12 havi rész szétszórt polaroidokként (`buildEpisodeMenu`: részenként rögzített `--rot`/`--dx`/`--dy`, minden harmadikon ragasztószalag; egér alatt kiegyenesedik, megnő, előre jön), `setStartLabel` |
 | `mischief.js` | csibészségek: `MISCHIEFS` (id, cím, napló-tipp, `stars(eredmény, extra)` → 1–3, `lower: true` = a kisebb eredmény a jobb), `award(id, eredmény, extra)` (legjobb mentése `localStorage`-ba, felugró csillagok), `toggleJournal()` (napló, **N** / 📒 – játék közben szünetel: `G.paused`), ⭐ összesítés |
+| `viewturn.js` | a nézet forgatása 90°-onként mindkét részben: ⟲ ⟳ gombok jobb felül, billentyű `,` és `.` (a 2. részben Q / R is); a `CAM_OFF`, `CAM_FWD`, `CAM_RIGHT` együtt fordul (`updateViewTurn` minden lépésben) |
 | `backmenu.js` | vissza a főmenübe: 🏠 gomb jobb felül játék közben (mindkét részben), megerősítő ablak (`#backDlg`, a játék közben áll), igen → a rész saját mentése (`G.saveHook`; 2. rész: nap, óra, hely, ajtók, lámpák – `petyus.r2.allapot`, a szeptemberi csempe ilyenkor „Folytatás ▶”), majd a kezdőképernyő (az oldal újraindul paraméterek nélkül) |
 | `ui.js` · `input.js` | képregényes buborékok (`say`), toast, nagy felirat · billentyűzet/érintés |
 | `ball.js` · `player.js` · `roller.js` · `npcs.js` | labda · Petyus irányítása · roller · járókelők, állatok |
