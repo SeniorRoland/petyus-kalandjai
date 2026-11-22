@@ -96,7 +96,7 @@ function movePetyus(dt) {
     const dx = a.pos.x - o.pos.x, dz = a.pos.z - o.pos.z, d = Math.hypot(dx, dz), m = 0.5;
     if (d < m && d > 1e-4) { a.pos.x = o.pos.x + dx / d * m; a.pos.z = o.pos.z + dz / d * m; }
   }
-  a.pos.x = clamp(a.pos.x, -0.5, 14.5); a.pos.z = clamp(a.pos.z, -2, 7.5);
+  a.pos.x = clamp(a.pos.x, -0.5, 18.5); a.pos.z = clamp(a.pos.z, -2.5, 10);
   const spd = Math.hypot(pvel.x, pvel.z);
   if (il > 0.1) a.targetHeading = Math.atan2(wx, wz);
   a.heading = dampAngle(a.heading, a.targetHeading, 14, dt);
@@ -134,7 +134,7 @@ function updateParents(dt) {
   ep2.momT -= dt;
   if (ep2.momT <= 0 && !m.path) {
     ep2.momT = 10 + Math.random() * 8;
-    if (ep2.momAt === 'cook') { m.walkTo([[8.0, 1.0]], 1.2); ep2.momAt = 'fridge'; } else { m.walkTo([[SPOTS.momCook.x, SPOTS.momCook.z]], 1.2); ep2.momAt = 'cook'; }
+    if (ep2.momAt === 'cook') { m.walkTo([[SPOTS.momFridge.x, SPOTS.momFridge.z]], 1.2); ep2.momAt = 'fridge'; } else { m.walkTo([[SPOTS.momCook.x, SPOTS.momCook.z]], 1.2); ep2.momAt = 'cook'; }
   }
   if (!m.path) m.targetHeading = Math.PI;   // facing the counter
   m.update(dt);
