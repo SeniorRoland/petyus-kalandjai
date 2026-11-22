@@ -16,6 +16,7 @@ import { setPrompt } from '../activities/drinking.js';
 import { FY, SPOTS, buildHome, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, updateHome, wallView } from './home.js';
 import { tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
+import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, wheek } from './karcsi.js';
 import { dressPajama } from './pajama.js';
 
 // ---------------------------------------------------------------- unlocking
@@ -43,7 +44,7 @@ export function startEp2() {
   scene.background.set(0xcde8f5);
   // bright morning: the sun is low in the east (through the east windows), cool sky light
   SUN_OFF.set(30, 26, -4); sun.color.set(0xfff3dc); sun.intensity = 2.3;
-  buildHome(placeOutsideProps); buildOutside();
+  buildHome(placeOutsideProps); buildOutside(); buildKarcsi();
   // the three of them in pajamas (Petyus: the football kit's model – the walking one)
   dressPajama(rigs.foci, 'petyus'); dressPajama(rigs.petya, 'petya'); dressPajama(rigs.angi, 'angi');
   G.petike.riding = false; G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7;
@@ -193,8 +194,12 @@ function interactHome() {
   let best = null, bd = 1e9;
   for (const d of doors) { const r = Math.hypot(p.x - d.x, p.z - d.z); if (r < 1.0 && r < bd) { bd = r; best = { d }; } }
   for (const sw of switches) { const r = Math.hypot(p.x - sw.x, p.z - sw.z); if (r < 0.85 && r < bd) { bd = r; best = { sw }; } }
+  { const cf = cageFront(), r = Math.hypot(p.x - cf.x, p.z - cf.z); if (r < 0.9 && r < bd) { bd = r; best = { cage: true }; } }
   let txt = '';
-  if (best && best.sw) {
+  if (best && best.cage) {
+    txt = cageDoorOpen() ? 'E – kalitka becsukása' : 'E – kalitka kinyitása';
+    if (G.usePressed) { toggleCageDoor(); sClick(); }
+  } else if (best && best.sw) {
     const sw = best.sw; txt = sw.on ? 'E – villany le' : 'E – villany fel';
     if (G.usePressed) { toggleSwitch(sw); sClick(); }
   } else if (best) {
@@ -224,11 +229,11 @@ function sClick() { tone('square', 1400, 900, 0.03, 0.04); }
 function updateParents(dt) {
   G.petya.update(dt);
   const m = G.angi;
-  // mum: at the cooktop, now and then to the fridge and back
+  // mum: at the cooktop, now and then to the fridge and back (Karcsi hears the fridge: wheek)
   ep2.momT -= dt;
   if (ep2.momT <= 0 && !m.path) {
     ep2.momT = 10 + Math.random() * 8;
-    if (ep2.momAt === 'cook') { m.walkTo([[SPOTS.momFridge.x, SPOTS.momFridge.z]], 1.2); ep2.momAt = 'fridge'; } else { m.walkTo([[SPOTS.momCook.x, SPOTS.momCook.z]], 1.2); ep2.momAt = 'cook'; }
+    if (ep2.momAt === 'cook') { m.walkTo([[SPOTS.momFridge.x, SPOTS.momFridge.z]], 1.2); ep2.momAt = 'fridge'; setTimeout(wheek, 1800); } else { m.walkTo([[SPOTS.momCook.x, SPOTS.momCook.z]], 1.2); ep2.momAt = 'cook'; }
   }
   if (!m.path) m.targetHeading = ep2.momAt === 'fridge' ? -Math.PI / 2 : Math.PI;   // facing the fridge (west) or the counter (north)
   m.update(dt);
@@ -248,7 +253,7 @@ export function stepEp2(dt) {
   if (G.mode === 'play') {
     movePetyus(dt);
     interactHome();
-    updateParents(dt); updateOutside(dt);
+    updateParents(dt); updateOutside(dt); updateKarcsi(dt);
     // walls solid in the first-person view and when zoomed far out (the roof is on then: the house looks whole)
     const r = updateHome(dt, G.petike.pos, fp.on || G.zoom > 1.55);
     if (r !== ep2.room) {
