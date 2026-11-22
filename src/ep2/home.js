@@ -101,7 +101,10 @@ function buildWall(w) {
           slab(o.a - 0.03, o.b + 0.03, o.y1, o.y1 + 0.18, 0xd8d2c4, off + sg * 0.05, 0.14);
         }
       } else {   // door: frame (+ the lintel, a separate mesh: it is hidden when the wall sinks)
-        piece(b, o.a - 0.05, o.a, 0, DOOR_H + 0.05, COL.trim, -0.03); piece(b, o.b, o.b + 0.05, 0, DOOR_H + 0.05, COL.trim, -0.03);
+        // the frame: jambs reaching 2 cm into the opening and a head piece below the lintel – no face of it lies in the same
+        // plane as a wall face (coplanar overlapping faces flicker, especially close up in the first-person view)
+        piece(b, o.a - 0.05, o.a + 0.02, 0, DOOR_H + 0.03, COL.trim, -0.03); piece(b, o.b - 0.02, o.b + 0.05, 0, DOOR_H + 0.03, COL.trim, -0.03);
+        piece(b, o.a - 0.05, o.b + 0.05, DOOR_H - 0.04, DOOR_H + 0.03, COL.trim, -0.03);
         if (o.leaf) {   // a closed door (the front door, the sibling's room): leaf + handle; it blocks the way
           piece(b, o.a, o.b, 0, DOOR_H, o.leaf === 'front' ? COL.doorDark : COL.door, tw * 0.5);
           const hx = o.leaf === 'front' ? o.a + 0.12 : o.b - 0.12;
@@ -151,7 +154,8 @@ function buildWall(w) {
     d.t = d.open ? 1 : 0; d.col.h = d.open ? -1 : WALL_H; pivot.rotation.y = d.open ? openR : closedR;
     doors.push(d);
   }
-  const lin = lintels.map((o) => { const m = partMesh((b) => piece(b, o.a - 0.05, o.b + 0.05, 0, WALL_H - DOOR_H, color, 0, 9)); m.material = mat; m.position.y = DOOR_H; group.add(m); return m; });
+  // the lintel covers exactly the opening: overlapping the wall would flicker
+  const lin = lintels.map((o) => { const m = partMesh((b) => piece(b, o.a, o.b, 0, WALL_H - DOOR_H, color, 0, 9)); m.material = mat; m.position.y = DOOR_H; group.add(m); return m; });
   for (const [x0, z0, x1, z1] of cols) addBoxCol(x0, z0, x1, z1, WALL_H);
   cutWalls.push({ body, mat, glass, lintels: lin, box: [w.x0, w.z0, w.x1, w.z1], n: w.n, s: 1, o: 1 });
 }
@@ -217,7 +221,12 @@ function furnish() {
   // wall, the wardrobe strip on the sibling's wall (1 m pieces: occlude.js fades them one by one)
   put('bed_double', 12.6, 5.4, 0, 0); put('sofa', 12.6, 8.72, P, 0); put('tv_unit', 8.3, 8.95, P, 0);
   for (const z of [5.0, 6.0, 7.0]) put('wardrobe', 7.24, z, E, 1);
-  put('floor_lamp', 14.3, 8.9); put('dresser', 10.3, 8.95, P, 1); put('rug', 12.6, 7.4, 0, 1);
+  put('floor_lamp', 11.25, 8.95);
+  // the parents' plants under the east window (z 6.9 … 8.7): a plant bench with small ones on it and below, big ones on the floor
+  put('plant_shelf', 15.38, 7.8, W, 0);
+  put('house_plant', 15.38, 7.25, 0, 6, { y: 0.46, noCol: true }); put('house_plant', 15.36, 7.8, 1, 4, { y: 0.46, noCol: true }); put('house_plant', 15.38, 8.35, 2, 5, { y: 0.46, noCol: true });
+  put('house_plant', 15.38, 7.45, 0.5, 4, { y: 0.15, noCol: true }); put('house_plant', 15.38, 8.15, 2.1, 6, { y: 0.15, noCol: true });
+  put('house_plant', 14.95, 6.75, 0.3, 0); put('house_plant', 14.85, 7.6, 1.2, 2); put('house_plant', 14.9, 8.4, 0.8, 3); put('house_plant', 15.15, 8.95, 2.2, 1); put('dresser', 10.2, 8.95, P, 1); put('rug', 12.6, 7.4, 0, 1);
   // balconies
   put('potted_plant', 12.1, -1.55); put('potted_plant', 15.2, -1.55); put('potted_plant', 17.7, 4.7); put('chair', 17.3, 8.3, W, 1);
 }

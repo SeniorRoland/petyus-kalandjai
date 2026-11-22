@@ -104,7 +104,9 @@ export function toggleFps(on = !fp.on) {
     toast(isTouch ? 'Belső nézet – húzással körülnézel' : 'Belső nézet – <b>kattints a képre</b>, és az egérrel nézel körül · Esc: egér vissza · <b>V</b>: felülnézet', 4);
   } else { screen.cam = camera; if (document.pointerLockElement) document.exitPointerLock(); }
 }
-const look = (dx, dy) => { fp.yaw -= dx * 0.006; fp.pitch = clamp(fp.pitch - dy * 0.004, -1.0, 0.8); };
+// mouse look: gentle (pointer lock reports raw pixels, often many per event); one event's jump is capped (browser spikes)
+const LOOK_X = 0.0022, LOOK_Y = 0.0018;
+const look = (dx, dy) => { dx = clamp(dx, -60, 60); dy = clamp(dy, -60, 60); fp.yaw -= dx * LOOK_X; fp.pitch = clamp(fp.pitch - dy * LOOK_Y, -1.0, 0.8); };
 {
   const app = $('app');
   // mouse: a click locks the pointer (then just moving the mouse looks round, like in FPS games; Esc frees it);
@@ -121,7 +123,7 @@ const look = (dx, dy) => { fp.yaw -= dx * 0.006; fp.pitch = clamp(fp.pitch - dy 
   });
   window.addEventListener('mouseup', () => { fp.mx = null; });
   app.addEventListener('touchstart', (e) => { if (fp.on && e.touches.length === 1) { const t = e.touches[0]; fp.tid = t.identifier; fp.mx = t.clientX; fp.my = t.clientY; } }, { passive: true });
-  app.addEventListener('touchmove', (e) => { if (!fp.on) return; for (const t of e.changedTouches) if (t.identifier === fp.tid) { look(t.clientX - fp.mx, t.clientY - fp.my); fp.mx = t.clientX; fp.my = t.clientY; } }, { passive: true });
+  app.addEventListener('touchmove', (e) => { if (!fp.on) return; for (const t of e.changedTouches) if (t.identifier === fp.tid) { look((t.clientX - fp.mx) * 2, (t.clientY - fp.my) * 2); fp.mx = t.clientX; fp.my = t.clientY; } }, { passive: true });
   app.addEventListener('touchend', () => { fp.tid = null; fp.mx = null; });
 }
 function updateFpsCam() {

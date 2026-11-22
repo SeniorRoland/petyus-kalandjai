@@ -275,6 +275,67 @@ function trampoline(seed) {   // Ø 3 m, mat at 0.6 m, net up to 2.1 m
   return g;
 }
 
+// ---------------------------------------------------------------- house plants (the parents' room, under the east window)
+const POTS = [0xc0643c, 0xf3f1ec, 0x3c6e71, 0xd9c7a3, 0x2c2f33];
+function pot(g, r, h, c) { g.disc(0, 0, r, 0, h, c); g.disc(0, 0, r - 0.8, h, h, 0x4e3524); g.disc(0, 0, r + 0.6, h, h, c, r - 0.4); }
+const LEAF = [0x2f7d3a, 0x3f8f3a, 0x4a9c42, 0x58ab4c];
+function housePlant(seed) {
+  const g = grid(seed), r = g.r, lc = () => LEAF[Math.floor(r() * LEAF.length)];
+  switch (seed) {
+    case 1: {   // monstera: big split leaves on long stems, ~1.1 m
+      pot(g, 5, 8, POTS[0]);
+      for (let n = 0; n < 7; n++) {
+        const a = n / 7 * Math.PI * 2 + r() * 0.4, d = 5 + r() * 4, y = 12 + Math.floor(r() * 9), cx = Math.round(Math.cos(a) * d), cz = Math.round(Math.sin(a) * d);
+        g.line([0, 8, 0], [cx, y, cz], 0x3d7a33);
+        g.ellipsoid(cx, y, cz, 4.5, 1.2, 3.5, (i, j, k) => (Math.abs(i - cx) === 1 && (k - cz) % 2 === 0 ? undefined : 0x2a6e33), 0.3);   // the splits
+      }
+      break;
+    }
+    case 2: {   // ficus tree: thin trunk, a dense crown, ~1.7 m
+      pot(g, 5, 9, POTS[1]);
+      g.box(0, 9, 0, 0, 22, 0, 0x7a5a3a); g.line([0, 18, 0], [3, 24, 1], 0x7a5a3a); g.line([0, 20, 0], [-3, 26, -1], 0x7a5a3a);
+      g.ellipsoid(0, 29, 0, 7, 6, 7, () => lc(), 0.7); g.ellipsoid(3, 25, 2, 4, 3, 4, () => lc(), 0.6);
+      break;
+    }
+    case 3: {   // snake plant: upright blades with yellow edges, ~0.9 m
+      pot(g, 4, 8, POTS[2]);
+      for (const [x, z, h] of [[0, 0, 18], [-2, 1, 14], [2, -1, 16], [1, 2, 12], [-1, -2, 15], [2, 2, 10]]) g.box(x, 8, z, x, 8 + h, z, (i, j) => (j === 8 + h ? 0xd9c84a : (j % 3 ? 0x3d6e3a : 0x5b8f4a)));
+      break;
+    }
+    case 4: {   // fern: arching fronds round a low pot, ~0.6 m
+      pot(g, 4, 6, POTS[3]);
+      g.ellipsoid(0, 10, 0, 7, 4, 7, () => (r() < 0.5 ? 0x6cbf58 : 0x58ab4c), 0.9);
+      for (let n = 0; n < 8; n++) { const a = n / 8 * Math.PI * 2; g.line([0, 9, 0], [Math.round(Math.cos(a) * 9), 5, Math.round(Math.sin(a) * 9)], 0x6cbf58); }
+      break;
+    }
+    case 5: {   // cactus + succulent in a small pot, ~0.45 m
+      pot(g, 3, 4, POTS[4]);
+      g.box(-1, 4, -1, 0, 12, 0, (i, j, k) => ((i + j + k) % 3 ? 0x4f8f4a : 0xe8e2b0)); g.box(1, 7, -1, 2, 9, 0, 0x4f8f4a); g.box(2, 9, -1, 2, 11, 0, 0x4f8f4a);
+      g.ellipsoid(1, 5, 1, 1.5, 1, 1.5, 0x8fbf8a, 0.2); g.set(-1, 13, -1, 0xff6b8b);
+      break;
+    }
+    case 6: {   // anthurium: glossy leaves and red flowers, ~0.6 m
+      pot(g, 3.5, 6, POTS[1]);
+      g.ellipsoid(0, 10, 0, 5, 4, 5, () => lc(), 0.7);
+      for (const [x, z] of [[2, 3], [-3, 1], [1, -3], [-1, 2]]) { g.line([0, 7, 0], [x, 13, z], 0x3d7a33); g.box(x, 13, z, x + 1, 13, z, 0xd62828); g.set(x, 14, z, 0xffd23f); }
+      break;
+    }
+    default: {   // pothos: trailing vines hanging over the pot (and the shelf's edge), ~0.35 m
+      pot(g, 3.5, 6, POTS[3]);
+      g.ellipsoid(0, 8, 0, 4.5, 2.5, 4.5, () => (r() < 0.6 ? 0x6fae3e : 0xc9d65a), 0.8);
+      for (const [x, z, len] of [[4, 0, 10], [-4, 1, 7], [1, 4, 12], [-2, -4, 6], [3, 3, 9]]) for (let j = 7; j > 7 - len; j--) if (r() < 0.85) g.set(x + (j % 2), j, z, j % 3 ? 0x6fae3e : 0x4a8f3a);
+    }
+  }
+  return g;
+}
+function plantShelf(seed) {   // a low white plant bench 1.6 × 0.35 × 0.45 m with a lower shelf
+  const g = grid(seed);
+  bx(g, -0.8, 0.42, -0.17, 0.8, 0.46, 0.17, C.white);
+  bx(g, -0.75, 0.12, -0.15, 0.75, 0.15, 0.15, C.white2);
+  for (const x of [-0.78, 0.74]) for (const z of [-0.16, 0.12]) bx(g, x, 0, z, x + 0.04, 0.42, z + 0.04, C.white2);
+  return g;
+}
+
 export const HOME_CATALOG = [
   { id: 'bed_single', name: 'Egyszemélyes ágy', cat: 'Lakás', variants: 3, build: bedSingle, collider: { hx: 0.47, hz: 1.05, h: 0.6 }, desc: 'Fa keret, csíkos paplan, párna. Az 1. változaton plüssmaci.', use: 'Petyus szobája' },
   { id: 'bed_double', name: 'Franciaágy', cat: 'Lakás', variants: 3, build: bedDouble, collider: { hx: 0.82, hz: 1.06, h: 0.6 }, desc: '160 × 200 cm, magas fejtámla, két párna.', use: 'A szülők szobája, a testvér szobája' },
@@ -301,5 +362,7 @@ export const HOME_CATALOG = [
   { id: 'shoes', name: 'Cipő', cat: 'Lakás', variants: 3, build: shoes, collider: null, noShadow: true, desc: 'Egy pár cipő: piros (Petyus), fekete (apa), fehér (anya).', use: 'Előtér' },
   { id: 'radiator', name: 'Radiátor', cat: 'Lakás', variants: 1, build: radiator, collider: { hx: 0.45, hz: 0.06, h: 0.7 }, desc: 'Bordás lapradiátor az ablak alatt.', use: 'Szobák, konyha' },
   { id: 'trampoline', name: 'Trambulin', cat: 'Lakás', variants: 1, build: trampoline, collider: { r: 1.55, h: 2.1 }, desc: '3 m átmérőjű trambulin kék párnázással és védőhálóval.', use: 'A ház mögött, az északi füves részen' },
+  { id: 'house_plant', name: 'Szobanövény', cat: 'Lakás', variants: 7, build: housePlant, collider: { r: 0.25, h: 1.0 }, desc: '1 monstera, 2 fikusz (fa), 3 anyósnyelv, 4 páfrány, 5 kaktusz és pozsgás, 6 flamingóvirág, 7 csüngő futóka (polcra).', use: 'A szülők szobája, a keleti ablak alatt' },
+  { id: 'plant_shelf', name: 'Virágpolc', cat: 'Lakás', variants: 1, build: plantShelf, collider: { hx: 0.8, hz: 0.18, h: 0.5 }, desc: 'Alacsony fehér virágtartó pad alsó polccal.', use: 'A szülők szobája, a keleti ablak alatt' },
   { id: 'potted_plant', name: 'Cserepes növény', cat: 'Lakás', variants: 1, build: pottedPlant, collider: { r: 0.18, h: 0.9 }, desc: 'Terrakotta cserép dús lombbal.', use: 'Szobák, erkély' },
 ];
