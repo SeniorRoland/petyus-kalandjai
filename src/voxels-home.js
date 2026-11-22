@@ -476,17 +476,46 @@ function bookshelf(seed) {   // 1.0 × 0.32 × 1.8 m, back at −z
 // crown of small green leaves and paper-thin coloured bracts, a few branches hanging over the pot's rim
 const BOUGAIN = [[0xd61f8c, 0xe83e9e, 0xb5176f], [0xf27aa8, 0xf59ac0, 0xe0608f], [0xa020a8, 0xb83cc0, 0x8a1a90], [0xf26b3a, 0xf58a5c, 0xe0502a], [0xfbe3ee, 0xf5c2d6, 0xffffff]];
 function bougainvillea(seed) {
-  const s = 0.04, g = new VoxelGrid(s, seed), r = g.r, br = BOUGAIN[(seed - 1) % BOUGAIN.length];
-  const LEAF = [0x2f7d3a, 0x3f8f3a, 0x4a9c42], STEM = 0x6b4a2b, POT = seed % 2 ? 0xc0643c : 0xb5552f;
-  g.disc(0, 0, 4.5, 0, 6, (i, j) => (j === 6 ? 0xd27a4f : POT)); g.disc(0, 0, 5.2, 6, 6, 0xd27a4f, 4.2); g.disc(0, 0, 3.6, 6, 6, 0x4e3524);   // the pot, its rim, soil
-  const tops = [];
-  for (let n = 0; n < 5; n++) { const a = n / 5 * Math.PI * 2 + r(), d = 2 + r() * 4, h = 14 + Math.floor(r() * 9); const t = [Math.round(Math.cos(a) * d), h, Math.round(Math.sin(a) * d)]; g.line([0, 6, 0], t, STEM); tops.push(t); }
-  const crown = (cx, cy, cz, rx, ry, rz) => g.ellipsoid(cx, cy, cz, rx, ry, rz, () => (r() < 0.58 ? br[Math.floor(r() * 3)] : LEAF[Math.floor(r() * 3)]), 1.1);
-  for (const t of tops) crown(t[0], t[1], t[2], 3.5 + r() * 1.5, 3 + r(), 3.5 + r() * 1.5);
-  crown(0, 18, 0, 6, 4, 6);
-  for (let n = 0; n < 4; n++) {   // branches hanging over the rim, flowering at their tips
-    const a = n / 4 * Math.PI * 2 + 0.7, x0 = Math.round(Math.cos(a) * 4), z0 = Math.round(Math.sin(a) * 4), x1 = Math.round(Math.cos(a) * 7), z1 = Math.round(Math.sin(a) * 7);
-    g.line([0, 8, 0], [x0, 9, z0], STEM); g.line([x0, 9, z0], [x1, 4, z1], LEAF[1]); g.ellipsoid(x1, 4, z1, 1.6, 1.6, 1.6, () => br[Math.floor(r() * 3)], 0.8);
+  // 2.5 cm voxels: a tapered pot with a band, a saucer and bark chips; two or three twisting woody stems branching out;
+  // small two-tone leaves along the branches; at the tips clusters of bract triads (three coloured papery bracts round a
+  // tiny cream flower); a few long branches arching over the rim with flowers at their ends
+  const s = 0.025, g = new VoxelGrid(s, seed), r = g.r, br = BOUGAIN[(seed - 1) % BOUGAIN.length];
+  const LEAF = [0x2f7d3a, 0x3a8a3c, 0x4a9c42], LEAF2 = 0x5fae4e, STEM = 0x6b4a2b, STEM2 = 0x7d5733, CREAM = 0xfff3c4;
+  const POT = seed % 2 ? 0xc0643c : 0xb5552f, POT2 = seed % 2 ? 0xa8532f : 0x9c4626;
+  // the pot (radius 7 → 8.5 voxels, 13 high), its rim, a band, the saucer, soil with bark chips
+  for (let j = 0; j <= 13; j++) { const rr = 7 + j * 0.12; g.disc(0, 0, rr, j + 1, j + 1, (i, jj) => (jj === 5 || jj === 6 ? POT2 : POT), rr - 1.2); }
+  g.disc(0, 0, 9.4, 14, 15, 0xd27a4f, 7.6); g.disc(0, 0, 8.6, 0, 0, 0x8a3f22); g.disc(0, 0, 7.4, 1, 1, POT);
+  g.disc(0, 0, 7.6, 13, 13, (i, j, k) => ((i * 7 + k * 3) % 5 === 0 ? 0x8b5a2b : 0x4e3524));
+  // leaves: a little oval (two tones), lying across the branch
+  const leaf = (x, y, z) => { const c = LEAF[Math.floor(r() * 3)], dx = r() < 0.5 ? 1 : 0, dz = 1 - dx; g.set(x, y, z, c); g.set(x + dx, y, z + dz, c); g.set(x - dx, y, z - dz, LEAF2); g.set(x, y + 1, z, c); };
+  // a bract triad: three papery bracts (2×2) round a cream flower
+  const triad = (x, y, z) => {
+    const c0 = br[Math.floor(r() * 3)], a0 = r() * Math.PI * 2;
+    for (let n = 0; n < 3; n++) { const a = a0 + n * 2.1, bx = x + Math.round(Math.cos(a) * 1.5), bz = z + Math.round(Math.sin(a) * 1.5), c = n === 1 ? br[(br.indexOf(c0) + 1) % 3] : c0;
+      g.set(bx, y, bz, c); g.set(bx + 1, y, bz, c); g.set(bx, y + 1, bz, c); g.set(bx, y, bz + 1, c); }
+    g.set(x, y + 1, z, CREAM);
+  };
+  const cluster = (x, y, z, n) => { for (let i = 0; i < n; i++) triad(x + Math.round((r() - 0.5) * 7), y + Math.round((r() - 0.5) * 4), z + Math.round((r() - 0.5) * 7)); for (let i = 0; i < n; i++) leaf(x + Math.round((r() - 0.5) * 8), y + Math.round((r() - 0.5) * 4) - 1, z + Math.round((r() - 0.5) * 8)); };
+  // a branch: a woody line, leaves along it, splitting in two near its end, flowers at the tips
+  const branch = (x, y, z, dx, dy, dz, len, depth) => {
+    let px = x, py = y, pz = z;
+    for (let t = 0; t < len; t++) {
+      px += dx + (r() - 0.5) * 0.6; py += dy; pz += dz + (r() - 0.5) * 0.6;
+      const ix = Math.round(px), iy = Math.round(py), iz = Math.round(pz);
+      g.set(ix, iy, iz, depth > 1 ? STEM : STEM2); if (depth > 1) g.set(ix + 1, iy, iz, STEM2);
+      if (t > 2 && r() < 0.45) leaf(ix + (r() < 0.5 ? 1 : -1), iy, iz + (r() < 0.5 ? 1 : -1));
+    }
+    const ix = Math.round(px), iy = Math.round(py), iz = Math.round(pz);
+    if (depth > 0) for (let k = 0; k < 2; k++) { const a = r() * Math.PI * 2; branch(ix, iy, iz, Math.cos(a) * 0.55, 0.75, Math.sin(a) * 0.55, Math.floor(len * 0.6), depth - 1); }
+    else cluster(ix, iy, iz, 5 + Math.floor(r() * 4));
+  };
+  const stems = 2 + (seed % 2);
+  for (let n = 0; n < stems; n++) { const a = n / stems * Math.PI * 2 + r(); branch(Math.round(Math.cos(a) * 2), 14, Math.round(Math.sin(a) * 2), Math.cos(a) * 0.25, 1, Math.sin(a) * 0.25, 12 + Math.floor(r() * 6), 2); }
+  // arching branches over the rim, ending in a hanging cluster
+  for (let n = 0; n < 4; n++) {
+    const a = n / 4 * Math.PI * 2 + 0.6; let px = Math.cos(a) * 3, py = 15, pz = Math.sin(a) * 3;
+    for (let t = 0; t < 16; t++) { const out = t < 6 ? 0.9 : 0.55, drop = t < 5 ? 0.6 : -0.85; px += Math.cos(a) * out; pz += Math.sin(a) * out; py += drop; g.set(Math.round(px), Math.round(py), Math.round(pz), STEM2); if (t % 3 === 1) leaf(Math.round(px), Math.round(py), Math.round(pz) + 1); }
+    cluster(Math.round(px), Math.round(py) - 1, Math.round(pz), 4);
   }
   return g;
 }
@@ -526,6 +555,6 @@ export const HOME_CATALOG = [
   { id: 'trampoline', name: 'Trambulin', cat: 'Lakás', variants: 1, build: trampoline, collider: { r: 1.55, h: 2.1 }, desc: '3 m átmérőjű trambulin kék párnázással és védőhálóval.', use: 'A ház mögött, az északi füves részen' },
   { id: 'house_plant', name: 'Szobanövény', cat: 'Lakás', variants: 7, build: housePlant, collider: { r: 0.25, h: 1.0 }, desc: '1 monstera, 2 fikusz (fa), 3 anyósnyelv, 4 páfrány, 5 kaktusz és pozsgás, 6 flamingóvirág, 7 csüngő futóka (polcra).', use: 'A szülők szobája, a keleti ablak alatt' },
   { id: 'plant_shelf', name: 'Virágpolc', cat: 'Lakás', variants: 1, build: plantShelf, collider: { hx: 0.8, hz: 0.18, h: 0.5 }, desc: 'Alacsony fehér virágtartó pad alsó polccal.', use: 'A szülők szobája, a keleti ablak alatt' },
-  { id: 'bougainvillea', name: 'Bougainvillea', cat: 'Lakás', variants: 5, build: bougainvillea, collider: { r: 0.22, h: 1.0 }, desc: 'Cserepes bougainvillea: fás szárak, sűrű lomb apró zöld levelekkel és papírvékony színes murvalevelekkel, a cserép peremén átlógó virágos ágak. Színek: bíbor, rózsaszín, lila, narancs, fehér-rózsaszín.', use: 'Petyus erkélye' },
+  { id: 'bougainvillea', name: 'Bougainvillea', cat: 'Lakás', variants: 5, build: bougainvillea, collider: { r: 0.22, h: 1.0 }, noShadow: true, desc: 'Cserepes bougainvillea (2,5 cm-es voxelek): díszcsíkos cserép alátéttel, a földön kéregdarabok; csavarodó, elágazó fás szárak, kétszínű apró levelek, az ágak végén fürtökben hármas murvalevél-csoportok krémszínű apró virággal; a cserép peremén ívesen átlógó, virágos ágak. Színek: bíbor, rózsaszín, lila, narancs, fehér-rózsaszín.', use: 'Petyus erkélye' },
   { id: 'potted_plant', name: 'Cserepes növény', cat: 'Lakás', variants: 1, build: pottedPlant, collider: { r: 0.18, h: 0.9 }, desc: 'Terrakotta cserép dús lombbal.', use: 'Szobák, erkély' },
 ];
