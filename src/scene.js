@@ -24,7 +24,9 @@ export function updateProjection() {
   camera.updateProjectionMatrix();
 }
 updateProjection();
-window.addEventListener('resize', () => { renderer.setSize(window.innerWidth, window.innerHeight); updateProjection(); });
+// the camera the picture is rendered with (and the speech bubbles are placed by): the ortho one, or part 2's first-person view
+export const view = { cam: camera };
+window.addEventListener('resize', () => { renderer.setSize(window.innerWidth, window.innerHeight); updateProjection(); if (view.cam.isPerspectiveCamera) { view.cam.aspect = window.innerWidth / window.innerHeight; view.cam.updateProjectionMatrix(); } });
 
 const hemi = new THREE.HemisphereLight(0xe8f6ff, 0x6f8f4a, 1.35);
 scene.add(hemi);

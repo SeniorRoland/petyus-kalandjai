@@ -1,5 +1,6 @@
 // Petyus kalandjai – 2. rész: Szeptember. Indítás (a park helyett a lakás), fő lépés (stepEp2), naptár és óra, reggeli jelenet.
 // For now: home, morning (6:00–7:30) – the flat, the three of them in pajamas, Petyus walks around; dad and mum keep talking.
+import * as THREE from 'three';
 import { updateFx } from '../actors.js';
 import { updateCamera } from '../camera.js';
 import { isTouch, keys, touch } from '../input.js';
@@ -7,12 +8,12 @@ import { totalStars } from '../mischief.js';
 import { updateOcclusion } from '../occlude.js';
 import { CAM_FWD, CAM_RIGHT } from '../player.js';
 import { EPISODES, G, SERIES, ball, rigs, roller } from '../state.js';
-import { CAM_OFF, SUN_OFF, camTarget, scene, sun } from '../scene.js';
+import { CAM_OFF, SUN_OFF, camTarget, camera, scene, sun, view as screen } from '../scene.js';
 import { say, toast, updateBubbles } from '../ui.js';
 import { $, V3, clamp, damp, dampAngle, pick } from '../util.js';
 import { INSTANCES, collide, colliders, setGround } from '../world.js';
 import { setPrompt } from '../activities/drinking.js';
-import { SPOTS, buildHome, cutWalls, doors, updateHome, wallView } from './home.js';
+import { SPOTS, buildHome, ceiling, cutWalls, doors, updateHome, wallView } from './home.js';
 import { dressPajama } from './pajama.js';
 
 // ---------------------------------------------------------------- unlocking
@@ -49,17 +50,18 @@ export function startEp2() {
   G.petya.path = null; G.petya.place(s.dadChair.x, s.dadChair.z, s.dadChair.h); G.petya.seatH = 0.45; G.petya.sit = G.petya.sitTarget = 1;
   G.angi.path = null; G.angi.sit = G.angi.sitTarget = 0; G.angi.place(s.momCook.x, s.momCook.z, s.momCook.h);
   G.mode = 'play'; G.pstate = 'home'; G.petyaMode = 'home';
-  G.viewSizeTarget = G.viewSize = 6.2; G.zoom = 1;
+  // the base framing is the overview (most of the flat): zooming out stops there, zooming in is free
+  G.viewSizeTarget = G.viewSize = 8; G.zoom = 1; G.zoomMax = 1;
   camTarget.set(G.petike.pos.x, 0, G.petike.pos.z);
   // HUD, help, tab title
   const ep = EPISODES[1];
   document.title = `${SERIES} – ${ep.n}. rész: ${ep.month}`;
   $('hud').innerHTML = '<span class="chip">📅 <span id="e2Date"></span></span> <span class="chip">🕕 <span id="e2Clock"></span></span> <span class="chip" id="e2RoomChip">📍 <span id="e2Room"></span></span>';
-  $('help').innerHTML = '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat</dd><dt>Q / R</dt><dd>nézet forgatása</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
+  $('help').innerHTML = '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat</dd><dt>Q / R</dt><dd>nézet forgatása</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); húzással körülnéz</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
   for (const id of ['kickBtn', 'runBtn']) { const el = $(id); if (el) el.style.display = id === 'kickBtn' ? 'none' : ''; }
   $('skipBtn').style.display = 'none'; $('hud').style.display = 'block'; $('help').style.display = isTouch ? 'none' : 'block';
   if (isTouch) $('touch').style.display = 'block';
-  for (const [t, ttl, fn] of [['⟲', 'Nézet forgatása (Q)', () => turnView(1)], ['⟳', 'Nézet forgatása (R)', () => turnView(-1)], ['🧱', 'Falak: átlátszó / lesüllyedő (T)', toggleWalls]]) {
+  for (const [t, ttl, fn] of [['⟲', 'Nézet forgatása (Q)', () => { if (!fp.on) turnView(1); }], ['⟳', 'Nézet forgatása (R)', () => { if (!fp.on) turnView(-1); }], ['🧱', 'Falak: átlátszó / lesüllyedő (T)', toggleWalls], ['👁', 'Belső nézet (V)', () => toggleFps()]]) {
     const b = document.createElement('button'); b.className = 'btn'; b.textContent = t; b.title = ttl; b.onclick = (e) => { fn(); e.currentTarget.blur(); };
     $('topright').insertBefore(b, $('journalBtn'));
   }
@@ -77,14 +79,46 @@ function applyYaw(y) {
   const sy = Math.sin(y), cy = Math.cos(y);
   CAM_OFF.set(sy * CAM_R, 34, cy * CAM_R); CAM_FWD.set(-sy, 0, -cy); CAM_RIGHT.set(cy, 0, -sy);
 }
-if (import.meta.env.DEV) window.__ep2 = { view, cutWalls, wallView, CAM_OFF };   // debugging (dev server only)
+if (import.meta.env.DEV) window.__ep2 = { view, cutWalls, wallView, CAM_OFF, toggleFps, get fp() { return fp; } };   // debugging (dev server only)
 export function turnView(dir) { view.want += dir * Math.PI / 2; }
 export function toggleWalls() {
   wallView.mode = wallView.mode === 'fade' ? 'sink' : 'fade';
   toast(wallView.mode === 'fade' ? 'Falak: <b>átlátszók</b> (T)' : 'Falak: <b>lesüllyednek</b> (T)', 2);
 }
+// ---------------------------------------------------------------- first-person view (V or the 👁 button)
+// A perspective camera at Petyus's eyes; his own model is hidden, the walls are solid, the ceiling is on.
+// W/S forward and back, A/D sideways, ← → or dragging (mouse / one finger) turns, dragging up and down looks up and down.
+const fpsCam = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.05, 80);
+const fp = { on: false, yaw: 0, pitch: -0.1, mx: null, my: null, tid: null };
+export function toggleFps(on = !fp.on) {
+  fp.on = on; G.fps = on;
+  ceiling.visible = on; G.petike.rig.root.visible = !on;
+  if (on) {
+    fp.yaw = G.petike.heading; fp.pitch = -0.1;
+    fpsCam.aspect = window.innerWidth / window.innerHeight; fpsCam.updateProjectionMatrix(); screen.cam = fpsCam;
+    toast('Belső nézet – <b>V</b>: vissza a felülnézetbe', 2.5);
+  } else screen.cam = camera;
+}
+const look = (dx, dy) => { fp.yaw -= dx * 0.006; fp.pitch = clamp(fp.pitch - dy * 0.004, -1.0, 0.8); };
+{
+  const app = $('app');
+  app.addEventListener('mousedown', (e) => { if (fp.on) { fp.mx = e.clientX; fp.my = e.clientY; } });
+  window.addEventListener('mousemove', (e) => { if (!fp.on || fp.mx === null) return; look(e.clientX - fp.mx, e.clientY - fp.my); fp.mx = e.clientX; fp.my = e.clientY; });
+  window.addEventListener('mouseup', () => { fp.mx = null; });
+  app.addEventListener('touchstart', (e) => { if (fp.on && e.touches.length === 1) { const t = e.touches[0]; fp.tid = t.identifier; fp.mx = t.clientX; fp.my = t.clientY; } }, { passive: true });
+  app.addEventListener('touchmove', (e) => { if (!fp.on) return; for (const t of e.changedTouches) if (t.identifier === fp.tid) { look(t.clientX - fp.mx, t.clientY - fp.my); fp.mx = t.clientX; fp.my = t.clientY; } }, { passive: true });
+  app.addEventListener('touchend', () => { fp.tid = null; fp.mx = null; });
+}
+function updateFpsCam() {
+  const a = G.petike, fx = Math.sin(fp.yaw), fz = Math.cos(fp.yaw), cp = Math.cos(fp.pitch);
+  fpsCam.position.set(a.pos.x + fx * 0.1, 1.32, a.pos.z + fz * 0.1);
+  fpsCam.lookAt(fpsCam.position.x + fx * cp, 1.32 + Math.sin(fp.pitch), fpsCam.position.z + fz * cp);
+}
+
 window.addEventListener('keydown', (e) => {
   if (G.episode !== 2 || G.mode !== 'play' || e.repeat) return;
+  if (e.code === 'KeyV') toggleFps();
+  if (fp.on) return;
   if (e.code === 'KeyQ') turnView(1);
   if (e.code === 'KeyR') turnView(-1);
   if (e.code === 'KeyT') toggleWalls();
@@ -106,11 +140,20 @@ const ROOM_LINES = {
 const pvel = new V3();
 function movePetyus(dt) {
   const a = G.petike;
-  let ix = 0, iy = 0;
-  if (keys.KeyA || keys.ArrowLeft) ix -= 1; if (keys.KeyD || keys.ArrowRight) ix += 1;
-  if (keys.KeyW || keys.ArrowUp) iy += 1; if (keys.KeyS || keys.ArrowDown) iy -= 1;
-  if (touch.active) { ix = touch.x; iy = touch.y; }
-  let wx = CAM_RIGHT.x * ix + CAM_FWD.x * iy, wz = CAM_RIGHT.z * ix + CAM_FWD.z * iy;
+  let ix = 0, iy = 0, wx, wz;
+  if (fp.on) {   // first person: forward / sideways relative to where he looks, ← → turn
+    if (keys.KeyA) ix -= 1; if (keys.KeyD) ix += 1;
+    if (keys.KeyW || keys.ArrowUp) iy += 1; if (keys.KeyS || keys.ArrowDown) iy -= 1;
+    if (keys.ArrowLeft) fp.yaw += 2.2 * dt; if (keys.ArrowRight) fp.yaw -= 2.2 * dt;
+    if (touch.active) { ix = touch.x; iy = touch.y; }
+    const fx = Math.sin(fp.yaw), fz = Math.cos(fp.yaw);
+    wx = fx * iy - fz * ix; wz = fz * iy + fx * ix;
+  } else {
+    if (keys.KeyA || keys.ArrowLeft) ix -= 1; if (keys.KeyD || keys.ArrowRight) ix += 1;
+    if (keys.KeyW || keys.ArrowUp) iy += 1; if (keys.KeyS || keys.ArrowDown) iy -= 1;
+    if (touch.active) { ix = touch.x; iy = touch.y; }
+    wx = CAM_RIGHT.x * ix + CAM_FWD.x * iy; wz = CAM_RIGHT.z * ix + CAM_FWD.z * iy;
+  }
   const il = Math.hypot(wx, wz); if (il > 1) { wx /= il; wz /= il; }
   const sprint = keys.ShiftLeft || keys.ShiftRight || touch.run;
   const maxSp = sprint ? 3.6 : 2.2;   // indoors: slower than in the park
@@ -123,8 +166,8 @@ function movePetyus(dt) {
   }
   a.pos.x = clamp(a.pos.x, -0.5, 18.5); a.pos.z = clamp(a.pos.z, -2.5, 10);
   const spd = Math.hypot(pvel.x, pvel.z);
-  if (il > 0.1) a.targetHeading = Math.atan2(wx, wz);
-  a.heading = dampAngle(a.heading, a.targetHeading, 14, dt);
+  if (fp.on) a.heading = a.targetHeading = fp.yaw;
+  else { if (il > 0.1) a.targetHeading = Math.atan2(wx, wz); a.heading = dampAngle(a.heading, a.targetHeading, 14, dt); }
   a.animate(dt, spd > 0.2, spd); a.sync();
 }
 
@@ -180,7 +223,7 @@ export function stepEp2(dt) {
     movePetyus(dt);
     interactHome();
     updateParents(dt);
-    const r = updateHome(dt, G.petike.pos);
+    const r = updateHome(dt, G.petike.pos, fp.on);
     if (r !== ep2.room) {
       ep2.room = r; $('e2Room').textContent = r ? r.name : '';
       const l = r && ROOM_LINES[r.id];
@@ -190,7 +233,7 @@ export function stepEp2(dt) {
     G.usePressed = false; G.qPressed = false; G.kickPressed = G.kickReleased = false;
   }
   view.yaw = damp(view.yaw, view.want, 7, dt); applyYaw(view.yaw);
-  updateFx(dt); updateCamera(dt); updateOcclusion(dt); updateBubbles(dt);
+  updateFx(dt); updateCamera(dt); if (fp.on) updateFpsCam(); updateOcclusion(dt); updateBubbles(dt);
   if (G.toastT > 0) { G.toastT -= dt; if (G.toastT <= 0) $('toast').classList.remove('show'); }
   if (G.bigT > 0) { G.bigT -= dt; if (G.bigT <= 0) $('big').classList.remove('show'); }
 }

@@ -22,7 +22,7 @@ import { buildPeople, updateAnimals, updateFountain, updateNPCs } from './npcs.j
 import { updatePlayer } from './player.js';
 import { CFG, rigFromGLTF } from './rigs.js';
 import { rollerRide } from './roller.js';
-import { camTarget, camera, renderer, scene, updateProjection } from './scene.js';
+import { camTarget, camera, renderer, scene, updateProjection, view } from './scene.js';
 import { EPISODE, G, ROLLER_SCALE, SERIES, ball, rigs, roller } from './state.js';
 import { buildEpisodeMenu, setStartLabel, showVersion } from './menu.js';
 import { say, toast, updateBubbles } from './ui.js';
@@ -74,7 +74,7 @@ function frame(now) {
     tickCine(dt0);
     for (let i = 0; i < TIME_SCALE; i++) (G.episode === 2 ? stepEp2 : step)(dt0 * cine.slow);
   }
-  renderer.render(scene, camera);
+  renderer.render(scene, view.cam);
   requestAnimationFrame(frame);
 }
 function step(dt) {
@@ -142,7 +142,7 @@ async function boot() {
   requestAnimationFrame(frame);
   window.__game = { THREE, scene, camera, renderer, petike: () => G.petike, petya: () => G.petya, angi: () => G.angi, ball, roller, keys, skipIntro, get mode() { return G.mode; }, get pstate() { return G.pstate; }, get petyaMode() { return G.petyaMode; }, use: () => { G.usePressed = true; }, roller, setZoom: (z) => { G.zoomOverride = z; G.viewSizeTarget = z; G.viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { G.kickPressed = true; setTimeout(() => { G.kickReleased = true; }, p); },
     // manual stepping (works even when the tab is hidden and rAF is paused): __game.tick(seconds)
-    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); (G.episode === 2 ? stepEp2 : step)(dt * cine.slow); } renderer.render(scene, camera); }, cine, ftn, cev, TREES, jug, jugPress, juggle: () => { G.qPressed = true; }, say };
+    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); (G.episode === 2 ? stepEp2 : step)(dt * cine.slow); } renderer.render(scene, view.cam); }, cine, ftn, cev, TREES, jug, jugPress, juggle: () => { G.qPressed = true; }, say };
 }
 boot();
 

@@ -50,7 +50,7 @@ function release(it, g) {
 export function updateOcclusion(dt) {
   viewDir();
   const P = G.petike && G.petike.pos;
-  const active = P && G.mode === 'play';
+  const active = P && G.mode === 'play' && !G.fps;   // not in part 2's first-person view
   if (active) {
     // the nearby tall props in front of him: re-listed a few times a second (cheap), tested every frame
     if ((scanT -= dt) <= 0) { scanT = 0.25; candidates = INSTANCES.filter((it) => it.h >= MIN_H && Math.abs(it.x - P.x) < NEAR && Math.abs(it.z - P.z) < NEAR); }

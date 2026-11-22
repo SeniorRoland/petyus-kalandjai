@@ -34,7 +34,8 @@ window.addEventListener('keyup', (e) => { keys[e.code] = false; if (e.code === '
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 // zoom: wheel, + / − (0 = back to normal), two-finger pinch on touch screens. Range ≈ 3× closer … 2.6× further than normal.
 export const ZOOM_MIN = 0.3, ZOOM_MAX = 2.6;
-export function zoomBy(f) { G.zoom = clamp(G.zoom * f, ZOOM_MIN, ZOOM_MAX); }
+// G.zoomMax: a scene may forbid zooming out past its own framing (part 2: 1 = the overview is the furthest)
+export function zoomBy(f) { G.zoom = clamp(G.zoom * f, ZOOM_MIN, G.zoomMax || ZOOM_MAX); }
 window.addEventListener('wheel', (e) => { if (journalOpen()) return; zoomBy(Math.pow(1.0015, clamp(e.deltaY, -240, 240))); }, { passive: true });
 function toggleMute() { G.muted = !G.muted; $('muteBtn').textContent = G.muted ? '🔇' : '🔊'; if (ambBed) ambBed.gain.value = G.muted ? 0 : 1; }
 $('muteBtn').onclick = toggleMute;
@@ -53,10 +54,10 @@ function panBy(dx, dy) {
 {
   const app = $('app'); let mx = null, my = null, tid = null, tx = 0, ty = 0;
   app.addEventListener('mousedown', (e) => { if (e.button !== 0 && e.button !== 1) return; mx = e.clientX; my = e.clientY; app.classList.add('panning'); });
-  window.addEventListener('mousemove', (e) => { if (mx === null) return; panBy(e.clientX - mx, e.clientY - my); mx = e.clientX; my = e.clientY; });
+  window.addEventListener('mousemove', (e) => { if (mx === null || G.fps) return; panBy(e.clientX - mx, e.clientY - my); mx = e.clientX; my = e.clientY; });
   window.addEventListener('mouseup', () => { mx = null; app.classList.remove('panning'); });
   app.addEventListener('touchstart', (e) => { if (e.touches.length === 1) { const t = e.touches[0]; tid = t.identifier; tx = t.clientX; ty = t.clientY; } else tid = null; }, { passive: true });
-  app.addEventListener('touchmove', (e) => { if (e.touches.length !== 1 || tid === null) return; const t = e.touches[0]; if (t.identifier !== tid) return; panBy(t.clientX - tx, t.clientY - ty); tx = t.clientX; ty = t.clientY; }, { passive: true });
+  app.addEventListener('touchmove', (e) => { if (e.touches.length !== 1 || tid === null) return; const t = e.touches[0]; if (t.identifier !== tid || G.fps) return; panBy(t.clientX - tx, t.clientY - ty); tx = t.clientX; ty = t.clientY; }, { passive: true });
   app.addEventListener('touchend', () => { tid = null; });
 }
 // two-finger pinch on the game view
@@ -65,7 +66,7 @@ function panBy(dx, dy) {
   const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
   const app = $('app');
   app.addEventListener('touchstart', (e) => { if (e.touches.length === 2) { d0 = dist(e.touches); z0 = G.zoom; } }, { passive: true });
-  app.addEventListener('touchmove', (e) => { if (e.touches.length === 2 && d0 > 0) { G.zoom = clamp(z0 * d0 / Math.max(10, dist(e.touches)), ZOOM_MIN, ZOOM_MAX); e.preventDefault(); } }, { passive: false });
+  app.addEventListener('touchmove', (e) => { if (e.touches.length === 2 && d0 > 0) { G.zoom = clamp(z0 * d0 / Math.max(10, dist(e.touches)), ZOOM_MIN, G.zoomMax || ZOOM_MAX); e.preventDefault(); } }, { passive: false });
   app.addEventListener('touchend', (e) => { if (e.touches.length < 2) d0 = 0; });
 }
 export const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;

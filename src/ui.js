@@ -1,5 +1,5 @@
 // Petyus kalandjai – ui: Szövegbuborékok, toast, nagy felirat.
-import { camera } from './scene.js';
+import { view } from './scene.js';
 import { G } from './state.js';
 import { $, V3, clamp, damp, touchText } from './util.js';
 
@@ -48,8 +48,10 @@ export function updateBubbles(dt) {
     const b = bubbles[i]; b.t -= dt;
     if (b.t <= 0) { b.el.remove(); if (b.g) b.g.remove(); bubbles.splice(i, 1); continue; }
     (b.actor.headWorld ? b.actor.headWorld(tmpV) : tmpV.copy(b.actor.root.position).add(new V3(0, 0.9, 0)));
-    tmpV.project(camera);
+    tmpV.project(view.cam);
     b.ax = (tmpV.x * 0.5 + 0.5) * W; b.ay = (-tmpV.y * 0.5 + 0.5) * H;
+    if (tmpV.z > 1) { b.ax = tmpV.x > 0 ? -9999 : 9999; b.ay = H / 2; }
+    if (b.actor.rig && !b.actor.rig.root.visible) { b.ax = W / 2; b.ay = 99999; }   // the speaker is the first-person camera itself: a subtitle   // behind a perspective camera (first-person view): off screen, on the other side
     // a speaker outside the picture talks in a subtitle at the bottom (margin + hysteresis: no flicker at the edge)
     const m = b.sub ? 30 : 0, inView = b.ax > V.x0 + m && b.ax < V.x1 - m && b.ay > V.y0 + 10 + m && b.ay < V.y1 - 10 - m;
     if (b.sub === inView) { b.sub = !inView; b.el.classList.toggle('sub', b.sub); b.placed = false; }
