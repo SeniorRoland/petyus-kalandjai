@@ -17,6 +17,7 @@ import { setPrompt } from '../activities/drinking.js';
 import { FY, SPOTS, buildHome, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, flushToilet, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
 import { noise, tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
+import { buildAppliances, devices, updateAppliances } from './appliances.js';
 import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, wheek } from './karcsi.js';
 import { dressPajama } from './pajama.js';
 
@@ -69,7 +70,10 @@ export function startEp2() {
   scene.background.set(0xcde8f5);
   // bright morning: the sun is low in the east (through the east windows), cool sky light
   SUN_OFF.set(30, 26, -4); sun.color.set(0xfff3dc); sun.intensity = 2.3;
-  buildHome(placeOutsideProps); buildOutside(); buildKarcsi();
+  // the sky light's ground colour was the park's grass (green): indoors every downward face (a fridge's ceiling, the underside
+  // of a shelf) would look green – a warm neutral instead
+  scene.traverse((o) => { if (o.isHemisphereLight) o.groundColor.set(0xb9ab98); });
+  buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances();
   // the three of them in pajamas (Petyus: the football kit's model – the walking one)
   dressPajama(rigs.foci, 'petyus'); dressPajama(rigs.petya, 'petya'); dressPajama(rigs.angi, 'angi');
   G.petike.riding = false; G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7;
@@ -225,10 +229,17 @@ function interactHome() {
   for (const sw of switches) { const r = Math.hypot(p.x - sw.x, p.z - sw.z); if (r < 0.85 && r < bd) { bd = r; best = { sw }; } }
   { const cf = cageFront(), r = Math.hypot(p.x - cf.x, p.z - cf.z); if (r < 0.9 && r < bd) { bd = r; best = { cage: true }; } }
   { const r = Math.hypot(p.x - toiletSeat.x, p.z - (toiletSeat.z + 0.6)); if (r < 0.75 && r < bd) { bd = r; best = { seat: true }; } }
+  for (const dv of devices) { const r = Math.hypot(p.x - dv.x, p.z - dv.z); if (r < dv.r && r < bd) { bd = r; best = { dev: dv }; } }
   let txt = '';
   // next to the toilet: Space (on touch: the LEHÚZÁS button) flushes
-  const kb = $('kickBtn'); if (kb) { const on = isTouch && !!(best && best.seat); kb.style.display = on ? 'block' : 'none'; if (on && kb.textContent !== 'LEHÚZÁS') kb.textContent = 'LEHÚZÁS'; }
-  if (best && best.seat) {
+  // (a device with a second action – the microwave – uses Space too; on touch the RÚGÁS button shows that action's name)
+  const kb = $('kickBtn');
+  if (kb) { const lbl = isTouch ? (best && best.seat ? 'LEHÚZÁS' : best && best.dev && best.dev.alt ? best.dev.alt.short() : '') : ''; kb.style.display = lbl ? 'block' : 'none'; if (lbl && kb.textContent !== lbl) kb.textContent = lbl; }
+  if (best && best.dev) {
+    const dv = best.dev; txt = dv.label() + (dv.alt && !isTouch ? ' · ' + dv.alt.label() : '');
+    if (G.usePressed) dv.use();
+    if (G.kickPressed && dv.alt) dv.alt.use();
+  } else if (best && best.seat) {
     txt = toiletSeatLabel() + (isTouch ? '' : ' · Szóköz – lehúzás');
     if (G.usePressed) { toggleToiletSeat(); sClick(); }
     if (G.kickPressed && flushToilet()) {
@@ -292,7 +303,7 @@ export function stepEp2(dt) {
   if (G.mode === 'play') {
     movePetyus(dt);
     interactHome();
-    updateParents(dt); updateOutside(dt); updateKarcsi(dt);
+    updateParents(dt); updateOutside(dt); updateKarcsi(dt); updateAppliances(dt);
     // walls solid in the first-person view and when zoomed far out (the roof is on then: the house looks whole)
     const r = updateHome(dt, G.petike.pos, fp.on || G.zoom > 1.55);
     if (r !== ep2.room) {

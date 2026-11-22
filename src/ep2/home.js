@@ -208,7 +208,7 @@ function furnish() {
   put('shoes', 0.45, 3.55, E, 0); put('shoes', 0.45, 2.75, E, 1); put('shoes', 2.15, 3.95, P, 2);
   // kitchen: fridge + the counter under the north windows; the table along the wall to Petyus's room (the middle stays free)
   // the wide fridge on the west wall, the counter beside it turning the corner (L): one unit on the west wall, four on the north
-  put('fridge_wide', 5.76, 1.5, E); put('kitchen_unit', 5.73, 0.5, E, 3);
+  put('kitchen_unit', 5.73, 0.5, E, 3);   // (the wide fridge itself opens: appliances.js)
   put('kitchen_unit', 6.6, 0.31, 0, 0); put('kitchen_unit', 7.6, 0.31, 0, 2); put('kitchen_unit', 8.6, 0.31, 0, 1); put('kitchen_unit', 9.6, 0.31, 0, 3);
   put('coffee_maker', 9.75, 0.22, 0, 0, { y: 0.93 });
   put('dining_table', 10.95, 1.95, E);
@@ -216,14 +216,16 @@ function furnish() {
   put('chair', 10.95, 0.78, 0, 0);
   put('potted_plant', 5.8, 3.9);
   // Petyus's room: bed on the kitchen wall, desk with the monitor by the east window, wardrobe on the south wall, play rug, school bag
-  put('bed_single', 12.22, 1.95, 0, 0); put('desk', 15.28, 1.45, W, 0); put('chair', 14.7, 1.45, E, 2);
+  put('bed_single', 12.22, 1.95, 0, 0); put('desk', 15.28, 1.45, W, 1);   // the computer on it: appliances.js put('chair', 14.7, 1.45, E, 2);
   put('desk', 14.3, 0.32, 0, 1);   // the table before the north window, with Karcsi's cage on it (karcsi.js)
   put('wardrobe', 14.3, 3.88, P, 0); put('rug', 13.7, 2.2, 0, 2); put('schoolbag', 13.25, 3.95, P);
   // the sibling's room (locked): double bed, built-in wardrobe, dresser
   put('bed_double', 1.12, 6.8, E, 2); put('wardrobe', 4.4, 4.64, 0, 0); put('wardrobe', 5.4, 4.64, 0, 0); put('dresser', 4.6, 8.92, P, 0); put('rug', 3.4, 6.8, 0, 0);
   // the parents' room: bed on the north wall, the sofa opposite on the south wall, TV on the south wall near the sibling's
   // wall, the wardrobe strip on the sibling's wall (1 m pieces: occlude.js fades them one by one)
-  put('bed_double', 12.6, 5.4, 0, 0); put('nightstand', 11.5, 4.55, 0, 0); put('nightstand', 13.72, 4.55, 0, 1);   // a bedside table with a lamp on each side put('sofa', 12.6, 8.72, P, 0); put('tv_unit', 8.3, 8.95, P, 0);
+  // a bedside table with a lamp on each side of the bed
+  put('bed_double', 12.6, 5.4, 0, 0); put('nightstand', 11.5, 4.55, 0, 0); put('nightstand', 13.72, 4.55, 0, 1);
+  put('sofa', 12.6, 8.72, P, 0); put('tv_unit', 8.3, 8.95, P, 0);
   [4.92, 6.12, 7.32, 8.52].forEach((z, n) => put('sideboard', 7.17, z, E, n % 2));   // half-height drawers + doors along the whole wall
   put('floor_lamp', 11.25, 8.95);
   // the parents' plants under the east window (z 6.9 … 8.7): a plant bench with small ones on it and below, big ones on the floor
