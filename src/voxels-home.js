@@ -154,14 +154,69 @@ function bathSink(seed) {   // vanity unit + basin + mirror on the wall (back at
   bx(g, 0.15, 0.88, -0.2, 0.21, 1.0, -0.14, 0x5fae6a); bx(g, 0.17, 1.0, -0.18, 0.19, 1.08, -0.16, 0xffc24d);   // cup + toothbrush
   return g;
 }
-function toilet(seed) {   // tank at −z
+function toilet(seed) {   // tank at −z; variant 2: without the seat (the game adds a seat that flips up and down)
   const g = grid(seed);
   bx(g, -0.16, 0, -0.12, 0.16, 0.38, 0.28, C.white);
-  bx(g, -0.19, 0.38, -0.14, 0.19, 0.42, 0.32, C.white2);
+  hole(g, -0.1, 0.25, -0.06, 0.1, 0.38, 0.22); bx(g, -0.1, 0.25, -0.06, 0.1, 0.27, 0.22, 0x9fd0ea);   // the bowl
+  if (seed === 1) bx(g, -0.19, 0.38, -0.12, 0.19, 0.42, 0.32, (i, j, k) => (Math.abs(i) < 2 && k > -1 && k < 4 ? undefined : C.white2));
   bx(g, -0.21, 0.35, -0.34, 0.21, 0.8, -0.14, C.white);
+  bx(g, -0.19, 0.8, -0.33, 0.19, 1.15, -0.29, C.white2);   // the lid, up against the tank
   bx(g, -0.05, 0.8, -0.27, 0.05, 0.82, -0.2, C.chrome);
   return g;
 }
+function toiletPaper(seed) {   // wall holder with a roll (back at −z on the wall) + two spare rolls on a little shelf above
+  const g = grid(seed);
+  bx(g, -0.08, 0.7, -0.03, 0.08, 0.74, 0.0, C.chrome); bx(g, -0.08, 0.6, -0.03, -0.06, 0.74, 0.12, C.chrome); bx(g, 0.06, 0.6, -0.03, 0.08, 0.74, 0.12, C.chrome);
+  bx(g, -0.06, 0.6, 0.0, 0.06, 0.72, 0.12, 0xf8f8f4); bx(g, -0.02, 0.57, 0.1, 0.02, 0.62, 0.13, 0xf8f8f4);   // the roll and its loose end
+  bx(g, -0.14, 1.05, -0.03, 0.14, 1.07, 0.1, C.white2);
+  for (const x of [-0.07, 0.07]) bx(g, x - 0.055, 1.07, 0.0, x + 0.055, 1.18, 0.1, 0xf8f8f4);
+  return g;
+}
+function plunger(seed) {   // WC pumpa: red rubber cup, wooden handle, standing in its holder
+  const g = grid(seed);
+  g.disc(0, 0, 2.2, 0, 1, 0xd9d4c8);
+  g.disc(0, 0, 1.6, 1, 2, 0xc62828);
+  bx(g, -0.02, 0.1, -0.02, 0.02, 0.58, 0.02, 0xb07a45);
+  return g;
+}
+// ---------------------------------------------------------------- hallway: wall coat hanger, shoe cabinet
+function wallCoatHanger(seed) {   // a board on the wall (back at −z) with hooks, coats, a hat and a scarf; a hat shelf on top
+  const g = grid(seed);
+  bx(g, -0.6, 1.55, -0.03, 0.6, 1.7, 0.0, C.woodDark);
+  bx(g, -0.6, 1.88, -0.03, 0.6, 1.91, 0.22, C.wood);   // hat shelf
+  for (let n = 0; n < 6; n++) bx(g, -0.5 + n * 0.2, 1.6, 0.0, -0.48 + n * 0.2, 1.63, 0.06, C.chrome);
+  const coats = [[-0.45, 0x3d5a80, 0.6], [-0.22, 0xc8553d, 0.65], [0.02, 0x8ac926, 0.5], [0.25, 0x5a4632, 0.62], [0.45, 0x6a4c93, 0.55]];   // they end above a shoe cabinet (0.95 m)
+  for (const [x, c, l] of coats) { bx(g, x - 0.09, 1.62 - l, 0.0, x + 0.09, 1.62, 0.12, c); bx(g, x - 0.05, 1.62 - l, 0.12, x + 0.05, 1.6, 0.13, (c & 0xfefefe) >> 1); }
+  bx(g, 0.31, 1.25, 0.12, 0.37, 1.6, 0.14, 0xe63946);   // a scarf
+  bx(g, -0.3, 1.91, 0.02, -0.08, 1.99, 0.18, 0x2c2f33); bx(g, -0.34, 1.91, 0.0, -0.04, 1.93, 0.2, 0x2c2f33);   // a hat
+  bx(g, 0.15, 1.91, 0.03, 0.4, 1.96, 0.18, 0xf4a261);   // gloves / a cap
+  return g;
+}
+function shoeCabinet(seed) {   // 1.0 × 0.35 × 0.9 m, two tilt-out flaps, shoes and keys on top
+  const g = grid(seed);
+  bx(g, -0.5, 0.04, -0.17, 0.5, 0.9, 0.17, (i, j, k) => (k === vi(0.17) - 1 && (i === 0 || j === 9) ? C.white2 : C.white));
+  bx(g, -0.48, 0, -0.15, 0.48, 0.04, 0.15, C.dark);
+  for (const [x, y] of [[-0.25, 0.4], [0.25, 0.4], [-0.25, 0.82], [0.25, 0.82]]) bx(g, x - 0.06, y, 0.17, x + 0.06, y + 0.02, 0.2, C.steelDark);
+  bx(g, -0.42, 0.9, -0.1, -0.3, 0.93, 0.08, 0xc9a227); bx(g, -0.2, 0.9, -0.05, -0.05, 0.92, 0.05, 0xb5793f);   // keys, a wallet
+  bx(g, 0.1, 0.9, -0.12, 0.38, 0.95, 0.12, 0xd9d4c8); bx(g, 0.15, 0.95, -0.06, 0.3, 1.1, 0.06, 0x5fae6a);   // a tray, a small plant
+  return g;
+}
+// ---------------------------------------------------------------- parents' room: the low wall-long cabinet (sideboard modules)
+function sideboard(seed) {   // 1.2 × 0.5 × 1.05 m; 1: drawers + two doors, 2: two doors + drawers; things on top
+  const g = grid(seed);   // (fronts and handles one 5 cm voxel each: the body ends at 0.2, fronts 0.2…0.25, handles 0.25…0.3)
+  bx(g, -0.6, 0.06, -0.25, 0.6, 1.0, 0.2, C.white);
+  bx(g, -0.6, 1.0, -0.25, 0.6, 1.05, 0.25, C.wood);
+  bx(g, -0.55, 0, -0.2, 0.55, 0.06, 0.15, C.woodDark);
+  const dx0 = seed === 1 ? -0.6 : 0.0;   // the drawer column (0.6 wide): four drawers with a gap between them
+  for (let n = 0; n < 4; n++) { const y = 0.1 + n * 0.225; bx(g, dx0 + 0.05, y, 0.2, dx0 + 0.55, y + 0.2, 0.25, C.white2); bx(g, dx0 + 0.2, y + 0.05, 0.25, dx0 + 0.4, y + 0.1, 0.3, C.wood); }
+  const d0 = seed === 1 ? 0.0 : -0.6;    // the door pair
+  bx(g, d0 + 0.05, 0.1, 0.2, d0 + 0.3, 0.95, 0.25, C.white2); bx(g, d0 + 0.3, 0.1, 0.2, d0 + 0.55, 0.95, 0.25, 0xe9e5dc);
+  bx(g, d0 + 0.2, 0.45, 0.25, d0 + 0.25, 0.65, 0.3, C.wood); bx(g, d0 + 0.35, 0.45, 0.25, d0 + 0.4, 0.65, 0.3, C.wood);
+  if (seed === 1) { bx(g, -0.4, 1.05, -0.1, -0.3, 1.3, 0.0, 0x3c6e71); bx(g, -0.45, 1.3, -0.15, -0.25, 1.35, 0.05, 0xf3a9c0); bx(g, 0.1, 1.05, -0.15, 0.45, 1.1, 0.1, 0x4f8fd6); bx(g, 0.15, 1.1, -0.1, 0.4, 1.15, 0.05, 0xd9534f); }   // vase, books
+  else { bx(g, -0.3, 1.05, -0.1, -0.05, 1.3, -0.05, 0x2c2f33); bx(g, 0.2, 1.05, -0.1, 0.35, 1.15, 0.05, 0xc0643c); bx(g, 0.25, 1.15, -0.05, 0.3, 1.3, 0.0, 0x58ab4c); }   // a photo frame, a plant
+  return g;
+}
+
 
 // ---------------------------------------------------------------- living room
 const SOFAS = [0x5a7fa8, 0x8b9a5b, 0xb5675b];
@@ -352,7 +407,12 @@ export const HOME_CATALOG = [
   { id: 'bath_sink', name: 'Mosdó tükörrel', cat: 'Lakás', variants: 1, build: bathSink, collider: { hx: 0.33, hz: 0.24, h: 0.9 }, desc: 'Mosdószekrény, csap, fogmosó pohár, tükör a falon.', use: 'Fürdőszoba (reggeli fogmosás)' },
   { id: 'washing_machine', name: 'Mosógép', cat: 'Lakás', variants: 1, build: washingMachine, collider: { hx: 0.3, hz: 0.3, h: 0.9 }, desc: 'Elöltöltős mosógép kerek üvegajtóval és kezelőpanellel.', use: 'Fürdőszoba' },
   { id: 'shelf', name: 'Polc', cat: 'Lakás', variants: 1, build: shelf, collider: { hx: 0.4, hz: 0.18, h: 1.4 }, desc: 'Álló fürdőszobapolc törölközőkkel, flakonokkal és szennyeskosárral.', use: 'Fürdőszoba' },
-  { id: 'toilet', name: 'WC', cat: 'Lakás', variants: 1, build: toilet, collider: { hx: 0.2, hz: 0.33, h: 0.8 }, desc: 'Álló WC tartállyal és öblítőgombbal.', use: 'WC' },
+  { id: 'toilet', name: 'WC', cat: 'Lakás', variants: 2, build: toilet, collider: { hx: 0.2, hz: 0.33, h: 0.8 }, desc: 'Álló WC tartállyal, öblítőgombbal, felhajtott fedéllel; a 2. változat ülőke nélkül (a játékban külön, fel- és lehajtható ülőke kerül rá).', use: 'WC' },
+  { id: 'toilet_paper', name: 'WC-papír-tartó', cat: 'Lakás', variants: 1, build: toiletPaper, collider: null, desc: 'Falra szerelt tartó tekerccsel, fölötte kis polc két tartalék tekerccsel.', use: 'WC' },
+  { id: 'plunger', name: 'WC-pumpa', cat: 'Lakás', variants: 1, build: plunger, collider: null, desc: 'Piros gumifejű pumpa fa nyéllel, a tartójában.', use: 'WC, a sarokban' },
+  { id: 'wall_coat_hanger', name: 'Fali fogas', cat: 'Lakás', variants: 1, build: wallCoatHanger, collider: null, desc: 'Fali fogasléc kalappolccal, rajta öt kabát, sál, kalap és sapka.', use: 'Előszoba' },
+  { id: 'shoe_cabinet', name: 'Cipősszekrény', cat: 'Lakás', variants: 1, build: shoeCabinet, collider: { hx: 0.5, hz: 0.18, h: 0.95 }, desc: 'Két billenőajtós cipősszekrény; a tetején kulcsok, pénztárca, tálca, kis növény.', use: 'Előszoba' },
+  { id: 'sideboard', name: 'Fiókos szekrény', cat: 'Lakás', variants: 2, build: sideboard, collider: { hx: 0.6, hz: 0.26, h: 1.1 }, desc: 'Fél magas (1,05 m) szekrényelem fiókokkal és két ajtóval; egymás mellé rakva egy egész falat beborít. A tetején váza, könyvek, fénykép, növény.', use: 'A szülők szobája, a testvér szobájának falán' },
   { id: 'sofa', name: 'Kanapé', cat: 'Lakás', variants: 3, build: sofa, collider: { hx: 1.0, hz: 0.45, h: 0.9 }, desc: 'Háromszemélyes kanapé karfákkal és díszpárnákkal.', use: 'A szülők szobája (nappali rész)' },
   { id: 'tv_unit', name: 'TV-szekrény', cat: 'Lakás', variants: 1, build: tvUnit, collider: { hx: 0.8, hz: 0.2, h: 1.3 }, desc: 'Alacsony szekrény lapos tévével.', use: 'Nappali' },
   { id: 'floor_lamp', name: 'Állólámpa', cat: 'Lakás', variants: 1, build: floorLamp, collider: { r: 0.18, h: 1.7 }, desc: 'Kerek talp, vékony szár, vászon ernyő meleg fényű izzóval.', use: 'Nappali' },

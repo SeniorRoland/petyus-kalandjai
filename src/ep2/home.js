@@ -199,9 +199,11 @@ function furnish() {
   // bathroom: tub on the west wall, washing machine + shelf on the north wall, the basin on the east wall
   put('bathtub', 0.4, 1.15, E); put('washing_machine', 1.45, 0.33, 0); put('shelf', 2.45, 0.2, 0); put('bath_sink', 3.35, 1.05, W); put('rug', 1.9, 1.55, 0, 0, { sx: 0.6 });
   // WC
-  put('toilet', 4.5, 0.37, 0);
+  put('toilet', 4.5, 0.37, 0, 1);   // without its seat: the seat flips up and down (buildToiletSeat)
+  put('toilet_paper', 5.29, 0.75, W); put('plunger', 5.08, 2.05);
   // hallway: coats, shoes by the front door
-  put('coat_rack', 1.4, 2.7); put('shoes', 0.45, 3.85, E, 0); put('shoes', 0.45, 2.65, E, 1); put('shoes', 0.8, 3.95, E, 2);
+  put('wall_coat_hanger', 1.3, 4.19, P); put('shoe_cabinet', 1.3, 4.02, P);   // on the wall opposite the bathroom, by the front door
+  put('shoes', 0.45, 3.55, E, 0); put('shoes', 0.45, 2.75, E, 1); put('shoes', 2.15, 3.95, P, 2);
   // kitchen: fridge + the counter under the north windows; the table along the wall to Petyus's room (the middle stays free)
   // the wide fridge on the west wall, the counter beside it turning the corner (L): one unit on the west wall, four on the north
   put('fridge_wide', 5.76, 1.5, E); put('kitchen_unit', 5.73, 0.5, E, 3);
@@ -220,7 +222,7 @@ function furnish() {
   // the parents' room: bed on the north wall, the sofa opposite on the south wall, TV on the south wall near the sibling's
   // wall, the wardrobe strip on the sibling's wall (1 m pieces: occlude.js fades them one by one)
   put('bed_double', 12.6, 5.4, 0, 0); put('sofa', 12.6, 8.72, P, 0); put('tv_unit', 8.3, 8.95, P, 0);
-  for (const z of [5.0, 6.0, 7.0]) put('wardrobe', 7.24, z, E, 1);
+  [4.92, 6.12, 7.32, 8.52].forEach((z, n) => put('sideboard', 7.17, z, E, n % 2));   // half-height drawers + doors along the whole wall
   put('floor_lamp', 11.25, 8.95);
   // the parents' plants under the east window (z 6.9 … 8.7): a plant bench with small ones on it and below, big ones on the floor
   put('plant_shelf', 15.38, 7.8, W, 0);
@@ -300,6 +302,65 @@ export function toggleSwitch(sw) {
 // doors that open: E toggles; the collider is off while open (h −1: collide() skips it)
 export function toggleDoor(d) { d.open = !d.open; d.col.h = d.open ? -1 : WALL_H; }
 
+// ---------------------------------------------------------------- pictures on the walls (scenes from part 1, public/kepek)
+// each: the wall face it hangs on (x, z on the face, n: the way it looks), its height and width; 16:9 photos in a frame.
+// A picture belongs to its wall: it fades (or sinks) with it.
+const PICTURES = [
+  { img: 'kep-01-csaladi-nap', x: 0.9, z: 2.42, n: [0, 1], y: 1.55, w: 0.75, frame: 0x2c2f33 },        // hallway
+  { img: 'kep-02-rollerverseny', x: 11.6, z: 1.95, n: [-1, 0], y: 1.6, w: 0.85, frame: 0xb5793f },     // kitchen, above the table
+  { img: 'kep-04-galambraj', x: 7.6, z: 4.2, n: [0, -1], y: 1.6, w: 0.8, frame: 0xf3f1ec },             // kitchen
+  { img: 'kep-08-kutyaszan', x: 11.72, z: 1.95, n: [1, 0], y: 1.55, w: 0.7, frame: 0x3a86ff },          // Petyus's room, above the bed
+  { img: 'kep-10-szundikalo-apa', x: 12.6, z: 4.32, n: [0, 1], y: 1.7, w: 1.1, frame: 0x8a5a2e },       // the parents' bed
+  { img: 'kep-03-lufis-bacsi', x: 6.92, z: 5.6, n: [1, 0], y: 1.8, w: 0.8, frame: 0x2c2f33 },           // above the low cabinet
+  { img: 'kep-05-fotobomba', x: 6.92, z: 7.8, n: [1, 0], y: 1.8, w: 0.8, frame: 0x2c2f33 },
+];
+function wallAt(x, z) { return cutWalls.find((w) => x >= w.box[0] - 0.03 && x <= w.box[2] + 0.03 && z >= w.box[1] - 0.03 && z <= w.box[3] + 0.03); }
+function buildPictures() {
+  const loader = new THREE.TextureLoader();
+  for (const p of PICTURES) {
+    const w = p.w, h = w * 9 / 16, fr = 0.035;
+    const g = new THREE.Group(); g.position.set(p.x + p.n[0] * 0.012, p.y, p.z + p.n[1] * 0.012); g.rotation.y = Math.atan2(p.n[0], p.n[1]);
+    const frameMat = new THREE.MeshLambertMaterial({ color: p.frame, transparent: true });
+    for (const [fx, fy, fw, fh] of [[0, h / 2 + fr / 2, w + 2 * fr, fr], [0, -h / 2 - fr / 2, w + 2 * fr, fr], [-w / 2 - fr / 2, 0, fr, h], [w / 2 + fr / 2, 0, fr, h]]) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(fw, fh, 0.03), frameMat); m.position.set(fx, fy, 0.015); g.add(m);
+    }
+    const tex = loader.load(import.meta.env.BASE_URL + 'kepek/' + p.img + '.jpg'); tex.colorSpace = THREE.SRGBColorSpace;
+    const photoMat = new THREE.MeshLambertMaterial({ map: tex, transparent: true });
+    const photo = new THREE.Mesh(new THREE.PlaneGeometry(w, h), photoMat); photo.position.z = 0.012; g.add(photo);
+    const wall = wallAt(p.x, p.z);
+    if (wall) { wall.body.add(g); (wall.extras ||= []).push(frameMat, photoMat); (wall.pics ||= []).push(g); } else homeRoot.add(g);
+  }
+}
+
+// ---------------------------------------------------------------- the shower over the bath (west wall) and its curtain
+function buildShower() {
+  homeRoot.add(partMesh((b) => {
+    const C2 = 0xd9dee3, zt = 1.75;   // the tap end of the bath (south)
+    b.bx(0.04, 0.95, zt, 0.06, 0.1, 0.22, C2, 0, 0); b.bx(0.1, 0.97, zt - 0.07, 0.06, 0.04, 0.04, C2, 0, 0); b.bx(0.1, 0.97, zt + 0.07, 0.06, 0.04, 0.04, C2, 0, 0);   // mixer + knobs
+    b.bx(0.04, 1.05, zt - 0.35, 0.03, 1.0, 0.03, C2, 0, 0);   // the sliding rail
+    b.bx(0.1, 1.86, zt - 0.35, 0.12, 0.04, 0.04, C2, 0, 0); b.bx(0.2, 1.78, zt - 0.35, 0.1, 0.12, 0.16, C2, 0, 0); b.bx(0.255, 1.79, zt - 0.35, 0.01, 0.1, 0.14, 0x8aa0b0, 0, 0);   // the head
+    for (let k = 0; k < 6; k++) b.bx(0.07, 0.65 + k * 0.07, zt - 0.06 - k * 0.05, 0.025, 0.08, 0.025, 0xb8bcc0, 0, 0);   // the hose (a loose loop)
+    b.bx(0.06, 0.6, zt - 0.32, 0.025, 0.42, 0.025, 0xb8bcc0, 0, 0);
+    // the curtain rail along the bath's outer edge, and the curtain pushed to the north end
+    b.bx(0.8, 2.0, 1.15, 0.025, 0.025, 1.75, C2, 0, 0); b.bx(0.4, 2.0, 0.28, 0.8, 0.025, 0.025, C2, 0, 0); b.bx(0.4, 2.0, 2.02, 0.8, 0.025, 0.025, C2, 0, 0);
+    for (let k = 0; k < 8; k++) b.bx(0.8 + (k % 2 ? 0.035 : -0.035), 0.62, 0.34 + k * 0.065, 0.03, 1.36, 0.07, k % 2 ? 0x9fd4ef : 0xc4e6f6, 0, 0);
+  }));
+}
+
+// ---------------------------------------------------------------- the WC seat: E next to the toilet flips it up / down
+export const toiletSeat = { x: 4.5, z: 0.37, up: false, t: 0, pivot: null };
+function buildToiletSeat() {
+  const pv = new THREE.Group(); pv.position.set(toiletSeat.x, 0.42, toiletSeat.z - 0.13); homeRoot.add(pv);
+  pv.add(partMesh((b) => {   // a ring round the bowl (hinged at its back edge), in the pivot's frame: z 0 … 0.45
+    const c = 0xf7f7f4;
+    b.bx(0, -0.04, 0.05, 0.38, 0.04, 0.1, c, 0, 0); b.bx(0, -0.04, 0.4, 0.3, 0.04, 0.1, c, 0, 0);
+    b.bx(-0.14, -0.04, 0.22, 0.1, 0.04, 0.3, c, 0, 0); b.bx(0.14, -0.04, 0.22, 0.1, 0.04, 0.3, c, 0, 0);
+    b.bx(-0.12, -0.03, 0.0, 0.05, 0.03, 0.04, 0xd9dee3, 0, 0); b.bx(0.12, -0.03, 0.0, 0.05, 0.03, 0.04, 0xd9dee3, 0, 0);   // hinges
+  }));
+  toiletSeat.pivot = pv;
+}
+export function toggleToiletSeat() { toiletSeat.up = !toiletSeat.up; }
+
 // the ceiling: only in the first-person view (from above the flat is open); unlit – the hemisphere light would tint a downward face green
 export let ceiling = null;
 export function buildHome(outside) {
@@ -311,6 +372,7 @@ export function buildHome(outside) {
   homeRoot.add(partMesh((b) => { for (const r of ROOMS) FLOORS[r.floor](b, r); }));
   for (const w of WALLS) buildWall(w);
   furnish(); if (outside) outside(); buildFurniture(); buildShell();
+  buildPictures(); buildShower(); buildToiletSeat();
 }
 
 // ---------------------------------------------------------------- walls between the camera and Petyus / his room
@@ -349,7 +411,10 @@ export function updateHome(dt, P, fps = false) {
     const see = w.o < 0.985;
     w.mat.opacity = see ? w.o : 1; w.mat.depthWrite = !see;
     w.glass.opacity = GLASS_OP * w.o;
+    if (w.extras) for (const m of w.extras) m.opacity = w.o;   // the pictures on it fade with the wall
+    if (w.pics) for (const g of w.pics) g.visible = w.s > 0.9;   // a sunk wall: its pictures are put away (not squashed)
   }
+  if (toiletSeat.pivot) { toiletSeat.t = damp(toiletSeat.t, toiletSeat.up ? 1 : 0, 8, dt); toiletSeat.pivot.rotation.x = -toiletSeat.t * Math.PI * 0.47; }
   for (const d of doors) if (d.pivot) { d.t = damp(d.t, d.open ? 1 : 0, 7, dt); d.pivot.rotation.y = d.closedR + (d.openR - d.closedR) * d.t; }
   return curRoom;
 }

@@ -14,7 +14,7 @@ import { say, toast, updateBubbles } from '../ui.js';
 import { $, V3, clamp, damp, dampAngle, pick } from '../util.js';
 import { INSTANCES, collide, colliders, setGround } from '../world.js';
 import { setPrompt } from '../activities/drinking.js';
-import { FY, SPOTS, buildHome, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, updateHome, wallView } from './home.js';
+import { FY, SPOTS, buildHome, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, toggleToiletSeat, toiletSeat, updateHome, wallView } from './home.js';
 import { tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
 import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, wheek } from './karcsi.js';
@@ -39,7 +39,7 @@ const SAVE_KEY = 'petyus.r2.allapot';
 export function ep2HasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
 function saveEp2() {
   const p = G.petike, st = { v: 1, day: ep2.day, min: ep2.min, x: p.pos.x, z: p.pos.z, h: p.heading,
-    doors: doors.filter((d) => d.pivot).map((d) => d.open), lights: switches.map((s) => s.on), walls: wallView.mode, cage: cageDoorOpen() };
+    doors: doors.filter((d) => d.pivot).map((d) => d.open), seat: toiletSeat.up, lights: switches.map((s) => s.on), walls: wallView.mode, cage: cageDoorOpen() };
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(st)); } catch (e) { /* storage blocked */ }
 }
 function loadEp2() {
@@ -51,6 +51,7 @@ function loadEp2() {
   switches.forEach((s, i) => { if (typeof st.lights?.[i] === 'boolean' && s.on !== st.lights[i]) toggleSwitch(s); });
   if (st.walls === 'fade' || st.walls === 'sink') wallView.mode = st.walls;
   if (typeof st.cage === 'boolean' && st.cage !== cageDoorOpen()) toggleCageDoor();
+  if (typeof st.seat === 'boolean') { toiletSeat.up = st.seat; toiletSeat.t = st.seat ? 1 : 0; }
   return true;
 }
 window.addEventListener('pagehide', () => { if (G.episode === 2 && G.mode === 'play') saveEp2(); });
@@ -218,8 +219,12 @@ function interactHome() {
   for (const d of doors) { const r = Math.hypot(p.x - d.x, p.z - d.z); if (r < 1.0 && r < bd) { bd = r; best = { d }; } }
   for (const sw of switches) { const r = Math.hypot(p.x - sw.x, p.z - sw.z); if (r < 0.85 && r < bd) { bd = r; best = { sw }; } }
   { const cf = cageFront(), r = Math.hypot(p.x - cf.x, p.z - cf.z); if (r < 0.9 && r < bd) { bd = r; best = { cage: true }; } }
+  { const r = Math.hypot(p.x - toiletSeat.x, p.z - (toiletSeat.z + 0.6)); if (r < 0.75 && r < bd) { bd = r; best = { seat: true }; } }
   let txt = '';
-  if (best && best.cage) {
+  if (best && best.seat) {
+    txt = toiletSeat.up ? 'E – ülőke lehajtása' : 'E – ülőke felhajtása';
+    if (G.usePressed) { toggleToiletSeat(); sClick(); }
+  } else if (best && best.cage) {
     txt = cageDoorOpen() ? 'E – kalitka becsukása' : 'E – kalitka kinyitása';
     if (G.usePressed) { toggleCageDoor(); sClick(); }
   } else if (best && best.sw) {
