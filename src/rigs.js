@@ -4,7 +4,8 @@ import { V3, pick, rand } from './util.js';
 import { partMesh } from './world.js';
 
 // ---------------------------------------------------------------- character rigs
-const charMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+// double-sided: where a joint opens up when a limb turns, the inside of the shell shows instead of a see-through hole
+const charMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
 function makeRigShell(scale) {
   const root = new THREE.Group(); const inner = new THREE.Group(); const S = new THREE.Group();
   S.scale.setScalar(scale); root.add(inner); inner.add(S);
@@ -23,6 +24,7 @@ function rigFromSkinned(gltf, cfg) {
   const rig = makeRigShell(cfg.scale); const model = gltf.scene; rig.S.add(model);
   let sm = null;
   model.traverse((o) => { if (o.isMesh) { o.material = charMat; o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; if (o.isSkinnedMesh) sm = o; } });
+  rigidArms(sm);
   const bone = (n) => { const b = sm.skeleton.bones.find((x) => x.name.replace(/^mixamorig:?/, '') === n); if (!b) throw new Error('Hiányzó csont: ' + n); return b; };
   rig.hip = [bone('RightUpLeg'), bone('LeftUpLeg')]; rig.knee = [bone('RightLeg'), bone('LeftLeg')]; rig.foot = [bone('RightFoot'), bone('LeftFoot')];
   rig.armBones = [bone('RightArm'), bone('LeftArm')]; rig.foreBones = [bone('RightForeArm'), bone('LeftForeArm')];
@@ -42,6 +44,28 @@ function rigFromSkinned(gltf, cfg) {
   rig.knee[0].getWorldPosition(hp); rig.kneeH = hp.y;   // standing knee height ≈ shin + foot length (used for sitting)
   rig.height = new THREE.Box3().setFromObject(rig.root).max.y;
   return rig;
+}
+// The models blend the joint rings 50/50 between two bones (shoulder: Arm + Spine2, elbow: Arm + ForeArm). The arms always
+// turn far (≈ 1.5 rad down from the T-pose, more when pointing), and a 50/50 ring then collapses: the upper arm's faces fold
+// over, turn their back to the camera and vanish. Fix: every triangle of an arm moves with one bone only – the one with the
+// most weight on its three corners (the mesh is split per triangle for that).
+function rigidArms(sm) {
+  let g = sm.geometry; if (g.index) g = g.toNonIndexed();
+  const si = g.attributes.skinIndex, sw = g.attributes.skinWeight, names = sm.skeleton.bones.map((b) => b.name.replace(/^mixamorig:?/, ''));
+  const arm = new Set(names.map((n, i) => (/Arm|Hand|Shoulder/.test(n) ? i : -1)).filter((i) => i >= 0));
+  const sum = new Map();
+  for (let t = 0; t < si.count; t += 3) {
+    sum.clear(); let isArm = false;
+    for (let v = t; v < t + 3; v++) for (let c = 0; c < 4; c++) {
+      const w = sw.getComponent(v, c); if (w <= 0.001) continue;
+      const b = si.getComponent(v, c); sum.set(b, (sum.get(b) || 0) + w); if (arm.has(b)) isArm = true;
+    }
+    if (!isArm) continue;
+    let best = -1, bw = -1; for (const [b, w] of sum) if (w > bw + 1e-6) { bw = w; best = b; }
+    for (let v = t; v < t + 3; v++) { si.setXYZW(v, best, 0, 0, 0); sw.setXYZW(v, 1, 0, 0, 0); }
+  }
+  si.needsUpdate = true; sw.needsUpdate = true;
+  if (g !== sm.geometry) { sm.geometry.dispose(); sm.geometry = g; }
 }
 export function rigFromGLTF(gltf, cfg) {
   let isSkinned = false; gltf.scene.traverse((o) => { if (o.isSkinnedMesh) isSkinned = true; });

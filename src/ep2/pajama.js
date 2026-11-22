@@ -14,7 +14,7 @@ export const PAJAMAS = {
 let mat = null;
 function pajamaMaterial() {
   if (mat) return mat;
-  mat = new THREE.MeshLambertMaterial({ vertexColors: true });
+  mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });   // double-sided like the plain character material (rigs.js)
   mat.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec4 pat;\nvarying vec4 vPat;\nvarying vec3 vPP;')
