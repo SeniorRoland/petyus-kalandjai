@@ -9,7 +9,7 @@ import { updateOcclusion } from '../occlude.js';
 import { CAM_FWD, CAM_RIGHT } from '../player.js';
 import { turnView, updateViewTurn, viewTurn } from '../viewturn.js';
 import { EPISODES, G, SERIES, ball, rigs, roller } from '../state.js';
-import { CAM_OFF, SUN_OFF, camTarget, camera, scene, sun, view as screen } from '../scene.js';
+import { CAM_OFF, SUN_OFF, camTarget, camera, renderer, scene, sun, view as screen } from '../scene.js';
 import { say, toast, updateBubbles } from '../ui.js';
 import { $, V3, clamp, damp, dampAngle, pick } from '../util.js';
 import { INSTANCES, collide, colliders, setGround } from '../world.js';
@@ -98,6 +98,11 @@ export function startEp2() {
     $('topright').insertBefore(b, $('menuBtn'));   // ⟲ ⟳ 🧱 👁 🏠 📒 🔊
   }
   $('e2Date').textContent = dateText(); hudClock(true);
+  // compile every material now (also the hidden ones: ceiling, lamps, the WC's water), so nothing stalls the game later when it
+  // first shows up (a shader compiled on first use is a visible hitch)
+  { const hidden = []; scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
+    try { renderer.compile(scene, camera); renderer.compile(scene, fpsCam); } catch (e) { /* best effort */ }
+    for (const o of hidden) o.visible = false; }
   if (resumed) toast(`Folytatás: <b>${dateText()}</b>, ${clockText(ep2.min)}`, 3);
   else setTimeout(() => say(G.angi, 'Jó reggelt, Petyus! Kelj fel, mosd meg a fogad!', 3.6), 900);
 }

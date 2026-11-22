@@ -187,7 +187,8 @@ const lists = new Map();
 // a voxel prop: in the flat (y from its floor, with a collider) or outside ({ ground: true }: on the ground, no collider)
 export function put(id, x, z, rot = 0, v = 0, o = {}) {
   if (o.ground) o.noCol = true;
-  const K = id + ':' + v; if (!lists.has(K)) lists.set(K, []);
+  // one instanced mesh per kind, variant AND 16 m cell: a mesh is culled as a whole, so cells off screen are not drawn at all
+  const K = id + ':' + v + ':' + Math.floor(x / 16) + ':' + Math.floor(z / 16); if (!lists.has(K)) lists.set(K, []);
   lists.get(K).push({ x, y: (o.y || 0) + (o.ground ? 0 : FY), z, rot, sx: o.sx || 1, s: o.s || 1 });
   const c = DEF[id].collider;
   if (c && !o.noCol) {
@@ -243,7 +244,10 @@ function buildFurniture() {
     list.forEach((it, n) => { e.set(0, it.rot, 0); q.setFromEuler(e); sc.set(it.sx * it.s, it.s, it.s); ps.set(it.x, it.y, it.z); m4.compose(ps, q, sc); mesh.setMatrixAt(n, m4);
       INSTANCES.push({ mesh, n, id, x: it.x, y: it.y, z: it.z, r: gr * it.sx * it.s, h: gh * it.s, matrix: m4.clone() }); });   // occlude.js: tall ones in front of Petyus fade
     mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere();
-    mesh.castShadow = !def.noShadow; mesh.receiveShadow = true; scene.add(mesh);
+    // shadows (the shadow pass draws every caster again): the flat's furniture, and outside only the trees and the trampoline –
+    // the parked cars, bushes, rocks, lamps … stay flat (a big saving: 19 cars alone are ~120 000 triangles)
+    const outside = list[0].y < FY - 0.5, castOut = /^(oak|pine|birch|trampoline)$/.test(id);
+    mesh.castShadow = !def.noShadow && (!outside || castOut); mesh.receiveShadow = true; scene.add(mesh);
   }
 }
 
@@ -279,6 +283,14 @@ const SWITCHES = [
   { room: 'szulok', x: 10.55, z: 4.32, n: [0, 1] },   // inside the parents' room, by the door
 ];
 export const switches = [];
+// Every point light costs on every pixel of every lit surface, switched on or not (and adding / removing one recompiles all
+// shaders): a fixed pool of two lights goes to the switched-on rooms nearest Petyus; with all lights off they are dark.
+const LIGHT_POOL = [];
+function updateLights(P) {
+  if (!LIGHT_POOL.length) for (let i = 0; i < 2; i++) { const l = new THREE.PointLight(0xffd9a0, 0, 9, 2); homeRoot.add(l); LIGHT_POOL.push(l); }
+  const on = switches.filter((s) => s.on).sort((a, b) => Math.hypot(a.light.position.x - P.x, a.light.position.z - P.z) - Math.hypot(b.light.position.x - P.x, b.light.position.z - P.z));
+  LIGHT_POOL.forEach((l, i) => { const s = on[i]; l.intensity = s ? LIGHT_ON : 0; if (s) l.position.copy(s.light.position); });
+}
 const LIGHT_ON = 14;
 function buildSwitches() {
   for (const sd of SWITCHES) {
@@ -288,7 +300,7 @@ function buildSwitches() {
     plate.position.set(sd.x + sd.n[0] * 0.008, 1.05, sd.z + sd.n[1] * 0.008); homeRoot.add(plate);
     const rocker = new THREE.Mesh(new THREE.BoxGeometry(alongX ? 0.05 : 0.02, 0.07, alongX ? 0.02 : 0.05), new THREE.MeshLambertMaterial({ color: 0xdedbd2 }));
     rocker.position.set(sd.x + sd.n[0] * 0.02, 1.05, sd.z + sd.n[1] * 0.02); homeRoot.add(rocker);
-    const light = new THREE.PointLight(0xffd9a0, 0, 9, 2); light.position.set(cx, 2.35, cz); homeRoot.add(light);
+    const light = { position: new THREE.Vector3(cx, 2.35, cz) };   // where the room's light is (a pool light goes there when it is on)
     const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.2, 0.14, 12), new THREE.MeshBasicMaterial({ color: 0xdedad2 }));
     lamp.position.set(cx, WALL_H - 0.07, cz); ceiling.add(lamp);
     switches.push({ ...sd, on: false, rocker, light, lamp, alongX, name: r.name });
@@ -296,7 +308,7 @@ function buildSwitches() {
 }
 export function toggleSwitch(sw) {
   sw.on = !sw.on;
-  sw.light.intensity = sw.on ? LIGHT_ON : 0;
+  // (the light itself: updateLights – the nearest switched-on rooms get the pool's lights)
   sw.lamp.material.color.set(sw.on ? 0xfff1c4 : 0xdedad2);
   sw.rocker.material.color.set(sw.on ? 0xffc24d : 0xdedbd2);
   if (sw.alongX) sw.rocker.rotation.x = sw.on ? -0.35 : 0; else sw.rocker.rotation.z = sw.on ? 0.35 : 0;
@@ -428,6 +440,7 @@ export function updateHome(dt, P, fps = false) {
     toiletSeat.lidT = damp(toiletSeat.lidT, toiletSeat.state >= 1 ? 1 : 0, 8, dt); toiletSeat.seatT = damp(toiletSeat.seatT, toiletSeat.state === 2 ? 1 : 0, 8, dt);
     toiletSeat.lid.rotation.x = -toiletSeat.lidT * Math.PI * 0.49; toiletSeat.seat.rotation.x = -toiletSeat.seatT * Math.PI * 0.46;
   }
+  updateLights(P);
   for (const d of doors) if (d.pivot) { d.t = damp(d.t, d.open ? 1 : 0, 7, dt); d.pivot.rotation.y = d.closedR + (d.openR - d.closedR) * d.t; }
   return curRoom;
 }

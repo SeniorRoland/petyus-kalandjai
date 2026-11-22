@@ -228,10 +228,7 @@ export function placeOutsideProps() {
   put('car', -46, -31, Math.PI / 2, 3, g); put('car', 30, 21, Math.PI / 2, 4, g);   // one in front of the garages, one on the street
   [[-46, -18, 0], [-41, -14, Math.PI], [-46, -6, 0], [-41, 0, Math.PI], [-46, 4, 0]].forEach(([x, z, r], n) => put('car', x, z, r, (n * 3 + 1) % 6, g));   // between the blocks
   [[7, -76, 0.3], [11, -79, -0.4], [14, -75, 1.2]].forEach(([x, z, r], n) => put('car', x, z, r, (n + 2) % 6, g));   // at the far end of the meadow
-  // the woods to the east (dense, big trees) and a few trees round the blocks and in the gardens across the street
-  for (let x = 38; x < 60; x += 4.2) for (let z = -78; z < 16; z += 4.4) { const k = Math.round(x * 3 + z); put(k % 3 ? 'oak' : 'pine', x + R(-1.2, 1.2), z + R(-1.2, 1.2), k, Math.abs(k) % 4, { ground: true, s: R(1.4, 2.1) }); }
-  for (const [id, x, z] of [['oak', -27, -18], ['oak', -27, 4], ['birch', -38, 10], ['oak', -60, 12], ['oak', -50, 42], ['birch', -30, 41], ['oak', 0, 42], ['oak', 22, 41], ['birch', 42, 42], ['oak', 60, 41], ['pine', -66, -50], ['oak', -40, -55]])
-    put(id, x, z, x, Math.abs(Math.round(x)) % 4, { ground: true, s: 1.2 });
+  // (the woods to the east and the trees further away are simple low-poly trees: buildFarTrees)
   // trees in the yard and outside
   const T = [['oak', -18, -12], ['oak', -20, 5], ['birch', -13, -18], ['pine', -21, -19], ['oak', 2, -17], ['birch', 9, -19], ['oak', 22, -16], ['pine', 30, -19],
     ['oak', 27, -5], ['birch', 30, 6], ['oak', 25, 13], ['birch', -16, 0], ['pine', 32, 14]];
@@ -249,7 +246,7 @@ export function placeOutsideProps() {
   put('picnic', -16, 8, 0.3, 0, g); put('bikerack', -5.6, 10.1, 0, 0, g);
   for (const [x, z] of [[-12, -15], [24, -3], [-19, -1]]) put('rock', x, z, x, Math.abs(x) % 4, g);
   // grass tufts and wild flowers on the lawns (seeded, so the same every time)
-  for (let n = 0; n < 340; n++) { const a = AREAS[n % 3], x = R(a.x0, a.x1), z = R(a.z0, a.z1); put(n % 6 ? 'grass' : 'wildflower', x, z, n, n % 6, { ground: true, s: R(0.8, 1.3) }); }
+  for (let n = 0; n < 180; n++) { const a = AREAS[n % 3], x = R(a.x0, a.x1), z = R(a.z0, a.z1); put(n % 6 ? 'grass' : 'wildflower', x, z, n, n % 6, { ground: true, s: R(0.8, 1.3) }); }
 }
 
 // ---------------------------------------------------------------- life in the yard: children, dogs, cats
@@ -322,10 +319,33 @@ export function updateOutside(dt) {
   }
 }
 
+// ---------------------------------------------------------------- far trees: a handful of boxes each (performance)
+// The detailed voxel trees have ~4000 triangles each; the 100+ trees of the woods and the neighbourhood would be over a million
+// per frame (and again for the shadows). Far away a few stacked boxes look the same: trunk + a crown of three blocks (oak /
+// birch) or three shrinking tiers (pine). They are one merged mesh and cast no shadow (they are outside the shadow area).
+function farTree(b, x, z, s, kind, n) {
+  const leaf = [[0x3f8f3a, 0x4a9c42, 0x58ab4c], [0x24603a, 0x2c6f42, 0x367d4a], [0x7dbb40, 0x8cc84b, 0x9fd25a]][kind];
+  b.bx(x, 0, z, 0.35 * s, 1.6 * s, 0.35 * s, kind === 2 ? 0xeeeee6 : 0x6e4a2b, n * 0.7, 0.05);
+  if (kind === 1) { for (let t = 0; t < 3; t++) b.bx(x, (1.0 + t * 1.0) * s, z, (2.6 - t * 0.75) * s, 1.1 * s, (2.6 - t * 0.75) * s, leaf[t], n * 0.7 + t * 0.4, 0.06); return; }
+  b.bx(x, 1.5 * s, z, 2.6 * s, 1.6 * s, 2.4 * s, leaf[0], n * 0.7, 0.06);
+  b.bx(x + 0.3 * s, 2.6 * s, z - 0.2 * s, 2.0 * s, 1.2 * s, 2.1 * s, leaf[1], n * 0.7 + 0.5, 0.06);
+  b.bx(x - 0.2 * s, 3.4 * s, z + 0.1 * s, 1.3 * s, 0.8 * s, 1.3 * s, leaf[2], n * 0.7 + 0.2, 0.06);
+}
+function buildFarTrees(b) {
+  let n = 0;
+  for (let x = 38; x < 60; x += 4.2) for (let z = -78; z < 16; z += 4.4) { const k = Math.round(x * 3 + z); farTree(b, x + R(-1.2, 1.2), z + R(-1.2, 1.2), R(1.4, 2.1), k % 3 ? 0 : 1, n++); }
+  for (const [kind, x, z] of [[0, -27, -18], [0, -27, 4], [2, -38, 10], [0, -60, 12], [0, -50, 42], [2, -30, 41], [0, 0, 42], [0, 22, 41], [2, 42, 42], [0, 60, 41], [1, -66, -50], [0, -40, -55]]) farTree(b, x, z, 1.2, kind, n++);
+}
+
 // the props go in with the flat's furniture (home.js buildHome(placeOutsideProps)); this builds the rest
 export function buildOutside() {
-  scene.add(partMesh((b) => buildGround(b)));
-  scene.add(partMesh((b) => { buildHouse(b); buildNeighbours(b); buildFence(b); buildYard(b); }));
+  // separate meshes, so each is culled on its own and only what needs to casts a shadow (the shadow pass draws casters again)
+  const add = (fn, cast) => { const m = partMesh(fn); m.castShadow = cast; scene.add(m); return m; };
+  add((b) => buildGround(b), false);
+  add((b) => { buildHouse(b); buildYard(b); }, true);
+  add((b) => buildNeighbours(b), false);
+  add((b) => buildFence(b), false);
+  add((b) => buildFarTrees(b), false);
   buildRoof();
   buildLife();
 }

@@ -148,7 +148,7 @@ const DEF = Object.fromEntries(CATALOG.map((d) => [d.id, d]));
 const instLists = new Map();
 function place(id, x, y, z, rot = 0, s = 1, variant = null, opts = {}) {
   const def = DEF[id]; const v = variant ?? Math.floor(rand() * def.variants);
-  const K = id + ':' + v; if (!instLists.has(K)) instLists.set(K, []);
+  const K = id + ':' + v + ':' + Math.floor(x / 16) + ':' + Math.floor(z / 16); if (!instLists.has(K)) instLists.set(K, []);
   instLists.get(K).push({ x, y, z, rot, s, sx: opts.sx ?? 1 });
   const c = def.collider;
   if (c && !opts.noCollider) {
@@ -156,6 +156,7 @@ function place(id, x, y, z, rot = 0, s = 1, variant = null, opts = {}) {
     else { const cs = Math.abs(Math.cos(rot)), sn = Math.abs(Math.sin(rot)); const hx = (cs * c.hx + sn * c.hz) * s, hz = (sn * c.hx + cs * c.hz) * s; addBoxCol(x - hx, z - hz, x + hx, z + hz, c.h * s); }
   }
 }
+// (instances are grouped per kind, variant and 16 m cell: an InstancedMesh is culled as a whole, so cells off screen cost nothing)
 // every placed prop instance (occlude.js makes the ones in front of Petyus see-through): mesh + index, position, size
 export const INSTANCES = [];
 function buildInstances() {
