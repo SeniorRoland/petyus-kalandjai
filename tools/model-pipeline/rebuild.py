@@ -11,8 +11,8 @@ exec(open(os.path.join(HERE, 'tpose.py'), encoding='utf-8').read().split('# arm 
 import rig as RG
 from pygltflib import GLTF2
 
-ARMX = {'petya': 0.345, 'angi': 0.265, 'petike_foci': 0.265}
-ARMY = {'petya': (0.77, 1.42), 'angi': (0.95, 1.6), 'petike_foci': (0.58, 1.27)}
+ARMX = {'petya': 0.345, 'angi': 0.22, 'petike_foci': 0.265}   # angi: her slimmer torso (reshape_angi) ends at 0.20
+ARMY = {'petya': (0.77, 1.42), 'angi': (0.95, 1.52), 'petike_foci': (0.58, 1.27)}
 BODY = {  # torso / leg landmarks: hip = top of the trousers/shorts, knee just below the shorts (or mid-leg for long trousers)
 # (every landmark on a voxel boundary – a multiple of S = 0.04 –, or the faces of a limb would be torn between two bones)
 # legBox (optional): the leg column (|x| from … to, z from … to, above y): there, whatever is outside it belongs to the body
@@ -33,25 +33,43 @@ def widen_shins(vox, ctr, legInner, y0, y1):
         if n not in vox and abs(ctr(n)[0]) > legInner: add[n] = col
     vox.update(add); return len(add)
 
-# Angi's lower body, rebuilt on the voxel grid (the source had a wide, deep block from 0.64 to 0.94 – jeans + a white band –
-# on thin legs: it looked like a nappy). Now: a narrower waist under the top, hips as wide as the bust, plain grey shorts down
-# to mid-thigh, the legs part at 0.86 (longer legs), the thighs taper into the existing shins.
+# Angi's body, rebuilt on the voxel grid. The source had a wide, deep block from 0.64 to 0.94 (jeans + a white band) on thin
+# legs – it looked like a nappy –, a broad, thick torso and arms thicker than the legs. Now: a slimmer top (bust ±0.20, waist
+# ±0.16, 5 voxels deep, a little bust in front), thin arms (2 wide, 3 deep – thinner than the legs), hips as wide as the bust,
+# plain grey shorts down to mid-thigh, the legs part at 0.86 (longer legs), the thighs taper into the existing shins.
 GREY, GREY_D = (0.25, 0.255, 0.27), (0.16, 0.165, 0.18)   # vertex colours are linear: a mid grey on screen
 def reshape_angi(vox, OFFS):
     I = lambda x: int(round((x - OFFS[0]) / S)); J = lambda y: int(round((y - OFFS[1]) / S)); K = lambda z: int(round((z - OFFS[2]) / S))
     SKIN, SKIN_E = vox[(I(0.08), J(0.40), K(-0.02))], vox[(I(0.12), J(0.40), K(0.02))]   # the shin's edge and middle colours
     def colr(c): return tuple(float(v) for v in c)
-    for k in [k for k in vox if 0.63 < k[1] * S + OFFS[1] < 0.96]: vox.pop(k)          # the old hip block (the top's hem at 0.98 stays)
-    # the waist: the top's outermost columns go between the bust and the hem (the hanging arms are further out)
-    for k in [k for k in vox if 1.04 < k[1] * S + OFFS[1] < 1.2 and abs(k[0] * S + OFFS[0]) > 0.22 and abs(k[0] * S + OFFS[0]) < 0.26]: vox.pop(k)
+    C = lambda x, y, z: vox[(I(x), J(y), K(z))]
+    TOP_F, TOP_B, TOP_S = C(0, 1.30, 0.06), C(0, 1.30, -0.10), C(0.24, 1.30, 0.02)      # the top: front, back, sides
+    HEM_F, HEM_B, HEM_S = C(0, 1.02, 0.06), C(0, 1.02, -0.10), C(0.24, 1.02, 0.02)      # its darker hem
+    ARM_O, ARM_F, ARM_B, HAND = C(0.40, 1.30, 0.02), C(0.32, 1.30, 0.06), C(0.32, 1.30, -0.06), C(0.32, 1.02, 0.02)
+    for k in [k for k in vox if 0.63 < k[1] * S + OFFS[1] < 1.56]: vox.pop(k)          # hips, torso and the hanging arms: rebuilt
+    def top(y, hw, front, back, side, z0=-0.10, z1=0.06):
+        for xi in range(I(-hw), I(hw) + 1):
+            for zi in range(K(z0), K(z1) + 1):
+                vox[(xi, J(y), zi)] = colr(side if xi in (I(-hw), I(hw)) else front if zi * S + OFFS[2] > -0.01 else back)
+    for y in (1.54, 1.50, 1.46, 1.42, 1.38, 1.34, 1.30, 1.26): top(y, 0.20, TOP_F, TOP_B, TOP_S)   # shoulders, bust
+    for y in (1.42, 1.38, 1.34):                                                                        # the bust, in front
+        for xi in range(I(-0.12), I(0.12) + 1): vox[(xi, J(y), K(0.10))] = colr(TOP_F)
+    for y in (1.22, 1.18, 1.14, 1.10, 1.06): top(y, 0.16, TOP_F, TOP_B, TOP_S)                       # the waist
+    for y in (1.02, 0.98): top(y, 0.20, HEM_F, HEM_B, HEM_S)                                            # the hem
+    for sg in (1, -1):                                                                                  # the arms, hanging
+        for xi in (I(sg * 0.24), I(sg * 0.28)):
+            for y in [1.02 + 0.04 * n for n in range(13)]:
+                for zi in range(K(-0.06), K(0.02) + 1):
+                    z = zi * S + OFFS[2]
+                    vox[(xi, J(y), zi)] = colr(HAND if y < 1.04 else ARM_O if xi == I(sg * 0.28) else ARM_F if z > 0 else ARM_B)
     def box(x0, x1, y, z0, z1, c, edge=None):
         for xi in range(I(x0), I(x1) + 1):
             for zi in range(K(z0), K(z1) + 1):
                 e = edge is not None and (xi in (I(x0), I(x1)))
                 vox[(xi, J(y), zi)] = colr(edge if e else c)
-    for y in (0.94, 0.90): box(-0.24, 0.24, y, -0.14, 0.10, GREY)                       # hips (shorts' seat)
+    for y in (0.94, 0.90): box(-0.20, 0.20, y, -0.14, 0.06, GREY)                       # hips (shorts' seat)
     for sg in (1, -1):
-        lo, hi = sorted((sg * 0.04, sg * 0.20)); box(lo, hi, 0.86, -0.14, 0.10, GREY)     # the shorts' legs part
+        lo, hi = sorted((sg * 0.04, sg * 0.20)); box(lo, hi, 0.86, -0.12, 0.06, GREY)     # the shorts' legs part
         lo, hi = sorted((sg * 0.04, sg * 0.16))
         for y in (0.82, 0.78): box(lo, hi, y, -0.10, 0.06, GREY)
         box(lo, hi, 0.74, -0.10, 0.06, GREY_D)                                            # the hem
