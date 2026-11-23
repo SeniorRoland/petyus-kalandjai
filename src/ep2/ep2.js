@@ -18,9 +18,10 @@ import { FY, SPOTS, buildHome, lightPool, ceiling, cutWalls, doors, switches, to
 import { noise, tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
 import { buildAppliances, devices, seating, updateAppliances } from './appliances.js';
-import { buildInventory, cycleItem, holdingController, invAction, pickLabel, pickUp, pickables, selectItem, updateInventory } from './inventory.js';
+import { buildInventory, cycleItem, holdingController, inv, invAction, itemObj, pickLabel, pickUp, pickables, selectItem, updateInventory } from './inventory.js';
 import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, wheek } from './karcsi.js';
 import { dressPajama } from './pajama.js';
+import { cf, coffeeTick, dadBusy } from './coffee.js';
 
 // ---------------------------------------------------------------- unlocking
 export const EP2_STARS = 15;   // part 1's mischief stars needed
@@ -32,7 +33,10 @@ export const ep2DevStart = () => import.meta.env.DEV && new URLSearchParams(loca
 // ---------------------------------------------------------------- calendar and clock
 const DAY0 = new Date(2026, 8, 2), DAYS = 29;   // 2026. szeptember 2. (szerda) … 30. (szerda)
 const WEEKDAYS = ['vasárnap', 'hétfő', 'kedd', 'szerda', 'csütörtök', 'péntek', 'szombat'];
-export const ep2 = { day: 0, min: 6 * 60, room: null, talkT: 6, seen: new Set(), momT: 9, momAt: 'cook', petyusLine: 0 };
+export const ep2 = { day: 0, min: 6 * 60, room: null, talkT: 6, seen: new Set(), momT: 9, momAt: 'cook', petyusLine: 0, lateMin: 0 };
+// the mischiefs make the family late (minutes): shown on the HUD (⏰)
+export function addLate(min) { ep2.lateMin += min; hudLate(); toast(`⏰ Késés: <b>+${min} perc</b>`, 2.6); }
+function hudLate() { const el = $('e2Late'); if (!el) return; el.style.display = ep2.lateMin > 0 ? '' : 'none'; $('e2LateN').textContent = ep2.lateMin; }
 
 // ---------------------------------------------------------------- saving the day's state (before going back to the menu, on leaving)
 // part 1's mischief results are saved on their own (mischief.js); part 2 keeps where the player is: the day, the clock,
@@ -41,7 +45,7 @@ const SAVE_KEY = 'petyus.r2.allapot';
 export function ep2HasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
 function saveEp2() {
   const p = G.petike, st = { v: 1, day: ep2.day, min: ep2.min, x: p.pos.x, z: p.pos.z, h: p.heading,
-    doors: doors.filter((d) => d.pivot).map((d) => d.open), seat: toiletSeat.state, lights: switches.map((s) => s.on), walls: wallView.mode, cage: cageDoorOpen() };
+    doors: doors.filter((d) => d.pivot).map((d) => d.open), seat: toiletSeat.state, lights: switches.map((s) => s.on), walls: wallView.mode, cage: cageDoorOpen(), late: ep2.lateMin };
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(st)); } catch (e) { /* storage blocked */ }
 }
 function loadEp2() {
@@ -52,6 +56,7 @@ function loadEp2() {
   doors.filter((d) => d.pivot).forEach((d, i) => { if (typeof st.doors?.[i] === 'boolean' && d.open !== st.doors[i]) { toggleDoor(d); d.t = d.open ? 1 : 0; } });
   switches.forEach((s, i) => { if (typeof st.lights?.[i] === 'boolean' && s.on !== st.lights[i]) toggleSwitch(s); });
   if (st.walls === 'fade' || st.walls === 'sink') wallView.mode = st.walls;
+  ep2.lateMin = clamp(st.late | 0, 0, 300);
   if (typeof st.cage === 'boolean' && st.cage !== cageDoorOpen()) toggleCageDoor();
   if (typeof st.seat === 'number') { toiletSeat.state = clamp(st.seat | 0, 0, 2); toiletSeat.lidT = toiletSeat.state >= 1 ? 1 : 0; toiletSeat.seatT = toiletSeat.state === 2 ? 1 : 0; }
   return true;
@@ -94,7 +99,7 @@ export function startEp2() {
   // HUD, help, tab title
   const ep = EPISODES[1];
   document.title = `${SERIES} – ${ep.n}. rész: ${ep.month}`;
-  $('hud').innerHTML = '<span class="chip">📅 <span id="e2Date"></span></span> <span class="chip">🕕 <span id="e2Clock"></span></span> <span class="chip" id="e2RoomChip">📍 <span id="e2Room"></span></span>';
+  $('hud').innerHTML = '<span class="chip">📅 <span id="e2Date"></span></span> <span class="chip">🕕 <span id="e2Clock"></span></span> <span class="chip" id="e2RoomChip">📍 <span id="e2Room"></span></span> <span class="chip" id="e2Late" style="display:none">⏰ +<span id="e2LateN"></span> perc</span>';
   $('help').innerHTML = '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat: ajtó nyitása / csukása, villany, kopogás</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>E · F</dt><dd>tárgy felvétele · a kiválasztott lerakása / bögre töltése</dd><dt>1–6 · Tab</dt><dd>tárgy kiválasztása</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
   for (const id of ['kickBtn', 'runBtn']) { const el = $(id); if (el) el.style.display = id === 'kickBtn' ? 'none' : ''; }
   $('skipBtn').style.display = 'none'; $('hud').style.display = 'block'; $('help').style.display = isTouch ? 'none' : 'block';
@@ -103,7 +108,7 @@ export function startEp2() {
     const b = document.createElement('button'); b.className = 'btn'; b.textContent = t; b.title = ttl; b.onclick = (e) => { fn(); e.currentTarget.blur(); };
     $('topright').insertBefore(b, $('menuBtn'));   // ⟲ ⟳ 🧱 👁 🏠 📒 🔊
   }
-  $('e2Date').textContent = dateText(); hudClock(true);
+  $('e2Date').textContent = dateText(); hudClock(true); hudLate();
   // compile every material now (also the hidden ones: ceiling, lamps, the WC's water), so nothing stalls the game later when it
   // first shows up (a shader compiled on first use is a visible hitch)
   { const hidden = []; scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
@@ -120,7 +125,7 @@ function hudClock(force) { const m = Math.floor(ep2.min); if (m !== shownMin || 
 // ---------------------------------------------------------------- turning the view (Q / R, or the ⟲ ⟳ buttons): 90° steps
 // CAM_OFF (scene.js) and the screen-relative walking directions CAM_FWD / CAM_RIGHT (player.js) turn together; the walls
 // (home.js), the fading props (occlude.js) and dragging the view (input.js) read them every frame.
-if (import.meta.env.DEV) window.__ep2 = { view: viewTurn, cutWalls, wallView, CAM_OFF, toggleFps, get fp() { return fp; } };   // debugging (dev server only)
+if (import.meta.env.DEV) window.__ep2 = { coffee: cf, inv, itemObj, take(id) { const c = pickables(G.petike.pos).find((q) => q.item.id === id); if (c) pickUp(c.item); return !!c; }, view: viewTurn, cutWalls, wallView, CAM_OFF, toggleFps, get fp() { return fp; } };   // debugging (dev server only)
 export function toggleWalls() {
   wallView.mode = wallView.mode === 'fade' ? 'sink' : 'fade';
   toast(wallView.mode === 'fade' ? 'Falak: <b>átlátszók</b> (T)' : 'Falak: <b>lesüllyednek</b> (T)', 2);
@@ -192,7 +197,7 @@ window.addEventListener('keydown', (e) => {
 });
 
 // ---------------------------------------------------------------- lines
-const DAD_LINES = ['Petyus! Fogmosás!', 'Öltözz fel, mert elkésünk!', 'Hol a tolltartód?', 'Bepakoltál a táskádba?', 'Ne rohangálj pizsamában!', 'Reggeliztél már?', 'Petyus, a cipőd hol van?', 'Ez a kávé még túl forró…'];
+const DAD_LINES = ['Petyus! Fogmosás!', 'Öltözz fel, mert elkésünk!', 'Hol a tolltartód?', 'Bepakoltál a táskádba?', 'Ne rohangálj pizsamában!', 'Reggeliztél már?', 'Petyus, a cipőd hol van?'];
 const MOM_LINES = ['Kakaót kérsz vagy teát?', 'Becsomagoltam az uzsonnádat.', 'Petya, nem láttad a kulcsomat?', 'Vajas kenyér lesz, vagy müzli?', 'Ne felejtsd el a tornacuccot!'];
 const ROOM_LINES = {
   furdo: [G_ => G_.petike, 'Fogmosás… két percig…'],
@@ -331,7 +336,7 @@ function sClick() { tone('square', 1400, 900, 0.03, 0.04); }
 
 // ---------------------------------------------------------------- the parents
 function updateParents(dt) {
-  G.petya.update(dt);
+  G.petya.update(dt); coffeeTick(dt);   // the creamy coffee may take dad over (coffee.js)
   const m = G.angi;
   // mum: at the cooktop, now and then to the fridge and back (Karcsi hears the fridge: wheek)
   ep2.momT -= dt;
@@ -346,7 +351,7 @@ function updateParents(dt) {
   if (ep2.talkT <= 0) {
     const near = Math.hypot(G.petike.pos.x - G.petya.pos.x, G.petike.pos.z - G.petya.pos.z) < 5;
     ep2.talkT = (near ? 9 : 15) + Math.random() * 6;
-    if (Math.random() < 0.6) { say(G.petya, pick(DAD_LINES), 3); G.petya.point = 1.4; } else say(G.angi, pick(MOM_LINES), 3);
+    if (Math.random() < 0.6 && !dadBusy()) { say(G.petya, pick(DAD_LINES), 3); G.petya.point = 1.4; } else say(G.angi, pick(MOM_LINES), 3);
   }
 }
 
@@ -363,7 +368,7 @@ export function stepEp2(dt) {
     if (r !== ep2.room) {
       ep2.room = r; $('e2Room').textContent = r ? r.name : '';
       const l = r && ROOM_LINES[r.id];
-      if (l && !ep2.seen.has(r.id)) { ep2.seen.add(r.id); say(l[0](G), l[1], 3); ep2.talkT = Math.max(ep2.talkT, 5); }
+      if (l && !ep2.seen.has(r.id) && !(l[0](G) === G.petya && dadBusy())) { ep2.seen.add(r.id); say(l[0](G), l[1], 3); ep2.talkT = Math.max(ep2.talkT, 5); }
     }
     ep2.min = Math.min(MORNING_END, ep2.min + dt * MIN_PER_SEC); hudClock();
     G.usePressed = false; G.qPressed = false; G.kickPressed = G.kickReleased = false; G.invPressed = false;

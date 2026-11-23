@@ -244,6 +244,7 @@ function buildTap(x, z, rot, y, name, len, hot) {
       jet.visible = st.on;
       if (st.on) { jet.scale.x = jet.scale.z = 0.9 + Math.sin(G.clockT * 40) * 0.15; if ((st.sndT -= dt) <= 0) { st.sndT = 0.35; noise(0.4, 1800, 0.6, 0.035); } }
     } });
+  return st;
 }
 function buildShowerWater(x, z, y) {   // the head over the bath: falling drops while on
   const grp = group(x, z, 0, y), drops = [];
@@ -516,7 +517,7 @@ export function buildAppliances() {
   buildMicrowave(6.45, 0.25, 0, 0.93);
   buildKettle(9.3, 0.22, 0, 0.93);
   buildCooktop(7.6, 0.31, 0, 0.93);
-  buildTap(8.6, 0.31, 0, 0, 'mosogatócsap', 0.36, { x: 0, z: 0.65, r: 0.7 }); devices[devices.length - 1].aim = new V3(8.6, 1.0, 0.2);
+  fx.sinkTap = buildTap(8.6, 0.31, 0, 0, 'mosogatócsap', 0.36, { x: 0, z: 0.65, r: 0.7 }); devices[devices.length - 1].aim = new V3(8.6, 1.0, 0.2);
   { const t = homeRoot.children[homeRoot.children.length - 1]; t.children[0].position.set(0, 1.15, -0.1); }   // the kitchen jet: from the spout into the basin
   buildTap(0.4, 1.15, E, 0, 'kádcsap', 0.42, { x: -0.7, z: 0.65, r: 0.5 }); devices[devices.length - 1].aim = new V3(0.4, 0.65, 1.88);
   { const t = homeRoot.children[homeRoot.children.length - 1]; t.children[0].position.set(-0.72, 0.72, 0); }   // the bath jet (the tap's end, in the bath's frame)
