@@ -14,8 +14,8 @@ import { say, toast, updateBubbles } from '../ui.js';
 import { $, V3, clamp, damp, dampAngle, lerp, pick } from '../util.js';
 import { INSTANCES, collide, colliders, setGround } from '../world.js';
 import { setPrompt } from '../activities/drinking.js';
-import { FY, SPOTS, buildHome, lightPool, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, flushToilet, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
-import { noise, tone } from '../audio.js';
+import { FY, SPOTS, roomAt, buildHome, lightPool, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, flushToilet, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
+import { noise, sStep, setOutdoor, tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
 import { buildAppliances, devices, seating, updateAppliances } from './appliances.js';
 import { buildInventory, cycleItem, holdingController, inv, invAction, itemObj, pickLabel, pickUp, pickables, selectItem, updateInventory } from './inventory.js';
@@ -210,6 +210,7 @@ const ROOM_LINES = {
 
 // ---------------------------------------------------------------- Petyus
 const pvel = new V3();
+const step = { n: 0 };
 function movePetyus(dt) {
   const a = G.petike;
   // sitting in the armchair: no walking; a movement key (or the stick) stands him up again
@@ -256,6 +257,9 @@ function movePetyus(dt) {
   }
   a.pos.x = clamp(a.pos.x, -0.5, 18.5); a.pos.z = clamp(a.pos.z, -2.5, 10);
   const spd = Math.hypot(pvel.x, pvel.z);
+  // footsteps: one at every half stride (the walk cycle's phase), the floor decides the sound
+  const stepN = Math.floor(a.phase / Math.PI);
+  if (stepN !== step.n) { step.n = stepN; if (spd > 0.4) { const r = roomAt(a.pos.x, a.pos.z); sStep(r ? r.floor : 'wood', sprint ? 1 : 0); } }
   if (fp.on) a.heading = a.targetHeading = fp.yaw;
   else { if (il > 0.1) a.targetHeading = Math.atan2(wx, wz); a.heading = dampAngle(a.heading, a.targetHeading, 14, dt); }
   a.animate(dt, spd > 0.2, spd); a.sync();
@@ -362,6 +366,8 @@ export function stepEp2(dt) {
   if (G.mode === 'play') {
     movePetyus(dt);
     interactHome();
+    // the world outside is not heard in the first-person view indoors (only the dog barking in the yard); on a balcony it is
+    { const r = roomAt(G.petike.pos.x, G.petike.pos.z); setOutdoor(fp.on && !(r && r.floor === 'balcony') ? 0 : 1); }
     updateParents(dt); updateOutside(dt); updateKarcsi(dt); updateAppliances(dt); updateInventory();
     // walls solid in the first-person view and when zoomed far out (the roof is on then: the house looks whole)
     const r = updateHome(dt, G.petike.pos, fp.on || G.zoom > 1.55);
