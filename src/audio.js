@@ -143,3 +143,33 @@ export function sStep(kind = 'wood', hard = 0) {
   noise(0.05, f * (0.9 + Math.random() * 0.2), 1.4, 0.05 * v);
   tone('sine', 95 + Math.random() * 20, 60, 0.05, 0.035 * v);
 }
+
+// ---------------------------------------------------------------- voices: a babble when Petya, Angi or Petyus speaks
+// Not words – a quick run of sung syllables in the speaker's own voice, so you hear who talks: Petya deep and buzzy, Angi
+// mid and soft, Petyus high and chirpy (and quick). One syllable per vowel of the line (at most 14, and it fits the bubble's
+// time); a shout is louder and higher, a mutter quiet and low, a question goes up at the end. From where the speaker stands.
+const VOICES = {
+  Petya: { f: 112, type: 'sawtooth', syl: 0.11, vol: 0.045, spread: 0.22, over: 0.012 },
+  Angi: { f: 245, type: 'triangle', syl: 0.1, vol: 0.085, spread: 0.32, over: 0.02 },
+  Petyus: { f: 370, type: 'square', syl: 0.078, vol: 0.03, spread: 0.36, over: 0.01 },
+};
+const VOWELS = /[aáeéiíoóöőuúüű]/gi;
+export function hasVoice(who) { return !!VOICES[who]; }
+export function sVoice(who, text, kind = 'normal', dur = 3) {
+  const v = VOICES[who]; if (!v || !actx || G.muted) return;
+  const shout = kind === 'shout', mutter = kind === 'mutter';
+  let f = v.f * (shout ? 1.28 : mutter ? 0.86 : 1), vol = v.vol * (shout ? 1.7 : mutter ? 0.5 : 1), syl = v.syl * (shout ? 0.92 : mutter ? 1.15 : 1);
+  const n = Math.max(1, Math.min(14, (text.match(VOWELS) || []).length, Math.floor(dur * 0.75 / syl)));
+  const ask = /\?\s*$/.test(text);
+  let t = 0;
+  for (let i = 0; i < n; i++) {
+    const k = i / Math.max(1, n - 1);
+    // the phrase falls a little towards its end (a question rises instead); each syllable wobbles round it
+    const contour = ask && k > 0.7 ? 1 + (k - 0.7) * 1.1 : 1 - k * 0.12;
+    const p = f * contour * (1 + (Math.random() - 0.5) * v.spread), d = syl * (0.75 + Math.random() * 0.5);
+    tone(v.type, p, p * (0.93 + Math.random() * 0.1), d * 0.85, vol, t);
+    tone('sine', p * 2.01, p * 1.9, d * 0.7, vol * 0.35 + v.over, t);           // a little brightness on top (a 'vowel')
+    if (Math.random() < 0.45) noise(0.025, 2600 + Math.random() * 1800, 1.2, vol * 0.6, t);   // a consonant now and then
+    t += d + (Math.random() < 0.18 ? syl * 0.6 : 0);                           // short pauses between 'words'
+  }
+}
