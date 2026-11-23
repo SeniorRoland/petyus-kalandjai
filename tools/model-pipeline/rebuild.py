@@ -17,8 +17,7 @@ BODY = {  # torso / leg landmarks: hip = top of the trousers/shorts, knee just b
 # (every landmark on a voxel boundary – a multiple of S = 0.04 –, or the faces of a limb would be torn between two bones)
 # legBox (optional): the leg column (|x| from … to, z from … to, above y): there, whatever is outside it belongs to the body
  'petya':       dict(hip=0.76, hipsTop=0.92, spineTop=1.12, spine1Top=1.32, neck=1.52, head=1.60, top=2.0, legX=0.15, legInner=0.06, knee=0.44, ankle=0.12, toeZ=0.2),
- 'angi':        dict(hip=0.68, hipsTop=1.08, spineTop=1.20, spine1Top=1.36, neck=1.52, head=1.56, top=2.04, legX=0.12, legInner=0.02, knee=0.40, ankle=0.12, toeZ=0.2,
-                    legBox=(0.06, 0.18, -0.08, 0.04, 0.62)),   # her pajama top reaches down to 0.64: there only the leg column is leg
+ 'angi':        dict(hip=0.88, hipsTop=1.08, spineTop=1.20, spine1Top=1.36, neck=1.52, head=1.56, top=2.04, legX=0.10, legInner=0.02, knee=0.48, ankle=0.12, toeZ=0.2),   # lower body rebuilt: reshape_angi
  'petike_foci': dict(hip=0.68, hipsTop=0.80, spineTop=0.92, spine1Top=1.08, neck=1.24, head=1.32, top=1.80, legX=0.12, legInner=0.06, knee=0.40, ankle=0.12, toeZ=0.2),
 }
 # Shin widening (y range, raw model metres): the footballer Petike's shin is only 2 voxels wide in the source
@@ -33,6 +32,31 @@ def widen_shins(vox, ctr, legInner, y0, y1):
         n = (k[0] - 1 if x > 0 else k[0] + 1, k[1], k[2])   # inner neighbour (towards x = 0)
         if n not in vox and abs(ctr(n)[0]) > legInner: add[n] = col
     vox.update(add); return len(add)
+
+# Angi's lower body, rebuilt on the voxel grid (the source had a wide, deep block from 0.64 to 0.94 – jeans + a white band –
+# on thin legs: it looked like a nappy). Now: a narrower waist under the top, hips as wide as the bust, plain grey shorts down
+# to mid-thigh, the legs part at 0.86 (longer legs), the thighs taper into the existing shins.
+GREY, GREY_D = (0.25, 0.255, 0.27), (0.16, 0.165, 0.18)   # vertex colours are linear: a mid grey on screen
+def reshape_angi(vox, OFFS):
+    I = lambda x: int(round((x - OFFS[0]) / S)); J = lambda y: int(round((y - OFFS[1]) / S)); K = lambda z: int(round((z - OFFS[2]) / S))
+    SKIN, SKIN_E = vox[(I(0.08), J(0.40), K(-0.02))], vox[(I(0.12), J(0.40), K(0.02))]   # the shin's edge and middle colours
+    def colr(c): return tuple(float(v) for v in c)
+    for k in [k for k in vox if 0.63 < k[1] * S + OFFS[1] < 0.96]: vox.pop(k)          # the old hip block (the top's hem at 0.98 stays)
+    # the waist: the top's outermost columns go between the bust and the hem (the hanging arms are further out)
+    for k in [k for k in vox if 1.04 < k[1] * S + OFFS[1] < 1.2 and abs(k[0] * S + OFFS[0]) > 0.22 and abs(k[0] * S + OFFS[0]) < 0.26]: vox.pop(k)
+    def box(x0, x1, y, z0, z1, c, edge=None):
+        for xi in range(I(x0), I(x1) + 1):
+            for zi in range(K(z0), K(z1) + 1):
+                e = edge is not None and (xi in (I(x0), I(x1)))
+                vox[(xi, J(y), zi)] = colr(edge if e else c)
+    for y in (0.94, 0.90): box(-0.24, 0.24, y, -0.14, 0.10, GREY)                       # hips (shorts' seat)
+    for sg in (1, -1):
+        lo, hi = sorted((sg * 0.04, sg * 0.20)); box(lo, hi, 0.86, -0.14, 0.10, GREY)     # the shorts' legs part
+        lo, hi = sorted((sg * 0.04, sg * 0.16))
+        for y in (0.82, 0.78): box(lo, hi, y, -0.10, 0.06, GREY)
+        box(lo, hi, 0.74, -0.10, 0.06, GREY_D)                                            # the hem
+        for y in (0.70, 0.66): box(lo, hi, y, -0.06, 0.06, SKIN_E, SKIN)                  # bare thighs into the shins
+    return vox
 
 def snap(x, base): return round((x - base) / S) * S + base
 
@@ -86,6 +110,7 @@ for name in ['petya', 'angi', 'petike_foci']:
     g0 = GLTF2().load(src_path); P0 = acc(g0, g0.meshes[0].primitives[0].attributes.POSITION); mn = P0.min(0)
     OFFS = np.array([(mn[0] % S) + S / 2, (mn[1] % S) + S / 2, (mn[2] % S) + S / 2])
     g, vox = voxelize(src_path); fill(vox)
+    if name == 'angi': reshape_angi(vox, OFFS)
     ctr = lambda k: np.array(k) * S + OFFS
     if name in SHIN_WIDEN: print(f'{name}: lábszár szélesítve, +{widen_shins(vox, ctr, BODY[name]["legInner"], *SHIN_WIDEN[name])} voxel')
     arms = {'R': [], 'L': []}
