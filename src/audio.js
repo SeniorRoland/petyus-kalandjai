@@ -113,3 +113,18 @@ export function startHum() {
 export const sBell =() => { for (const d of [0, 0.17]) { tone('sine', 2350, 2330, 0.55, 0.11, d); tone('sine', 5640, 5600, 0.3, 0.035, d); tone('triangle', 1175, 1170, 0.4, 0.04, d); } };
 export const sHorn = (twice) => { for (const d of twice ? [0, 0.3] : [0]) { tone('square', 330, 326, twice ? 0.2 : 0.45, 0.05, d); tone('square', 415, 411, twice ? 0.2 : 0.45, 0.045, d); } };
 
+
+// part 2, the creamy coffee: a stomach growl (low, wobbling) and farts (a buzzing low reed + a puff of noise; len 0.3 … 1.6 s)
+export function sGrowl(vol = 1) {
+  const n = 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < n; i++) { const d = i * 0.22 + Math.random() * 0.05; tone('sawtooth', 62 + Math.random() * 25, 40 + Math.random() * 15, 0.3, 0.07 * vol, d); noise(0.28, 140, 4, 0.12 * vol, d); }
+  tone('sine', 95, 55, n * 0.22 + 0.3, 0.06 * vol);
+}
+export function sFart(len = 0.6, pitch = 1, vol = 1) {
+  const n = Math.max(2, Math.round(len / 0.07));
+  for (let i = 0; i < n; i++) {
+    const d = i * (len / n), f = (95 + Math.random() * 40) * pitch * (1 - i / n * 0.35);
+    tone('sawtooth', f, f * 0.8, len / n * 1.3, 0.09 * vol, d); tone('square', f * 0.5, f * 0.45, len / n * 1.2, 0.035 * vol, d);
+  }
+  noise(len, 260 * pitch, 1.5, 0.22 * vol); noise(0.25, 900, 0.8, 0.06 * vol, len * 0.9);
+}

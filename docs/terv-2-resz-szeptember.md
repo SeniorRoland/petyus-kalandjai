@@ -79,7 +79,7 @@ Később részletezzük (osztályterem, folyosó, udvar/tornaterem, ebédlő?). 
 
 Mindhárom a meglévő lakásra épül (leltár, eszközök, ajtók, Karcsi). Közös következményük a **késés**: minden sikeres csibészség perceket vesz el a reggelből (`ep2.lateMin`), és ha a család 7:30 után indul, az iskolában ennek következménye lesz (beírás, a tanár megjegyzése – az iskolai résznél döntjük el). Az eredmények a 2. rész saját naplójába kerülnek (`petyus.r2.csibeszsegek`), csibészségenként max. 3 ⭐.
 
-#### 1. „A tejszínes kávé” (`r2-tejszin`)
+#### 1. „A tejszínes kávé” (`r2-tejszin`) – **kész** (`src/ep2/coffee.js`)
 
 **Alaphelyzet:** apa az asztalnál ül, és időnként kávét kér („Petyus, hoznál egy kávét?”). Apa gyomra érzékeny a tejszínre: a **tej** rendben van, a **tejszínhabot** észreveszi, a **tejszínt** nem.
 

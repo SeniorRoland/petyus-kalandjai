@@ -189,8 +189,16 @@ function checker(b, r, s, c1, c2) {
 const DEF = Object.fromEntries(CATALOG.map((d) => [d.id, d]));
 const lists = new Map();
 // a voxel prop: in the flat (y from its floor, with a collider) or outside ({ ground: true }: on the ground, no collider)
+export const SOLO = {};   // single furniture meshes that move (dad's chair): { mesh, pivot, col }
 export function put(id, x, z, rot = 0, v = 0, o = {}) {
   if (o.ground) o.noCol = true;
+  if (o.solo) {   // its own mesh in a pivot at the floor (it can tip over)
+    const pivot = new THREE.Group(); pivot.position.set(x, FY + (o.y || 0), z); scene.add(pivot);
+    const mesh = new THREE.Mesh(getGeometry(id, v), vcMat); mesh.rotation.y = rot; mesh.castShadow = mesh.receiveShadow = true; pivot.add(mesh);
+    const c = DEF[id].collider; if (c && c.r !== undefined) addCircleCol(x, z, c.r, c.h); else if (c) addBoxCol(x - c.hz, z - c.hz, x + c.hz, z + c.hz, c.h);
+    SOLO[o.solo] = { mesh, pivot, col: colliders[colliders.length - 1], x, z, rot };
+    return;
+  }
   // one instanced mesh per kind, variant AND 16 m cell: a mesh is culled as a whole, so cells off screen are not drawn at all
   const K = id + ':' + v + ':' + Math.floor(x / 16) + ':' + Math.floor(z / 16); if (!lists.has(K)) lists.set(K, []);
   lists.get(K).push({ x, y: (o.y || 0) + (o.ground ? 0 : FY), z, rot, sx: o.sx || 1, s: o.s || 1 });
@@ -216,7 +224,8 @@ function furnish() {
   put('kitchen_unit', 6.6, 0.31, 0, 0); put('kitchen_unit', 7.6, 0.31, 0, 2); put('kitchen_unit', 8.6, 0.31, 0, 1); put('kitchen_unit', 9.6, 0.31, 0, 3);
   put('coffee_maker', 9.75, 0.22, 0, 0, { y: 0.93 });
   put('dining_table', 10.95, 1.95, E, 1);   // (the breakfast on it: buildBreakfast)
-  for (const z of [1.35, 1.95, 2.55]) put('chair', 10.3, z, E, 0);
+  for (const z of [1.35, 2.55]) put('chair', 10.3, z, E, 0);
+  put('chair', 10.3, 1.95, E, 0, { solo: 'dadChair' });   // dad's own: it falls over when he runs (coffee.js)
   put('chair', 10.95, 0.78, 0, 0);
   put('potted_plant', 5.8, 3.9);
   // Petyus's room: bed on the kitchen wall, desk with the monitor by the east window, wardrobe on the south wall, play rug, school bag
@@ -380,7 +389,7 @@ function buildBreakfast() {
   F.at(t, F.muesliBowl(), 10.68, 0, 1.35); F.at(t, F.glass(0xfafaf6, 0.75), 10.84, 0, 1.18);
   // dad: a plate with buttered bread and salami, tea in his mug, knife and fork
   F.at(t, F.plate(0x2a9d8f), 10.68, 0, 1.95); F.at(t, F.cutlery(1), 10.68, 0, 1.95, H);
-  { const sl = F.salamiSlices(3); F.at(t, sl, 10.67, 0.02, 1.97); } F.at(t, F.mug(0x3a86ff, 0x9b5a1a), 10.86, 0, 2.17);
+  { const sl = F.salamiSlices(3); F.at(t, sl, 10.67, 0.02, 1.97); }
   // mum: a plate with a slice of bread, tea
   F.at(t, F.plate(0xe76f51), 10.68, 0, 2.55); F.at(t, F.cutlery(1), 10.68, 0, 2.55, H); F.at(t, F.mug(0xffffff, 0xa8641a), 10.86, 0, 2.76);
   // the north end: a plate and a glass of orange juice
