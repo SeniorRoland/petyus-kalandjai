@@ -46,20 +46,22 @@ function rigFromSkinned(gltf, cfg) {
   rig.height = new THREE.Box3().setFromObject(rig.root).max.y;
   return rig;
 }
-// The models blend the joint rings 50/50 between two bones (shoulder: Arm + Spine2, elbow: Arm + ForeArm). The arms always
-// turn far (≈ 1.5 rad down from the T-pose, more when pointing), and a 50/50 ring then collapses: the upper arm's faces fold
-// over, turn their back to the camera and vanish. Fix: every triangle of an arm moves with one bone only – the one with the
-// most weight on its three corners (the mesh is split per triangle for that).
+// The models blend the joint rings 50/50 between two bones (shoulder: Arm + Spine2, elbow: Arm + ForeArm, knee: UpLeg + Leg).
+// The limbs turn far (arms ≈ 1.5 rad down from the T-pose; sitting: hips and knees ≈ 1.5 rad), and a 50/50 ring then
+// collapses: the faces fold over, crumple and vanish. Fix: every triangle of an arm or a leg moves with one bone only – the
+// one with the most weight on its three corners (the mesh is split per triangle for that) – and the joints get fillers
+// (fillJoints) that close the gap a bent rigid joint opens.
 function rigidArms(sm) {
   let g = sm.geometry; if (g.index) g = g.toNonIndexed();
   const si = g.attributes.skinIndex, sw = g.attributes.skinWeight, names = sm.skeleton.bones.map((b) => b.name.replace(/^mixamorig:?/, ''));
   const arm = new Set(names.map((n, i) => (/Arm|Hand|Shoulder/.test(n) ? i : -1)).filter((i) => i >= 0));
+  const limb = new Set(names.map((n, i) => (/Arm|Hand|Shoulder|Leg|Foot|Toe/.test(n) ? i : -1)).filter((i) => i >= 0));
   const sum = new Map();
   for (let t = 0; t < si.count; t += 3) {
     sum.clear(); let isArm = false;
     for (let v = t; v < t + 3; v++) for (let c = 0; c < 4; c++) {
       const w = sw.getComponent(v, c); if (w <= 0.001) continue;
-      const b = si.getComponent(v, c); sum.set(b, (sum.get(b) || 0) + w); if (arm.has(b)) isArm = true;
+      const b = si.getComponent(v, c); sum.set(b, (sum.get(b) || 0) + w); if (limb.has(b)) isArm = true;
     }
     if (!isArm) continue;
     let best = -1, bw = -1; for (const [b, w] of sum) if (w > bw + 1e-6) { bw = w; best = b; }
@@ -68,6 +70,58 @@ function rigidArms(sm) {
   si.needsUpdate = true; sw.needsUpdate = true;
   if (g !== sm.geometry) { sm.geometry.dispose(); sm.geometry = g; }
   capArms(sm, arm, names);
+  fillJoints(sm, names);
+}
+// A rigid joint (hip, knee, ankle, elbow) opens a wedge on its outer side when it bends (you could look into the hollow limb).
+// Each joint gets a filler: a cylinder round the joint's hinge axis (the axis the game turns that bone about), as wide as the
+// limb and as deep (clipped flat to the limb's front and back, so it never sticks out of a straight limb). It moves with one of
+// the two bones; turning about its own axis it always covers the wedge. Its colour: the limb's colour there.
+function fillJoints(sm, names) {
+  const g = sm.geometry, P = g.attributes.position, C = g.attributes.color, si = g.attributes.skinIndex;
+  const bindInv = sm.bindMatrixInverse;
+  const M = (i) => sm.skeleton.boneInverses[i].clone().invert().premultiply(bindInv);   // the bone at bind time, in mesh space
+  const at = (i) => new THREE.Vector3().setFromMatrixPosition(M(i));
+  const axisOf = (i, k) => new THREE.Vector3().setFromMatrixColumn(M(i), k).normalize();
+  const caps = [], v = new THREE.Vector3();
+  const tri = (a, b, c, n, bone, col) => { const f = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a)); caps.push({ v: (f.dot(n) >= 0 ? [a, b, c] : [a, c, b]).map((p) => [p.x, p.y, p.z]), n: [n.x, n.y, n.z], bone, col }); };
+  // jb: the bone turned at this joint; k: its hinge axis (0 x, 1 y); from → to: the limb's direction; gb: the bone the filler
+  // moves with (its vertices give the size and colour); lo … hi: the slab along the limb (from the joint) that is measured
+  const joint = (jb, k, from, to, gb, lo, hi) => {
+    const J = names.indexOf(jb), F = names.indexOf(from), T = names.indexOf(to), B = names.indexOf(gb);
+    if (J < 0 || F < 0 || T < 0 || B < 0) return;
+    const j = at(J), L = at(T).sub(at(F)).normalize(), A = axisOf(J, k);
+    A.addScaledVector(L, -A.dot(L)).normalize(); const D = new THREE.Vector3().crossVectors(A, L);
+    let a0 = 1e9, a1 = -1e9, d0 = 1e9, d1 = -1e9, n = 0; const col = [0, 0, 0];
+    for (let i = 0; i < P.count; i++) {
+      if (si.getX(i) !== B) continue;
+      v.fromBufferAttribute(P, i).sub(j); const l = v.dot(L); if (l < lo || l > hi) continue;
+      const a = v.dot(A), d = v.dot(D); a0 = Math.min(a0, a); a1 = Math.max(a1, a); d0 = Math.min(d0, d); d1 = Math.max(d1, d);
+      if (C) { col[0] += C.getX(i); col[1] += C.getY(i); col[2] += C.getZ(i); } n++;
+    }
+    if (n < 4 || a1 - a0 < 0.02 || d1 - d0 < 0.02) return;
+    const c = C ? col.map((x) => x / n) : [1, 1, 1], e = 0.006, R = Math.max(-d0, d1);
+    a0 += e; a1 -= e; d0 += e; d1 -= e;
+    const N = 20, ring = [];
+    for (let q = 0; q < N; q++) { const th = (q / N) * Math.PI * 2; ring.push([R * Math.cos(th), Math.min(d1, Math.max(d0, R * Math.sin(th)))]); }
+    const pt = (l, d, a) => j.clone().addScaledVector(L, l).addScaledVector(D, d).addScaledVector(A, a);
+    for (let q = 0; q < N; q++) {
+      const [l0, e0] = ring[q], [l1, e1] = ring[(q + 1) % N];
+      const out = L.clone().multiplyScalar((l0 + l1) / 2).addScaledVector(D, (e0 + e1) / 2).normalize();
+      const p00 = pt(l0, e0, a0), p01 = pt(l0, e0, a1), p10 = pt(l1, e1, a0), p11 = pt(l1, e1, a1);
+      const fn = new THREE.Vector3().subVectors(p10, p00).cross(new THREE.Vector3().subVectors(p01, p00)).normalize(); if (fn.dot(out) < 0) fn.negate();
+      tri(p00, p10, p11, fn, B, c); tri(p00, p11, p01, fn, B, c);
+      // the two flat ends (fans round the axis)
+      tri(j.clone().addScaledVector(A, a0), p00, p10, A.clone().negate(), B, c);
+      tri(j.clone().addScaledVector(A, a1), p01, p11, A, B, c);
+    }
+  };
+  for (const s of ['Left', 'Right']) {
+    joint(s + 'UpLeg', 0, s + 'UpLeg', s + 'Leg', s + 'UpLeg', 0, 0.1);      // hip (sitting: the seat's back)
+    joint(s + 'Leg', 0, s + 'Leg', s + 'Foot', s + 'Leg', 0, 0.1);          // knee
+    joint(s + 'Foot', 0, s + 'Leg', s + 'Foot', s + 'Leg', -0.1, 0);        // ankle
+    joint(s + 'ForeArm', 1, s + 'ForeArm', s + 'Hand', s + 'ForeArm', 0, 0.08);   // elbow
+  }
+  appendCaps(g, caps);
 }
 // The voxel shell is open where an arm meets the body (those faces were inside the T-pose model). With the arm down, the
 // open end shows: you can look into the hollow arm from above, and into the body's side. Two caps per side close them:
@@ -92,9 +146,12 @@ function capArms(sm, arm, names) {
     quad(side * (ring + 0.006), -side, armBone, ac.map((c) => c / an));
     if (bodyBone >= 0) quad(side * (ring - 0.006), side, bodyBone, bn ? bc.map((c) => c / bn) : ac.map((c) => c / an));
   }
+  appendCaps(g, caps);
+}
+// append triangles ({ v: [[x, y, z] …], n, bone, col }) to every attribute of a skinned geometry (unknown ones get zeros)
+function appendCaps(g, caps) {
   if (!caps.length) return;
-  // append the cap triangles to every attribute (unknown ones get zeros)
-  const add = caps.length * 6, n0 = P.count;
+  const P = g.attributes.position, add = caps.reduce((s, c) => s + c.v.length, 0), n0 = P.count;
   for (const name of Object.keys(g.attributes)) {
     const a = g.attributes[name], arr = new a.array.constructor((n0 + add) * a.itemSize); arr.set(a.array);
     const na = new THREE.BufferAttribute(arr, a.itemSize, a.normalized);
