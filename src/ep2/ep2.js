@@ -15,7 +15,7 @@ import { $, V3, clamp, damp, dampAngle, lerp, pick } from '../util.js';
 import { INSTANCES, collide, colliders, setGround } from '../world.js';
 import { setPrompt } from '../activities/drinking.js';
 import { FY, SPOTS, roomAt, buildHome, lightPool, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, flushToilet, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
-import { noise, sStep, setOutdoor, tone } from '../audio.js';
+import { noise, sStep, setMasterVol, setOutdoor, tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
 import { buildAppliances, devices, seating, updateAppliances } from './appliances.js';
 import { buildInventory, cycleItem, holdingController, inv, invAction, itemObj, pickLabel, pickUp, pickables, selectItem, updateInventory } from './inventory.js';
@@ -69,6 +69,7 @@ const clockText = (m) => `${Math.floor(m / 60)}:${String(Math.floor(m % 60)).pad
 // ---------------------------------------------------------------- start: the park goes, the flat comes
 export function startEp2() {
   G.episode = 2;
+  setMasterVol(0.9);   // indoors: louder than the park
   for (const o of [...scene.children]) if (!o.isLight && o !== sun.target) scene.remove(o);   // part 1's world (built at boot)
   colliders.length = 0; INSTANCES.length = 0;
   setGround((x, z) => (x > -0.4 && x < 18.3 && z > -2.1 && z < 9.6 ? FY : 0));   // the flat (and its balconies) is upstairs, the yard on the ground
@@ -366,8 +367,9 @@ export function stepEp2(dt) {
   if (G.mode === 'play') {
     movePetyus(dt);
     interactHome();
-    // the world outside is not heard in the first-person view indoors (only the dog barking in the yard); on a balcony it is
-    { const r = roomAt(G.petike.pos.x, G.petike.pos.z); setOutdoor(fp.on && !(r && r.floor === 'balcony') ? 0 : 1); }
+    // the world outside: indoors in the first-person view not at all (only the dog barking in the yard), indoors in the top
+    // view faintly, on a balcony fully
+    { const r = roomAt(G.petike.pos.x, G.petike.pos.z), out = !!(r && r.floor === 'balcony'); setOutdoor(out ? 1 : fp.on ? 0 : 0.3); }
     updateParents(dt); updateOutside(dt); updateKarcsi(dt); updateAppliances(dt); updateInventory();
     // walls solid in the first-person view and when zoomed far out (the roof is on then: the house looks whole)
     const r = updateHome(dt, G.petike.pos, fp.on || G.zoom > 1.55);

@@ -39,7 +39,7 @@ export function roomAt(x, z) { return ROOMS.find((r) => x >= r.x0 - 0.06 && x <=
 // places in the flat the game uses
 export const SPOTS = {
   petyusWake: { x: 13.1, z: 1.8, h: Math.PI * 0.75 },     // next to his bed
-  dadChair: { x: 10.3, z: 1.95, h: Math.PI / 2 },          // at the table (west side), facing it
+  dadChair: { x: 9.6, z: 1.95, h: Math.PI / 2 },           // at the table's west end, facing it
   momCook: { x: 7.6, z: 1.0, h: Math.PI },                 // at the cooktop
   momFridge: { x: 6.55, z: 1.5 },                          // in front of the wide fridge (west wall)
 };
@@ -214,7 +214,8 @@ function furnish() {
   put('bathtub', 0.4, 1.15, E); put('washing_machine', 1.45, 0.33, 0); put('shelf', 2.45, 0.2, 0); put('bath_sink', 3.35, 1.05, W); put('rug', 1.9, 1.55, 0, 0, { sx: 0.6 });
   // WC
   put('toilet', 4.5, 0.37, 0, 1);   // without its seat: the seat flips up and down (buildToiletSeat)
-  put('toilet_paper', 5.29, 0.75, W); put('plunger', 5.08, 2.05);
+  put('toilet_paper', 5.29, 0.75, W); put('plunger', 4.98, 0.22);   // the plunger beside the toilet
+  wcRolls(5.29, 0.75, W);
   // hallway: coats, shoes by the front door
   put('wall_coat_hanger', 1.3, 4.19, P); put('shoe_cabinet', 1.3, 4.02, P);   // on the wall opposite the bathroom, by the front door
   put('shoes', 0.45, 3.55, E, 0); put('shoes', 0.45, 2.75, E, 1); put('shoes', 2.15, 3.95, P, 2);
@@ -223,10 +224,10 @@ function furnish() {
   put('kitchen_unit', 5.73, 0.5, E, 3);   // (the wide fridge itself opens: appliances.js)
   put('kitchen_unit', 6.6, 0.31, 0, 0); put('kitchen_unit', 7.6, 0.31, 0, 2); put('kitchen_unit', 8.6, 0.31, 0, 1); put('kitchen_unit', 9.6, 0.31, 0, 3);
   put('coffee_maker', 9.75, 0.22, 0, 0, { y: 0.93 });
-  put('dining_table', 10.95, 1.95, E, 1);   // (the breakfast on it: buildBreakfast)
-  for (const z of [1.35, 2.55]) put('chair', 10.3, z, E, 0);
-  put('chair', 10.3, 1.95, E, 0, { solo: 'dadChair' });   // dad's own: it falls over when he runs (coffee.js)
-  put('chair', 10.95, 0.78, 0, 0);
+  put('dining_table', 10.7, 1.95, 0, 1);   // (the breakfast on it: buildBreakfast)
+  // the table's short end at the wall to Petyus's room: chairs on its two long sides, dad's at the free (west) end
+  put('chair', 10.4, 1.3, 0, 0); put('chair', 11.2, 1.3, 0, 0); put('chair', 10.4, 2.6, P, 0);
+  put('chair', 9.6, 1.95, E, 0, { solo: 'dadChair' });   // dad's own: it falls over when he runs (coffee.js)
   put('potted_plant', 5.8, 3.9);
   // Petyus's room: bed on the kitchen wall, desk with the monitor by the east window, wardrobe on the south wall, play rug, school bag
   put('bed_single', 12.22, 1.95, 0, 0); put('desk', 15.28, 1.45, W, 1);   // the computer on it: appliances.js put('chair', 14.7, 1.45, E, 2);
@@ -380,27 +381,37 @@ function buildPictures() {
 }
 
 // ---------------------------------------------------------------- breakfast on the kitchen table (food.js)
-// the table: x 10.5 … 11.4, z 1.05 … 2.85, top at 0.75; chairs on its west side (z 1.35 Petyus, 1.95 dad, 2.55 mum) and at
-// its north end; the shared things in the middle / east half
+// the table: x 9.8 … 11.6, z 1.5 … 2.4 (its short end at the wall to Petyus's room), top at 0.77. Places: dad at the west end
+// (facing east), Petyus on the north side, mum on the south side, a free place north-east; the shared things in the middle
+// band (z 1.87 … 2.07) and along the south-east edge. Everything stays at least 4 cm inside the edge.
 function buildBreakfast() {
-  const t = new THREE.Group(); t.position.y = 0.75; homeRoot.add(t);
+  const t = new THREE.Group(); t.position.y = 0.77; homeRoot.add(t);
   const H = Math.PI / 2;
-  // Petyus: muesli with milk, a glass of milk
-  F.at(t, F.muesliBowl(), 10.68, 0, 1.35); F.at(t, F.glass(0xfafaf6, 0.75), 10.84, 0, 1.18);
-  // dad: a plate with buttered bread and salami, tea in his mug, knife and fork
-  F.at(t, F.plate(0x2a9d8f), 10.68, 0, 1.95); F.at(t, F.cutlery(1), 10.68, 0, 1.95, H);
-  { const sl = F.salamiSlices(3); F.at(t, sl, 10.67, 0.02, 1.97); }
-  // mum: a plate with a slice of bread, tea
-  F.at(t, F.plate(0xe76f51), 10.68, 0, 2.55); F.at(t, F.cutlery(1), 10.68, 0, 2.55, H); F.at(t, F.mug(0xffffff, 0xa8641a), 10.86, 0, 2.76);
-  // the north end: a plate and a glass of orange juice
-  F.at(t, F.plate(0xffca3a), 10.95, 0, 1.2); F.at(t, F.glass(0xf8961e, 0.7), 11.18, 0, 1.18);
-  // in the middle: bread on its board, salami, fruit, milk, muesli box, tea pot, butter, honey, napkins
-  F.at(t, F.breadBoard(), 11.12, 0, 1.62, H);
-  { const p = F.plate(0xc1121f, 0.1); F.at(t, p, 11.18, 0, 2.06); F.at(t, F.salamiSlices(7), 11.18, 0.02, 2.06); }
-  F.at(t, F.fruitBowl(), 11.15, 0, 2.48);
-  F.at(t, F.milkCarton(), 11.3, 0, 1.3); F.at(t, F.muesliBox(), 11.27, 0, 1.12, H);
-  F.at(t, F.teapot(), 11.22, 0, 2.78);
-  F.at(t, F.butterDish(), 10.93, 0, 2.3, H); F.at(t, F.honeyJar(), 10.92, 0, 1.64); F.at(t, F.napkins(), 10.95, 0, 2.86);
+  // dad: a plate with salami, knife and fork beside it (his mug: inventory.js – the 'dad' place, 10.18 / 2.22)
+  F.at(t, F.plate(0x2a9d8f), 10.02, 0, 1.95); F.at(t, F.cutlery(1), 10.02, 0, 1.95, H);
+  { const sl = F.salamiSlices(3); F.at(t, sl, 10.02, 0.02, 1.96); }
+  // Petyus: muesli with milk, a glass of milk on his right
+  F.at(t, F.muesliBowl(), 10.42, 0, 1.66); F.at(t, F.glass(0xfafaf6, 0.75), 10.24, 0, 1.62);
+  // mum: a plate with knife and fork, her tea on the right
+  F.at(t, F.plate(0xe76f51), 10.42, 0, 2.24); F.at(t, F.cutlery(1), 10.42, 0, 2.24); F.at(t, F.mug(0xffffff, 0xa8641a), 10.66, 0, 2.28, Math.PI);
+  // the free place: a plate and a glass of orange juice, napkins
+  F.at(t, F.plate(0xffca3a), 11.2, 0, 1.67); F.at(t, F.glass(0xf8961e, 0.7), 11.42, 0, 1.62); F.at(t, F.napkins(), 11.47, 0, 1.79);
+  // the middle band: bread on its board, salami, milk, muesli box, honey
+  F.at(t, F.breadBoard(), 10.62, 0, 1.97);
+  { const p = F.plate(0xc1121f, 0.1); F.at(t, p, 10.95, 0, 1.97); F.at(t, F.salamiSlices(7), 10.95, 0.02, 1.97); }
+  F.at(t, F.milkCarton(), 11.15, 0, 1.92); F.at(t, F.muesliBox(), 11.3, 0, 1.92, H); F.at(t, F.honeyJar(), 11.47, 0, 1.94);
+  // along the south-east edge: butter, the teapot, the fruit bowl
+  F.at(t, F.butterDish(), 10.9, 0, 2.25); F.at(t, F.teapot(), 11.15, 0, 2.25); F.at(t, F.fruitBowl(), 11.43, 0, 2.23);
+}
+// the WC's paper holder: the roll on its arm (turned on its side, a sheet hanging from it) and two spares on the shelf –
+// the same model as the roll Petyus can pick up (food.js toiletRoll)
+function wcRolls(x, z, rot) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; homeRoot.add(g);
+  const r = F.toiletRoll(); r.rotation.z = Math.PI / 2; r.position.set(0.05, 0.69, 0.07); g.add(r);
+  const sheet = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.13, 0.003), new THREE.MeshLambertMaterial({ color: 0xfafaf6 }));
+  sheet.position.set(0, 0.625, 0.125); sheet.castShadow = true; g.add(sheet);
+  const perf = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.003, 0.004), new THREE.MeshLambertMaterial({ color: 0xe6e6df })); perf.position.set(0, 0.6, 0.126); g.add(perf);
+  for (const cx of [-0.075, 0.075]) { const sp = F.toiletRoll(); sp.position.set(cx, 1.06, 0.05); g.add(sp); }
 }
 
 // ---------------------------------------------------------------- the shower over the bath (west wall) and its curtain

@@ -5,13 +5,16 @@ import { R, clamp, rand } from './util.js';
 
 // ---------------------------------------------------------------- audio
 export let actx = null, master = null, outNode = null, ambBed = null, outBus = null;
+let masterVol = 0.5;
+// the overall volume (part 2 is indoors, its sounds are small: louder)
+export function setMasterVol(v) { masterVol = v; if (master) master.gain.value = v; }
 // phones (iOS) suspend the audio when the page is in the background or a call comes in: resume it on the next touch / when visible
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => { if (!actx) return; if (document.hidden) actx.suspend().catch(() => {}); else actx.resume().catch(() => {}); });
   window.addEventListener('touchend', () => { if (actx && actx.state !== 'running' && !document.hidden) actx.resume().catch(() => {}); }, { passive: true });
 }
 export function initAudio() {
-  if (actx) return; try { actx = new (window.AudioContext || window.webkitAudioContext)(); master = actx.createGain(); master.gain.value = 0.5; master.connect(actx.destination);
+  if (actx) return; try { actx = new (window.AudioContext || window.webkitAudioContext)(); master = actx.createGain(); master.gain.value = masterVol; master.connect(actx.destination);
     outBus = actx.createGain(); outBus.connect(master); startAmbience(); } catch (e) { actx = null; }
 }
 // constant park ambience: wind in the leaves (slowly swelling) + far-away traffic rumble
@@ -136,7 +139,7 @@ export function setOutdoor(level) { if (outBus) outBus.gain.setTargetAtTime(leve
 export const soundOut = (x, z, fn, vol = 1) => soundAt(x, z, fn, vol, outBus);
 // a footstep in slippers: a soft thud (wood, carpet) or a dry tap (tiles, stone, the balcony); hard: running
 export function sStep(kind = 'wood', hard = 0) {
-  const v = 0.6 + hard * 0.5, f = { wood: 260, wood2: 260, tile: 900, kitchen: 800, stone: 700, balcony: 1100 }[kind] || 400;
+  const v = 1 + hard * 0.6, f = { wood: 260, wood2: 260, tile: 900, kitchen: 800, stone: 700, balcony: 1100 }[kind] || 400;
   noise(0.05, f * (0.9 + Math.random() * 0.2), 1.4, 0.05 * v);
   tone('sine', 95 + Math.random() * 20, 60, 0.05, 0.035 * v);
 }
