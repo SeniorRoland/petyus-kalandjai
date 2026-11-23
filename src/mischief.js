@@ -17,28 +17,43 @@ export const MISCHIEFS = [
   { id: 'bujocska', title: 'Bújócska apával', hint: 'Apa szeret keresgélni. (szólj neki a padnál)', fmt: (v, x) => x && x.gaveUp ? `${v} mp – apa feladta` : `${v} mp rejtőzés`, stars: (v, x) => 1 + (v >= 40 || !!x.gaveUp) + (!!x.gaveUp) },
   { id: 'lufi', title: 'Lufis bácsi', hint: 'Valaki lufit árul a park szélén. (a pálya melletti sétánynál)', fmt: (v) => v >= 3 ? 'megvan a labda, minden lufi épen' : v === 2 ? 'megvan a fára akadt labda' : 'repült a lufikkal', stars: (v) => v },
 ];
+// part 2 (Szeptember): its own list and its own save – the morning at home (the school and the afternoon come later)
+export const MISCHIEFS2 = [
+  { id: 'r2-tejszin', title: 'A tejszínes kávé', hint: 'Apa kávét kér, de a gyomra nem bír mindent. (a hűtőben van tej, tejszín és tejszínhab)', fmt: (v, x) => (v >= 3 ? 'apa a WC-n – első próbára, tanúk nélkül' : v === 2 ? 'apa a WC-n – első próbára' : 'apa a WC-n') + (x && x.paper ? ', papírért kiabált' : ''), stars: (v) => v },
+  { id: 'r2-karcsi', title: 'Karcsi nagy szökése', hint: 'Karcsi is szeretne körülnézni a lakásban. (hamarosan)', stars: () => 1 },
+  { id: 'r2-kulcs', title: 'Hol a kulcs, Angi?', hint: 'Anya kulcsa mindig a cipősszekrényen van. (hamarosan)', stars: () => 1 },
+];
+const BOOKS = {
+  1: { list: MISCHIEFS, key: 'petyus.r1.csibeszsegek', sub: '1. rész: Augusztus – Egy nap a parkban' },
+  2: { list: MISCHIEFS2, key: 'petyus.r2.csibeszsegek', sub: '2. rész: Szeptember – Otthon és iskola' },
+};
+for (const b of Object.values(BOOKS)) {
+  try { b.saved = JSON.parse(localStorage.getItem(b.key) || '{}') || {}; } catch (e) { b.saved = {}; }   // storage blocked → this session only
+}
+const bookOf = (id) => Object.values(BOOKS).find((b) => b.list.some((m) => m.id === id));
+const curBook = () => BOOKS[G.episode === 2 ? 2 : 1];
+const saveBook = (b) => { try { localStorage.setItem(b.key, JSON.stringify(b.saved)); } catch (e) { /* not stored */ } };
+const starsOf = (b) => b.list.reduce((s, m) => s + ((b.saved[m.id] && b.saved[m.id].stars) || 0), 0);
 export const MAX_STARS = MISCHIEFS.length * 3;
-const KEY = 'petyus.r1.csibeszsegek';
-let saved = {};
-try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }   // storage blocked → this session only
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) { /* not stored */ } };
-export const totalStars = () => MISCHIEFS.reduce((s, m) => s + ((saved[m.id] && saved[m.id].stars) || 0), 0);
-export const doneCount = () => MISCHIEFS.filter((m) => saved[m.id]).length;
+// part 1's stars (the September episode opens with 15 of them)
+export const totalStars = () => starsOf(BOOKS[1]);
+export const doneCount = () => MISCHIEFS.filter((m) => BOOKS[1].saved[m.id]).length;
 
 // score a finished mischief: returns the stars of this attempt
 export function award(id, value, extra = {}) {
-  const m = MISCHIEFS.find((x) => x.id === id); if (!m) return 0;
+  const b = bookOf(id); if (!b) return 0;
+  const m = b.list.find((x) => x.id === id), saved = b.saved;
   const stars = clamp(m.stars ? m.stars(value, extra) : 1, 1, 3), prev = saved[id];
   // best result: the highest – or the lowest for „fewer is better” (m.lower, e.g. collisions)
   const best = prev ? (m.lower ? Math.min(prev.best, value) : Math.max(prev.best, value)) : value;
   const improved = !prev || (m.lower ? best < prev.best : best > prev.best) || stars > prev.stars;
   saved[id] = { stars: Math.max(stars, prev ? prev.stars : 0), best, x: improved ? extra : prev.x, at: prev && !improved ? prev.at : Date.now() };
-  save(); refreshTotals();
-  showAward(m, stars, value, !prev, improved && !!prev, extra);
+  saveBook(b); refreshTotals();
+  showAward(m, stars, value, !prev, improved && !!prev, extra, saved);
   return stars;
 }
 let awardTimer = 0;
-function showAward(m, stars, value, first, better, extra) {
+function showAward(m, stars, value, first, better, extra, saved) {
   const el = $('mAward');
   const keep = saved[m.id] ? '★'.repeat(saved[m.id].stars) : '';
   el.querySelector('.t1').textContent = first ? 'Csibészség teljesítve!' : better ? 'Új legjobb!' : `Nem lett jobb – a legjobbad marad: ${keep}`;
@@ -66,10 +81,12 @@ export function toggleJournal(open = !journalOpen()) {
   G.paused = open && G.mode === 'play';    // the game waits while you read
 }
 function renderJournal() {
-  $('jrSum').textContent = `⭐ ${totalStars()} / ${MAX_STARS} · ${doneCount()} / ${MISCHIEFS.length} csibészség`;
+  const b = curBook(), L = b.list;
+  $('jrSub').textContent = b.sub;
+  $('jrSum').textContent = `⭐ ${starsOf(b)} / ${L.length * 3} · ${L.filter((m) => b.saved[m.id]).length} / ${L.length} csibészség`;
   const list = $('jrList'); list.textContent = '';
-  for (const [i, m] of MISCHIEFS.entries()) {
-    const s = saved[m.id], row = document.createElement('div'); row.className = 'jr ' + (s ? 'done' : 'todo');
+  for (const [i, m] of L.entries()) {
+    const s = b.saved[m.id], row = document.createElement('div'); row.className = 'jr ' + (s ? 'done' : 'todo');
     const num = document.createElement('span'); num.className = 'no'; num.textContent = i + 1 + '.';
     const txt = document.createElement('span'); txt.className = 'tx';
     const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = s ? m.title : '???';

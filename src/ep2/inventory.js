@@ -13,6 +13,7 @@ import { say, toast } from '../ui.js';
 import { $ } from '../util.js';
 import { fx, seating } from './appliances.js';
 import { FY, homeRoot } from './home.js';
+import { toiletRoll } from './food.js';
 
 const ITEMS = [
   { id: 'controller', name: 'kontroller', icon: '🎮' },
@@ -25,29 +26,27 @@ const ITEMS = [
 const ACCEPT = {
   controller: ['tv', 'desk', 'fridge', 'micro', 'tub'],
   paper: ['tv', 'desk', 'fridge', 'micro', 'tub', 'wc'],
-  mug: ['micro', 'fridge', 'table', 'tv', 'desk', 'counter'],
+  mug: ['dad', 'micro', 'fridge', 'table', 'tv', 'desk', 'counter'],
   milk: ['fridge', 'table', 'counter'], cream: ['fridge', 'table', 'counter'], whip: ['fridge', 'table', 'counter'],
 };
-const PLACE_NAME = { tv: 'a TV-állványra', desk: 'az íróasztalra', fridge: 'a hűtőbe', micro: 'a mikróba', tub: 'a kád szélére', table: 'az asztalra', counter: 'a konyhapultra', wc: 'a WC-tartályra' };
+const PLACE_NAME = { tv: 'a TV-állványra', desk: 'az íróasztalra', fridge: 'a hűtőbe', micro: 'a mikróba', tub: 'a kád szélére', table: 'az asztalra', dad: 'apa elé', counter: 'a konyhapultra', wc: 'a WC-tartályra' };
 const DRINK = { tea: 'tea', kave: 'kávé', tej: 'tej', tejszin: 'tejszín', hab: 'tejszínhab' };
 
 const places = {};   // id → { hot: (p) => distance, slots: [{ parent, pos, item, only }], open?: () => bool }
 const items = {};    // id → { ...ITEMS[i], obj, place, slot }
-export const inv = { list: [], sel: -1, mug: {} };   // what Petyus carries (item ids), the selected one, what is in the mug
+export const inv = { list: [], sel: -1, mug: {}, foamy: false };   // what Petyus carries (item ids), the selected one, what is in the mug; foamy: whipped cream was in it (until it is washed)
+// what the creamy-coffee mischief (coffee.js) listens to: poured(what) – something into the mug; placed(id, place); emptied(); washed()
+export const invHooks = {};
+export const itemObj = (id) => items[id] && items[id].obj;
+export const itemPlace = (id) => items[id] && items[id].place;
+// a locked item cannot be picked up (dad holds the mug while he drinks)
+export function lockItem(id, on) { if (items[id]) items[id].locked = on; }
 let holding = false;
 
 // ---------------------------------------------------------------- building
 function slot(parent, x, y, z, only = null) { return { parent, pos: new THREE.Vector3(x, y, z), item: null, only }; }
 const near = (x, z, r) => (p) => Math.hypot(p.x - x, p.z - z) - r;
 const nearRect = (x0, z0, x1, z1, pad) => (p) => Math.hypot(Math.max(x0 - p.x, 0, p.x - x1), Math.max(z0 - p.z, 0, p.z - z1)) - pad;
-function toiletRoll() {   // the spare roll on the WC tank: white paper round a cardboard core
-  const g = new THREE.Group();
-  const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.1, 22, 1, true), new THREE.MeshLambertMaterial({ color: 0xfafaf6, side: THREE.DoubleSide })); roll.position.y = 0.05; g.add(roll);
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.02, 0.055, 22), new THREE.MeshLambertMaterial({ color: 0xf0f0ea, side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.1; g.add(ring);
-  const core = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.1, 14, 1, true), new THREE.MeshLambertMaterial({ color: 0xb8915e, side: THREE.DoubleSide })); core.position.y = 0.05; g.add(core);
-  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-  return g;
-}
 export function buildInventory() {
   const H = homeRoot;
   places.tv = { hot: near(8.3, 8.2, 1.0), slots: [slot(fx.tv.grp, -0.52, 0.5, 0.06, 'controller'), slot(fx.tv.grp, -0.25, 0.5, 0.12), slot(fx.tv.grp, 0.25, 0.5, 0.12), slot(fx.tv.grp, 0.35, 0.5, -0.12)] };
@@ -57,10 +56,12 @@ export function buildInventory() {
       slot(fx.fridge.grp, 0.33, 0.525, 0.06), slot(fx.fridge.grp, 0.15, 1.325, 0.06), slot(fx.fridge.grp, 0.36, 0.925, 0.08), slot(fx.fridge.grp, 0.2, 0.925, 0.1)] };
   places.micro = { hot: near(6.45, 0.9, 0.75), open: () => fx.micro.isOpen(), slots: [slot(fx.micro.tt, 0, 0.012, 0)] };
   places.tub = { hot: near(1.1, 1.1, 0.8), slots: [slot(H, 0.73, 0.55, 1.25), slot(H, 0.73, 0.55, 0.85)] };
-  places.table = { hot: nearRect(10.5, 1.05, 11.4, 2.85, 0.75), slots: [slot(H, 10.72, 0.75, 1.64), slot(H, 11.32, 0.75, 2.25), slot(H, 10.65, 0.75, 2.82), slot(H, 11.33, 0.75, 1.56)] };
+  places.table = { hot: nearRect(9.8, 1.5, 11.6, 2.4, 0.75), slots: [slot(H, 10.76, 0.77, 1.67), slot(H, 10.99, 0.77, 1.69), slot(H, 11.02, 0.77, 2.12), slot(H, 10.25, 0.77, 1.84)] };
   places.counter = { hot: (p) => Math.min(nearRect(5.42, 0, 10.1, 0.62, 0.75)(p), nearRect(5.42, 0, 6.02, 1.0, 0.75)(p)),
     slots: [slot(fx.micro.grp, 0.4, 0.016, 0.16, 'mug'), slot(H, 9.55, 0.93, 0.48), slot(H, 9.95, 0.93, 0.48), slot(H, 8.2, 0.93, 0.48), slot(H, 5.75, 0.93, 0.35), slot(H, 7.0, 0.93, 0.5)] };
   places.wc = { hot: near(4.5, 0.95, 0.8), slots: [slot(H, 4.38, 0.845, 0.13, 'paper')] };
+  // dad's place at the table (only the mug): in reach it wins over the rest of the table
+  places.dad = { hot: (p) => { const d = Math.hypot(p.x - 10.1, p.z - 2.0); return d < 1.0 ? d - 5 : 1; }, slots: [slot(H, 10.18, 0.77, 2.22, 'mug')] };
   // the things and where they start
   const objs = { controller: fx.tv.controller, paper: toiletRoll(), mug: fx.mug.obj, milk: fx.dairy.milk, cream: fx.dairy.cream, whip: fx.dairy.whip };
   for (const it of ITEMS) items[it.id] = { ...it, obj: objs[it.id], place: null, slot: null };
@@ -96,7 +97,8 @@ function renderHud() {
     hud.appendChild(b);
   });
 }
-const mugText = () => { const k = Object.keys(inv.mug).filter((x) => inv.mug[x]); return k.length ? ' (' + k.map((x) => DRINK[x]).join(', ') + ')' : ' (üres)'; };
+const mugText = () => { const k = Object.keys(inv.mug).filter((x) => inv.mug[x]); return k.length ? ' (' + k.map((x) => DRINK[x]).join(', ') + ')' : inv.foamy ? ' (üres, habos)' : ' (üres)'; };
+export function refreshMug() { drawMug(); renderHud(); }
 export function selectItem(i) { if (i >= 0 && i < inv.list.length) { inv.sel = i; renderHud(); } }
 export function cycleItem() { if (inv.list.length) { inv.sel = (inv.sel + 1) % inv.list.length; renderHud(); } }
 
@@ -109,7 +111,7 @@ function drawMug() {
   if ((m.kave || m.tea) && m.tejszin) c.lerp(new THREE.Color(0xfff6e6), 0.3);
   d.material.color.copy(c);
   d.position.y = 0.04 + Math.min(4, n) * 0.011;
-  fx.mug.foam.visible = !!m.hab; fx.mug.foam.position.y = d.visible ? d.position.y + 0.004 : 0.03;
+  fx.mug.foam.visible = !!m.hab || (inv.foamy && n === 0); fx.mug.foam.position.y = d.visible ? d.position.y + 0.004 : 0.03;
 }
 
 // ---------------------------------------------------------------- picking up (E) – called by ep2.js interactHome
@@ -120,7 +122,7 @@ export function pickables(p) {
   for (const id in items) {
     const it = items[id]; if (!it.place) continue;
     const pl = places[it.place]; if (pl.open && !pl.open()) continue;
-    if (id === 'controller' && holding) continue;
+    if ((id === 'controller' && holding) || it.locked) continue;
     const w = worldXZ(it.obj); out.push({ item: it, w, d: Math.hypot(p.x - w.x, p.z - w.z) });
   }
   return out;
@@ -130,7 +132,7 @@ export function pickCandidate(p) {
   for (const id in items) {
     const it = items[id]; if (!it.place) continue;
     const pl = places[it.place]; if (pl.open && !pl.open()) continue;
-    if (id === 'controller' && holding) continue;
+    if ((id === 'controller' && holding) || it.locked) continue;
     const w = worldXZ(it.obj), d = Math.hypot(p.x - w.x, p.z - w.z);
     if (d < bd) { bd = d; best = it; }
   }
@@ -150,12 +152,14 @@ export function invAction(p, look = null) {
   // a source / spot counts when it is near (top view) – or, in the first-person view, when it is looked at
   const at = (x, y, z, r) => (look ? look(new THREE.Vector3(x, y + FY, z)) : Math.hypot(p.x - x, p.z - z) < r);
   const it = items[id];
-  const fill = (what) => () => { if (inv.mug[what]) { toast(`Már van benne ${DRINK[what]}.`, 1.6); return; } inv.mug[what] = true; drawMug(); renderHud(); noise(0.5, 900, 0.8, 0.06); tone('sine', 700, 500, 0.3, 0.02); if (what === 'hab') { noise(0.4, 4000, 0.6, 0.08); say(G.petike, 'Pssszt! Hab!', 1.4); } };
+  const fill = (what) => () => { if (inv.mug[what]) { toast(`Már van benne ${DRINK[what]}.`, 1.6); return; } inv.mug[what] = true; if (what === 'hab') inv.foamy = true; drawMug(); renderHud(); invHooks.poured?.(what); noise(0.5, 900, 0.8, 0.06); tone('sine', 700, 500, 0.3, 0.02); if (what === 'hab') { noise(0.4, 4000, 0.6, 0.08); say(G.petike, 'Pssszt! Hab!', 1.4); } };
   // the mug: tea from the teapot, coffee from the machine, empty it at the sink
   if (id === 'mug') {
-    if (at(11.22, 0.82, 2.78, 0.85)) return { label: 'tea töltése a bögrébe', short: 'TEA', run: fill('tea') };
-    if (look ? at(9.75, 1.05, 0.22) : Math.hypot(p.x - 9.75, p.z - 0.85) < 0.7) return { label: 'kávé a bögrébe', short: 'KÁVÉ', run: () => { fill('kave')(); tone('square', 200, 180, 0.6, 0.02); if (G.petya) say(G.petya, 'Az az én kávém, Petyus!', 2.2); } };
-    if (at(8.6, 0.85, 0.31, 0.7) && Object.values(inv.mug).some(Boolean)) return { label: 'bögre kiöntése', short: 'KIÖNT', run: () => { inv.mug = {}; drawMug(); renderHud(); noise(0.6, 600, 0.5, 0.08); } };
+    if (at(11.15, 0.84, 2.25, 0.85)) return { label: 'tea töltése a bögrébe', short: 'TEA', run: fill('tea') };
+    if (look ? at(9.75, 1.05, 0.22) : Math.hypot(p.x - 9.75, p.z - 0.85) < 0.7) return { label: 'kávé a bögrébe', short: 'KÁVÉ', run: () => { fill('kave')(); tone('square', 200, 180, 0.6, 0.02); } };
+    if (at(8.6, 0.85, 0.31, 0.7) && Object.values(inv.mug).some(Boolean)) return { label: 'bögre kiöntése', short: 'KIÖNT', run: () => { inv.mug = {}; drawMug(); renderHud(); noise(0.6, 600, 0.5, 0.08); invHooks.emptied?.(); } };
+    // washing it under the running kitchen tap (an empty mug)
+    if (at(8.6, 0.85, 0.31, 0.7) && fx.sinkTap && fx.sinkTap.on) return { label: inv.foamy ? 'bögre kimosása (még habos)' : 'bögre kimosása', short: 'MOSÁS', run: () => { inv.foamy = false; drawMug(); renderHud(); noise(0.9, 1500, 0.6, 0.08); noise(0.5, 3200, 0.8, 0.04, 0.4); toast('Tiszta a bögre.', 1.4); invHooks.washed?.(); } };
   }
   // milk / cream / whipped cream into the mug (the mug carried, or within reach)
   const mugOk = inv.list.includes('mug') ? true : (look ? (items.mug.place && (!places[items.mug.place].open || places[items.mug.place].open()) && look(worldXZ(items.mug.obj))) : reachOf('mug', p) < 0.9);
@@ -182,7 +186,7 @@ export function invAction(p, look = null) {
   // dairy into the fridge: its own place in the door if free
   let si = best.si; if (best.pid === 'fridge') { const own = pl.slots.findIndex((s) => s.only === id && !s.item); if (own >= 0) si = own; else si = pl.slots.findIndex((s) => !s.item && !s.only); }
   return { label: `${it.name} lerakása ${PLACE_NAME[best.pid]}`, short: 'LERAK', run: () => {
-    inv.list.splice(inv.sel, 1); inv.sel = Math.min(inv.sel, inv.list.length - 1); put(id, best.pid, si); renderHud(); tone('sine', 600, 420, 0.1, 0.05);
+    inv.list.splice(inv.sel, 1); inv.sel = Math.min(inv.sel, inv.list.length - 1); put(id, best.pid, si); renderHud(); tone('sine', 600, 420, 0.1, 0.05); invHooks.placed?.(id, best.pid);
   } };
 }
 

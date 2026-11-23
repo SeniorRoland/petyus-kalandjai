@@ -105,11 +105,19 @@ function buildFridge(x, z, rot) {
   // the collider: the body (turned with the device)
   const c = Math.abs(Math.cos(rot)), sn = Math.abs(Math.sin(rot)), hx = c * 0.45 + sn * 0.33, hz = sn * 0.45 + c * 0.33;
   addBoxCol(x - hx, z - hz, x + hx, z + hz, 1.9);
-  const st = { open: false, t: 0 };
+  const st = { open: false, t: 0, openT: 0, beepT: 0, capT: 0 };
   const front = toWorld(grp, 0, 0, 0.7); front.y -= FY;
   devices.push({ aim: loc(grp, 0, 1.0, 0.3), size: 0.45, x: front.x, z: front.z, r: 0.75, label: () => (st.open ? 'E – hűtő becsukása' : 'E – hűtő kinyitása'),
     use: () => { st.open = !st.open; tone('sine', st.open ? 220 : 160, st.open ? 180 : 120, 0.12, 0.08); if (!st.open) noise(0.08, 400, 1, 0.12); },
-    update: (dt) => { st.t = damp(st.t, st.open ? 1 : 0, 6, dt); L.rotation.y = -st.t * 1.9; Rr.rotation.y = st.t * 1.9; } });
+    update: (dt) => {
+      st.t = damp(st.t, st.open ? 1 : 0, 6, dt); L.rotation.y = -st.t * 1.9; Rr.rotation.y = st.t * 1.9;
+      // open for more than 15 seconds: it beeps (two short beeps every 1.2 s) until it is closed
+      st.openT = st.open ? st.openT + dt : 0;
+      if (st.openT > 15) {
+        if ((st.beepT -= dt) <= 0) { st.beepT = 1.2; tone('square', 2300, 2300, 0.08, 0.05); tone('square', 2300, 2300, 0.08, 0.05, 0.16); }
+        if ((st.capT -= dt) <= 0) { st.capT = 3.6; say({ headWorld: (o) => o.copy(toWorld(grp, 0, 1.95, 0.2)) }, 'BÍP-BÍP!', 1.2); }
+      } else { st.beepT = 0; st.capT = 0; }
+    } });
   fx.fridge = { grp, door: Rr, isOpen: () => st.open && st.t > 0.6 }; fx.dairy = { milk, cream, whip };
 }
 
@@ -183,7 +191,7 @@ function buildMicrowave(x, z, rot, y) {
       st.t = damp(st.t, st.open ? 1 : 0, 8, dt); pv.rotation.y = -st.t * 1.75;
       if (st.run > 0) {
         st.run = Math.max(0, st.run - dt); tt.rotation.y += dt * 1.2;
-        if ((st.hum -= dt) <= 0) { st.hum = 0.5; noise(0.5, 180, 0.8, 0.03); }
+        if ((st.hum -= dt) <= 0) { st.hum = 0.5; noise(0.55, 150, 0.9, 0.09); tone('sawtooth', 100, 100, 0.52, 0.018); tone('sine', 200, 200, 0.52, 0.02); }
         drawDisp('0:' + String(Math.ceil(st.run)).padStart(2, '0'));
         if (st.run === 0) { for (let i = 0; i < 3; i++) tone('sine', 1760, 1760, 0.18, 0.08, i * 0.35); drawDisp('KÉSZ'); st.done = 3; say({ headWorld: (o) => o.copy(toWorld(grp, 0, 0.45, 0)) }, 'DING!', 1.4); }
       } else if (st.done > 0) { st.done -= dt; if (st.done <= 0) drawDisp('6:00'); }
@@ -206,13 +214,14 @@ function buildKettle(x, z, rot, y) {
   const st = { on: false, t: 0, steamT: 0 };
   const front = toWorld(grp, 0, 0, 0.6); front.y -= FY;
   devices.push({ aim: loc(grp, 0, 0.14, 0), x: front.x, z: front.z, r: 0.6, label: () => (st.on ? 'E – vízforraló kikapcsolása' : 'E – vízforraló bekapcsolása'),
-    use: () => { st.on = !st.on; st.t = 0; click(); },
+    use: () => { st.on = !st.on; st.t = 0; click(); tone('square', 1500, 1100, 0.05, 0.1); },
     update: (dt) => {
       ring.material.opacity = st.on ? 0.95 : 0;
       if (!st.on) return;
       st.t += dt;
+      if ((st.sndT = (st.sndT || 0) - dt) <= 0) { const k = Math.min(1, st.t / 7); st.sndT = 0.22; noise(0.3, 160 + k * 500, 0.8, 0.03 + k * 0.09); if (k > 0.55) tone('sine', 280 + R() * 500, 200, 0.06, 0.03 * k); }
       if (st.t > 2 && (st.steamT -= dt) <= 0) { st.steamT = 0.12; noise(0.2, 300 + st.t * 60, 0.7, 0.02); spawnFx(toWorld(grp, 0.1, 0.25, 0), new V3(0.05 + R() * 0.1, 0.5, (R() - 0.5) * 0.1), 0xf5f7fa, 0.03, 1.0, -0.15); }
-      if (st.t > 8) { st.on = false; tone('square', 1500, 1100, 0.04, 0.06); say({ headWorld: (o) => o.copy(toWorld(grp, 0, 0.5, 0)) }, 'KATT!', 1.2); }
+      if (st.t > 8) { st.on = false; tone('square', 1500, 1100, 0.05, 0.14); noise(0.05, 2500, 1, 0.15); say({ headWorld: (o) => o.copy(toWorld(grp, 0, 0.5, 0)) }, 'KATT!', 1.2); }
     } });
 }
 
@@ -244,6 +253,7 @@ function buildTap(x, z, rot, y, name, len, hot) {
       jet.visible = st.on;
       if (st.on) { jet.scale.x = jet.scale.z = 0.9 + Math.sin(G.clockT * 40) * 0.15; if ((st.sndT -= dt) <= 0) { st.sndT = 0.35; noise(0.4, 1800, 0.6, 0.035); } }
     } });
+  return st;
 }
 function buildShowerWater(x, z, y) {   // the head over the bath: falling drops while on
   const grp = group(x, z, 0, y), drops = [];
@@ -516,7 +526,7 @@ export function buildAppliances() {
   buildMicrowave(6.45, 0.25, 0, 0.93);
   buildKettle(9.3, 0.22, 0, 0.93);
   buildCooktop(7.6, 0.31, 0, 0.93);
-  buildTap(8.6, 0.31, 0, 0, 'mosogatócsap', 0.36, { x: 0, z: 0.65, r: 0.7 }); devices[devices.length - 1].aim = new V3(8.6, 1.0, 0.2);
+  fx.sinkTap = buildTap(8.6, 0.31, 0, 0, 'mosogatócsap', 0.36, { x: 0, z: 0.65, r: 0.7 }); devices[devices.length - 1].aim = new V3(8.6, 1.0, 0.2);
   { const t = homeRoot.children[homeRoot.children.length - 1]; t.children[0].position.set(0, 1.15, -0.1); }   // the kitchen jet: from the spout into the basin
   buildTap(0.4, 1.15, E, 0, 'kádcsap', 0.42, { x: -0.7, z: 0.65, r: 0.5 }); devices[devices.length - 1].aim = new V3(0.4, 0.65, 1.88);
   { const t = homeRoot.children[homeRoot.children.length - 1]; t.children[0].position.set(-0.72, 0.72, 0); }   // the bath jet (the tap's end, in the bath's frame)

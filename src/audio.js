@@ -4,14 +4,18 @@ import { G } from './state.js';
 import { R, clamp, rand } from './util.js';
 
 // ---------------------------------------------------------------- audio
-export let actx = null, master = null, outNode = null, ambBed = null;
+export let actx = null, master = null, outNode = null, ambBed = null, outBus = null;
+let masterVol = 0.5;
+// the overall volume (part 2 is indoors, its sounds are small: louder)
+export function setMasterVol(v) { masterVol = v; if (master) master.gain.value = v; }
 // phones (iOS) suspend the audio when the page is in the background or a call comes in: resume it on the next touch / when visible
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => { if (!actx) return; if (document.hidden) actx.suspend().catch(() => {}); else actx.resume().catch(() => {}); });
   window.addEventListener('touchend', () => { if (actx && actx.state !== 'running' && !document.hidden) actx.resume().catch(() => {}); }, { passive: true });
 }
 export function initAudio() {
-  if (actx) return; try { actx = new (window.AudioContext || window.webkitAudioContext)(); master = actx.createGain(); master.gain.value = 0.5; master.connect(actx.destination); startAmbience(); } catch (e) { actx = null; }
+  if (actx) return; try { actx = new (window.AudioContext || window.webkitAudioContext)(); master = actx.createGain(); master.gain.value = masterVol; master.connect(actx.destination);
+    outBus = actx.createGain(); outBus.connect(master); startAmbience(); } catch (e) { actx = null; }
 }
 // constant park ambience: wind in the leaves (slowly swelling) + far-away traffic rumble
 function startAmbience() {
@@ -21,16 +25,16 @@ function startAmbience() {
   const g1 = actx.createGain(); g1.gain.value = 0.06; const g2 = actx.createGain(); g2.gain.value = 0.014;
   const lfo = actx.createOscillator(); lfo.frequency.value = 0.11; const lg = actx.createGain(); lg.gain.value = 0.011; lfo.connect(lg); lg.connect(g2.gain);
   s.connect(lp); lp.connect(g1); s.connect(bp); bp.connect(g2);
-  ambBed = actx.createGain(); ambBed.gain.value = G.muted ? 0 : 1; g1.connect(ambBed); g2.connect(ambBed); ambBed.connect(master);
+  ambBed = actx.createGain(); ambBed.gain.value = G.muted ? 0 : 1; g1.connect(ambBed); g2.connect(ambBed); ambBed.connect(outBus);
   s.start(); lfo.start();
 }
 // play the sounds made inside fn() as if they came from world point (x, z): stereo pan + distance falloff (relative to the camera)
-export function soundAt(x, z, fn, vol = 1) {
+export function soundAt(x, z, fn, vol = 1, bus = master) {
   if (!actx || G.muted) return;
   const dx = x - camTarget.x, dz = z - camTarget.z, d = Math.hypot(dx, dz);
   const sp = actx.createStereoPanner(); sp.pan.value = clamp((dx - dz) / Math.SQRT2 / 16, -0.9, 0.9);   // screen-x (camera right = (1,0,-1)/√2)
   const g = actx.createGain(); g.gain.value = vol * clamp(1.15 - d / 38, 0.12, 1);
-  sp.connect(g); g.connect(master); outNode = sp; try { fn(); } finally { outNode = null; }
+  sp.connect(g); g.connect(bus || master); outNode = sp; try { fn(); } finally { outNode = null; }
 }
 function noiseBuf(dur) { const b = actx.createBuffer(1, actx.sampleRate * dur, actx.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; }
 function env(g, t, a, peak, d) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); }
@@ -113,3 +117,29 @@ export function startHum() {
 export const sBell =() => { for (const d of [0, 0.17]) { tone('sine', 2350, 2330, 0.55, 0.11, d); tone('sine', 5640, 5600, 0.3, 0.035, d); tone('triangle', 1175, 1170, 0.4, 0.04, d); } };
 export const sHorn = (twice) => { for (const d of twice ? [0, 0.3] : [0]) { tone('square', 330, 326, twice ? 0.2 : 0.45, 0.05, d); tone('square', 415, 411, twice ? 0.2 : 0.45, 0.045, d); } };
 
+
+// part 2, the creamy coffee: a stomach growl (low, wobbling) and farts (a buzzing low reed + a puff of noise; len 0.3 … 1.6 s)
+export function sGrowl(vol = 1) {
+  const n = 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < n; i++) { const d = i * 0.22 + Math.random() * 0.05; tone('sawtooth', 62 + Math.random() * 25, 40 + Math.random() * 15, 0.3, 0.07 * vol, d); noise(0.28, 140, 4, 0.12 * vol, d); }
+  tone('sine', 95, 55, n * 0.22 + 0.3, 0.06 * vol);
+}
+export function sFart(len = 0.6, pitch = 1, vol = 1) {
+  const n = Math.max(2, Math.round(len / 0.07));
+  for (let i = 0; i < n; i++) {
+    const d = i * (len / n), f = (95 + Math.random() * 40) * pitch * (1 - i / n * 0.35);
+    tone('sawtooth', f, f * 0.8, len / n * 1.3, 0.09 * vol, d); tone('square', f * 0.5, f * 0.45, len / n * 1.2, 0.035 * vol, d);
+  }
+  noise(len, 260 * pitch, 1.5, 0.22 * vol); noise(0.25, 900, 0.8, 0.06 * vol, len * 0.9);
+}
+
+// the world outside (part 2): the ambience bed and the yard / street sounds go through outBus – faded out indoors in the
+// first-person view (level 0 … 1, smooth). Play an outdoor sound: soundOut(x, z, fn, vol).
+export function setOutdoor(level) { if (outBus) outBus.gain.setTargetAtTime(level, actx.currentTime, 0.25); }
+export const soundOut = (x, z, fn, vol = 1) => soundAt(x, z, fn, vol, outBus);
+// a footstep in slippers: a soft thud (wood, carpet) or a dry tap (tiles, stone, the balcony); hard: running
+export function sStep(kind = 'wood', hard = 0) {
+  const v = 1 + hard * 0.6, f = { wood: 260, wood2: 260, tile: 900, kitchen: 800, stone: 700, balcony: 1100 }[kind] || 400;
+  noise(0.05, f * (0.9 + Math.random() * 0.2), 1.4, 0.05 * v);
+  tone('sine', 95 + Math.random() * 20, 60, 0.05, 0.035 * v);
+}

@@ -203,19 +203,22 @@ function toiletPaper(seed) {   // 1.25 cm voxels: wall plate + arm, a roll with 
   fill(g, s, -0.09, 0.09, 0.64, 0.74, -0.012, 0.0, (x, y) => (Math.abs(x) > 0.08 && (y < 0.65 || y > 0.73) ? undefined : CH2));   // the wall plate
   fill(g, s, 0.07, 0.085, 0.68, 0.7, 0.0, 0.08, () => CH);                                                                       // the arm
   fill(g, s, -0.065, 0.07, 0.68, 0.7, 0.06, 0.08, (x) => (x > -0.06 ? CH : undefined));
-  // the roll: a cylinder along x (radius 5.5 cm) round the arm, the core showing at the end
-  fill(g, s, -0.06, 0.06, 0.63, 0.75, 0.015, 0.125, (x, y, z) => { const d = Math.hypot(y - 0.69, z - 0.07); if (d > 0.055) return undefined; if (d < 0.02 && Math.abs(x) > 0.05) return d < 0.012 ? undefined : CORE; return Math.abs(x) > 0.055 ? P2 : P; });
-  fill(g, s, -0.055, 0.055, 0.56, 0.69, 0.12, 0.13, (x, y) => (Math.abs(y - 0.6) < 0.004 ? P2 : P));   // the loose sheet (perforation line)
-  // a little shelf and two spare rolls standing on it
+  // a little shelf above it
   fill(g, s, -0.15, 0.15, 1.04, 1.06, -0.012, 0.11, () => 0xe9e5dc);
-  for (const cx of [-0.075, 0.075]) fill(g, s, cx - 0.06, cx + 0.06, 1.06, 1.17, -0.01, 0.11, (x, y, z) => { const d = Math.hypot(x - cx, z - 0.05); if (d > 0.055) return undefined; if (d < 0.02 && y > 1.15) return d < 0.012 ? undefined : CORE; return y > 1.155 ? P2 : P; });
+  // the rolls themselves (on the arm, two spares on the shelf) are the same smooth model as the roll Petyus can pick up:
+  // food.js toiletRoll, added by home.js (in the catalogue only the holder and the shelf)
+  if (seed === 99) { void P; void P2; void CORE; }
   return g;
 }
-function plunger(seed) {   // WC pumpa: red rubber cup, wooden handle, standing in its holder
-  const g = grid(seed);
-  g.disc(0, 0, 2.2, 0, 1, 0xd9d4c8);
-  g.disc(0, 0, 1.6, 1, 2, 0xc62828);
-  bx(g, -0.02, 0.1, -0.02, 0.02, 0.58, 0.02, 0xb07a45);
+function plunger(seed) {   // WC pumpa (1.25 cm voxels): a round holder tub, the red rubber bell with a darker rim, a wooden handle, a black cap
+  const s = 0.0125, g = new VoxelGrid(s, seed);
+  // the holder: a round tub, open at the top, with a grey band at the top
+  fill(g, s, -0.085, 0.085, 0, 0.05, -0.085, 0.085, (x, y, z) => { const r = Math.hypot(x, z); if (r > 0.085) return undefined; if (y > 0.0125 && r < 0.072) return undefined; return y > 0.036 ? 0xb8bfc6 : 0xe3e6e9; });
+  // the rubber bell: wide at the bottom, narrowing upwards, hollow below; the bottom rim darker
+  fill(g, s, -0.07, 0.07, 0.0125, 0.14, -0.07, 0.07, (x, y, z) => { const r = Math.hypot(x, z), R = 0.066 - (y - 0.0125) * 0.33; if (r > R) return undefined; if (r < R - 0.02 && y < 0.11) return undefined; return y < 0.03 ? 0x8e1b1b : y > 0.12 ? 0xa61e1e : 0xc62828; });
+  // the handle: wood with a grain, a black cap with a hanging hole
+  fill(g, s, -0.0125, 0.0125, 0.13, 0.58, -0.0125, 0.0125, (x, y) => (Math.floor(y / 0.0375) % 3 === 0 ? 0xa46d3c : 0xb07a45));
+  fill(g, s, -0.019, 0.019, 0.58, 0.62, -0.019, 0.019, (x, y, z) => (y > 0.595 && y < 0.61 && Math.abs(z) < 0.007 ? undefined : 0x2c2f33));
   return g;
 }
 // ---------------------------------------------------------------- hallway: wall coat hanger, shoe cabinet

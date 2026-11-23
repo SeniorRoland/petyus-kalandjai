@@ -170,3 +170,15 @@ export function napkins() { return mesh(new THREE.BoxGeometry(0.1, 0.012, 0.1), 
 
 // place a built thing (a Group) into a parent at x, y, z, turned ry
 export function at(parent, obj, x, y, z, ry = 0) { obj.position.set(x, y, z); obj.rotation.y = ry; parent.add(obj); return obj; }
+
+// a toilet roll: white paper round a cardboard core (radius 5.5 cm, 10 cm tall, standing; turn it for a holder's arm)
+export function toiletRoll() {
+  const g = new THREE.Group();
+  const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.1, 22, 1, true), new THREE.MeshLambertMaterial({ color: 0xfafaf6, side: THREE.DoubleSide })); roll.position.y = 0.05; g.add(roll);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.02, 0.055, 22), new THREE.MeshLambertMaterial({ color: 0xf0f0ea, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.1; g.add(ring);
+  const ring2 = ring.clone(); ring2.position.y = 0.0005; g.add(ring2);
+  const core = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.1, 14, 1, true), new THREE.MeshLambertMaterial({ color: 0xb8915e, side: THREE.DoubleSide })); core.position.y = 0.05; g.add(core);
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+}

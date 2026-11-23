@@ -11,18 +11,24 @@ export const PAJAMAS = {
   angi: { neck: 1.53, base: 0xf3a9c0, pat: 0xffffff, kind: 3, slipper: 0xfafafa },
 };
 
-let mat = null;
-function pajamaMaterial() {
-  if (mat) return mat;
-  mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });   // double-sided like the plain character material (rigs.js)
+// one material per person (they share the shader program): its uniforms say whether the pants are pushed down (the creamy
+// coffee: dad on the WC) – then the thighs (between the knee and the hip, in bind-pose model units) show skin
+const mats = {};
+export const pants = {};   // who → { down, hip, knee, skin } uniforms
+function pajamaMaterial(who) {
+  if (mats[who]) return mats[who];
+  const mat = mats[who] = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });   // double-sided like the plain character material (rigs.js)
+  const u = pants[who] = { down: { value: 0 }, hip: { value: 1 }, knee: { value: 0.5 }, skin: { value: new THREE.Color(0xf0c09a) } };
   mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uPantsDown = u.down; sh.uniforms.uHipY = u.hip; sh.uniforms.uKneeY = u.knee; sh.uniforms.uSkin = u.skin;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec4 pat;\nvarying vec4 vPat;\nvarying vec3 vPP;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPat = pat; vPP = position;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying vec4 vPat;\nvarying vec3 vPP;')
+      .replace('#include <common>', '#include <common>\nvarying vec4 vPat;\nvarying vec3 vPP;\nuniform float uPantsDown, uHipY, uKneeY;\nuniform vec3 uSkin;')
       .replace('#include <color_fragment>', `#include <color_fragment>
-      if (vPat.w > 0.5) {
+      if (uPantsDown > 0.5 && vPat.w > 0.5 && vPP.y < uHipY && vPP.y > uKneeY) diffuseColor.rgb = uSkin;   // pants down: bare thighs
+      else if (vPat.w > 0.5) {
         float m = 0.0;
         if (vPat.w < 1.5) m = step(0.62, fract((vPP.x + vPP.z) * 7.0));                                   // stripes
         else if (vPat.w < 2.5) m = 0.5 * (step(0.5, fract((vPP.x + vPP.z) * 5.0)) + step(0.5, fract(vPP.y * 5.0)));             // gingham checks
@@ -33,9 +39,16 @@ function pajamaMaterial() {
   mat.customProgramCacheKey = () => 'pajama';
   return mat;
 }
+export function setPantsDown(who, on) { if (pants[who]) pants[who].down.value = on ? 1 : 0; }
 
 // recolours a rig's meshes (once; the original colours are kept, see undress)
 export function dressPajama(rig, who) {
+  pajamaMaterial(who);
+  { // the hip and the knee in model units (the pants-down band)
+    const u = pants[who], s = rig.S.scale.y || 1, v = new THREE.Vector3(); rig.root.updateMatrixWorld(true);
+    const y0 = rig.root.getWorldPosition(v).y;
+    u.hip.value = (rig.hip[0].getWorldPosition(v).y - y0) / s + 0.04; u.knee.value = (rig.knee[0].getWorldPosition(v).y - y0) / s + 0.03;
+  }
   const p = PAJAMAS[who], base = new THREE.Color(p.base), pc = new THREE.Color(p.pat), sl = new THREE.Color(p.slipper);
   rig.root.traverse((o) => {
     if (!o.isMesh || !o.geometry.attributes.color) return;
@@ -52,6 +65,6 @@ export function dressPajama(rig, who) {
     }
     col.needsUpdate = true;
     g.setAttribute('pat', new THREE.BufferAttribute(pat, 4));
-    o.material = pajamaMaterial();
+    o.material = pajamaMaterial(who);
   });
 }
