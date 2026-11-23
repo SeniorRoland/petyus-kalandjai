@@ -39,7 +39,7 @@ export function roomAt(x, z) { return ROOMS.find((r) => x >= r.x0 - 0.06 && x <=
 // places in the flat the game uses
 export const SPOTS = {
   petyusWake: { x: 13.1, z: 1.8, h: Math.PI * 0.75 },     // next to his bed
-  dadChair: { x: 9.68, z: 1.95, h: Math.PI / 2 },          // at the table's west end, facing it (in front of the chair's back: see furnish)
+  dadChair: { x: 9.55, z: 1.95, h: Math.PI / 2 },          // at the table's west end, facing it (in front of the chair's back: see furnish)
   momCook: { x: 7.6, z: 1.0, h: Math.PI },                 // at the cooktop
   momFridge: { x: 6.55, z: 1.5 },                          // in front of the wide fridge (west wall)
 };
@@ -227,7 +227,7 @@ function furnish() {
   put('dining_table', 10.7, 1.95, 0, 1);   // (the breakfast on it: buildBreakfast)
   // the table's short end at the wall to Petyus's room: chairs on its two long sides, dad's at the free (west) end
   put('chair', 10.4, 1.3, 0, 0); put('chair', 11.2, 1.3, 0, 0); put('chair', 10.4, 2.6, P, 0);
-  put('chair', 9.5, 1.95, E, 0, { solo: 'dadChair' });     // dad's own: it falls over when he runs (coffee.js)
+  put('chair', 9.42, 1.95, E, 0, { solo: 'dadChair' });     // dad's own: it falls over when he runs (coffee.js)
   put('potted_plant', 5.8, 3.9);
   // Petyus's room: bed on the kitchen wall, desk with the monitor by the east window, wardrobe on the south wall, play rug, school bag
   put('bed_single', 12.22, 1.95, 0, 0); put('desk', 15.28, 1.45, W, 1);   // the computer on it: appliances.js put('chair', 14.7, 1.45, E, 2);
