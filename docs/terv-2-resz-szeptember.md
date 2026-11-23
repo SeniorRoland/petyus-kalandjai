@@ -192,3 +192,11 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 3. **Szobák:** a 20 m²-es a testvéré (egyelőre zárva), a 26 m²-es a szülőké.
 4. **Indulás:** a játékos dönti el, mikor indul.
 5. **Ruhák:** reggel pizsama mindhármuknak; később átöltözés iskolai (Petyus) és munkaruhába (Petya, Angi).
+
+## Javítandók (felvéve: 2026. 11. 23.)
+
+- [ ] **Interakció-feliratok:** az egyes interakciók feliratai itt is pontosak legyenek – a súgósor (`#prompt`) és a telefonos gombok (HASZNÁL / RÚGÁS helyén az aktuális művelet) is (`ep2.js` `interactHome`).
+- [ ] **Hűtő:** a tej, a tejszín és a tejszínhab a második polcon legyen (most a jobb ajtó alsó rekeszében vannak – `appliances.js` hűtő, `inventory.js` `places.fridge` helyei).
+- [ ] **Tejszínes kávé – WC-ajtó:** Petya a WC-re rohanva becsukja maga mögött az ajtót; ha végzett, kinyitja, kijön, és visszacsukja (`coffee.js`: `rush` → `wc` → `back`). (A szagfelhő ilyenkor az ajtó résein / nyitáskor gomolyog ki.)
+- [ ] **Bögre átadása apának:** könnyebb legyen – elég Petyára nézni (belső nézetben) vagy mellette állni, és úgy odaadni neki („bögre Petyának”), ne kelljen az asztalon a pontos helyet eltalálni (`inventory.js` `places.dad` / `invAction`).
+- [ ] **TV:** focimeccs menjen rajta: Real Madrid – Barcelona (pálya, két mez szín: fehér / gránátvörös-kék, eredményjelző – `appliances.js` TV-kép).
