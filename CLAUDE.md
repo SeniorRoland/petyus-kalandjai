@@ -55,7 +55,7 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 | `quality.js` | grafikai minőség: `Q.level` 2 asztal / 1 mobil / 0 minimális, `MOBILE`, `fxAllowed()` (részecske-ritkítás), `watchFrame()` (lassú eszközön automatikus visszaváltás), `?quality=high|mobile|low` |
 | `world.js` | voxel batch, csempék/talaj, ütközők, világépítés, voxel-kellékek, `TREES` |
 | `rigs.js` · `actors.js` | karakter-rigek · `Actor`, állatmodellek, FX |
-| `audio.js` · `ambience.js` | szintetizált hangok, `soundAt` · környezeti hangok |
+| `audio.js` · `ambience.js` | szintetizált hangok, `soundAt` (térhatás); a külvilág hangjai az `outBus`-on (`soundOut`, `setOutdoor`: a 2. részben belső nézetben a lakásban elnémul, csak a kutyaugatás hallik; erkélyen szól); Petyus lépései a padló szerint (`sStep`) · környezeti hangok |
 | `menu.js` | kezdőképernyő: a 12 havi rész szétszórt polaroidokként (`buildEpisodeMenu`: részenként rögzített `--rot`/`--dx`/`--dy`, minden harmadikon ragasztószalag; egér alatt kiegyenesedik, megnő, előre jön), `setStartLabel` |
 | `mischief.js` | csibészségek: `MISCHIEFS` (1. rész) és `MISCHIEFS2` (2. rész, külön mentés `petyus.r2.csibeszsegek`; a napló az aktuális rész listáját mutatja, a `totalStars()` csak az 1. részé) (id, cím, napló-tipp, `stars(eredmény, extra)` → 1–3, `lower: true` = a kisebb eredmény a jobb), `award(id, eredmény, extra)` (legjobb mentése `localStorage`-ba, felugró csillagok), `toggleJournal()` (napló, **N** / 📒 – játék közben szünetel: `G.paused`), ⭐ összesítés |
 | `viewturn.js` | a nézet forgatása 90°-onként mindkét részben: ⟲ ⟳ gombok jobb felül, billentyű `,` és `.` (a 2. részben Q / R is); a `CAM_OFF`, `CAM_FWD`, `CAM_RIGHT` együtt fordul (`updateViewTurn` minden lépésben) |

@@ -11,7 +11,7 @@ import { say } from '../ui.js';
 import { R, V3, clamp, dampAngle, pick } from '../util.js';
 import { partMesh, vcMat } from '../world.js';
 import { getGeometry } from '../voxels.js';
-import { noise } from '../audio.js';
+import { noise, sBark, soundAt, soundOut, tone } from '../audio.js';
 import { FY, put } from './home.js';
 
 // our block: the flat (x −0.25 … 15.85) + the stairwell and the neighbours' flat to the west; ground floor + 1st floor below
@@ -318,7 +318,12 @@ export function updateOutside(dt) {
   if ((chatT -= dt) <= 0) {
     chatT = R(7, 14);
     const p = pick(pets);
-    if (p) say({ headWorld: (v) => v.set(p.pos.x, p.type === 'dog' ? 1.0 : 0.7, p.pos.z) }, p.type === 'dog' ? pick(['Vau!', 'Vau-vau!']) : pick(['Miaú!', 'Mrrr…']), 1.3, '');
+    if (p) {
+      say({ headWorld: (v) => v.set(p.pos.x, p.type === 'dog' ? 1.0 : 0.7, p.pos.z) }, p.type === 'dog' ? pick(['Vau!', 'Vau-vau!']) : pick(['Miaú!', 'Mrrr…']), 1.3, '');
+      // the dog is heard indoors too (even in the first-person view); the cat only outside
+      if (p.type === 'dog') soundAt(p.pos.x, p.pos.z, sBark, G.fps ? 0.7 : 1.2);
+      else soundOut(p.pos.x, p.pos.z, () => tone('triangle', 700, 520, 0.35, 0.05));
+    }
   }
 }
 
@@ -359,7 +364,7 @@ function updateTraffic(dt) {
     if (c.x > 100) c.x = -100; else if (c.x < -100) c.x = 100;
     c.grp.position.set(c.x, 0, c.z);
     const near = Math.abs(c.x - (G.petike ? G.petike.pos.x : 0)) < 2;
-    if (near && c.sound <= 0) { noise(1.1, 260, 0.7, 0.025); c.sound = 3; }
+    if (near && c.sound <= 0) { soundOut(c.x, c.z, () => noise(1.1, 260, 0.7, 0.05)); c.sound = 3; }
     c.sound -= dt;
   }
 }

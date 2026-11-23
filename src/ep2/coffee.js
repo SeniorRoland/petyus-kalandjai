@@ -27,7 +27,7 @@ const GROWL = ['GRRRRRR…', 'KORRR-KORRR!', 'BRUGGGGG…', 'GRRRUUUMMM…', 'KO
 const FARTS = [['PRRRT!', 0.45, 1.1], ['PFFFFRRR!', 1.1, 0.95], ['BRÖTTYH!', 0.35, 0.7], ['PRRRRRRRT!', 1.5, 1.0], ['PUFF!', 0.25, 1.3]];
 const WAILS = ['Jajjj, a hasam!', 'Ki tett tejszínt a kávémba?!', 'Soha többé tejszín…', 'Jaj, jaj, jaj…', 'Angiii, hozz még papírt!', 'Ez a reggel… ez a reggel…'];
 // dad's way to the WC: round the table, through the kitchen and the hallway, through the WC door (x 4.1 … 4.9), to the bowl
-const TO_WC = [[9.7, 2.0], [7.2, 3.3], [4.5, 3.3], [4.5, 2.36], [4.5, 1.2]];
+const TO_WC = [[8.8, 2.5], [7.2, 3.3], [4.5, 3.3], [4.5, 2.36], [4.5, 1.2]];
 const WC_SIT = { x: 4.5, z: 0.66 };
 
 // a sound effect's caption at a point (not an Actor: a coloured caption, no tail)
@@ -244,7 +244,7 @@ export function coffeeTick(dt) {
       if (cf.t > 1.5 && !dad.path && !cf.backWalk) { cf.backWalk = true; dad.walkTo([[4.5, 1.2], ...TO_WC.slice(0, -1).reverse(), [SPOTS.dadChair.x - 0.4, SPOTS.dadChair.z], [SPOTS.dadChair.x, SPOTS.dadChair.z]], 0.85); }
       if (dad.path) { poseBelly(0.5, 0.22); dad.sync(); if (Math.random() < dt * 0.7) puff(1, 0.5); }
       // the chair stands up again before he sits
-      if (cf.backWalk && Math.hypot(dad.pos.x - 10, dad.pos.z - 2) < 1.4) { cf.chairA = Math.max(0, cf.chairA - dt * 3); chairTo(cf.chairA); }
+      if (cf.backWalk && Math.hypot(dad.pos.x - SPOTS.dadChair.x, dad.pos.z - SPOTS.dadChair.z) < 1.4) { cf.chairA = Math.max(0, cf.chairA - dt * 3); chairTo(cf.chairA); }
       if (cf.backWalk && !dad.path) {
         cf.chairA = 0; chairTo(0);
         dad.place(SPOTS.dadChair.x, SPOTS.dadChair.z, SPOTS.dadChair.h); dad.pos.y = FY; dad.seatH = 0.45; dad.sitTarget = 1;
