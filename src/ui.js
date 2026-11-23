@@ -1,4 +1,5 @@
 // Petyus kalandjai – ui: Szövegbuborékok, toast, nagy felirat.
+import { hasVoice, soundAt, sVoice } from './audio.js';
 import { view } from './scene.js';
 import { G } from './state.js';
 import { $, V3, clamp, damp, touchText } from './util.js';
@@ -32,6 +33,8 @@ export function say(actor, text, dur = 2.8, name = actor.name) {
     edge = document.createElementNS(SVGNS, 'path'); edge.setAttribute('class', 'edge');
     g.append(fill, edge); $('tails').appendChild(g);
   }
+  // Petya, Angi, Petyus: their voice (a babble – audio.js), from where they stand
+  if (kind !== 'sfx' && actor.pos && hasVoice(actor.name)) soundAt(actor.pos.x, actor.pos.z, () => sVoice(actor.name, text, kind, dur), 1.3);
   bubbles.push({ actor, el, g, fill, edge, who, name, kind, t: dur, w: 0, h: 0, x: 0, y: 0, tx: 0, ty: 0, bx: 0, by: 0, ax: 0, ay: 0, placed: false, sub: false, hidden: false, arrow: '' });
 }
 const tmpV = new V3();
