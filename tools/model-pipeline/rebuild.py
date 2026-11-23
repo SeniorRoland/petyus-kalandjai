@@ -92,6 +92,20 @@ def reshape_angi(vox, OFFS):
     bun(-0.26, 0.04, 1.86, 1.94, HAIR_D)                # its back
     return vox
 
+# Petya's head was bald at the back (skin from the nape up to the crown): short hair there – the back face and, behind the
+# ears, the sides – in the colour of the hair at his temples; the light grey top of the head gets the hair colour too
+def reshape_petya(vox, OFFS):
+    I = lambda x: int(round((x - OFFS[0]) / S)); J = lambda y: int(round((y - OFFS[1]) / S)); K = lambda z: int(round((z - OFFS[2]) / S))
+    HAIR, HAIR_D = vox[(I(-0.20), J(1.82), K(-0.10))], vox[(I(0), J(1.90), K(-0.18))]
+    for y in [1.66 + 0.04 * n for n in range(6)]:
+        c = HAIR_D if y > 1.85 else HAIR
+        for xi in range(I(-0.20), I(0.20) + 1): vox[(xi, J(y), K(-0.18))] = c          # the back of the head
+        for x in (-0.20, 0.20):
+            for z in (-0.14, -0.10, -0.06): vox[(I(x), J(y), K(z))] = c                # behind the ears
+    # the top of the head was light grey (it read as a bald patch from the game's camera, which looks down on it): hair colour
+    for k in [k for k in vox if abs(k[1] * S + OFFS[1] - 1.98) < 0.01]: vox[k] = HAIR_D
+    return vox
+
 def snap(x, base): return round((x - base) / S) * S + base
 
 def in_leg(ax, y, z, c):
@@ -145,6 +159,7 @@ for name in ['petya', 'angi', 'petike_foci']:
     OFFS = np.array([(mn[0] % S) + S / 2, (mn[1] % S) + S / 2, (mn[2] % S) + S / 2])
     g, vox = voxelize(src_path); fill(vox)
     if name == 'angi': reshape_angi(vox, OFFS)
+    if name == 'petya': reshape_petya(vox, OFFS)
     ctr = lambda k: np.array(k) * S + OFFS
     if name in SHIN_WIDEN: print(f'{name}: lábszár szélesítve, +{widen_shins(vox, ctr, BODY[name]["legInner"], *SHIN_WIDEN[name])} voxel')
     arms = {'R': [], 'L': []}
