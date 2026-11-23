@@ -92,6 +92,7 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 - `rigFromSkinned()` ugyanazt az interfészt adja, mint a régi felosztós rig: `rig.hip[R,L]` = UpLeg, `rig.knee[R,L]` = Leg csontok; **`rig.sh[R,L]` proxyk** (Object3D) – „lelógó kar” jelentéssel. A `rig.apply()` írja át őket a karcsontokra: `armBone.rotation = (sh.x, sh.y, sh.z + armBase)`, ahol `armBase = [+1.5, −1.5]` hozza le a T-pose karokat. Index 0 = jobb (−X), 1 = bal (+X).
   - Kar előre lendítése: `sh.rotation.x < 0`; comb előre: `hip.rotation.x < 0`; térd hajlítása: `knee.rotation.x > 0`.
   - `Actor.sync()` hívja az `apply()`-t; aki közvetlenül pózol (pl. `poseRider`), annak is hívnia kell.
+- A végtagok merevek: a karok és a lábak minden háromszöge egyetlen csonttal mozog (`rigidArms` a `rigs.js`-ben – az 50/50-es ízületgyűrű nagy hajlításnál összeesett), a hajlásnál nyíló rést ízület-kitöltők zárják (`fillJoints`: csípő, térd, boka, könyök – henger a csukló tengelye körül, a végtag szélességére és mélységére vágva).
 - Ülés: `sitKnee()` a lábszár hossza (`rig.kneeH`) alapján dönti meg a lábszárat, hogy a talp a földön legyen (a `rig.foot` csont vízszintesen tartja a talpat).
 - `CFG` (skála + régi felosztási küszöbök): Petya 0.93, Angi 0.86, focista Petyus 0.833, rolleres Petyus 1.14 (≈ 1,5 m, Petya 1,86 m, Angi 1,75 m); a roller `ROLLER_SCALE` = 0.84 (`state.js`; a deszka magassága is ezzel nő). Ha Petyus méretét változtatod, a rolleren a kéz–kormány illesztést (`RIDE_SKINNED` a `roller.js`-ben) újra kell hangolni.
 - Ha nem skinnelt GLB-t kap, a `rigFromGLTF` a régi módon (voxel-y/x küszöbökkel) bontja végtagokra.
@@ -118,7 +119,7 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 ## Modell-pipeline (`tools/model-pipeline`, Python 3 + `requirements.txt`)
 
 - `rebuild.py [--install]`: `models/source/{petya,angi,petike_foci}.glb` → voxelekre bontás + belső kitöltés → karok 90°-kal T-pose-ba (a voxelrácson) → összevont lapok (greedy meshing, csonthatárokon nem lép át) → csontváz + súlyozás → `models/build/*_tpose.glb`, `*_rigged.glb`; `--install` a riggeltet a `public/`-ba másolja.
-  - Az ízület-magasságok a `BODY` szótárban vannak (csípő = a nadrág teteje, térd = közvetlenül a nadrág alatt). A karok szélességét az `ARMX` küszöb adja (focista: 0.265 – a kar 3 voxel széles!).
+  - Az ízület-magasságok a `BODY` szótárban vannak (csípő = a nadrág teteje, térd = közvetlenül a nadrág alatt) – mindig voxelhatáron (0,04 többszöröse), különben a lapok két csont közt cikcakkban szakadnak. Angi felsője 0,64-ig ér: nála a csípő 0,68, a térd 0,40, és a `legBox` mondja meg, hogy a felső alja magasságában csak a láboszlop láb (a többi a törzs). A lábak súlyai merevek (a lap csontja), a comb és a törzs határán zárt lapok vannak. A karok szélességét az `ARMX` küszöb adja (focista: 0.265 – a kar 3 voxel széles!).
 - `roller_tpose.py` + `rig_roller.py [--install]`: a dobozokból álló rolleres Petyus.
 - `render2.py a.glb …`: gyors előnézet `preview.png`-be.
 - Egyben: `npm run models` (Windows-on, ha nincs `python`, `py`-jal futtasd a szkripteket).
