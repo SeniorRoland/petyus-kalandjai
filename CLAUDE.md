@@ -119,7 +119,7 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 ## Modell-pipeline (`tools/model-pipeline`, Python 3 + `requirements.txt`)
 
 - `rebuild.py [--install]`: `models/source/{petya,angi,petike_foci}.glb` → voxelekre bontás + belső kitöltés → karok 90°-kal T-pose-ba (a voxelrácson) → összevont lapok (greedy meshing, csonthatárokon nem lép át) → csontváz + súlyozás → `models/build/*_tpose.glb`, `*_rigged.glb`; `--install` a riggeltet a `public/`-ba másolja.
-  - Az ízület-magasságok a `BODY` szótárban vannak (csípő = a nadrág teteje, térd = közvetlenül a nadrág alatt). A karok szélességét az `ARMX` küszöb adja (focista: 0.265 – a kar 3 voxel széles!).
+  - Az ízület-magasságok a `BODY` szótárban vannak (csípő = a nadrág teteje, térd = közvetlenül a nadrág alatt) – mindig voxelhatáron (0,04 többszöröse), különben a lapok két csont közt cikcakkban szakadnak. Angi felsője 0,64-ig ér: nála a csípő 0,68, a térd 0,40, és a `legBox` mondja meg, hogy a felső alja magasságában csak a láboszlop láb (a többi a törzs). A lábak súlyai merevek (a lap csontja), a comb és a törzs határán zárt lapok vannak. A karok szélességét az `ARMX` küszöb adja (focista: 0.265 – a kar 3 voxel széles!).
 - `roller_tpose.py` + `rig_roller.py [--install]`: a dobozokból álló rolleres Petyus.
 - `render2.py a.glb …`: gyors előnézet `preview.png`-be.
 - Egyben: `npm run models` (Windows-on, ha nincs `python`, `py`-jal futtasd a szkripteket).

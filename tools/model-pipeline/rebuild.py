@@ -14,8 +14,11 @@ from pygltflib import GLTF2
 ARMX = {'petya': 0.345, 'angi': 0.265, 'petike_foci': 0.265}
 ARMY = {'petya': (0.77, 1.42), 'angi': (0.95, 1.6), 'petike_foci': (0.58, 1.27)}
 BODY = {  # torso / leg landmarks: hip = top of the trousers/shorts, knee just below the shorts (or mid-leg for long trousers)
+# (every landmark on a voxel boundary – a multiple of S = 0.04 –, or the faces of a limb would be torn between two bones)
+# legBox (optional): the leg column (|x| from … to, z from … to, above y): there, whatever is outside it belongs to the body
  'petya':       dict(hip=0.76, hipsTop=0.92, spineTop=1.12, spine1Top=1.32, neck=1.52, head=1.60, top=2.0, legX=0.15, legInner=0.06, knee=0.44, ankle=0.12, toeZ=0.2),
- 'angi':        dict(hip=0.96, hipsTop=1.08, spineTop=1.20, spine1Top=1.36, neck=1.52, head=1.56, top=2.04, legX=0.12, legInner=0.02, knee=0.56, ankle=0.12, toeZ=0.2),
+ 'angi':        dict(hip=0.68, hipsTop=1.08, spineTop=1.20, spine1Top=1.36, neck=1.52, head=1.56, top=2.04, legX=0.12, legInner=0.02, knee=0.40, ankle=0.12, toeZ=0.2,
+                    legBox=(0.06, 0.18, -0.08, 0.04, 0.62)),   # her pajama top reaches down to 0.64: there only the leg column is leg
  'petike_foci': dict(hip=0.68, hipsTop=0.80, spineTop=0.92, spine1Top=1.08, neck=1.24, head=1.32, top=1.80, legX=0.12, legInner=0.06, knee=0.40, ankle=0.12, toeZ=0.2),
 }
 # Shin widening (y range, raw model metres): the footballer Petike's shin is only 2 voxels wide in the source
@@ -33,25 +36,32 @@ def widen_shins(vox, ctr, legInner, y0, y1):
 
 def snap(x, base): return round((x - base) / S) * S + base
 
+def in_leg(ax, y, z, c):
+    b = c.get('legBox')
+    return b is None or y < b[4] or (b[0] <= ax <= b[1] and b[2] <= z <= b[3])
+
 def bone_at(p, c):
     """bone owning a voxel centre (never on a seam plane)"""
     x, y, z = p; s = 'Left' if x > 0 else 'Right'; ax = abs(x)
     if c['armBot'] <= y <= c['armTop'] and ax >= c['shoulderX']:
         return s + ('Arm' if ax < c['elbow'] else 'ForeArm' if ax < c['wrist'] else 'Hand')
-    if y <= c['hip'] and ax >= c['legInner']:
+    if y <= c['hip'] and ax >= c['legInner'] and in_leg(ax, y, z, c):
         return s + ('Foot' if y < c['ankle'] else 'Leg' if y < c['knee'] else 'UpLeg')
     for lim, b in [(c['hipsTop'], 'Hips'), (c['spineTop'], 'Spine'), (c['spine1Top'], 'Spine1'), (c['neck'], 'Spine2'), (c['head'], 'Neck')]:
         if y < lim: return b
     return 'Head'
 
+def parts(a, b):   # a thigh voxel next to a body voxel: both get a face (closed shells when the leg turns)
+    return a != b and ((a.endswith('UpLeg') and b == 'Hips') or (b.endswith('UpLeg') and a == 'Hips'))
+
 def greedy(vox, keyfn):
-    pos, nor, col, idx = [], [], [], []
+    pos, nor, col, idx, vb = [], [], [], [], []
     for F in FACES:
         n = F[0]; a = [abs(t) for t in n].index(1); s = n[a]; u, v = (a + 1) % 3, (a + 2) % 3
         planes = {}
         for p, c in vox.items():
             q = list(p); q[a] += s
-            if tuple(q) in vox: continue
+            if tuple(q) in vox and not parts(keyfn(p), keyfn(tuple(q))): continue
             planes.setdefault(p[a], {})[(p[u], p[v])] = (c, keyfn(p))
         for pl, cells in planes.items():
             done = set()
@@ -66,8 +76,9 @@ def greedy(vox, keyfn):
                 lo = [0, 0, 0]; ln = [1, 1, 1]; lo[a] = pl; lo[u] = u0; lo[v] = v0; ln[u] = w; ln[v] = h
                 b = len(pos)
                 for cc in F[1]:
-                    pos.append([(lo[d] + cc[d] * ln[d] - 0.5) * S + OFFS[d] for d in range(3)]); nor.append(n); col.append(key[0])
+                    pos.append([(lo[d] + cc[d] * ln[d] - 0.5) * S + OFFS[d] for d in range(3)]); nor.append(n); col.append(key[0]); vb.append(key[1])
                 idx += [b, b + 1, b + 2, b, b + 2, b + 3]
+    greedy.bones = vb
     return np.array(pos, np.float32), np.array(nor, np.float32), np.array(col, np.float32), np.array(idx, np.uint32)
 
 for name in ['petya', 'angi', 'petike_foci']:
@@ -107,6 +118,12 @@ for name in ['petya', 'angi', 'petike_foci']:
     write(g0, os.path.join(BUILD, f'{name}_tpose.glb'), pos, nor, col, ind)
     J = RG.skeleton(c); names = [n for n, _, _ in J]
     Jn, Wn = RG.weights_voxel(pos, c, names)
+    # the legs (and the body's faces down there) move rigidly with the bone of their face: no 50/50 rings at the hip, knee and
+    # ankle (they collapse when the joint bends far – sitting), and nothing torn between two bones (the game adds joint fillers)
+    bi = {n: i for i, n in enumerate(names)}
+    for n, b in enumerate(greedy.bones):
+        if pos[n][1] <= c['hip'] + 1e-4 and (b.endswith(('UpLeg', 'Leg', 'Foot')) or b == 'Hips'):
+            Jn[n] = (bi[b], 0, 0, 0); Wn[n] = (1, 0, 0, 0)
     RG.write_skinned(os.path.join(BUILD, f'{name}_rigged.glb'), g0.meshes[0].name or name, pos, nor, col, ind, J, Jn, Wn, g0.materials[0])
     print(f"{name:12s} arm w={L['w']:.2f} shoulderX={c['shoulderX']:.2f} elbow={c['elbow']:.2f} wrist={c['wrist']:.2f} tip={c['tip']:.2f} armY={c['armBot']:.2f}..{c['armTop']:.2f} clash={clash}  verts {len(pos)}  tris {len(ind)//3}")
     if '--install' in sys.argv: shutil.copy(os.path.join(BUILD, f'{name}_rigged.glb'), os.path.join(PUBLIC, f'{name}.glb')); print('   → public/' + name + '.glb')

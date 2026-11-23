@@ -85,10 +85,13 @@ function fillJoints(sm, names) {
   const caps = [], v = new THREE.Vector3();
   const tri = (a, b, c, n, bone, col) => { const f = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a)); caps.push({ v: (f.dot(n) >= 0 ? [a, b, c] : [a, c, b]).map((p) => [p.x, p.y, p.z]), n: [n.x, n.y, n.z], bone, col }); };
   // jb: the bone turned at this joint; k: its hinge axis (0 x, 1 y); from → to: the limb's direction; gb: the bone the filler
-  // moves with (its vertices give the size and colour); lo … hi: the slab along the limb (from the joint) that is measured
+  // moves with (its vertices give the size and colour); lo … hi: the slab along the limb (from the joint) that is measured,
+  // in parts of the from → to segment's length (the hip measures the thigh lower down: a long shirt's hem – Angi – also
+  // belongs to the thigh bone near the hip, and it is much wider than the leg)
   const joint = (jb, k, from, to, gb, lo, hi) => {
     const J = names.indexOf(jb), F = names.indexOf(from), T = names.indexOf(to), B = names.indexOf(gb);
     if (J < 0 || F < 0 || T < 0 || B < 0) return;
+    const seg = at(T).distanceTo(at(F)); lo *= seg; hi *= seg;
     const j = at(J), L = at(T).sub(at(F)).normalize(), A = axisOf(J, k);
     A.addScaledVector(L, -A.dot(L)).normalize(); const D = new THREE.Vector3().crossVectors(A, L);
     let a0 = 1e9, a1 = -1e9, d0 = 1e9, d1 = -1e9, n = 0; const col = [0, 0, 0];
@@ -116,10 +119,10 @@ function fillJoints(sm, names) {
     }
   };
   for (const s of ['Left', 'Right']) {
-    joint(s + 'UpLeg', 0, s + 'UpLeg', s + 'Leg', s + 'UpLeg', 0, 0.1);      // hip (sitting: the seat's back)
-    joint(s + 'Leg', 0, s + 'Leg', s + 'Foot', s + 'Leg', 0, 0.1);          // knee
-    joint(s + 'Foot', 0, s + 'Leg', s + 'Foot', s + 'Leg', -0.1, 0);        // ankle
-    joint(s + 'ForeArm', 1, s + 'ForeArm', s + 'Hand', s + 'ForeArm', 0, 0.08);   // elbow
+    joint(s + 'UpLeg', 0, s + 'UpLeg', s + 'Leg', s + 'UpLeg', 0.55, 0.9);      // hip (sitting: the seat's back)
+    joint(s + 'Leg', 0, s + 'Leg', s + 'Foot', s + 'Leg', 0, 0.3);              // knee
+    joint(s + 'Foot', 0, s + 'Leg', s + 'Foot', s + 'Leg', -0.3, 0);            // ankle
+    joint(s + 'ForeArm', 1, s + 'ForeArm', s + 'Hand', s + 'ForeArm', 0, 0.3);   // elbow
   }
   appendCaps(g, caps);
 }
@@ -304,8 +307,12 @@ export function animWalk(r, phase, amt, swing = 0.6) {
   if (amt < 0.001) return;
   const s = Math.sin(phase);
   r.hip[0].rotation.x = s * swing * amt; r.hip[1].rotation.x = -s * swing * amt;
-  r.knee[0].rotation.x = Math.max(0, Math.sin(phase + 1.7)) * 0.9 * amt;
-  r.knee[1].rotation.x = Math.max(0, Math.sin(phase + Math.PI + 1.7)) * 0.9 * amt;
+  // the knee bends on the swinging leg (its hip moves from back to front: phase π/2 … 3π/2): it starts just before the toe
+  // leaves the ground, is most bent early in the swing and straight again when the heel lands; the leg carrying the weight
+  // stays almost straight (a slight give)
+  const TAU = Math.PI * 2, swingKnee = (p) => { p = ((p % TAU) + TAU) % TAU; return p > 1.2 && p < 4.6 ? Math.sin((p - 1.2) * 0.924) : 0; };
+  r.knee[0].rotation.x = (0.08 + swingKnee(phase) * 0.75) * amt;
+  r.knee[1].rotation.x = (0.08 + swingKnee(phase + Math.PI) * 0.75) * amt;
   r.sh[0].rotation.x = -s * swing * 0.8 * amt; r.sh[1].rotation.x = s * swing * 0.8 * amt;
   r.inner.position.y = Math.abs(Math.cos(phase)) * 0.045 * amt;
 }
