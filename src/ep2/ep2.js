@@ -23,6 +23,7 @@ import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, whe
 import { dressPajama } from './pajama.js';
 import { cf, coffeeTick, dadBusy } from './coffee.js';
 import { dadChasing, momBusy, runawayTick, rw } from './runaway.js';
+import { giveKeyHint, kh, keyBusy, keyHintLabel, keyTick } from './keyhunt.js';
 import { karcsiState, karcsiTakeable, pigObj, takeKarcsi } from './karcsi.js';
 
 // ---------------------------------------------------------------- unlocking
@@ -128,7 +129,7 @@ function hudClock(force) { const m = Math.floor(ep2.min); if (m !== shownMin || 
 // ---------------------------------------------------------------- turning the view (Q / R, or the ⟲ ⟳ buttons): 90° steps
 // CAM_OFF (scene.js) and the screen-relative walking directions CAM_FWD / CAM_RIGHT (player.js) turn together; the walls
 // (home.js), the fading props (occlude.js) and dragging the view (input.js) read them every frame.
-if (import.meta.env.DEV) window.__ep2 = { coffee: cf, rw, karcsi: karcsiState, inv, itemObj, take(id) { const c = pickables(G.petike.pos).find((q) => q.item.id === id); if (c) pickUp(c.item); return !!c; }, view: viewTurn, cutWalls, wallView, CAM_OFF, toggleFps, get fp() { return fp; } };   // debugging (dev server only)
+if (import.meta.env.DEV) window.__ep2 = { coffee: cf, rw, kh, karcsi: karcsiState, inv, itemObj, take(id) { const c = pickables(G.petike.pos).find((q) => q.item.id === id); if (c) pickUp(c.item); return !!c; }, view: viewTurn, cutWalls, wallView, CAM_OFF, toggleFps, get fp() { return fp; } };   // debugging (dev server only)
 export function toggleWalls() {
   wallView.mode = wallView.mode === 'fade' ? 'sink' : 'fade';
   toast(wallView.mode === 'fade' ? 'Falak: <b>átlátszók</b> (T)' : 'Falak: <b>lesüllyednek</b> (T)', 2);
@@ -282,6 +283,7 @@ function interactHome() {
   cands.push({ o: { seat: true }, r: Math.hypot(p.x - toiletSeat.x, p.z - (toiletSeat.z + 0.6)), reach: 0.75, aim: new V3(toiletSeat.x, 0.45, toiletSeat.z + 0.1), size: 0.25 });
   for (const dv of devices) cands.push({ o: { dev: dv }, r: Math.hypot(p.x - dv.x, p.z - dv.z), reach: dv.r, aim: dv.aim || new V3(dv.x, 0.9, dv.z), size: dv.size || 0.14 });
   for (const pc of pickables(p)) cands.push({ o: { item: pc.item }, r: pc.d - 0.2, reach: 0.55, aimW: pc.w, size: 0.08 });
+  { const hl = keyHintLabel(); if (hl) cands.push({ o: { hint: hl }, r: Math.hypot(p.x - G.angi.pos.x, p.z - G.angi.pos.z) - 0.3, reach: 1.1, aimW: new V3(G.angi.pos.x, FY + 1.2, G.angi.pos.z), size: 0.35 }); }
   if (karcsiTakeable()) { const w = new V3(); pigObj().getWorldPosition(w); cands.push({ o: { karcsi: true }, r: Math.hypot(p.x - w.x, p.z - w.z) - 0.6, reach: 0.4, aimW: w, size: 0.12 }); }   // he wins over the cage door next to him
   let best = null;
   if (fp.on) {
@@ -298,7 +300,10 @@ function interactHome() {
   const kb = $('kickBtn'), altBusy = !!(best && (best.seat || (best.dev && best.dev.alt)));
   if (kb) { const lbl = isTouch ? (best && best.seat ? 'LEHÚZÁS' : best && best.dev && best.dev.alt ? best.dev.alt.short() : act ? act.short : '') : ''; kb.style.display = lbl ? 'block' : 'none'; if (lbl && kb.textContent !== lbl) kb.textContent = lbl; }
   if (act && (G.invPressed || (isTouch && G.kickPressed && !altBusy))) act.run();
-  if (best && best.karcsi) {
+  if (best && best.hint) {
+    txt = best.hint;
+    if (G.usePressed) giveKeyHint();
+  } else if (best && best.karcsi) {
     txt = 'E – Karcsi felvétele';
     if (G.usePressed) { takeKarcsi('carried'); invTake('karcsi'); say(G.petike, 'Megvagy, Karcsi!', 1.6); }
   } else if (best && best.item) {
@@ -355,7 +360,7 @@ function interactHome() {
 // the HASZNÁL button's label from a prompt ('E – hűtő kinyitása' → NYIT …)
 const VERBS = [[/felvétele/, 'FELVESZ'], [/kinyitása|megnyitása|felnyitása/, 'NYIT'], [/becsukása|elzárása/, 'ZÁR'], [/bekapcsolása|indítása/, 'BE'],
   [/kikapcsolása|leállítása/, 'KI'], [/felhajtása/, 'FELHAJT'], [/lehajtása/, 'LEHAJT'], [/leülés/, 'LEÜL'], [/felállás/, 'FELÁLL'],
-  [/villany/, 'VILLANY'], [/kopogás/, 'KOPOG'], [/indulás/, 'INDULÁS']];
+  [/villany/, 'VILLANY'], [/kopogás/, 'KOPOG'], [/indulás/, 'INDULÁS'], [/Anya, nem/, 'TIPP']];
 function touchVerb(txt) { const m = /^E – (.*?)( · |$)/.exec(txt); if (!m) return 'HASZNÁL'; for (const [re, v] of VERBS) if (re.test(m[1])) return v; return 'HASZNÁL'; }
 // a short click (switch, door handle)
 function sClick() { tone('square', 1400, 900, 0.03, 0.04); }
@@ -366,19 +371,20 @@ function updateParents(dt) {
   const m = G.angi;
   // mum: at the cooktop, now and then to the fridge and back (Karcsi hears the fridge: wheek)
   ep2.momT -= dt;
-  if (!momBusy() && ep2.momT <= 0 && !m.path) {
+  if (!momBusy() && !keyBusy() && ep2.momT <= 0 && !m.path) {
     ep2.momT = 10 + Math.random() * 8;
     if (ep2.momAt === 'cook') { m.walkTo([[SPOTS.momFridge.x, SPOTS.momFridge.z]], 1.2); ep2.momAt = 'fridge'; setTimeout(wheek, 1800); } else { m.walkTo([[SPOTS.momCook.x, SPOTS.momCook.z]], 1.2); ep2.momAt = 'cook'; }
   }
-  if (!m.path && !momBusy()) m.targetHeading = ep2.momAt === 'fridge' ? -Math.PI / 2 : Math.PI;   // facing the fridge (west) or the counter (north)
+  if (!m.path && !momBusy() && !keyBusy()) m.targetHeading = ep2.momAt === 'fridge' ? -Math.PI / 2 : Math.PI;   // facing the fridge (west) or the counter (north)
   m.update(dt);
   runawayTick(dt);   // „Karcsi nagy szökése”: mum on the chair, dad on all fours (runaway.js)
+  keyTick(dt);       // „Hol a kulcs, Angi?”: mum looking for her keys (keyhunt.js)
   // talking: dad (and now and then mum), more often when Petyus is close
   ep2.talkT -= dt;
   if (ep2.talkT <= 0) {
     const near = Math.hypot(G.petike.pos.x - G.petya.pos.x, G.petike.pos.z - G.petya.pos.z) < 5;
     ep2.talkT = (near ? 9 : 15) + Math.random() * 6;
-    if (Math.random() < 0.6 && !dadBusy() && !dadChasing()) { say(G.petya, pick(DAD_LINES), 3); G.petya.point = 1.4; } else if (!momBusy()) say(G.angi, pick(MOM_LINES), 3);
+    if (Math.random() < 0.6 && !dadBusy() && !dadChasing()) { say(G.petya, pick(DAD_LINES), 3); G.petya.point = 1.4; } else if (!momBusy() && !keyBusy()) say(G.angi, pick(MOM_LINES), 3);
   }
 }
 

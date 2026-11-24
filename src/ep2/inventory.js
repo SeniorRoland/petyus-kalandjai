@@ -13,7 +13,7 @@ import { say, toast } from '../ui.js';
 import { $ } from '../util.js';
 import { fx, seating } from './appliances.js';
 import { FY, homeRoot } from './home.js';
-import { carrot as carrotModel, toiletRoll } from './food.js';
+import { carrot as carrotModel, keyRing, toiletRoll } from './food.js';
 import { CAGE, cageDoorOpen, cageFront, karcsiState, lureKarcsi, pigObj, putKarcsiBack, releaseKarcsi, setFloorCarrot } from './karcsi.js';
 import { walkable } from './navgrid.js';
 
@@ -26,6 +26,7 @@ const ITEMS = [
   { id: 'whip', name: 'tejszínhab', icon: '🍦' },
   { id: 'carrot', name: 'répa', icon: '🥕' },
   { id: 'karcsi', name: 'Karcsi', icon: '🐹' },
+  { id: 'key', name: 'Angi kulcsa', icon: '🔑' },
 ];
 const ACCEPT = {
   controller: ['tv', 'desk', 'fridge', 'micro', 'tub'],
@@ -33,8 +34,10 @@ const ACCEPT = {
   mug: ['dad', 'micro', 'fridge', 'table', 'tv', 'desk', 'counter'],
   milk: ['fridge', 'table', 'counter'], cream: ['fridge', 'table', 'counter'], whip: ['fridge', 'table', 'counter'],
   carrot: ['fridge', 'table', 'counter', 'desk'], karcsi: [],
+  // the key: anywhere – the usual places first, the odd ones (where nobody would look) last (keyhunt.js searches in that order)
+  key: ['shoe', 'coat', 'counter', 'table', 'sofa', 'armchair', 'tv', 'desk', 'wc', 'tub', 'micro', 'fridge', 'washer', 'cage'],
 };
-const PLACE_NAME = { tv: 'a TV-állványra', desk: 'az íróasztalra', fridge: 'a hűtőbe', micro: 'a mikróba', tub: 'a kád szélére', table: 'az asztalra', dad: 'apa elé', counter: 'a konyhapultra', wc: 'a WC-tartályra' };
+const PLACE_NAME = { tv: 'a TV-állványra', desk: 'az íróasztalra', fridge: 'a hűtőbe', micro: 'a mikróba', tub: 'a kád szélére', table: 'az asztalra', dad: 'apa elé', shoe: 'a cipősszekrényre', coat: 'a kabátzsebbe', sofa: 'a kanapépárna alá', armchair: 'a fotelba', washer: 'a mosógépbe', cage: 'Karcsi kalitkájába', counter: 'a konyhapultra', wc: 'a WC-tartályra' };
 const DRINK = { tea: 'tea', kave: 'kávé', tej: 'tej', tejszin: 'tejszín', hab: 'tejszínhab' };
 
 const places = {};   // id → { hot: (p) => distance, slots: [{ parent, pos, item, only }], open?: () => bool }
@@ -46,6 +49,14 @@ export const itemObj = (id) => items[id] && items[id].obj;
 export const itemPlace = (id) => items[id] && items[id].place;
 // a locked item cannot be picked up (dad holds the mug while he drinks)
 export function lockItem(id, on) { if (items[id]) items[id].locked = on; }
+// put a thing straight into a place (Angi takes her key back to the shoe cabinet; the key out of Petyus's hands)
+export function moveItem(id, placeId) {
+  const it = items[id]; if (!it) return;
+  if (it.place) { places[it.place].slots[it.slot].item = null; it.place = null; }
+  const i = inv.list.indexOf(id); if (i >= 0) { inv.list.splice(i, 1); inv.sel = Math.min(inv.sel, inv.list.length - 1); renderHud(); }
+  const si = places[placeId].slots.findIndex((s) => !s.item && (!s.only || s.only === id)); if (si >= 0) put(id, placeId, si);
+}
+export const carrying = (id) => inv.list.includes(id);
 // into Petyus's hands without a place (Karcsi, taken out of his cage or off the floor)
 export function invTake(id) { if (!inv.list.includes(id)) { inv.list.push(id); inv.sel = inv.list.length - 1; renderHud(); tone('sine', 520, 780, 0.1, 0.05); } }
 function invDrop(id) { const i = inv.list.indexOf(id); if (i >= 0) { inv.list.splice(i, 1); inv.sel = Math.min(inv.sel, inv.list.length - 1); renderHud(); } }
@@ -70,15 +81,23 @@ export function buildInventory() {
   places.counter = { hot: (p) => Math.min(nearRect(5.42, 0, 10.1, 0.62, 0.75)(p), nearRect(5.42, 0, 6.02, 1.0, 0.75)(p)),
     slots: [slot(fx.micro.grp, 0.4, 0.016, 0.16, 'mug'), slot(H, 9.55, 0.93, 0.48), slot(H, 9.95, 0.93, 0.48), slot(H, 8.2, 0.93, 0.48), slot(H, 5.75, 0.93, 0.35), slot(H, 7.0, 0.93, 0.5)] };
   places.wc = { hot: near(4.5, 0.95, 0.8), slots: [slot(H, 4.38, 0.845, 0.13, 'paper')] };
+  // places for Angi's key (only the key goes there): the shoe cabinet (its home), a coat's pocket on the hanger, under the
+  // sofa's cushion, in the armchair, in the washing machine's drum, in Karcsi's cage (the door open)
+  places.shoe = { hot: near(1.66, 3.6, 0.55), slots: [slot(H, 1.66, 0.9, 4.03, 'key')] };
+  places.coat = { hot: near(0.8, 3.6, 0.55), slots: [slot(H, 0.85, 1.22, 4.08, 'key')] };
+  places.sofa = { hot: nearRect(11.6, 8.25, 13.6, 9.2, 0.6), slots: [slot(H, 12.15, 0.42, 8.62, 'key')] };
+  places.armchair = { hot: near(8.3, 6.8, 0.6), slots: [slot(H, 8.42, 0.43, 7.42, 'key')] };
+  places.washer = { hot: near(1.45, 0.95, 0.6), slots: [slot(H, 1.45, 0.42, 0.33, 'key')] };
+  places.cage = { hot: (p) => Math.hypot(p.x - cageFront().x, p.z - cageFront().z) - 0.75, open: () => cageDoorOpen(), slots: [slot(H, CAGE.x + 0.3, CAGE.y + 0.125, CAGE.z - 0.05, 'key')] };
   // dad's place at the table (only the mug): in reach it wins over the rest of the table
   places.dad = { hot: (p) => { const d = Math.hypot(p.x - 10.1, p.z - 2.0); return d < 1.0 ? d - 5 : 1; }, slots: [slot(H, 10.18, 0.77, 2.22, 'mug')] };
   // things put on the floor (the carrot for Karcsi): a new place each time
   places.floor = { hot: () => 1, slots: [] };
   // the things and where they start (Karcsi is in his cage – karcsi.js moves him; he is no place's)
-  const objs = { controller: fx.tv.controller, paper: toiletRoll(), mug: fx.mug.obj, milk: fx.dairy.milk, cream: fx.dairy.cream, whip: fx.dairy.whip, carrot: carrotModel(), karcsi: pigObj() };
+  const objs = { controller: fx.tv.controller, paper: toiletRoll(), mug: fx.mug.obj, milk: fx.dairy.milk, cream: fx.dairy.cream, whip: fx.dairy.whip, carrot: carrotModel(), karcsi: pigObj(), key: keyRing() };
   for (const it of ITEMS) items[it.id] = { ...it, obj: objs[it.id], place: null, slot: null };
   put('controller', 'tv', 0, true); put('paper', 'wc', 0); put('mug', 'counter', 0, true);
-  put('milk', 'fridge', 0, true); put('cream', 'fridge', 1, true); put('whip', 'fridge', 2, true); put('carrot', 'fridge', 3);
+  put('milk', 'fridge', 0, true); put('cream', 'fridge', 1, true); put('whip', 'fridge', 2, true); put('carrot', 'fridge', 3); put('key', 'shoe', 0);
   buildHud(); drawMug();
 }
 // put an item into a place's slot (keep: it is already there – keep its exact position / turn)
@@ -216,7 +235,7 @@ export function invAction(p, look = null) {
     return null;
   }
   const pl = places[best.pid];
-  if (pl.open && !pl.open()) return { label: `${it.name}: előbb nyisd ki ${best.pid === 'fridge' ? 'a hűtőt' : 'a mikrót'}`, short: 'ZÁRVA', run: () => tone('sine', 300, 200, 0.1, 0.04) };
+  if (pl.open && !pl.open()) return { label: `${it.name}: előbb nyisd ki ${best.pid === 'fridge' ? 'a hűtőt' : best.pid === 'cage' ? 'a kalitkát' : 'a mikrót'}`, short: 'ZÁRVA', run: () => tone('sine', 300, 200, 0.1, 0.04) };
   // dairy into the fridge: its own place in the door if free
   let si = best.si; if (best.pid === 'fridge') { const own = pl.slots.findIndex((s) => s.only === id && !s.item); if (own >= 0) si = own; else si = pl.slots.findIndex((s) => !s.item && !s.only); }
   return { label: `${it.name} lerakása ${PLACE_NAME[best.pid]}`, short: 'LERAK', run: () => {

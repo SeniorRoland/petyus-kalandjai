@@ -9,10 +9,11 @@ import { XE, ZS } from './home.js';
 const C = 0.15, NX = Math.ceil(XE / C), NZ = Math.ceil(ZS / C), PAD = 0.07;
 const idx = (i, j) => j * NX + i;
 const cellOf = (x, z) => [Math.max(0, Math.min(NX - 1, Math.floor(x / C))), Math.max(0, Math.min(NZ - 1, Math.floor(z / C)))];
-function blockedGrid() {
+// pass: colliders to ignore (closed doors for somebody who opens them on the way – Angi looking for her keys)
+function blockedGrid(pass = null) {
   const g = new Uint8Array(NX * NZ);
   for (const c of colliders) {
-    if (c.h < 0.85) continue;   // low furniture (or an open door: h = −1): passable
+    if (c.h < 0.85 || (pass && pass.has(c))) continue;   // low furniture (or an open door: h = −1): passable
     if (c.box) {
       const i0 = Math.floor((c.x0 - PAD) / C), i1 = Math.floor((c.x1 + PAD) / C), j0 = Math.floor((c.z0 - PAD) / C), j1 = Math.floor((c.z1 + PAD) / C);
       for (let j = Math.max(0, j0); j <= Math.min(NZ - 1, j1); j++) for (let i = Math.max(0, i0); i <= Math.min(NX - 1, i1); i++) g[idx(i, j)] = 1;
@@ -34,8 +35,8 @@ function nearestFree(g, i, j) {
   return [i, j];
 }
 // a path from (x0, z0) to (x1, z1): [[x, z], …] (the last point exact), or null when it cannot be reached
-export function findPath(x0, z0, x1, z1) {
-  const g = blockedGrid();
+export function findPath(x0, z0, x1, z1, pass = null) {
+  const g = blockedGrid(pass);
   const [si, sj] = nearestFree(g, ...cellOf(x0, z0)), [ti, tj] = nearestFree(g, ...cellOf(x1, z1));
   const prev = new Int32Array(NX * NZ).fill(-1), start = idx(si, sj), goal = idx(ti, tj);
   const q = [start]; prev[start] = start;

@@ -106,7 +106,7 @@ Mindhárom a meglévő lakásra épül (leltár, eszközök, ajtók, Karcsi). K�
 - **letolt pizsamanadrág:** a pizsama-shaderben egy `pantsDown` jel – ilyenkor a comb bőrszínt kap, és a térdcsonthoz (`rig.knee`) kötve egy gyűrött nadrág-gyűrű jelenik meg; ülés a WC-n a WC magasságára (0,42 m);
 - pukik és gyomormorgás: új szintetizált hangok (`audio.js`); szagfelhő: zöld részecskék (`spawnFx`), lassan emelkedő, nagyobbodó, halványuló pamacsok.
 
-#### 2. „Karcsi nagy szökése” (`r2-karcsi`)
+#### 2. „Karcsi nagy szökése” (`r2-karcsi`) – **kész** (`src/ep2/runaway.js`, `karcsi.js`, `navgrid.js`)
 
 **Alaphelyzet:** Karcsi a kalitkában, Petyus szobájában. Angi fél az egerektől és minden „kis szőröstől” – reggel el is mondja: „Ha az a malac még egyszer kiszökik, én elköltözöm!”
 
@@ -124,7 +124,7 @@ Mindhárom a meglévő lakásra épül (leltár, eszközök, ajtók, Karcsi). K�
 
 **Technika:** Karcsi kiléphet a kalitkából (a `karcsi.js` mozgása a padlón is: célpontok – búvóhelyek, répa, az emberek elkerülése, vagy épp Angi lába); Karcsi és a répa felvehető tárgy a leltárban; Angi „széken állás” póza (a szék tetején, karok a feje fölött); apa négykézláb járása (comb és kar is előre, a test vízszintesen).
 
-#### 3. „Hol a kulcs, Angi?” (`r2-kulcs`)
+#### 3. „Hol a kulcs, Angi?” (`r2-kulcs`) – **kész** (`src/ep2/keyhunt.js`)
 
 **Alaphelyzet:** Angi kulcscsomója az előszobában a cipősszekrény tetején van (a modellen most is van ott egy kulcs – felvehető tárgy lesz 🔑). Angi reggel többször kérdezi: „Petya, nem láttad a kulcsomat?” (ez a sora már megvan) – innen az ötlet.
 

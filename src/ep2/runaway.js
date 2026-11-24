@@ -70,7 +70,7 @@ export function runawayTick(dt) {
   if (rw.phase === 'free' && karcsiFree()) rw.freeT += dt;
   // ---- mum: shrieks, jumps onto the chair, stays up there while Karcsi is about
   const kp = karcsiPos(), inKitchen = karcsiFree() && karcsiRoom() === 'konyha';
-  if (rw.phase === 'free' && rw.mom === 'cook' && inKitchen && Math.hypot(kp.x - m.pos.x, kp.z - m.pos.z) < 2.2) {
+  if (rw.phase === 'free' && rw.mom === 'cook' && !G.angiSearching && inKitchen && Math.hypot(kp.x - m.pos.x, kp.z - m.pos.z) < 2.2) {
     rw.mom = 'shriek'; rw.momT = 0; rw.scream = true;
     say(m, 'ÁÁÁÁÁ! EGY PATKÁNY!!', 2.2); soundAt(m.pos.x, m.pos.z, () => { tone('sine', 1200, 1700, 0.5, 0.06); tone('sine', 1500, 2000, 0.6, 0.05, 0.4); });
     setTimeout(() => say(G.petike, 'Anya, ez Karcsi!', 1.8), 1300);
