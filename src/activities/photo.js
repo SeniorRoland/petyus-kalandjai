@@ -9,7 +9,7 @@ import { noise, sFlap, tone } from '../audio.js';
 import { dad, dadReturn } from '../dad.js';
 import { isTouch, keys, touch } from '../input.js';
 import { SEAT } from '../intro.js';
-import { award } from '../mischief.js';
+import { award, starsFor } from '../mischief.js';
 import { pvel } from '../player.js';
 import { camera, renderer, scene } from '../scene.js';
 import { G, pigeons } from '../state.js';
@@ -46,7 +46,8 @@ export function photoTick(dt) {
   if (ph.phase === 'off') {
     const calm = G.pstate === 'free' && (G.petyaMode === 'bench' || (G.petyaMode === 'doze' && !nap.game && nap.fallT < 0)) && G.petya.sit > 0.9 && G.angi.sit > 0.9 && !pig.active && !ph.back;
     if (calm) ph.idleT += dt;
-    if (ph.idleT > ph.nextT) invite();
+    // Angi asks for photos only until the photobomb has all its three stars (then she has her pictures)
+    if (ph.idleT > ph.nextT && starsFor('fotobomba') < 3) invite();
     return;
   }
   if (ph.phase === 'invite') {

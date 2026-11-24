@@ -192,3 +192,11 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 3. **Szobák:** a 20 m²-es a testvéré (egyelőre zárva), a 26 m²-es a szülőké.
 4. **Indulás:** a játékos dönti el, mikor indul.
 5. **Ruhák:** reggel pizsama mindhármuknak; később átöltözés iskolai (Petyus) és munkaruhába (Petya, Angi).
+
+## Javítandók (felvéve: 2026. 11. 23.)
+
+- [x] **Interakció-feliratok:** az egyes interakciók feliratai itt is pontosak legyenek – a súgósor (`#prompt`) és a telefonos gombok (HASZNÁL / RÚGÁS helyén az aktuális művelet) is (`ep2.js` `interactHome`). ✅ Telefonon a súgósor a gombok nevét írja (nincs E / F / Szóköz), a HASZNÁL gomb a műveletet (NYIT, ZÁR, BE, KI, FELVESZ, VILLANY, KOPOG, LEÜL …), a RÚGÁS gomb az F-ét (KÁVÉ, TÖLT, LERAK, ODAAD …) vagy a második műveletet (START, LEHÚZÁS).
+- [x] **Hűtő:** a tej, a tejszín és a tejszínhab a második polcon legyen (most a jobb ajtó alsó rekeszében vannak – `appliances.js` hűtő, `inventory.js` `places.fridge` helyei). ✅ A második polc elején (saját helyük), a sajt és a szalámi az első polcon, az ajtórekeszben palackok.
+- [x] **Tejszínes kávé – WC-ajtó:** Petya a WC-re rohanva becsukja maga mögött az ajtót; ha végzett, kinyitja, kijön, és visszacsukja (`coffee.js`: `rush` → `wc` → `back`). (A szagfelhő ilyenkor az ajtó résein / nyitáskor gomolyog ki.) ✅ Befelé menet becsapja („BUMM!”), csukott ajtónál a szag az ajtó alatt és fölött szivárog ki; a végén kinyitja (kigomolyog a felhő), kijön, visszacsukja („Most egy darabig ne menjen be senki…”).
+- [x] **Bögre átadása apának:** könnyebb legyen – elég Petyára nézni (belső nézetben) vagy mellette állni, és úgy odaadni neki („bögre Petyának”), ne kelljen az asztalon a pontos helyet eltalálni (`inventory.js` `places.dad` / `invAction`). ✅ „F – bögre odaadása apának”: felülnézetben 1,4 m-en belül, belső nézetben apára nézve.
+- [x] **TV:** focimeccs menjen rajta: Real Madrid – Barcelona (pálya, két mez szín: fehér / gránátvörös-kék, eredményjelző – `appliances.js` TV-kép). ✅ Közvetítés: lelátó, csíkos gyep, a kamera követi a labdát, fehér madridi és gránátvörös-kék barcelonai mezek, „RMA x – x BAR” + játékidő, időnként GÓÓÓL! és a közönség zaja, sípszó.

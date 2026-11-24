@@ -43,6 +43,16 @@ function rigFromSkinned(gltf, cfg) {
   rig.root.updateMatrixWorld(true);
   const hp = new V3(); rig.hip[0].getWorldPosition(hp); rig.hipH = hp.y;
   rig.knee[0].getWorldPosition(hp); rig.kneeH = hp.y;   // standing knee height ≈ shin + foot length (used for sitting)
+  { // half the thigh's thickness (front to back): seated, the hip joint is that much above the seat (else the thighs sink in)
+    const P = sm.geometry.attributes.position, si = sm.geometry.attributes.skinIndex, ul = sm.skeleton.bones.indexOf(rig.hip[1]);
+    let z0 = 1e9, z1 = -1e9; for (let i = 0; i < P.count; i++) if (si.getX(i) === ul) { z0 = Math.min(z0, P.getZ(i)); z1 = Math.max(z1, P.getZ(i)); }
+    rig.thighR = z1 > z0 ? Math.min(0.14, (z1 - z0) / 2 * cfg.scale) : 0.06;
+    // the foot from the ankle joint to the tip of the toes (the farthest foot vertex): for sitting on tiptoe
+    const fb = sm.skeleton.bones.indexOf(rig.foot[1]), fp = new V3(), v = new V3(); rig.foot[1].getWorldPosition(fp); let fl = 0;
+    rig.root.updateMatrixWorld(true);
+    for (let i = 0; i < P.count; i++) if (si.getX(i) === fb) { sm.getVertexPosition(i, v); v.applyMatrix4(sm.matrixWorld); fl = Math.max(fl, v.distanceTo(fp)); }
+    rig.footLen = fl || 0.2; rig.ankleH = fp.y;
+  }
   rig.height = new THREE.Box3().setFromObject(rig.root).max.y;
   return rig;
 }

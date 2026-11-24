@@ -4,7 +4,7 @@
 // Where things may go (a place: its hotspot, its slots – a parent group + a position in it –, what it accepts):
 //   kontroller, WC-papír: TV-állvány, Petyus íróasztala, hűtő, mikró, kád (a papír a WC-tartályra is)
 //   bögre: mikró, hűtő, étkezőasztal, TV-állvány, íróasztal, konyhapult
-//   tej, tejszín, tejszínhab: hűtő (a jobb ajtó rekeszébe), étkezőasztal, konyhapult
+//   tej, tejszín, tejszínhab: hűtő (a második polc elejére), étkezőasztal, konyhapult
 // A mug holds any of: tea (the teapot on the table), coffee (the coffee maker), milk, cream, whipped cream; F at the sink empties it.
 import * as THREE from 'three';
 import { noise, tone } from '../audio.js';
@@ -52,8 +52,9 @@ export function buildInventory() {
   places.tv = { hot: near(8.3, 8.2, 1.0), slots: [slot(fx.tv.grp, -0.52, 0.5, 0.06, 'controller'), slot(fx.tv.grp, -0.25, 0.5, 0.12), slot(fx.tv.grp, 0.25, 0.5, 0.12), slot(fx.tv.grp, 0.35, 0.5, -0.12)] };
   places.desk = { hot: near(14.62, 1.45, 0.85), slots: [slot(fx.desk, -0.38, 0.77, 0.12), slot(fx.desk, -0.25, 0.77, 0.2), slot(fx.desk, 0.5, 0.77, -0.12), slot(fx.desk, 0.5, 0.77, 0.15)] };
   places.fridge = { hot: near(6.46, 1.5, 0.85), open: () => fx.fridge.isOpen(),
-    slots: [slot(fx.fridge.door, -0.34, 0.375, -0.1, 'milk'), slot(fx.fridge.door, -0.235, 0.375, -0.1, 'cream'), slot(fx.fridge.door, -0.12, 0.375, -0.1, 'whip'),
-      slot(fx.fridge.grp, 0.33, 0.525, 0.06), slot(fx.fridge.grp, 0.15, 1.325, 0.06), slot(fx.fridge.grp, 0.36, 0.925, 0.08), slot(fx.fridge.grp, 0.2, 0.925, 0.1)] };
+    // milk, cream, whipped cream: their own places on the second shelf (in front); the other places take anything
+    slots: [slot(fx.fridge.grp, 0.1, 0.925, 0.08, 'milk'), slot(fx.fridge.grp, 0.2, 0.925, 0.08, 'cream'), slot(fx.fridge.grp, 0.31, 0.925, 0.08, 'whip'),
+      slot(fx.fridge.grp, 0.3, 0.525, 0.07), slot(fx.fridge.grp, 0.15, 1.325, 0.06), slot(fx.fridge.grp, 0.2, 0.925, -0.15), slot(fx.fridge.grp, 0.32, 1.325, -0.14)] };
   places.micro = { hot: near(6.45, 0.9, 0.75), open: () => fx.micro.isOpen(), slots: [slot(fx.micro.tt, 0, 0.012, 0)] };
   places.tub = { hot: near(1.1, 1.1, 0.8), slots: [slot(H, 0.73, 0.55, 1.25), slot(H, 0.73, 0.55, 0.85)] };
   places.table = { hot: nearRect(9.8, 1.5, 11.6, 2.4, 0.75), slots: [slot(H, 10.76, 0.77, 1.67), slot(H, 10.99, 0.77, 1.69), slot(H, 11.02, 0.77, 2.12), slot(H, 10.25, 0.77, 1.84)] };
@@ -166,6 +167,13 @@ export function invAction(p, look = null) {
   if ((id === 'milk' || id === 'cream' || id === 'whip') && mugOk) {
     const what = { milk: 'tej', cream: 'tejszin', whip: 'hab' }[id];
     return { label: `${it.name} a bögrébe`, short: 'TÖLT', run: fill(what) };
+  }
+  // the mug to dad: standing next to him (top view) or looking at him (first person) is enough – it goes to his place
+  if (id === 'mug' && G.petya && !places.dad.slots[0].item) {
+    const d = G.petya, chest = new THREE.Vector3(d.pos.x, FY + 0.95, d.pos.z);
+    if (look ? look(chest, 0.4) : Math.hypot(p.x - d.pos.x, p.z - d.pos.z) < 1.4) return { label: 'bögre odaadása apának', short: 'ODAAD', run: () => {
+      inv.list.splice(inv.sel, 1); inv.sel = Math.min(inv.sel, inv.list.length - 1); put('mug', 'dad', 0); renderHud(); tone('sine', 600, 420, 0.1, 0.05); invHooks.placed?.('mug', 'dad');
+    } };
   }
   // put it down: the nearest place within reach that takes it and has a free slot
   // (an open place wins over a closed one – a closed fridge / microwave only gives the hint when nothing else is in reach)

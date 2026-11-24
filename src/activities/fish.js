@@ -179,7 +179,16 @@ function endFish() {
 }
 
 // ---------- finale: the ice-cream cart rolls up, Petyus buys a scoop and takes it to dad
-const CART = [4.6, -4.4], BUY = [3.9, -3.6];
+// the cart stops on the paved path east of the fountain (not in the flower bed), Petyus walks round the fountain on the ring
+// path to buy (not through the water); the vendor comes and goes along the paths
+const CART = [6.4, -0.3], BUY = [5.25, -0.3], RING_R = 3.6;
+function ringRoute(from, to) {   // waypoints round the fountain on the ring path, then the target
+  let a0 = Math.atan2(from.z - FOUNTAIN.z, from.x - FOUNTAIN.x), a1 = Math.atan2(to[1] - FOUNTAIN.z, to[0] - FOUNTAIN.x);
+  let d = a1 - a0; d = Math.atan2(Math.sin(d), Math.cos(d));
+  const n = Math.max(1, Math.ceil(Math.abs(d) / 0.5)), pts = [];
+  for (let i = 0; i <= n; i++) { const a = a0 + d * i / n; pts.push([FOUNTAIN.x + Math.cos(a) * RING_R, FOUNTAIN.z + Math.sin(a) * RING_R]); }
+  pts.push(to); return pts;
+}
 function buildCart() {
   const g = new THREE.Group(), m = (c) => new THREE.MeshLambertMaterial({ color: c });
   const box = (w, h, d, x, y, z, c) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m(c)); b.position.set(x, y, z); b.castShadow = true; g.add(b); return b; };
@@ -198,16 +207,16 @@ function makeCone() {
 }
 function startFinale() {
   const a = G.petike, n = fi.got;
-  fi.cart = fi.cart || buildCart(); fi.cart.position.set(16, 0, -5.4); fi.cart.rotation.y = 0; fi.cart.visible = true;
+  fi.cart = fi.cart || buildCart(); fi.cart.position.set(17.4, 0, -6.4); fi.cart.rotation.y = 0; fi.cart.visible = true;
   if (!fi.vendor) { fi.vendor = new Actor(makePerson({ shirt: 0xffffff, pants: 0xf28cb1, hat: true, hatColor: 0xffffff, dress: false }), 'Fagyis'); }
-  fi.vendor.place(16.8, -5.4, -Math.PI / 2); fi.vendor.walkTo([[CART[0] + 0.85, CART[1]]], 2.0);
+  fi.vendor.place(18.2, -6.4, -Math.PI / 2); fi.vendor.walkTo([[18.2, CART[1]], [CART[0] + 0.85, CART[1]]], 2.0);
   sBell();
   const dadSeated = G.petyaMode === 'bench' || G.petyaMode === 'doze';
   const toDad = dadSeated ? [...BENCH_ROUTE].reverse().concat([[G.petya.pos.x + 0.05, G.petya.pos.z + 0.95]]) : null;
   runSeq([
     [0.2, () => say(a, n >= 10 ? 'Meggazdagodtam! Irány a fagyis!' : 'Megvan! Ebből fagyi lesz!', 2.0)],
     [0.8, () => say(fi.vendor, 'Fagyit tessék! Friss fagyi!', 2.0)],
-    [0.4, () => { a.walkTo([BUY], 2.4); fi.end = 'walk'; }],
+    [0.4, () => { a.walkTo(ringRoute(a.pos, BUY), 2.4); fi.end = 'walk'; }],
     [0.2, () => { a.targetHeading = Math.atan2(CART[0] - a.pos.x, CART[1] - a.pos.z); say(a, `Egy csokit kérek! Itt van ${n} érme.`, 2.2); }, () => !a.path && !fi.vendor.path],
     [2.2, () => say(fi.vendor, n >= 10 ? 'Hűha! Ez két gombóc, kisfiam.' : n >= 6 ? 'Ez épp egy nagy gombóc.' : 'Hm… pont egy kis gombócra elég.', 2.2)],
     [2.0, () => { fi.cone = makeCone(); fi.cone.s.scale.setScalar(n >= 10 ? 1.35 : n >= 6 ? 1.15 : 0.9); tone('sine', 880, 990, 0.1, 0.06); say(a, 'Köszönöm!', 1.2); }],
@@ -222,7 +231,7 @@ function startFinale() {
       award('penzhalasz', n, { seen: fi.seen });
       G.pstate = 'free'; fi.end = '';
       if (fi.cone) { scene.remove(fi.cone.g); fi.cone = null; if (a.rig.elbow) a.rig.elbow[0] = 0; }
-      fi.vendor.walkTo([[16.8, -5.4], [22, -11.2], [60, -11.2]], 1.6); fi.cartGo = true; fi.leaving.push(fi.vendor); fi.vendor = null; fi.leaveT = 14;
+      fi.vendor.walkTo([[18.2, CART[1]], [18.2, -6.2], [22.5, -11.2], [60, -11.2]], 1.6); fi.cartGo = true; fi.leaving.push(fi.vendor); fi.vendor = null; fi.leaveT = 14;
       setTimeout(() => { if (fi.scoop) { scene.remove(fi.scoop); fi.scoop = null; } }, 15000);
     }],
   ]);

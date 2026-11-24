@@ -36,11 +36,17 @@ export function interactions() {
   const canDrink = dDrink < 1.6, canRide = dRoll < 1.5 && !roller.rider, canFtn = dFtn < FOUNTAIN.r + 1.0;
   const canJug = canJuggle(), canCoach = canChallengeDad(), canDmp = canDump(), canTwr = canTower(), canCrumb = canAskCrumbs(), canHd = canHide(), canBl = canBalloon();
   // the bench mischiefs win over the scooter leaning right next to dad
-  setPrompt(canDrink ? (pig.active ? 'E – inni az ivókútból' : isTouch ? 'HASZNÁL – inni · RÚGÁS – vízipisztoly!' : 'E – inni · Szóköz – vízipisztoly!') : canDmp ? 'E – Morzsa apára!' : canTwr ? 'E – Torony apa fejére (csitt!)' : canHd ? 'E – Apa, bújócskázzunk!' : canBl ? 'E – Kérek egy lufit!' : canRide ? 'E – felszállni a rollerre' : canFtn ? (pig.active ? 'E – inni a szökőkútból' : isTouch ? 'HASZNÁL – inni a szökőkútból · RÚGÁS – pénzhalászat' : 'E – inni a szökőkútból · Szóköz – pénzhalászat')
-    : canCoach ? 'E – Mutasd te, apa!' : canCrumb ? 'E – Anya, van egy kis morzsád?' : pig.active && !pig.done ? (isTouch ? 'RÚGÁS – morzsát szórni' : 'Szóköz – morzsát szórni') : canJug ? (isTouch ? 'Dekázás' : 'Q – dekázás') : '');
+  const atRim = canFtn && !canDrink && !canDmp && !canTwr && !canHd && !canBl && !canRide;
+  // what the touch buttons do here: their labels (touchui.js) – the RÚGÁS button (Space) and the HASZNÁL button (E)
+  const fishOk = atRim && !pig.active && canFish();
+  G.touchKick = canDrink && !pig.active ? 'FRÖCSKÖL' : fishOk ? 'HALÁSZ' : pig.active && !pig.done ? 'MORZSA' : null;
+  G.touchUse = canDrink ? 'IVÁS' : canDmp ? 'MORZSA' : canTwr ? 'TORONY' : canHd ? 'BÚJÓCSKA' : canBl ? 'LUFI' : canRide ? 'ROLLER' : canFtn ? 'IVÁS'
+    : canCoach ? 'MUTASD!' : canCrumb ? 'MORZSA?' : canJug ? 'DEKÁZÁS' : null;
+  const K = isTouch ? G.touchKick : 'Szóköz', U = isTouch ? G.touchUse : 'E';
+  setPrompt(canDrink ? (pig.active ? `${U} – inni az ivókútból` : `${U} – inni · ${K} – vízipisztoly!`) : canDmp ? `${U} – Morzsa apára!` : canTwr ? `${U} – Torony apa fejére (csitt!)` : canHd ? `${U} – Apa, bújócskázzunk!` : canBl ? `${U} – Kérek egy lufit!` : canRide ? `${U} – felszállni a rollerre` : canFtn ? (fishOk ? `${U} – inni a szökőkútból · ${K} – pénzhalászat` : `${U} – inni a szökőkútból`)
+    : canCoach ? `${U} – Mutasd te, apa!` : canCrumb ? `${U} – Anya, van egy kis morzsád?` : pig.active && !pig.done ? `${K} – morzsát szórni` : canJug ? (isTouch ? `${U} – dekázás` : 'Q – dekázás') : '');
   if (G.qPressed) { G.qPressed = false; if (canJug) { startJuggle(); return true; } }
   if (canDrink && G.kickPressed && !pig.active) { G.kickPressed = false; startSquirt(); return true; }   // 4. csibészség: „Vízipisztoly az ivókútból”
-  const atRim = canFtn && !canDrink && !canDmp && !canTwr && !canHd && !canBl && !canRide;
   if (atRim && G.kickPressed && !pig.active && canFish()) { G.kickPressed = false; startFish(); return true; }   // 7. csibészség: „Pénzhalászat a szökőkútból”
   if (!G.usePressed) return false;
   G.usePressed = false;

@@ -72,11 +72,11 @@ function buildFridge(x, z, rot) {
     B(g, s, -0.3, -0.12, 0.1, 0.25, -0.2, -0.02, 0xf3a9c0); B(g, s, -0.3, -0.12, 0.57, 0.65, -0.15, 0.05, 0x5fae6a);
     B(g, s, -0.35, -0.1, 1.2, 1.26, -0.2, 0.05, 0xcfe8f3);
   }));
-  // what is in it (fridge side): milk, cream (TEJSZÍN), whipped cream (TEJSZÍNHAB), cheese, salami, cola, orange soda,
-  // a can; apples, oranges and grapes in the crisper. Shelf tops: 0.525, 0.925, 1.325; the floor 0.075.
-  { const p = F.plate(0x8ecae6, 0.09); F.at(grp, p, 0.2, 0.525, -0.08); F.at(grp, F.apple(), 0.17, 0.545, -0.09); F.at(grp, F.orange(), 0.24, 0.545, -0.06); }
-  { const p = F.plate(0xf2c94c, 0.08); F.at(grp, p, 0.13, 0.925, -0.06); F.at(grp, F.cheeseWedge(), 0.13, 0.94, -0.06, 0.4); }
-  F.at(grp, F.salamiLog(), 0.28, 0.925, -0.08, 0.2);
+  // what is in it (fridge side): cheese and salami on the first shelf, milk, cream (TEJSZÍN) and whipped cream (TEJSZÍNHAB)
+  // on the second (in front, easy to reach), cola, orange soda, a can on the third; apples, oranges and grapes in the crisper.
+  // Shelf tops: 0.525, 0.925, 1.325; the floor 0.075.
+  { const p = F.plate(0xf2c94c, 0.08); F.at(grp, p, 0.13, 0.525, -0.08); F.at(grp, F.cheeseWedge(), 0.13, 0.54, -0.08, 0.4); }
+  F.at(grp, F.salamiLog(), 0.29, 0.525, -0.1, 0.2);
   F.at(grp, F.sodaBottle(), 0.1, 1.325, -0.16); F.at(grp, F.sodaBottle(0xf4a261, 0xf77f00, 'NARANCS', '#f77f00'), 0.2, 1.325, -0.16); F.at(grp, F.sodaCan('#c1121f', 'MÁLNA'), 0.32, 1.325, 0.0);
   for (const [fx, fz, f] of [[0.1, -0.15, F.apple()], [0.18, -0.05, F.apple(0x8ac926)], [0.26, -0.16, F.orange()], [0.32, 0.0, F.orange()], [0.12, 0.05, F.grapes()]]) F.at(grp, f, fx, 0.075, fz);
   // the doors: hinged at the outer edges, opening outwards
@@ -91,7 +91,6 @@ function buildFridge(x, z, rot) {
       // the inner side: door bins with bottles
       for (const by of [0.35, 0.85, 1.3]) {
         B(g, s, x0 + 0.04, x1 - 0.04, by, by + 0.1, -0.16, -0.06, (x, y, z) => (y > by + 0.03 && z > -0.14 ? undefined : 0xf2f4f6));   // floor + a lip at the far edge
-        if (side > 0 && by === 0.35) continue;   // the right door's lowest bin: milk, cream, whipped cream (food.js, below)
         for (let n = 0; n < 3; n++) { const bx = x0 + 0.1 + n * 0.11; B(g, s, bx, bx + 0.03, by + 0.03, by + 0.2, -0.11, -0.08, [0xd9453a, 0xf4a261, 0x7fb6e8][(n + (side > 0 ? 1 : 0)) % 3]); }
       }
     }));
@@ -99,9 +98,9 @@ function buildFridge(x, z, rot) {
   };
   const L = door(-1), Rr = door(1);
   // in the right door's lowest bin (they swing out with the door): milk, cream (TEJSZÍN), whipped cream (TEJSZÍNHAB)
-  const milk = F.at(Rr, F.milkCarton(), -0.34, 0.375, -0.1);
-  const cream = (() => { const c = F.creamCarton(); c.scale.setScalar(0.78); return F.at(Rr, c, -0.235, 0.375, -0.1); })();
-  const whip = F.at(Rr, F.whippedCream(), -0.12, 0.375, -0.1);
+  const milk = F.at(grp, F.milkCarton(), 0.1, 0.925, 0.08);
+  const cream = (() => { const c = F.creamCarton(); c.scale.setScalar(0.78); return F.at(grp, c, 0.2, 0.925, 0.08); })();
+  const whip = F.at(grp, F.whippedCream(), 0.31, 0.925, 0.08);
   // the collider: the body (turned with the device)
   const c = Math.abs(Math.cos(rot)), sn = Math.abs(Math.sin(rot)), hx = c * 0.45 + sn * 0.33, hz = sn * 0.45 + c * 0.33;
   addBoxCol(x - hx, z - hz, x + hx, z + hz, 1.9);
@@ -372,14 +371,41 @@ function buildTV(x, z, rot) {
   // on the stand: the console (right) and the controller (left, in front of the TV)
   const xlogo = buildXbox(grp, 0.6, 0.5, -0.05), ctl = buildController(grp, -0.52, 0.5, 0.06, 0.35), cbtn = ctl.btn;
   const st = { on: false, t: 0, frame: 0, sndT: 0 }, xb = { on: false, t: 0 };
-  const cartoon = (c, t) => {
-    c.fillStyle = '#8fd3ff'; c.fillRect(0, 0, 256, 144);
-    c.fillStyle = '#ffd23f'; c.beginPath(); c.arc(215, 28, 16, 0, 7); c.fill();
-    c.fillStyle = '#fff'; for (let i = 0; i < 3; i++) { const cx = ((t * 18 + i * 95) % 300) - 30; c.beginPath(); c.ellipse(cx, 25 + i * 12, 22, 8, 0, 0, 7); c.fill(); }
-    c.fillStyle = '#5fbf4a'; c.beginPath(); c.moveTo(0, 144); for (let x = 0; x <= 256; x += 8) c.lineTo(x, 108 + Math.sin(x / 30 + t * 0.4) * 8); c.lineTo(256, 144); c.fill();
-    const bx = 128 + Math.sin(t * 1.3) * 90, by = 100 - Math.abs(Math.sin(t * 3)) * 55;   // a bouncing red ball with a face
-    c.fillStyle = '#e63946'; c.beginPath(); c.arc(bx, by, 13, 0, 7); c.fill(); c.fillStyle = '#111'; c.fillRect(bx - 5, by - 4, 3, 3); c.fillRect(bx + 3, by - 4, 3, 3);
-    c.fillStyle = '#ffffffcc'; c.font = 'bold 13px sans-serif'; c.textAlign = 'left'; c.fillText('MESE', 8, 136);
+  // the TV programme: a football match, Real Madrid – Barcelona, as on TV (the broadcast camera follows the ball; the stands,
+  // the striped pitch, white Madrid shirts, garnet-and-blue Barcelona stripes, the score and the clock in the corner; now and
+  // then a goal: GÓÓÓL! and the crowd roars – the sounds: update below)
+  const GOALS = [[22, 0], [51, 1], [83, 0], [117, 1], [140, 0]];   // [seconds into the programme, 0 Madrid / 1 Barcelona]
+  const score = (t) => { const k = t % 160; let a = 0, b = 0; for (const [g, w] of GOALS) if (k >= g) { if (w) b++; else a++; } return [a, b]; };
+  const goalNow = (t) => { const k = t % 160; return GOALS.find(([g]) => k >= g && k < g + 3); };
+  const match = (c, t) => {
+    const W = 256, H = 144, bx = 200 + Math.sin(t * 0.35) * 170 + Math.sin(t * 1.1) * 40;   // the ball along the pitch (0 … 400)
+    const cam = bx - W / 2;
+    // the stands: rows of fans (dots), flickering
+    c.fillStyle = '#2b2d42'; c.fillRect(0, 0, W, 34);
+    for (let y = 4; y < 32; y += 5) for (let x = -((cam * 0.5) % 6); x < W; x += 6) { const h = (Math.floor(x + cam * 0.5) * 7 + y * 13) % 5; c.fillStyle = ['#f1faee', '#e63946', '#1d3557', '#a8dadc', '#ffd166'][h]; if ((h + Math.floor(t * 4)) % 7) c.fillRect(x, y, 3, 3); }
+    c.fillStyle = '#457b9d'; c.fillRect(0, 32, W, 4);   // the advertising boards
+    // the pitch: mown stripes, the touchline, the halfway line and the centre circle (they move with the camera)
+    for (let i = -1; i < 10; i++) { const x = i * 32 - (cam % 64); c.fillStyle = (i + Math.floor(cam / 64)) % 2 ? '#2e7d32' : '#388e3c'; c.fillRect(x, 36, 32, H - 36); }
+    c.strokeStyle = '#ffffffcc'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, 42); c.lineTo(W, 42); c.stroke();
+    const half = 200 - cam; c.beginPath(); c.moveTo(half, 42); c.lineTo(half, H); c.stroke(); c.beginPath(); c.ellipse(half, 92, 30, 16, 0, 0, 7); c.stroke();
+    // the players: 6 + 6, near the ball, running (a little bob); Madrid white, Barcelona garnet / blue stripes
+    for (let i = 0; i < 12; i++) {
+      const team = i % 2, px = bx + Math.sin(t * 0.8 + i * 1.7) * (40 + i * 6) - cam, py = 60 + ((i * 37) % 70) + Math.sin(t * 1.3 + i) * 8;
+      const bob = Math.abs(Math.sin(t * 9 + i)) * 2;
+      if (team === 0) { c.fillStyle = '#ffffff'; c.fillRect(px - 3, py - 9 - bob, 6, 7); c.fillStyle = '#e9e9e9'; c.fillRect(px - 3, py - 2 - bob, 6, 3); }
+      else { c.fillStyle = '#a50044'; c.fillRect(px - 3, py - 9 - bob, 6, 7); c.fillStyle = '#004d98'; c.fillRect(px - 1, py - 9 - bob, 2, 7); c.fillStyle = '#004d98'; c.fillRect(px - 3, py - 2 - bob, 6, 3); }
+      c.fillStyle = '#e0ac69'; c.fillRect(px - 2, py - 13 - bob, 4, 4);                      // head
+      c.fillStyle = '#222'; c.fillRect(px - 3, py + 1 - bob, 2, 3); c.fillRect(px + 1, py + 1 - bob, 2, 3);   // legs
+    }
+    const by = 104 + Math.sin(t * 2.3) * 22 - Math.abs(Math.sin(t * 3.1)) * 10;
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(W / 2, by, 3, 0, 7); c.fill();
+    // the score and the clock (top left), the channel's logo (top right)
+    const [a, b] = score(t), mins = 60 + Math.floor((t % 160) / 160 * 30), secs = Math.floor((t * 7) % 60);
+    c.fillStyle = '#0b1d3a'; c.fillRect(6, 5, 132, 15); c.fillStyle = '#fff'; c.fillRect(6, 5, 4, 15); c.fillStyle = '#a50044'; c.fillRect(134, 5, 4, 15);
+    c.fillStyle = '#fff'; c.font = 'bold 10px sans-serif'; c.textAlign = 'left'; c.fillText(`RMA ${a} – ${b} BAR`, 14, 16);
+    c.fillStyle = '#ffd166'; c.fillText(`${mins}:${String(secs).padStart(2, '0')}`, 104, 16);
+    c.fillStyle = '#ffffffaa'; c.font = 'bold 9px sans-serif'; c.textAlign = 'right'; c.fillText('SPORT ÉLŐ', W - 6, 14);
+    if (goalNow(t)) { c.fillStyle = '#000000aa'; c.fillRect(0, 60, W, 34); c.fillStyle = '#ffd166'; c.font = 'bold 26px sans-serif'; c.textAlign = 'center'; c.fillText('GÓÓÓL!', W / 2, 86); }
   };
   const console_ = (c, t) => {
     if (t < 2.5) {   // the start: black, a green orb growing, the name
@@ -415,21 +441,24 @@ function buildTV(x, z, rot) {
   const draw = () => {
     const c = scr.ctx;
     if (!st.on) { c.fillStyle = '#0c0f14'; c.fillRect(0, 0, 256, 144); }
-    else if (xb.on) console_(c, xb.t); else cartoon(c, st.t);
+    else if (xb.on) console_(c, xb.t); else match(c, st.t);
     scr.tex.needsUpdate = true;
   };
   draw();
   const front = toWorld(grp, 0, 0, 0.75); front.y -= FY;
   devices.push({ aim: loc(grp, -0.025, 0.95, -0.02), size: 0.4, x: front.x, z: front.z, r: 1.0, label: () => (st.on ? 'E – tévé kikapcsolása' : 'E – tévé bekapcsolása'),
-    use: () => { st.on = !st.on; st.t = 0; click(); draw(); if (st.on && !xb.on) say({ headWorld: (o) => o.copy(toWorld(grp, 0, 1.4, 0)) }, '♪ Lalala-lala! ♪', 2); },
+    use: () => { st.on = !st.on; st.t = 0; st.goal = -1; click(); draw(); if (st.on && !xb.on) say({ headWorld: (o) => o.copy(toWorld(grp, 0, 1.4, 0)) }, 'Real Madrid – Barcelona, élőben!', 2.4); },
     update: (dt) => {
       xlogo.material.opacity = xb.on ? 1 : 0.12; cbtn.material.opacity = xb.on ? 0.95 : 0.12;
       if (xb.on) xb.t += dt;
       if (!st.on) return; st.t += dt; if ((st.frame -= dt) <= 0) { st.frame = 1 / 12; draw(); }
+      { const g = !xb.on && goalNow(st.t); if (g && st.goal !== g[0] + Math.floor(st.t / 160) * 1000) {   // a goal: the crowd roars
+        st.goal = g[0] + Math.floor(st.t / 160) * 1000; noise(2.4, 800, 0.3, 0.12); noise(1.6, 1600, 0.5, 0.05, 0.3);
+        say({ headWorld: (o) => o.copy(toWorld(grp, 0, 1.4, 0)) }, 'GÓÓÓL!', 1.8); } }
       if ((st.sndT -= dt) <= 0) {
         st.sndT = 0.6;
-        if (!xb.on) tone('triangle', 520 + Math.floor(R() * 4) * 130, 520, 0.18, 0.015);
-        else if (xb.t > 4.5) noise(0.5, 900, 0.5, 0.02);   // the crowd
+        if (!xb.on || xb.t > 4.5) noise(0.7, 700 + R() * 300, 0.4, 0.025);   // the crowd
+        if (!xb.on && R() < 0.06) tone('square', 2900, 2700, 0.25, 0.02);       // the referee's whistle now and then
       }
     } });
   // the console: its own button (E next to it); the start chime; the TV shows it when both are on
