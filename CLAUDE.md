@@ -134,6 +134,22 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 - Headless teszthez (Playwright) WebGL: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`.
 - Módosítás után érdemes: nyitójelenet végigfut-e hibátlanul (`mode === 'play'`), és képernyőkép a releváns helyről.
 
+## Tervdokumentumok (`docs/terv-*.md`)
+
+Minden rész terve (`docs/terv-N-resz-….md`) ugyanazt a szerkezetet követi; **legalább ezeket a fejezeteket kell tartalmaznia**, ebben a sorrendben:
+
+1. **Cím és állapot:** `# N. rész (Hónap – alcím): terv`, egy mondatos bevezető, majd egy **Állapot:** sor (mi kész, mi van részben, mi van hátra).
+2. **`## Röviden`:** helyszínek, napszakok, a csibészségek száma, szereplők, nézet.
+3. **`## Pontozás és csibészség-napló`:** a rész csillagrendszere, mentése (`localStorage`-kulcs), naplója, és egy **csibészség-táblázat** minden csibészséggel: `# | Csibészség | (Helyszín) | ★ | ★★ | ★★★ | Tipp a naplóban | Állapot`.
+4. **Csibészségenként egy fejezet** (`---` után): `## N. Név  ✅ kész` (vagy ◐ / ⬜), benne pontokban: **Megvalósítás** (ha kész: melyik fájl, mit csinál – az elejére), **Játék** / **Menet**, **Poén**, **Mire épül**, **Csillagok** (★ · ★★ · ★★★).
+5. **Helyszínek, napok és egyéb rendszerek** (ha a résznek vannak): fejezetenként jelölve.
+6. **`## Fejlesztési lépések`:** számozott lista, minden lépés jelölve.
+7. **`## Döntések`:** a felhasználó válaszai a nyitott kérdésekre (ha voltak).
+8. **`## Javítandók (felvéve: ÉÉÉÉ. HH. NN.)`:** pipálható lista (`- [ ]` / `- [x] … ✅` + rövid leírás, mi lett a megoldás).
+
+- **Jelölések:** ✅ kész · ◐ részben · ⬜ hátravan – a fejezetcímek végén (két szóköz után) és a listákban/táblázatokban is.
+- **Karbantartás:** ha valami elkészül (vagy változik), a tervet is frissíteni kell ugyanabban a commitban: jelölés, „Megvalósítás” pont, és az elavult leírások javítása.
+
 ## Ötletek / nyitott pontok
 
 - **Csibészségek az 1. részhez** (mini játékok / jelenetek; részletek, poénok és a kódbeli kapcsolódás: [docs/terv-1-resz-csibeszsegek.md](docs/terv-1-resz-csibeszsegek.md), ott az állapotuk is). **Pontozás:** mindegyikért max. 3 csillag (★ teljesítés, ★★/★★★ mérhető eredményért, a legjobb számít), összesen ⭐ 30; **Csibészség-napló** (N / 📒): elvégzettek csillagokkal és legjobb eredménnyel, a hátralévők „???” + tipp; ⭐ x/30 a HUD-on és az augusztusi csempén; mentés `localStorage`-ban. **Kész:** a közös rendszer (`mischief.js`, `award(id, érték, extra)`) és mind a 10 csibészség.
