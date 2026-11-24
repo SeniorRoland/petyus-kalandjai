@@ -24,7 +24,7 @@ const ITEMS = [
   { id: 'milk', name: 'tej', icon: '🥛' },
   { id: 'cream', name: 'tejszín', icon: '🍶' },
   { id: 'whip', name: 'tejszínhab', icon: '🍦' },
-  { id: 'carrot', name: 'répa', icon: '🥕' },
+  { id: 'carrot', name: 'répa', icon: '🥕' }, { id: 'carrot2', name: 'répa', icon: '🥕' }, { id: 'carrot3', name: 'répa', icon: '🥕' },
   { id: 'karcsi', name: 'Karcsi', icon: '🐹' },
   { id: 'key', name: 'Angi kulcsa', icon: '🔑' },
 ];
@@ -33,7 +33,7 @@ const ACCEPT = {
   paper: ['tv', 'desk', 'fridge', 'micro', 'tub', 'wc'],
   mug: ['dad', 'micro', 'fridge', 'table', 'tv', 'desk', 'counter'],
   milk: ['fridge', 'table', 'counter'], cream: ['fridge', 'table', 'counter'], whip: ['fridge', 'table', 'counter'],
-  carrot: ['fridge', 'table', 'counter', 'desk'], karcsi: [],
+  carrot: ['fridge', 'table', 'counter', 'desk'], carrot2: ['fridge', 'table', 'counter', 'desk'], carrot3: ['fridge', 'table', 'counter', 'desk'], karcsi: [],
   // the key: anywhere – the usual places first, the odd ones (where nobody would look) last (keyhunt.js searches in that order)
   key: ['shoe', 'coat', 'counter', 'table', 'sofa', 'armchair', 'tv', 'desk', 'wc', 'tub', 'micro', 'fridge', 'washer', 'cage'],
 };
@@ -64,7 +64,10 @@ function putFloor(id, x, z) { places.floor.slots.push(slot(homeRoot, x, 0, z, id
 let holding = false;
 
 // ---------------------------------------------------------------- building
-function slot(parent, x, y, z, only = null) { return { parent, pos: new THREE.Vector3(x, y, z), item: null, only }; }
+// only: the one thing it takes ('carrot': any carrot); rot: a fixed turn (else a little random one)
+function slot(parent, x, y, z, only = null, rot = undefined) { return { parent, pos: new THREE.Vector3(x, y, z), item: null, only, rot }; }
+const fits = (s, id) => !s.only || s.only === id || (s.only === 'carrot' && isCarrot(id));
+export const isCarrot = (id) => /^carrot/.test(id || '');
 const near = (x, z, r) => (p) => Math.hypot(p.x - x, p.z - z) - r;
 const nearRect = (x0, z0, x1, z1, pad) => (p) => Math.hypot(Math.max(x0 - p.x, 0, p.x - x1), Math.max(z0 - p.z, 0, p.z - z1)) - pad;
 export function buildInventory() {
@@ -74,7 +77,8 @@ export function buildInventory() {
   places.fridge = { hot: near(6.46, 1.5, 0.85), open: () => fx.fridge.isOpen(),
     // milk, cream, whipped cream: their own places on the second shelf (in front); the other places take anything
     slots: [slot(fx.fridge.grp, 0.1, 0.925, 0.08, 'milk'), slot(fx.fridge.grp, 0.2, 0.925, 0.08, 'cream'), slot(fx.fridge.grp, 0.31, 0.925, 0.08, 'whip'),
-      slot(fx.fridge.grp, 0.3, 0.525, 0.07), slot(fx.fridge.grp, 0.15, 1.325, 0.06), slot(fx.fridge.grp, 0.2, 0.925, -0.15), slot(fx.fridge.grp, 0.32, 1.325, -0.14)] };
+      slot(fx.fridge.grp, 0.3, 0.925, -0.15), slot(fx.fridge.grp, 0.15, 1.325, 0.06), slot(fx.fridge.grp, 0.32, 1.325, -0.14),
+      slot(fx.fridge.grp, 0.21, 0.525, -0.03, 'carrot', 0), slot(fx.fridge.grp, 0.21, 0.525, 0.035, 'carrot', 0), slot(fx.fridge.grp, 0.21, 0.525, 0.1, 'carrot', 0)] };
   places.micro = { hot: near(6.45, 0.9, 0.75), open: () => fx.micro.isOpen(), slots: [slot(fx.micro.tt, 0, 0.012, 0)] };
   places.tub = { hot: near(1.1, 1.1, 0.8), slots: [slot(H, 0.73, 0.55, 1.25), slot(H, 0.73, 0.55, 0.85)] };
   places.table = { hot: nearRect(9.8, 1.5, 11.6, 2.4, 0.75), slots: [slot(H, 10.76, 0.77, 1.67), slot(H, 10.99, 0.77, 1.69), slot(H, 11.02, 0.77, 2.12), slot(H, 10.25, 0.77, 1.84)] };
@@ -94,17 +98,17 @@ export function buildInventory() {
   // things put on the floor (the carrot for Karcsi): a new place each time
   places.floor = { hot: () => 1, slots: [] };
   // the things and where they start (Karcsi is in his cage – karcsi.js moves him; he is no place's)
-  const objs = { controller: fx.tv.controller, paper: toiletRoll(), mug: fx.mug.obj, milk: fx.dairy.milk, cream: fx.dairy.cream, whip: fx.dairy.whip, carrot: carrotModel(), karcsi: pigObj(), key: keyRing() };
+  const objs = { controller: fx.tv.controller, paper: toiletRoll(), mug: fx.mug.obj, milk: fx.dairy.milk, cream: fx.dairy.cream, whip: fx.dairy.whip, carrot: carrotModel(), carrot2: carrotModel(), carrot3: carrotModel(), karcsi: pigObj(), key: keyRing() };
   for (const it of ITEMS) items[it.id] = { ...it, obj: objs[it.id], place: null, slot: null };
   put('controller', 'tv', 0, true); put('paper', 'wc', 0); put('mug', 'counter', 0, true);
-  put('milk', 'fridge', 0, true); put('cream', 'fridge', 1, true); put('whip', 'fridge', 2, true); put('carrot', 'fridge', 3); put('key', 'shoe', 0);
+  put('milk', 'fridge', 0, true); put('cream', 'fridge', 1, true); put('whip', 'fridge', 2, true); put('carrot', 'fridge', 6); put('carrot2', 'fridge', 7); put('carrot3', 'fridge', 8); put('key', 'shoe', 0);
   buildHud(); drawMug();
 }
 // put an item into a place's slot (keep: it is already there – keep its exact position / turn)
 function put(id, placeId, si, keep = false) {
   const it = items[id], sl = places[placeId].slots[si];
   sl.item = id; it.place = placeId; it.slot = si;
-  if (!keep || it.obj.parent !== sl.parent) { sl.parent.add(it.obj); it.obj.position.copy(sl.pos); it.obj.rotation.set(0, (Math.random() - 0.5) * 0.6, 0); }
+  if (!keep || it.obj.parent !== sl.parent) { sl.parent.add(it.obj); it.obj.position.copy(sl.pos); it.obj.rotation.set(0, sl.rot !== undefined ? sl.rot : (Math.random() - 0.5) * 0.6, 0); }
 }
 const worldXZ = (o) => { const v = new THREE.Vector3(); o.getWorldPosition(v); return v; };
 
@@ -209,7 +213,7 @@ export function invAction(p, look = null) {
     } };
   }
   // the carrot: offered at the open cage (Karcsi comes to the door), or put down on the floor when there is nowhere else
-  if (id === 'carrot' && atCage && cageDoorOpen() && karcsiState().where === 'cage') return { label: 'répa felkínálása Karcsinak', short: 'RÉPA', run: () => { lureKarcsi(); say(G.petike, 'Gyere, Karcsi! Répa!', 1.8); } };
+  if (isCarrot(id) && atCage && cageDoorOpen() && karcsiState().where === 'cage') return { label: 'répa felkínálása Karcsinak', short: 'RÉPA', run: () => { lureKarcsi(); say(G.petike, 'Gyere, Karcsi! Répa!', 1.8); } };
   // the mug to dad: standing next to him (top view) or looking at him (first person) is enough – it goes to his place
   if (id === 'mug' && G.petya && !places.dad.slots[0].item) {
     const d = G.petya, chest = new THREE.Vector3(d.pos.x, FY + 0.95, d.pos.z);
@@ -224,20 +228,20 @@ export function invAction(p, look = null) {
     const pl = places[pid];
     // top view: the place's area; first-person view: one of its slots looked at
     const d = look ? (pl.slots.some((s) => { s.parent.updateMatrixWorld(true); return look(s.parent.localToWorld(s.pos.clone())); }) ? -1 : 1) : pl.hot(p); if (d > 0) continue;
-    const si = pl.slots.findIndex((s) => !s.item && (!s.only || s.only === id));
+    const si = pl.slots.findIndex((s) => !s.item && fits(s, id));
     const anyFree = si >= 0 ? si : pl.slots.findIndex((s) => !s.item && !s.only);
     if (anyFree < 0) continue;
     const isOpen = !pl.open || pl.open();
     if (!best || (isOpen && !bestOpen) || (isOpen === bestOpen && d < bd)) { bd = d; best = { pid, si: anyFree }; bestOpen = isOpen; }
   }
   if (!best) {
-    if (id === 'carrot') return { label: 'répa letétele a padlóra', short: 'LETESZ', run: () => { const f = front(0.3); putFloor('carrot', f.x, f.z); tone('sine', 600, 420, 0.1, 0.05); } };
+    if (isCarrot(id)) return { label: 'répa letétele a padlóra', short: 'LETESZ', run: () => { const f = front(0.55), q = walkable(f.x, f.z) ? f : front(0.3); putFloor(id, q.x, q.z); tone('sine', 600, 420, 0.1, 0.05); } };
     return null;
   }
   const pl = places[best.pid];
   if (pl.open && !pl.open()) return { label: `${it.name}: előbb nyisd ki ${best.pid === 'fridge' ? 'a hűtőt' : best.pid === 'cage' ? 'a kalitkát' : 'a mikrót'}`, short: 'ZÁRVA', run: () => tone('sine', 300, 200, 0.1, 0.04) };
   // dairy into the fridge: its own place in the door if free
-  let si = best.si; if (best.pid === 'fridge') { const own = pl.slots.findIndex((s) => s.only === id && !s.item); if (own >= 0) si = own; else si = pl.slots.findIndex((s) => !s.item && !s.only); }
+  let si = best.si; if (best.pid === 'fridge') { const own = pl.slots.findIndex((s) => s.only && fits(s, id) && !s.item); if (own >= 0) si = own; else si = pl.slots.findIndex((s) => !s.item && !s.only); }
   return { label: `${it.name} lerakása ${PLACE_NAME[best.pid]}`, short: 'LERAK', run: () => {
     inv.list.splice(inv.sel, 1); inv.sel = Math.min(inv.sel, inv.list.length - 1); put(id, best.pid, si); renderHud(); tone('sine', 600, 420, 0.1, 0.05); invHooks.placed?.(id, best.pid);
   } };
@@ -257,6 +261,9 @@ export function updateInventory() {
   }
   if (hud) hud.style.visibility = G.mode === 'play' ? 'visible' : 'hidden';
   // Karcsi smells the carrot on the floor
-  const ca = items.carrot; setFloorCarrot(ca && ca.place === 'floor' ? { x: ca.obj.position.x, z: ca.obj.position.z } : null);
+  // (the nearest of the carrots lying on the floor)
+  const kp = karcsiState(); let near = null, nd = 1e9;
+  for (const id of ['carrot', 'carrot2', 'carrot3']) { const c = items[id]; if (!c || c.place !== 'floor') continue; const d = Math.hypot(c.obj.position.x - kp.x, c.obj.position.z - kp.z); if (d < nd) { nd = d; near = { x: c.obj.position.x, z: c.obj.position.z }; } }
+  setFloorCarrot(near);
 }
 export { FY };

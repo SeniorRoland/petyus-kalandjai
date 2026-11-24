@@ -72,11 +72,12 @@ function buildFridge(x, z, rot) {
     B(g, s, -0.3, -0.12, 0.1, 0.25, -0.2, -0.02, 0xf3a9c0); B(g, s, -0.3, -0.12, 0.57, 0.65, -0.15, 0.05, 0x5fae6a);
     B(g, s, -0.35, -0.1, 1.2, 1.26, -0.2, 0.05, 0xcfe8f3);
   }));
-  // what is in it (fridge side): cheese and salami on the first shelf, milk, cream (TEJSZÍN) and whipped cream (TEJSZÍNHAB)
+  // what is in it (fridge side): carrots, cheese and salami on the first shelf, milk, cream (TEJSZÍN) and whipped cream (TEJSZÍNHAB)
   // on the second (in front, easy to reach), cola, orange soda, a can on the third; apples, oranges and grapes in the crisper.
   // Shelf tops: 0.525, 0.925, 1.325; the floor 0.075.
-  { const p = F.plate(0xf2c94c, 0.08); F.at(grp, p, 0.13, 0.525, -0.08); F.at(grp, F.cheeseWedge(), 0.13, 0.54, -0.08, 0.4); }
-  F.at(grp, F.salamiLog(), 0.29, 0.525, -0.1, 0.2);
+  // (the first shelf's front: three carrots – inventory.js)
+  { const p = F.plate(0xf2c94c, 0.08); F.at(grp, p, 0.13, 0.525, -0.17); F.at(grp, F.cheeseWedge(), 0.13, 0.54, -0.17, 0.4); }
+  F.at(grp, F.salamiLog(), 0.3, 0.525, -0.17, 0.2);
   F.at(grp, F.sodaBottle(), 0.1, 1.325, -0.16); F.at(grp, F.sodaBottle(0xf4a261, 0xf77f00, 'NARANCS', '#f77f00'), 0.2, 1.325, -0.16); F.at(grp, F.sodaCan('#c1121f', 'MÁLNA'), 0.32, 1.325, 0.0);
   for (const [fx, fz, f] of [[0.1, -0.15, F.apple()], [0.18, -0.05, F.apple(0x8ac926)], [0.26, -0.16, F.orange()], [0.32, 0.0, F.orange()], [0.12, 0.05, F.grapes()]]) F.at(grp, f, fx, 0.075, fz);
   // the doors: hinged at the outer edges, opening outwards
