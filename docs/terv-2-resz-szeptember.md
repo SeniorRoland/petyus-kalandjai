@@ -1,22 +1,7 @@
-# 2. rész: Szeptember – terv
+# 2. rész (Szeptember – Otthon és iskola): terv
 
-**Állapot:** az otthoni reggel kész (a lakás, a ház és környéke, eszközök, leltár, mindhárom reggeli csibészség); az átöltözés, az indulás, az iskola és a délután még hátravan. Ezt a dokumentumot lépésenként bővítjük.
-
-| | Tétel | Állapot |
-|---|---|---|
-| ✅ | Megnyitás 15 ⭐-tól, fejlesztői elérés (`?resz=2`) | kész |
-| ✅ | Csibészség-rendszer részenként (saját lista és mentés, a naplóban külön fül) | kész |
-| ✅ | Otthon reggel: a lakás az alaprajz szerint, a ház és környéke, falak/nézet, FPS, ajtók, kapcsolók, lámpák | kész |
-| ✅ | Kapcsolható eszközök, reggeli, hűtő, leltár (tárgyak felvétele, lerakása, bögre töltése) | kész |
-| ✅ | Karcsi, a tengerimalac (kalitkában és szabadon) | kész |
-| ✅ | Hangok: külvilág belső nézetben elnémul, lépések, eszközök, szereplők beszédhangja | kész |
-| ✅ | Reggeli csibészségek: „A tejszínes kávé”, „Karcsi nagy szökése”, „Hol a kulcs, Angi?” | kész |
-| ◐ | Naptár és óra a HUD-on, késés (⏰) – a napok léptetése és a napszak-váltás még nincs | részben |
-| ⬜ | Átöltözés (iskolai ruha / munkaruha), iskolatáska, cipő, indulás a bejárati ajtón | hátravan |
-| ⬜ | Napok léptetése, hétvégi átvezető, a hónap vége | hátravan |
-| ⬜ | Iskola (helyszín, 4 csibészség), otthon délután (3 csibészség) | hátravan |
-| ⬜ | „Új rész nyílt meg!” jelzés a kezdőképernyőn | hátravan |
-| ⬜ | Tesztelés valódi telefonon | hátravan |
+Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
+**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a hangok és mind a 3 reggeli csibészség. ◐ A naptár és az óra kész, a napok léptetése még nem. ⬜ Hátravan: átöltözés és indulás, az iskola (4 csibészség), az otthoni délután (3 csibészség), a hétvégék, tesztelés telefonon.
 
 ## Röviden
 
@@ -26,16 +11,122 @@
 - **Szereplők most:** Petyus, Petya (apa), Angi (anya). Később még három szereplő jön – velük egyelőre nem foglalkozunk.
 - **Nézet:** izometrikus, voxel stílus, mint az 1. részben.
 
-## Megnyitás és fejlesztői elérés
+## Pontozás és csibészség-napló (2. rész)  ✅ kész
+
+- **Ugyanaz a rendszer, mint az 1. részben** (`src/mischief.js`): csibészségenként legfeljebb 3 csillag, a legjobb eredmény számít; teljesítéskor felugró csillagok.
+- **Saját lista és mentés:** `MISCHIEFS2`, `localStorage`-kulcs `petyus.r2.csibeszsegek`; a megnyitáshoz (15 ⭐) továbbra is csak az 1. rész csillagai számítanak (`totalStars()`).
+- **Napló:** az **N** / 📒 naplóban részenként fül („2. Szeptember ⭐ x/9”, később x/30) – a kezdőképernyőről is megnézhető; játék közben az aktuális rész füle nyílik.
+- **Késés:** minden sikeres reggeli csibészség perceket vesz el a reggelből (`ep2.lateMin`); ha a család 7:30 után indul, az iskolában ennek következménye lesz (beírás, a tanár megjegyzése – az iskolai résznél döntjük el).
+- A HUD-on a késés: ⏰ +x perc (`addLate()` az `ep2.js`-ben, mentve a rész állapotával).
+
+| # | Csibészség | Helyszín | ★ | ★★ | ★★★ | Tipp a naplóban | Állapot |
+|---|---|---|---|---|---|---|---|
+| 1 | A tejszínes kávé | otthon, reggel | apa a WC-re rohan | első próbára (nincs tejszínhabos visszaküldés) | és senki nem látta a tejszínt | „Apa kávét kér, de a gyomra nem bír mindent.” | **kész** |
+| 2 | Karcsi nagy szökése | otthon, reggel | Karcsi szabadon | anya a széken | és ≥ 60 mp szabadon | „Karcsi is szeretne körülnézni a lakásban.” | **kész** |
+| 3 | Hol a kulcs, Angi? | otthon, reggel | anya keresni kezd | 2 percnél tovább keres | fura helyen volt, és Petyus nem árulta el | „Anya kulcsa mindig a cipősszekrényen van.” | **kész** |
+| 4–7 | (iskolai csibészségek) | iskola | | | | | ⬜ még nincs kitalálva |
+| 8–10 | (délutáni csibészségek) | otthon, délután | | | | | ⬜ még nincs kitalálva |
+
+---
+
+## 1. A tejszínes kávé  ✅ kész
+
+- **Megvalósítás** (`src/ep2/coffee.js`): apa kb. 12 mp után kávét kér; a bögre a pulton van, kávé a kávéfőzőnél (F), tej / tejszín / tejszínhab a hűtőből; apának elég mellette állni (belső nézetben rá nézni): **F – bögre odaadása apának**. Tejszínhabot (vagy kimosatlan, habos bögrét) visszaküld – a mosogatónál ki kell önteni, a nyitott csapnál kimosni. Tejszínnel megissza, 5× morog a gyomra (Angi: „Jól vagy, Petya?”), az 5.-re felpattan (a széke feldől), félrelöki Petyust, a WC-be rohan, becsapja az ajtót („BUMM!”), letolt pizsamanadrággal ül (a comb bőrszínű – `setPantsDown` a `pajama.js`-ben –, gyűrött nadrág a térdén), pukizik, jajveszékel, a zöld szagfelhő az ajtó alatt-fölött szivárog ki; papírért kiabál, ha Petyus elvitte. Végül kinyitja az ajtót (kigomolyog a felhő), kijön, visszacsukja, bicegve visszaül: „Ma kések a munkából. És te is az iskolából.” → +15 perc. Apa állapotai: `cf.st` (`wait → asked → look → drink → growl → rush → sitdown → wc → back → done`).
+- **Alaphelyzet:** apa az asztalnál ül, és időnként kávét kér („Petyus, hoznál egy kávét?”). Apa gyomra érzékeny a tejszínre: a **tej** rendben van, a **tejszínhabot** észreveszi, a **tejszínt** nem.
+
+- **Menet:**
+1. Petyus felveszi a bögrét, a kávéfőzőnél kávét tölt bele (F), aztán a hűtőből tejet, tejszínt vagy tejszínhabot ad hozzá (ez már megvan: `inventory.js`).
+2. A bögrét apa helyére teszi az asztalon (új lerakóhely: „apa helye”, csak a bögrét fogadja). Apa megissza (ivó póz, néhány korty).
+3. A tartalomtól függően:
+   - **Csak kávé, vagy kávé + tej:** „Köszönöm, fiam!” – nincs csibészség.
+   - **Tejszínhab van benne:** apa azonnal észreveszi: „Ez tejszínhab! Tudod, hogy nem bírom!” – visszaadja a bögrét, és új kávét kér. Ilyenkor a bögrét a **mosogatóba kell önteni** (F a mosogatónál – megvan), **ki kell mosni** (új lépés: nyitott csapnál F – „bögre kimosása”; a kimosatlan, csak kiöntött bögrébe töltött kávéra apa: „Ez még habos!”), és **új adag kávét** kell csinálni. Ez még nem csibészség, csak kitérő (a ★★-t elveszi, lásd lent).
+   - **Tejszín van benne (tejszínhab nélkül):** apa nem veszi észre, megissza, eszik tovább. Kb. 8–12 mp-enként **hangosan morog a gyomra** (hanghatás-felirat: „GRRRRRR…”, „KORRR-KORRR!”, „BRUGGGGG…” – szintetizált mély, remegő hang), közben a hasához kap, fészkelődik a széken; Angi rákérdez („Jól vagy, Petya?” – „Persze… persze…”).
+4. **Az 5. morgásra** apa hirtelen felpattan („JAJ! Most azonnal!!”), feldönti a székét, és **a WC-be rohan**. A WC ajtaja kinyílik előtte, ha zárva van; ha Petyus áll az útjában, félrelöki: „Félre!”. Az ülőkét és a fedelet felcsapja, ráül.
+5. **A WC-n:** a **pizsamanadrág térdig letolva** (a nadrág a térde köré gyűrődik – lásd a technikát), görnyedve ül, a hasát fogja. Hangosan **pukizgat** (szintetizált, változatos hosszúságú és hangmagasságú hangok, hanghatás-feliratok: „PRRRT!”, „PFFFFRRR!”, „BRÖTTYH!”), és **jajveszékel**: „Jajjj, a hasam!”, „Ki tett tejszínt a kávémba?!”, „Soha többé tejszín…”, „Angiii, hozz még papírt!”. A WC-ből **zöldes szagfelhő** gomolyog ki: lassan felszálló, terjedő zöld pamacsok az ajtón és a kis ablakon át, átér az előszobába is. Angi az orrát fogja: „Petya, az ég szerelmére, nyiss ablakot!”
+6. **Izometrikus nézetben jól látszik:** a WC fala átlátszó lesz (a falak most is ilyenek), így látni, ahogy apa szenved; a szagfelhő a falakon kívül is látszik. A jelenet kb. 40–60 mp, közben Petyus szabadon mozoghat (belső nézetben a WC ajtajánál hallani is). Ha a **WC-papír** közben nincs a WC-ben (Petyus elvitte – leltár), apa külön kiabál érte: „PAPÍRT!!” – Petyus beviheti (lerakóhely a WC-ben), vagy hagyhatja.
+7. **Vége:** apa kijön (sápadtan, görnyedt, lassú járással): „Ma kések a munkából. És te is az iskolából.” → **késés** (+15 perc).
+
+- **Csillagok:**
+- ★ apa a WC-re rohan (a tejszínes kávé hatott);
+- ★★ első próbálkozásra sikerült (nem volt tejszínhabos visszaküldés);
+- ★★★ és senki nem látta, ahogy a tejszínt a bögrébe tölti (Angi nem volt a konyhában, vagy háttal állt – Angi „látómezeje” egy kúp a nézési irányában).
+
+- **Technika (új elemek):**
+- apa új állapotai: `coffeeAsk → drinking → growl (1…5) → rushWC → onWC → limpBack` (útvonal a WC-ig: konyha → előtér → WC-ajtó);
+- „apa helye” lerakóhely (csak a bögre), a bögre kimosása (nyitott csapnál F), a bögre „tiszta / habos” állapota;
+- **letolt pizsamanadrág:** a pizsama-shaderben egy `pantsDown` jel – ilyenkor a comb bőrszínt kap, és a térdcsonthoz (`rig.knee`) kötve egy gyűrött nadrág-gyűrű jelenik meg; ülés a WC-n a WC magasságára (0,42 m);
+- pukik és gyomormorgás: új szintetizált hangok (`audio.js`); szagfelhő: zöld részecskék (`spawnFx`), lassan emelkedő, nagyobbodó, halványuló pamacsok.
+
+## 2. Karcsi nagy szökése  ✅ kész
+
+- **Megvalósítás** (`src/ep2/runaway.js`, `karcsi.js`, `navgrid.js`): a hűtőben három répa 🥕; a nyitott kalitkánál felkínálva (F) Karcsi az ajtóhoz jön és felvehető (E, 🐹), bárhol letehető a padlóra. Szabadon (`karcsi.js` szabad mód) futkos, búvóhelyekre bújik (Petyus ágya, nagyágy, kanapé, asztal, fotel, íróasztal), a padlóra tett répához szalad (evés közben fel lehet venni), sokszor a konyha felé szaglászik. Angi lábánál: „ÁÁÁÁÁ! EGY PATKÁNY!!”, a székre ugrik (legalább 8 mp-ig fent marad), közben odaég a reggeli (füst, „Ég a rántotta!”). Apa négykézláb kergeti (útkeresés a lakás rácsán – `navgrid.js`), az asztal alatt beüti a fejét („Au! A fejem!”), Karcsi búvóhelyről búvóhelyre ugrik; a végén apa (vagy Petyus) visszateszi a kalitkába: „Petyus! Délután nincs Xbox!” → +10 perc. Állapot: `rw`.
+- **Alaphelyzet:** Karcsi a kalitkában, Petyus szobájában. Angi fél az egerektől és minden „kis szőröstől” – reggel el is mondja: „Ha az a malac még egyszer kiszökik, én elköltözöm!”
+
+- **Menet:**
+1. Petyus kinyitja a kalitka ajtaját (E – megvan), és **kiveszi Karcsit** (Karcsi a leltárba kerül 🐹). Ha Karcsi épp a házikójában bújik, várni kell, vagy egy **répával** (új tárgy a hűtőből 🥕) ki kell csalogatni.
+2. Petyus bárhol **leteszi** Karcsit a padlóra (F). Karcsi magától futkos a lakásban: bútorok alá bújik (ágy, kanapé, szekrény), szaglászik, visít („UÍ-UÍ!”), és a répa felé szalad, ha Petyus leteszi.
+3. **Ha Karcsi a konyhába, Angi lábához ér:** Angi felsikít („ÁÁÁÁÁ! EGY PATKÁNY!!” – Petyus: „Anya, ez Karcsi!”), **felugrik egy székre**, és onnan nem jön le, amíg Karcsi a konyhában van. Közben a reggeli odaég a tűzhelyen (füst; apa: „Ég a rántotta!”).
+4. **Apa** feláll, és **négykézláb kergeti** Karcsit a lakásban („Gyere ide, te kis… szőrgombóc!”): mulatságos négykézláb járás, az asztal alatt beüti a fejét („Au!”). Karcsi mindig a legközelebbi búvóhelyre menekül.
+5. **Vége:** apa (vagy Petyus) elkapja Karcsit, és visszateszi a kalitkába; Angi: „Petyus! Délután nincs Xbox!” → **késés** (+10 perc).
+
+- **Csillagok:**
+- ★ Karcsi szabadon a lakásban;
+- ★★ Angi a székre ugrik;
+- ★★★ és Karcsi legalább 60 mp-ig szabad marad, mielőtt apa elkapja (minél jobb búvóhelyre fut, annál tovább tart).
+
+- **Technika:** Karcsi kiléphet a kalitkából (a `karcsi.js` mozgása a padlón is: célpontok – búvóhelyek, répa, az emberek elkerülése, vagy épp Angi lába); Karcsi és a répa felvehető tárgy a leltárban; Angi „széken állás” póza (a szék tetején, karok a feje fölött); apa négykézláb járása (comb és kar is előre, a test vízszintesen).
+
+## 3. Hol a kulcs, Angi?  ✅ kész
+
+- **Megvalósítás** (`src/ep2/keyhunt.js`): Angi kulcsa 🔑 a cipősszekrényen; minden lerakóhelyre elrejthető, plusz kabátzsebbe, kanapépárna alá, fotelba, mosógépbe, Karcsi kalitkájába. 20 mp után Angi keresni kezd: a logikus helyektől (cipősszekrény, kabát, pult, asztal, kanapé, fotel, tévé, íróasztal) a furcsák felé (WC, kád, mikró, hűtő, mosógép, kalitka), mindenhol kotorászik, ajtót nyit, egyre idegesebb. Petyus mellette **E – „Anya, nem a … van?”** (tipp: ★★★ elvész). Fura helyen: „A kulcsom… a HŰTŐBEN?! … PETYA!!”, apát hibáztatja, Petyus fütyörészik; ha Petyusnál maradt: „Nálad van a kulcsom?!” Késés 5–20 perc a keresés hossza szerint. Állapot: `kh`.
+- **Alaphelyzet:** Angi kulcscsomója az előszobában a cipősszekrény tetején van (a modellen most is van ott egy kulcs – felvehető tárgy lesz 🔑). Angi reggel többször kérdezi: „Petya, nem láttad a kulcsomat?” (ez a sora már megvan) – innen az ötlet.
+
+- **Menet:**
+1. Petyus felveszi a kulcsot (E), és **elrejti** valahol (F): hűtő, mikró, a mosógép dobja, kád, Karcsi kalitkája, a kanapé párnája alá, a fotelbe, a cipősszekrénybe, az íróasztal fiókjába, a WC-tartályra…
+2. Amikor közeledik az indulás (vagy Angi a kulcsért megy), **Angi keresni kezd**: sorra járja a „logikus” helyeket (cipősszekrény → kabátzseb a fogason → táska → konyhapult → asztal → kanapé → …), mindegyiknél kicsit kotorászik (fiókot nyit, párnákat emelget), és egyre idegesebb („Itt volt! Itt volt a kezemben!”, „Petya, te tetted el?!”, „Ez a ház megeszi a kulcsaimat!”).
+3. **A rejtekhelytől függ, meddig keres:** a szokásos helyeken hamar megtalálja; a fura helyeken (hűtő, mosógép, Karcsi kalitkája, mikró) csak a sor végén. A legvégén: „A kulcsom… a HŰTŐBEN?! … PETYA!!” – és **apát hibáztatja** („Megint te pakoltad el a bevásárlással együtt!”), apa értetlenül tiltakozik. Petyus közben fütyörészik.
+4. Petyus **segíthet** is: Angi mellett E-vel tippet adhat („Anya, nem a hűtőben van?”) – Angi azonnal odamegy, de a ★★★ elvész (gyanús lesz: „Honnan tudtad?…”).
+5. **Vége:** megvan a kulcs → **késés** (a keresés ideje szerint +5…+20 perc).
+
+- **Csillagok:**
+- ★ Angi keresni kezdi a kulcsot (el van rejtve);
+- ★★ 2 percnél tovább keres;
+- ★★★ a kulcs fura helyen volt (hűtő, mikró, mosógép, Karcsi kalitkája), és Angi végül apát hibáztatja (Petyus nem árulta el magát).
+
+- **Technika:** a kulcs új leltártárgy (minden lerakóhely elfogadja, plusz új rejtekhelyek: kanapé, fotel, fiók, mosógép); Angi keresési útvonala és „kotorászás” mozdulatai (lehajolás, fiók- és szekrényajtó nyitása – az ajtók már nyithatók); a keresés ideje rejtekhelyenként.
+
+## 4–7. Iskolai csibészségek  ⬜ még nincs kitalálva
+
+Az iskola helyszínnel együtt (lásd lent).
+
+## 8–10. Délutáni csibészségek  ⬜ még nincs kitalálva
+
+Az otthoni délutánnal együtt (16:00–22:00).
+
+---
+
+## A reggel vége, a késés  ◐ részben
+
+- ✅ A csibészségek késése összeadódik, a HUD-on ⏰ +x perc.
+- ⬜ Indulás (átöltözés után), „Elkéstünk!” átvezető, következmény az iskolában.
+
+- Az indulást továbbra is a játékos dönti el (a bejárati ajtónál – ha már nem pizsamában van; az átöltözés még hátravan).
+- A csibészségek késése összeadódik; 7:30 után indulva „Elkéstünk!” átvezető, az iskolában következménnyel (később).
+- Egy reggelen mindhárom elvégezhető, de nem kötelező egyszerre: a naptár napjain bármikor, és – mint az 1. részben – a legjobb eredmény számít.
+
+## Megnyitás és fejlesztői elérés  ✅ kész
 
 - **Feltétel:** a 2. rész csak akkor nyílik meg, ha az 1. részben a csibészségekből **legalább 15 ⭐** összegyűlt (`totalStars()` a `mischief.js`-ben, mentés: `petyus.r1.csibeszsegek`).
-- **Kezdőképernyő:** a szeptemberi polaroidon zárva „🔒 15 ⭐ kell (most: x)” felirat; ha megvan a 15 ⭐, a csempe indítható lesz (mint az augusztusi). Első megnyíláskor egy kis „Új rész nyílt meg!” jelzés.
+- **Kezdőképernyő:** a szeptemberi polaroidon zárva „🔒 15 ⭐ kell (most: x)” felirat; ha megvan a 15 ⭐, a csempe indítható lesz (mint az augusztusi). ⬜ Első megnyíláskor egy kis „Új rész nyílt meg!” jelzés (még nincs).
 - **Fejlesztői elérés:** csak a fejlesztői szerveren (`npm run dev`), a kiadott (prod) buildben nincs benne.
   - Megvalósítás: `import.meta.env.DEV` ágban – a Vite a buildből kidobja, így a prod oldalon semmilyen URL-lel vagy gombbal nem érhető el.
-  - Használat: `?resz=2` URL-paraméter (egyből a 2. részt indítja), valamint `?resz=2&hely=iskola&nap=5` jellegű ugrás a helyszínek / napok teszteléséhez; a kezdőképernyőn dev módban egy kis „DEV: minden rész nyitva” jelzés.
+  - Használat: ✅ `?resz=2` URL-paraméter (egyből a 2. részt indítja); ⬜ `?resz=2&hely=iskola&nap=5` jellegű ugrás a helyszínek / napok teszteléséhez; a kezdőképernyőn dev módban egy kis „DEV: minden rész nyitva” jelzés.
   - Ellenőrzés: a build után a `dist/` JS-ében nem szerepelhet a dev-ág (pl. egy keresés a `resz=` szövegre).
 
-## Napok, naptár, váltás a helyszínek között
+## Napok, naptár, váltás a helyszínek között  ◐ részben
+
+- ✅ Naptár és óra a HUD-on (2026. szeptember 2. …), a reggeli óra telik (6:00 → 7:30), mentés a rész állapotával.
+- ⬜ A napok léptetése, hétvégi átvezető, a hónap vége, a helyszínek közti váltás.
 
 - **Kör:** otthon reggel → iskola → otthon délután. Csak előre lehet lépni, vissza nem. Egy teljes kör = egy nap; utána a következő nap reggele jön.
 - **Naptár:** a HUD-on (és váltáskor nagyban) látszik az aktuális nap: „2026. szeptember 2., szerda”. Indulás: **2026. szeptember 2.** (szerda), utolsó nap: **2026. szeptember 30.** (szerda) – összesen 29 nap.
@@ -44,7 +135,7 @@
 - **Váltás:** a **játékos dönti el**, mikor indul tovább (pl. az iskolatáskával és cipőben az ajtónál: „E – Indulás az iskolába”); egy rövid átvezető / áttűnés visz a következő helyszínre, közben a naptár és az óra mutatja az időugrást.
 - **Óra:** a játékidő gyorsítva telik (hangolandó); a napszak végéhez közeledve apa/anya sürget („Elkésel!”), de a váltást akkor is a játékos indítja. (Hogy a késésnek legyen-e következménye, később döntjük el.)
 
-## Helyszín: Otthon (a lakás)
+## Helyszín: Otthon (a lakás)  ✅ kész (reggel)
 
 ### Az alaprajz értelmezése (a csatolt kép alapján)
 
@@ -83,96 +174,7 @@ A lakás egyszintes, nagyjából **13 m × 7,5 m**, téglafalakkal, két erkéll
 - **Angi (anya):** reggelit készít, uzsonnát csomagol, a folyosón keresi a kulcsot.
 - **Ruhák:** reggel **mindhárman pizsamában** vannak; később átöltöznek – Petyus iskolai ruhába, Petya és Angi munkaruhába. Megvalósítás: a meglévő modellek színezett változatai (a ruha anyagszíneinek cseréje, esetleg minta), vagy új modellváltozatok a modell-pipeline-nal – az első lépésben a pizsama kell.
 
-## Helyszín: Iskola
-
-Később részletezzük (osztályterem, folyosó, udvar/tornaterem, ebédlő?). A 4 iskolai csibészség és a tanár(ok) / osztálytársak itt jönnek majd.
-
-## Csibészségek
-
-10 csibészség: 3 otthon reggel, 4 az iskolában, 3 otthon délután – a tartalmukat később találjuk ki. A rendszer ugyanaz, mint az 1. részben (`mischief.js`: `award`, napló, ⭐), de részenként külön listával és mentéssel (`petyus.r2.csibeszsegek`).
-
-### Otthon reggel (6:00–7:30) – 3 csibészség
-
-Mindhárom a meglévő lakásra épül (leltár, eszközök, ajtók, Karcsi). Közös következményük a **késés**: minden sikeres csibészség perceket vesz el a reggelből (`ep2.lateMin`), és ha a család 7:30 után indul, az iskolában ennek következménye lesz (beírás, a tanár megjegyzése – az iskolai résznél döntjük el). Az eredmények a 2. rész saját naplójába kerülnek (`petyus.r2.csibeszsegek`), csibészségenként max. 3 ⭐.
-
-#### 1. „A tejszínes kávé” (`r2-tejszin`) – **kész** (`src/ep2/coffee.js`)
-
-**Alaphelyzet:** apa az asztalnál ül, és időnként kávét kér („Petyus, hoznál egy kávét?”). Apa gyomra érzékeny a tejszínre: a **tej** rendben van, a **tejszínhabot** észreveszi, a **tejszínt** nem.
-
-**Menet:**
-1. Petyus felveszi a bögrét, a kávéfőzőnél kávét tölt bele (F), aztán a hűtőből tejet, tejszínt vagy tejszínhabot ad hozzá (ez már megvan: `inventory.js`).
-2. A bögrét apa helyére teszi az asztalon (új lerakóhely: „apa helye”, csak a bögrét fogadja). Apa megissza (ivó póz, néhány korty).
-3. A tartalomtól függően:
-   - **Csak kávé, vagy kávé + tej:** „Köszönöm, fiam!” – nincs csibészség.
-   - **Tejszínhab van benne:** apa azonnal észreveszi: „Ez tejszínhab! Tudod, hogy nem bírom!” – visszaadja a bögrét, és új kávét kér. Ilyenkor a bögrét a **mosogatóba kell önteni** (F a mosogatónál – megvan), **ki kell mosni** (új lépés: nyitott csapnál F – „bögre kimosása”; a kimosatlan, csak kiöntött bögrébe töltött kávéra apa: „Ez még habos!”), és **új adag kávét** kell csinálni. Ez még nem csibészség, csak kitérő (a ★★-t elveszi, lásd lent).
-   - **Tejszín van benne (tejszínhab nélkül):** apa nem veszi észre, megissza, eszik tovább. Kb. 8–12 mp-enként **hangosan morog a gyomra** (hanghatás-felirat: „GRRRRRR…”, „KORRR-KORRR!”, „BRUGGGGG…” – szintetizált mély, remegő hang), közben a hasához kap, fészkelődik a széken; Angi rákérdez („Jól vagy, Petya?” – „Persze… persze…”).
-4. **Az 5. morgásra** apa hirtelen felpattan („JAJ! Most azonnal!!”), feldönti a székét, és **a WC-be rohan**. A WC ajtaja kinyílik előtte, ha zárva van; ha Petyus áll az útjában, félrelöki: „Félre!”. Az ülőkét és a fedelet felcsapja, ráül.
-5. **A WC-n:** a **pizsamanadrág térdig letolva** (a nadrág a térde köré gyűrődik – lásd a technikát), görnyedve ül, a hasát fogja. Hangosan **pukizgat** (szintetizált, változatos hosszúságú és hangmagasságú hangok, hanghatás-feliratok: „PRRRT!”, „PFFFFRRR!”, „BRÖTTYH!”), és **jajveszékel**: „Jajjj, a hasam!”, „Ki tett tejszínt a kávémba?!”, „Soha többé tejszín…”, „Angiii, hozz még papírt!”. A WC-ből **zöldes szagfelhő** gomolyog ki: lassan felszálló, terjedő zöld pamacsok az ajtón és a kis ablakon át, átér az előszobába is. Angi az orrát fogja: „Petya, az ég szerelmére, nyiss ablakot!”
-6. **Izometrikus nézetben jól látszik:** a WC fala átlátszó lesz (a falak most is ilyenek), így látni, ahogy apa szenved; a szagfelhő a falakon kívül is látszik. A jelenet kb. 40–60 mp, közben Petyus szabadon mozoghat (belső nézetben a WC ajtajánál hallani is). Ha a **WC-papír** közben nincs a WC-ben (Petyus elvitte – leltár), apa külön kiabál érte: „PAPÍRT!!” – Petyus beviheti (lerakóhely a WC-ben), vagy hagyhatja.
-7. **Vége:** apa kijön (sápadtan, görnyedt, lassú járással): „Ma kések a munkából. És te is az iskolából.” → **késés** (+15 perc).
-
-**Csillagok:**
-- ★ apa a WC-re rohan (a tejszínes kávé hatott);
-- ★★ első próbálkozásra sikerült (nem volt tejszínhabos visszaküldés);
-- ★★★ és senki nem látta, ahogy a tejszínt a bögrébe tölti (Angi nem volt a konyhában, vagy háttal állt – Angi „látómezeje” egy kúp a nézési irányában).
-
-**Technika (új elemek):**
-- apa új állapotai: `coffeeAsk → drinking → growl (1…5) → rushWC → onWC → limpBack` (útvonal a WC-ig: konyha → előtér → WC-ajtó);
-- „apa helye” lerakóhely (csak a bögre), a bögre kimosása (nyitott csapnál F), a bögre „tiszta / habos” állapota;
-- **letolt pizsamanadrág:** a pizsama-shaderben egy `pantsDown` jel – ilyenkor a comb bőrszínt kap, és a térdcsonthoz (`rig.knee`) kötve egy gyűrött nadrág-gyűrű jelenik meg; ülés a WC-n a WC magasságára (0,42 m);
-- pukik és gyomormorgás: új szintetizált hangok (`audio.js`); szagfelhő: zöld részecskék (`spawnFx`), lassan emelkedő, nagyobbodó, halványuló pamacsok.
-
-#### 2. „Karcsi nagy szökése” (`r2-karcsi`) – **kész** (`src/ep2/runaway.js`, `karcsi.js`, `navgrid.js`)
-
-**Alaphelyzet:** Karcsi a kalitkában, Petyus szobájában. Angi fél az egerektől és minden „kis szőröstől” – reggel el is mondja: „Ha az a malac még egyszer kiszökik, én elköltözöm!”
-
-**Menet:**
-1. Petyus kinyitja a kalitka ajtaját (E – megvan), és **kiveszi Karcsit** (Karcsi a leltárba kerül 🐹). Ha Karcsi épp a házikójában bújik, várni kell, vagy egy **répával** (új tárgy a hűtőből 🥕) ki kell csalogatni.
-2. Petyus bárhol **leteszi** Karcsit a padlóra (F). Karcsi magától futkos a lakásban: bútorok alá bújik (ágy, kanapé, szekrény), szaglászik, visít („UÍ-UÍ!”), és a répa felé szalad, ha Petyus leteszi.
-3. **Ha Karcsi a konyhába, Angi lábához ér:** Angi felsikít („ÁÁÁÁÁ! EGY PATKÁNY!!” – Petyus: „Anya, ez Karcsi!”), **felugrik egy székre**, és onnan nem jön le, amíg Karcsi a konyhában van. Közben a reggeli odaég a tűzhelyen (füst; apa: „Ég a rántotta!”).
-4. **Apa** feláll, és **négykézláb kergeti** Karcsit a lakásban („Gyere ide, te kis… szőrgombóc!”): mulatságos négykézláb járás, az asztal alatt beüti a fejét („Au!”). Karcsi mindig a legközelebbi búvóhelyre menekül.
-5. **Vége:** apa (vagy Petyus) elkapja Karcsit, és visszateszi a kalitkába; Angi: „Petyus! Délután nincs Xbox!” → **késés** (+10 perc).
-
-**Csillagok:**
-- ★ Karcsi szabadon a lakásban;
-- ★★ Angi a székre ugrik;
-- ★★★ és Karcsi legalább 60 mp-ig szabad marad, mielőtt apa elkapja (minél jobb búvóhelyre fut, annál tovább tart).
-
-**Technika:** Karcsi kiléphet a kalitkából (a `karcsi.js` mozgása a padlón is: célpontok – búvóhelyek, répa, az emberek elkerülése, vagy épp Angi lába); Karcsi és a répa felvehető tárgy a leltárban; Angi „széken állás” póza (a szék tetején, karok a feje fölött); apa négykézláb járása (comb és kar is előre, a test vízszintesen).
-
-#### 3. „Hol a kulcs, Angi?” (`r2-kulcs`) – **kész** (`src/ep2/keyhunt.js`)
-
-**Alaphelyzet:** Angi kulcscsomója az előszobában a cipősszekrény tetején van (a modellen most is van ott egy kulcs – felvehető tárgy lesz 🔑). Angi reggel többször kérdezi: „Petya, nem láttad a kulcsomat?” (ez a sora már megvan) – innen az ötlet.
-
-**Menet:**
-1. Petyus felveszi a kulcsot (E), és **elrejti** valahol (F): hűtő, mikró, a mosógép dobja, kád, Karcsi kalitkája, a kanapé párnája alá, a fotelbe, a cipősszekrénybe, az íróasztal fiókjába, a WC-tartályra…
-2. Amikor közeledik az indulás (vagy Angi a kulcsért megy), **Angi keresni kezd**: sorra járja a „logikus” helyeket (cipősszekrény → kabátzseb a fogason → táska → konyhapult → asztal → kanapé → …), mindegyiknél kicsit kotorászik (fiókot nyit, párnákat emelget), és egyre idegesebb („Itt volt! Itt volt a kezemben!”, „Petya, te tetted el?!”, „Ez a ház megeszi a kulcsaimat!”).
-3. **A rejtekhelytől függ, meddig keres:** a szokásos helyeken hamar megtalálja; a fura helyeken (hűtő, mosógép, Karcsi kalitkája, mikró) csak a sor végén. A legvégén: „A kulcsom… a HŰTŐBEN?! … PETYA!!” – és **apát hibáztatja** („Megint te pakoltad el a bevásárlással együtt!”), apa értetlenül tiltakozik. Petyus közben fütyörészik.
-4. Petyus **segíthet** is: Angi mellett E-vel tippet adhat („Anya, nem a hűtőben van?”) – Angi azonnal odamegy, de a ★★★ elvész (gyanús lesz: „Honnan tudtad?…”).
-5. **Vége:** megvan a kulcs → **késés** (a keresés ideje szerint +5…+20 perc).
-
-**Csillagok:**
-- ★ Angi keresni kezdi a kulcsot (el van rejtve);
-- ★★ 2 percnél tovább keres;
-- ★★★ a kulcs fura helyen volt (hűtő, mikró, mosógép, Karcsi kalitkája), és Angi végül apát hibáztatja (Petyus nem árulta el magát).
-
-**Technika:** a kulcs új leltártárgy (minden lerakóhely elfogadja, plusz új rejtekhelyek: kanapé, fotel, fiók, mosógép); Angi keresési útvonala és „kotorászás” mozdulatai (lehajolás, fiók- és szekrényajtó nyitása – az ajtók már nyithatók); a keresés ideje rejtekhelyenként.
-
-### A reggel vége, a késés
-- Az indulást továbbra is a játékos dönti el (a bejárati ajtónál – ha már nem pizsamában van; az átöltözés még hátravan).
-- A csibészségek késése összeadódik; 7:30 után indulva „Elkéstünk!” átvezető, az iskolában következménnyel (később).
-- Egy reggelen mindhárom elvégezhető, de nem kötelező egyszerre: a naptár napjain bármikor, és – mint az 1. részben – a legjobb eredmény számít.
-
-## Technikai terv (váz)
-
-1. ✅ **Részek szétválasztása:** ma a játék egyetlen pályára (a parkra) épül. Kell egy rész/helyszín-betöltő: a közös motor (rigek, `Actor`, buborékok, input, minőség, kamera, csibészség-rendszer) marad, a világ (`world.js` park) és a rész-specifikus tevékenységek részenként külön modulba kerülnek (pl. `src/ep1/…` és `src/ep2/…`), és a kezdőképernyőről indított rész tölti be a sajátját.
-2. ✅ **Csibészség-rendszer részenként:** `MISCHIEFS` és a mentési kulcs részenként; az összesítés (⭐) részenként és összesen.
-3. ✅ **Megnyitás + fejlesztői elérés** (fent).
-4. ◐ **Naptár és napszakok** (a naptár, az óra és a HUD kész; a napok léptetése, az átvezetők még nem): állapot (`nap`, `napszak`, játékóra), mentés `localStorage`-ba, HUD-elem, átvezetők a váltáshoz.
-5. ✅ **Otthon – reggel:** a lakás voxelből az alaprajz alapján (falak, ajtók, ablakok, padló, bútorok), babaház-nézet, reggeli fények, Petyus/Petya/Angi elhelyezése, mozgás, ütközés. **← ez az első fejlesztési lépés.**
-6. ◐ Iskola, délutáni otthon (⬜), csibészségek (✅ a reggeliek) – később.
-
-## Első lépés – kész ✅
+### Ami elkészült  ✅
 
 - **Kód:** `src/ep2/ep2.js` (indítás: a park eltűnik, a lakás jön – `startEp2()`; fő lépés: `stepEp2(dt)` a `main.js`-ből, ha `G.episode === 2`; naptár + óra a HUD-on; apa és anya szövegei; ajtók: kopogás a testvérnél, a bejárati ajtó „Pizsamában?!”), `src/ep2/home.js` (szobák `ROOMS`, falak `WALLS` ajtókkal/ablakokkal, padlók, bútorok, erkélyek, ütközők; a belső falak lesüllyednek, ha Petyus vagy a szobája mögöttük van – `updateHome`), `src/ep2/pajama.js` (a ruha átszínezése vertex-színekben + minta a shaderben: Petyus csíkos, apa kockás, anya pöttyös), `src/voxels-home.js` (22 bútor a katalógusban, „Lakás” kategória).
 - **Megnyitás:** a szeptemberi csempe (`need: 15` az `EPISODES`-ban) zárva „🔒 15 ⭐ kell (most: x)”; ha megvan, indítható. Fejlesztői szerveren mindig nyitva („DEV: nyitva”), és `?resz=2` egyből indítja; a buildben ez nincs benne (ellenőrizve).
@@ -198,11 +200,24 @@ Mindhárom a meglévő lakásra épül (leltár, eszközök, ajtók, Karcsi). K�
 - **Azóta kész:** ✅ a telefonos gombfeliratok, ✅ a három reggeli csibészség, ✅ hangok és beszédhang, ✅ a belső nézetben nagyobb szögben lehet le- és felnézni (kb. ±80°).
 - **Még nincs:** ⬜ átöltözés, ⬜ iskolatáska/cipő és indulás az iskolába, ⬜ a napok léptetése, ⬜ „Új rész nyílt meg!” jelzés.
 
-## Első lépés (eredeti leírás)
+### Az eredeti első lépés
 
 A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (`?resz=2`) betölthető lakás az alaprajz szerint, berendezve, reggeli fényekkel, a három szereplővel; Petyus irányítható, a falak és bútorok ütköznek. A megnyitási feltétel (15 ⭐) és a kezdőképernyő-csempe ugyanebben a körben.
 
-## Döntések (a kérdésekre adott válaszok)
+## Helyszín: Iskola  ⬜ még nincs
+
+Később részletezzük (osztályterem, folyosó, udvar/tornaterem, ebédlő?). A 4 iskolai csibészség és a tanár(ok) / osztálytársak itt jönnek majd.
+
+## Fejlesztési lépések
+
+1. ✅ **Részek szétválasztása** (kész: `src/ep2/…`, `startEp2` / `stepEp2`): egy rész/helyszín-betöltő – a közös motor (rigek, `Actor`, buborékok, input, minőség, kamera, csibészség-rendszer) marad, a világ (`world.js` park) és a rész-specifikus tevékenységek részenként külön modulba kerülnek (pl. `src/ep1/…` és `src/ep2/…`), és a kezdőképernyőről indított rész tölti be a sajátját.
+2. ✅ **Csibészség-rendszer részenként:** `MISCHIEFS` és a mentési kulcs részenként; az összesítés (⭐) részenként és összesen.
+3. ✅ **Megnyitás + fejlesztői elérés** (fent).
+4. ◐ **Naptár és napszakok** (a naptár, az óra és a HUD kész; a napok léptetése, az átvezetők még nem): állapot (`nap`, `napszak`, játékóra), mentés `localStorage`-ba, HUD-elem, átvezetők a váltáshoz.
+5. ✅ **Otthon – reggel:** a lakás voxelből az alaprajz alapján (falak, ajtók, ablakok, padló, bútorok), babaház-nézet, reggeli fények, Petyus/Petya/Angi elhelyezése, mozgás, ütközés.
+6. ◐ Iskola, délutáni otthon (⬜), csibészségek (✅ a reggeliek) – később.
+
+## Döntések
 
 1. **Utolsó nap:** 2026. szeptember 30. (szerda).
 2. **Hétvégék:** benne vannak; szombaton–vasárnap csak otthon reggel és otthon délután, a köztes program helyett átvezető képernyő.
@@ -210,7 +225,7 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 4. **Indulás:** a játékos dönti el, mikor indul.
 5. **Ruhák:** reggel pizsama mindhármuknak; később átöltözés iskolai (Petyus) és munkaruhába (Petya, Angi).
 
-## Javítandók (felvéve: 2026. 11. 23.)
+## Javítandók (felvéve: 2026. 11. 23.)  ✅ mind kész
 
 - [x] **Interakció-feliratok:** az egyes interakciók feliratai itt is pontosak legyenek – a súgósor (`#prompt`) és a telefonos gombok (HASZNÁL / RÚGÁS helyén az aktuális művelet) is (`ep2.js` `interactHome`). ✅ Telefonon a súgósor a gombok nevét írja (nincs E / F / Szóköz), a HASZNÁL gomb a műveletet (NYIT, ZÁR, BE, KI, FELVESZ, VILLANY, KOPOG, LEÜL …), a RÚGÁS gomb az F-ét (KÁVÉ, TÖLT, LERAK, ODAAD …) vagy a második műveletet (START, LEHÚZÁS).
 - [x] **Hűtő:** a tej, a tejszín és a tejszínhab a második polcon legyen (most a jobb ajtó alsó rekeszében vannak – `appliances.js` hűtő, `inventory.js` `places.fridge` helyei). ✅ A második polc elején (saját helyük), a sajt és a szalámi az első polcon, az ajtórekeszben palackok.
