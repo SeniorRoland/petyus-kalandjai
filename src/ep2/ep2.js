@@ -288,7 +288,7 @@ function interactHome() {
     let bd = 1e9;
     for (const c of cands) if (c.r < c.reach && c.r < bd) { bd = c.r; best = c.o; }
   }
-  const act = invAction(p, fp.on ? (w) => lookAngle(w, 0.1) < 1e8 : null);   // what F would do with the selected thing here (aimed in first person)
+  const act = invAction(p, fp.on ? (w, size = 0.1) => lookAngle(w, size) < 1e8 : null);   // what F would do with the selected thing here (aimed in first person)
   let txt = '';
   // next to the toilet: Space (on touch: the LEHÚZÁS button) flushes
   // (a device with a second action – the microwave – uses Space too; on touch the RÚGÁS button shows that action's name)
@@ -333,9 +333,24 @@ function interactHome() {
       if (G.usePressed) { toggleDoor(d); sClick(); }
     }
   }
-  if (act && !isTouch) txt += (txt ? ' · ' : '') + 'F – ' + act.label;
+  // touch screens: no E / F / Space keys – the prompt names the on-screen buttons, and the HASZNÁL button says what it does
+  // (NYIT, ZÁR, BE, KI, FELVESZ, VILLANY, KOPOG …); the action of F (and of a device's second action) is the RÚGÁS button's
+  if (isTouch) {
+    const short = touchVerb(txt);
+    txt = txt.replace(/^E – /, short + ' – ');
+    if (best && best.dev && best.dev.alt) txt += ' · ' + best.dev.alt.label().replace(/^Szóköz – /, best.dev.alt.short() + ' – ');
+    if (best && best.seat) txt += ' · LEHÚZÁS – lehúzás';
+    if (act && !altBusy) txt += (txt ? ' · ' : '') + act.short + ' – ' + act.label;
+    const ub = $('useBtn'); if (ub && ub.textContent !== short) { ub.textContent = short; ub.classList.toggle('long', short.length > 7); }
+  } else if (act) txt += (txt ? ' · ' : '') + 'F – ' + act.label;
   setPrompt(txt);
+  if (isTouch && !best) $('useBtn').style.display = 'none';   // only F's action here: the RÚGÁS button does it
 }
+// the HASZNÁL button's label from a prompt ('E – hűtő kinyitása' → NYIT …)
+const VERBS = [[/felvétele/, 'FELVESZ'], [/kinyitása|megnyitása|felnyitása/, 'NYIT'], [/becsukása|elzárása/, 'ZÁR'], [/bekapcsolása|indítása/, 'BE'],
+  [/kikapcsolása|leállítása/, 'KI'], [/felhajtása/, 'FELHAJT'], [/lehajtása/, 'LEHAJT'], [/leülés/, 'LEÜL'], [/felállás/, 'FELÁLL'],
+  [/villany/, 'VILLANY'], [/kopogás/, 'KOPOG'], [/indulás/, 'INDULÁS']];
+function touchVerb(txt) { const m = /^E – (.*?)( · |$)/.exec(txt); if (!m) return 'HASZNÁL'; for (const [re, v] of VERBS) if (re.test(m[1])) return v; return 'HASZNÁL'; }
 // a short click (switch, door handle)
 function sClick() { tone('square', 1400, 900, 0.03, 0.04); }
 
