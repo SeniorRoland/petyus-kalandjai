@@ -171,6 +171,13 @@ export function napkins() { return mesh(new THREE.BoxGeometry(0.1, 0.012, 0.1), 
 // place a built thing (a Group) into a parent at x, y, z, turned ry
 export function at(parent, obj, x, y, z, ry = 0) { obj.position.set(x, y, z); obj.rotation.y = ry; parent.add(obj); return obj; }
 
+// a carrot (with its green top): Karcsi's favourite – lying on its side
+export function carrot() {
+  const g = grp();
+  const c = mesh(new THREE.ConeGeometry(0.022, 0.15, 10), mat(0xf08a24), 0, 0.022, 0); c.rotation.z = Math.PI / 2; g.add(c);
+  for (const a of [-0.5, 0, 0.5]) { const l = mesh(new THREE.BoxGeometry(0.05, 0.006, 0.012), mat(0x5fae6a), -0.095, 0.025, a * 0.02); l.rotation.y = a; g.add(l); }
+  return g;
+}
 // a toilet roll: white paper round a cardboard core (radius 5.5 cm, 10 cm tall, standing; turn it for a holder's arm)
 export function toiletRoll() {
   const g = new THREE.Group();

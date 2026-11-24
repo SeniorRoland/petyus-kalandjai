@@ -20,7 +20,7 @@ export const FY = 6;
 export const homeRoot = new THREE.Group(); homeRoot.position.y = FY;
 const TE = 0.25, CUT = 0.17, FADE = 0.16, FADE_OUT = 0.2;   // outer wall thickness, a sunk wall's height (× WALL_H), a see-through (inner / outer) wall's opacity
 export const wallView = { mode: 'fade' };   // 'fade' | 'sink'
-const XE = 15.6, ZS = 9.2;   // the flat's inner east and south edges
+export const XE = 15.6, ZS = 9.2;   // the flat's inner east and south edges
 
 // ---------------------------------------------------------------- rooms (inner floor areas)
 export const ROOMS = [
