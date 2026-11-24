@@ -46,13 +46,15 @@ export class Actor {
     if (r.foot) for (let i = 0; i < 2; i++) r.foot[i].rotation.x = 0;
     if (this.sit > 0) {
       // the hip joint (the middle of the thigh) is half a thigh above the seat, so the thighs rest on it, not in it
-      const hy = this.seatH + (r.thighR || 0), s = smooth(this.sit), kneeSit = sitKnee(r, hy + 0.04);
-      // short legs on a high seat (Angi): the thighs slope down until the soles reach the floor (instead of dangling)
-      const drop = r.kneeH ? hy - r.kneeH : 0, thigh = (r.hipH || 0) - (r.kneeH || 0);
-      const tilt = drop > 0 && thigh > 0.05 ? Math.asin(Math.min(0.8, drop / thigh)) : 0;
+      const hy = this.seatH + (r.thighR || 0) + 0.02, s = smooth(this.sit), kneeSit = sitKnee(r, hy + 0.04);
+      // the thighs lie flat on the seat (sloping them down would cut into its front edge). Legs too short for the seat (the
+      // stylised models): the soles don't reach – the feet point down, so the toes touch the floor (sitting on tiptoe)
+      // (the toe tip, footLen from the ankle, lies on the floor with the ankle at ankleH: turn the foot down until it does again)
+      const dangle = r.kneeH ? hy - r.kneeH : 0, a0 = r.ankleH || 0;
+      const toe = dangle > 0.005 && r.footLen ? Math.asin(Math.min(0.97, (a0 + dangle) / r.footLen)) - Math.asin(Math.min(0.97, a0 / r.footLen)) : 0;
       for (let i = 0; i < 2; i++) {
-        r.hip[i].rotation.x = lerp(r.hip[i].rotation.x, -1.5 + tilt, s); r.knee[i].rotation.x = lerp(r.knee[i].rotation.x, kneeSit - tilt, s); r.sh[i].rotation.x = lerp(r.sh[i].rotation.x, -0.35, s);
-        if (r.foot) r.foot[i].rotation.x = (1.5 - kneeSit) * s;   // keep the sole flat on the ground
+        r.hip[i].rotation.x = lerp(r.hip[i].rotation.x, -Math.PI / 2, s); r.knee[i].rotation.x = lerp(r.knee[i].rotation.x, kneeSit, s); r.sh[i].rotation.x = lerp(r.sh[i].rotation.x, -0.35, s);
+        if (r.foot) r.foot[i].rotation.x = (Math.PI / 2 - kneeSit + toe) * s;   // the sole flat on the ground (or the toes down)
       }
       r.inner.position.y = lerp(r.inner.position.y, hy - r.hipH, s);
       r.inner.position.z = lerp(0, -0.05, s);
