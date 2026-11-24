@@ -182,11 +182,12 @@ export function keyRing() {
   g.add(mesh(new THREE.BoxGeometry(0.03, 0.012, 0.045), mat(0xf28cb1), -0.035, 0.007, 0.01));
   return g;
 }
-// a carrot (with its green top): Karcsi's favourite – lying on its side
+// a carrot (with its leafy green top): Karcsi's favourite – lying on its side, along x; a big one, so it shows on the floor
 export function carrot() {
   const g = grp();
-  const c = mesh(new THREE.ConeGeometry(0.022, 0.15, 10), mat(0xf08a24), 0, 0.022, 0); c.rotation.z = Math.PI / 2; g.add(c);
-  for (const a of [-0.5, 0, 0.5]) { const l = mesh(new THREE.BoxGeometry(0.05, 0.006, 0.012), mat(0x5fae6a), -0.095, 0.025, a * 0.02); l.rotation.y = a; g.add(l); }
+  const c = mesh(new THREE.ConeGeometry(0.031, 0.21, 12), mat(0xff7f11), 0, 0.031, 0); c.rotation.z = Math.PI / 2; g.add(c);
+  for (const t of [-0.06, -0.01, 0.04]) g.add(mesh(new THREE.TorusGeometry(0.03 - (t + 0.06) * 0.09, 0.0025, 4, 12), mat(0xd96a08), t, 0.031, 0)).children.at(-1).rotation.y = Math.PI / 2;   // rings
+  for (const a of [-0.55, -0.2, 0.2, 0.55]) { const l = mesh(new THREE.BoxGeometry(0.075, 0.008, 0.016), mat(0x4caf50), -0.14, 0.036, a * 0.03); l.rotation.y = a; g.add(l); }
   return g;
 }
 // a toilet roll: white paper round a cardboard core (radius 5.5 cm, 10 cm tall, standing; turn it for a holder's arm)
