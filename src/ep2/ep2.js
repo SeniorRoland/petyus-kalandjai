@@ -17,7 +17,7 @@ import { setPrompt } from '../activities/drinking.js';
 import { FY, SPOTS, roomAt, buildHome, lightPool, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, flushToilet, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
 import { noise, sStep, setMasterVol, setOutdoor, tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
-import { buildAppliances, devices, seating, updateAppliances } from './appliances.js';
+import { buildAppliances, devices, fx, seating, updateAppliances } from './appliances.js';
 import { buildInventory, cycleItem, holdingController, inv, invAction, invTake, itemObj, pickLabel, pickUp, pickables, selectItem, updateInventory } from './inventory.js';
 import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, wheek } from './karcsi.js';
 import { dressPajama } from './pajama.js';
@@ -365,18 +365,52 @@ function touchVerb(txt) { const m = /^E – (.*?)( · |$)/.exec(txt); if (!m) re
 // a short click (switch, door handle)
 function sClick() { tone('square', 1400, 900, 0.03, 0.04); }
 
+// ---------------------------------------------------------------- mum's morning: at the cooktop; now and then to the fridge – she
+// opens it, looks around in it, shuts it and goes back. When Petyus stands in front of the fridge she does not go there: she
+// busies herself at the sink, the kettle or the cooktop instead. (Karcsi hears the fridge: wheek.)
+const MOM_JOBS = { sink: { x: 8.6, z: 0.95, h: Math.PI }, kettle: { x: 9.3, z: 0.9, h: Math.PI }, cooktop: { x: 7.75, z: 0.95, h: Math.PI } };
+const FRIDGE_FRONT = { x: 6.55, z: 1.5 };
+const petyusAtFridge = () => Math.hypot(G.petike.pos.x - FRIDGE_FRONT.x, G.petike.pos.z - FRIDGE_FRONT.z) < 1.3;
+function momRoutine(dt) {
+  const m = G.angi;
+  if (momBusy() || keyBusy()) { if (fx.fridge && ep2.momAt === 'fridge' && fx.fridge.open() && !petyusAtFridge()) fx.fridge.setOpen(false); return; }
+  ep2.momT -= dt;
+  // on the way to the fridge, Petyus steps in front of it: she turns to something else
+  if (ep2.momAt === 'toFridge' && m.path && petyusAtFridge()) { momJob(); return; }
+  if (ep2.momAt === 'toFridge' && !m.path) { ep2.momAt = 'fridge'; ep2.momT = 2.5 + Math.random() * 1.5; fx.fridge.setOpen(true); wheek(); }
+  if (ep2.momAt === 'toJob' && !m.path) { ep2.momAt = 'job'; ep2.momT = 3 + Math.random() * 2; }
+  if (ep2.momAt === 'job' && ep2.momJob === 'sink' && Math.random() < dt * 1.5) noise(0.4, 1800, 0.6, 0.03);   // a little water
+  if (ep2.momT > 0 || m.path) {
+    if (!m.path && ep2.momAt !== 'fridge') m.targetHeading = ep2.momAt === 'job' ? MOM_JOBS[ep2.momJob].h : Math.PI;   // the counter (north)
+    return;
+  }
+  // the time is up for what she is doing
+  if (ep2.momAt === 'fridge') { fx.fridge.setOpen(false); goCook(); }
+  else if (ep2.momAt === 'job') goCook();
+  else if (ep2.momAt === 'cook') {
+    if (petyusAtFridge()) momJob();
+    else { ep2.momAt = 'toFridge'; m.walkTo([[FRIDGE_FRONT.x, FRIDGE_FRONT.z]], 1.2); }
+  }
+}
+function goCook() { ep2.momAt = 'cook'; ep2.momT = 10 + Math.random() * 8; G.angi.walkTo([[SPOTS.momCook.x, SPOTS.momCook.z]], 1.2); }
+function momJob() {
+  const k = pick(['sink', 'kettle', 'cooktop']), j = MOM_JOBS[k];
+  ep2.momAt = 'toJob'; ep2.momJob = k; G.angi.walkTo([[j.x, j.z]], 1.2);
+}
+// at the open fridge: facing it, bending a little to look in, a hand on the door
+function momLook() {
+  const m = G.angi, r = m.rig, w = Math.sin(G.clockT * 2.2);
+  m.targetHeading = -Math.PI / 2; m.heading = dampAngle(m.heading, -Math.PI / 2, 8, 1 / 60);
+  r.inner.rotation.x = 0.18 + w * 0.05; r.sh[1].rotation.x = -1.2; r.sh[0].rotation.x = -0.5 + w * 0.2; m.sync();
+}
+
 // ---------------------------------------------------------------- the parents
 function updateParents(dt) {
   G.petya.update(dt); coffeeTick(dt);   // the creamy coffee may take dad over (coffee.js)
   const m = G.angi;
-  // mum: at the cooktop, now and then to the fridge and back (Karcsi hears the fridge: wheek)
-  ep2.momT -= dt;
-  if (!momBusy() && !keyBusy() && ep2.momT <= 0 && !m.path) {
-    ep2.momT = 10 + Math.random() * 8;
-    if (ep2.momAt === 'cook') { m.walkTo([[SPOTS.momFridge.x, SPOTS.momFridge.z]], 1.2); ep2.momAt = 'fridge'; setTimeout(wheek, 1800); } else { m.walkTo([[SPOTS.momCook.x, SPOTS.momCook.z]], 1.2); ep2.momAt = 'cook'; }
-  }
-  if (!m.path && !momBusy() && !keyBusy()) m.targetHeading = ep2.momAt === 'fridge' ? -Math.PI / 2 : Math.PI;   // facing the fridge (west) or the counter (north)
+  momRoutine(dt);
   m.update(dt);
+  if (ep2.momAt === 'fridge' && !m.path && !momBusy() && !keyBusy()) momLook();
   runawayTick(dt);   // „Karcsi nagy szökése”: mum on the chair, dad on all fours (runaway.js)
   keyTick(dt);       // „Hol a kulcs, Angi?”: mum looking for her keys (keyhunt.js)
   // talking: dad (and now and then mum), more often when Petyus is close

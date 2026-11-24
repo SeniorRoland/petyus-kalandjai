@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { spawnFx } from '../actors.js';
 import { noise, tone } from '../audio.js';
-import { G } from '../state.js';
+import { G, ROLLER_SCALE } from '../state.js';
 import { say } from '../ui.js';
 import { V3, damp } from '../util.js';
 import { VoxelGrid } from '../voxels.js';
@@ -118,7 +118,9 @@ function buildFridge(x, z, rot) {
         if ((st.capT -= dt) <= 0) { st.capT = 3.6; say({ headWorld: (o) => o.copy(toWorld(grp, 0, 1.95, 0.2)) }, 'BÍP-BÍP!', 1.2); }
       } else { st.beepT = 0; st.capT = 0; }
     } });
-  fx.fridge = { grp, door: Rr, isOpen: () => st.open && st.t > 0.6 }; fx.dairy = { milk, cream, whip };
+  // (mum opens and closes it too – ep2.js)
+  const setOpen = (v) => { if (st.open === v) return; st.open = v; tone('sine', v ? 220 : 160, v ? 180 : 120, 0.12, 0.08); if (!v) noise(0.08, 400, 1, 0.12); };
+  fx.fridge = { grp, door: Rr, isOpen: () => st.open && st.t > 0.6, open: () => st.open, setOpen }; fx.dairy = { milk, cream, whip };
 }
 
 // ---------------------------------------------------------------- the microwave (on the counter): door, turntable, display, a cup and a plate
@@ -200,6 +202,29 @@ function buildMicrowave(x, z, rot, y) {
 }
 
 // ---------------------------------------------------------------- the kettle (on the counter): blue light, it boils, clicks off
+// ---------------------------------------------------------------- Petyus's scooter (the one from the park) with his helmet on the handlebar
+function buildScooterCorner(x, z) {
+  if (!G.rollerModel) return;
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.set(0, Math.PI, 0.1, 'YXZ');   // handlebar towards the wall (south), leaning on its stand
+  const m = G.rollerModel.clone(true); m.scale.setScalar(ROLLER_SCALE); m.rotation.y = Math.PI / 2; m.position.x = 0.07 * ROLLER_SCALE;
+  g.add(m); homeRoot.add(g); g.updateMatrixWorld(true);
+  m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  // the top of the handlebar: the highest vertices' middle (in the group's frame)
+  const top = new THREE.Vector3(), v = new THREE.Vector3(), inv = new THREE.Matrix4().copy(g.matrixWorld).invert(); let maxY = -1e9, n = 0;
+  m.traverse((o) => { if (!o.isMesh) return; const P = o.geometry.attributes.position; for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld).applyMatrix4(inv); if (v.y > maxY + 0.02) { maxY = v.y; top.set(0, 0, 0); n = 0; } if (v.y > maxY - 0.03) { top.add(v); n++; } } });
+  if (n) top.divideScalar(n);
+  // the helmet: a blue shell with an orange stripe, vents, a visor and the straps; hanging on the handlebar
+  const helmet = new THREE.Group();
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(0.13, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x2f6fd6 })); shell.scale.set(1, 0.9, 1.15); helmet.add(shell);
+  const stripe = new THREE.Mesh(new THREE.SphereGeometry(0.132, 18, 10, -0.18, 0.36, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0xff7a3d })); stripe.scale.set(1, 0.9, 1.15); helmet.add(stripe);
+  for (const a of [-0.6, 0.6]) { const vent = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.012, 0.09), new THREE.MeshLambertMaterial({ color: 0x1b2a40 })); vent.position.set(Math.sin(a) * 0.1, 0.085, 0); vent.rotation.z = -a; helmet.add(vent); }
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.012, 0.05), new THREE.MeshLambertMaterial({ color: 0x1b2a40 })); visor.position.set(0, 0.01, 0.15); visor.rotation.x = 0.25; helmet.add(visor);
+  for (const s of [-1, 1]) { const strap = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.14, 0.015), new THREE.MeshLambertMaterial({ color: 0x222222 })); strap.position.set(s * 0.1, -0.06, 0.02); strap.rotation.z = s * 0.25; helmet.add(strap); }
+  helmet.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  helmet.position.set(top.x, top.y - 0.02, top.z); helmet.rotation.set(0.5, 0.4, 0);
+  g.add(helmet);
+  addBoxCol(x - 0.3, z - 0.5, x + 0.3, z + 0.5, 1.0);
+}
 function buildKettle(x, z, rot, y) {
   const s = 0.0125, grp = group(x, z, rot, y), STEEL = 0xc9ced3;
   grp.add(vox(s, (g) => {
@@ -555,6 +580,7 @@ export function buildAppliances() {
   buildFridge(5.76, 1.5, E);
   buildMicrowave(6.45, 0.25, 0, 0.93);
   buildKettle(9.3, 0.22, 0, 0.93);
+  buildScooterCorner(15.2, 3.72);   // Petyus's scooter and helmet, between the wardrobe and the east wall
   buildCooktop(7.6, 0.31, 0, 0.93);
   fx.sinkTap = buildTap(8.6, 0.31, 0, 0, 'mosogatócsap', 0.36, { x: 0, z: 0.65, r: 0.7 }); devices[devices.length - 1].aim = new V3(8.6, 1.0, 0.2);
   { const t = homeRoot.children[homeRoot.children.length - 1]; t.children[0].position.set(0, 1.15, -0.1); }   // the kitchen jet: from the spout into the basin
