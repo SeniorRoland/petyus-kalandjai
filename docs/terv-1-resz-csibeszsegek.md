@@ -116,8 +116,8 @@ Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni
 
 ## Javítandók (felvéve: 2026. 11. 23.)
 
-- [ ] **Fotóbomba csak 3 csillagig:** Angi addig hív magától fotózni a szökőkúthoz, amíg Petyus el nem érte a ★★★-ot a fotóbombában; utána már nem (`activities/photo.js`, `photoTick` – a mentett eredmény a `mischief.js`-ben).
-- [ ] **Telefonos gombfeliratok:** az érintéses gombok felirata nem mindig a valódi műveletet mutatja – pl. az ivókútnál „RÚGÁS” áll a fröcskölés helyett. Minden helyzetben a tényleges műveletet írja ki (`touchui.js` `updateTouchUI`, `touchText()` a `util.js`-ben).
-- [ ] **Labda visszahívása telefonon:** messzire rúgott labda után nincs gomb a visszaszerzésére (böngészőben ez az **R**). Kell egy érintéses gomb is („LABDA IDE”).
-- [ ] **Pénzhalászat vége:** utána Petyus kerülje ki a szökőkutat (ne menjen át rajta), és a fagyis kocsi ne a virágágyásba álljon, hanem a járdára (`activities/fish.js`).
-- [ ] **Ülés a padon:** a padon ülő Petya és Angi lába ne lógjon bele a padba (ülőmagasság / comb-lábszár póz a padon – `actors.js` ülés, `sitKnee`).
+- [x] **Fotóbomba csak 3 csillagig:** Angi addig hív magától fotózni a szökőkúthoz, amíg Petyus el nem érte a ★★★-ot a fotóbombában; utána már nem (`activities/photo.js`, `photoTick` – `starsFor('fotobomba')` a `mischief.js`-ben). ✅
+- [x] **Telefonos gombfeliratok:** az érintéses gombok felirata nem mindig a valódi műveletet mutatja – pl. az ivókútnál „RÚGÁS” áll a fröcskölés helyett. Minden helyzetben a tényleges műveletet írja ki (`touchui.js` `updateTouchUI`, `touchText()` a `util.js`-ben). ✅ Az `interactions()` adja a `G.touchKick` / `G.touchUse` feliratot (FRÖCSKÖL, HALÁSZ, MORZSA · IVÁS, ROLLER, LUFI, DEKÁZÁS …; rolleren KUTYASZÁN / VERSENY / LESZÁLL), a súgósor is ezeket írja; a hosszú felirat kisebb betűvel.
+- [x] **Labda visszahívása telefonon:** messzire rúgott labda után nincs gomb a visszaszerzésére (böngészőben ez az **R**). Kell egy érintéses gomb is („LABDA IDE”). ✅ `#ballBtn` („⚽ IDE”): akkor látszik, ha a labda 7 m-nél messzebb van (vagy nincs játékban).
+- [x] **Pénzhalászat vége:** utána Petyus kerülje ki a szökőkutat (ne menjen át rajta), és a fagyis kocsi ne a virágágyásba álljon, hanem a járdára (`activities/fish.js`). ✅ A kocsi a szökőkúttól keletre, a kövezett úton áll meg (`CART`), az árus az utakon jön-megy, Petyus a gyűrűs úton kerüli meg a szökőkutat (`ringRoute`).
+- [x] **Ülés a padon:** a padon ülő Petya és Angi lába ne lógjon bele a padba (ülőmagasság / comb-lábszár póz a padon – `actors.js` ülés, `sitKnee`). ✅ Ülve a csípő a comb félvastagságával (`rig.thighR`) az ülés fölött van – minden ülésre (pad, szék, WC).

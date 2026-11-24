@@ -83,6 +83,7 @@ if (isTouch) {
   $('kickBtn').addEventListener('touchstart', (e) => { kickHeld = true; G.kickPressed = true; e.preventDefault(); }, { passive: false });
   $('kickBtn').addEventListener('touchend', (e) => { kickHeld = false; G.kickReleased = true; e.preventDefault(); }, { passive: false });
   $('useBtn').addEventListener('touchstart', (e) => { G.usePressed = true; e.preventDefault(); }, { passive: false });
+  $('ballBtn').addEventListener('touchstart', (e) => { if (G.pstate !== 'juggle' && G.episode !== 2) resetBallToPlayer(); e.preventDefault(); }, { passive: false });   // the R key on a keyboard
   for (const b of document.querySelectorAll('#jTouch button')) b.addEventListener('touchstart', (e) => { jugPress(b.dataset.k); e.preventDefault(); }, { passive: false });
   $('runBtn').addEventListener('touchstart', (e) => { G.runPressed = true; if (G.pstate === 'photo') { e.preventDefault(); return; }   // „Fotóbomba”: GRIMASZ
     touch.run = !touch.run; $('runBtn').style.background = touch.run ? 'rgba(255,122,61,.85)' : ''; e.preventDefault(); }, { passive: false });

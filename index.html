@@ -274,6 +274,11 @@
     background:rgba(255,122,61,.85); color:#fff; font-weight:bold; font-size:18px; box-shadow:0 6px 0 #b8501f; }
   #runBtn { position:fixed; right:150px; bottom:30px; width:76px; height:76px; border-radius:50%; z-index:11; border:0;
     background:rgba(43,45,66,.6); color:#fff; font-weight:bold; font-size:14px; }
+  /* long labels (FRÖCSKÖL, KUTYASZÁN …) in a smaller type, so they fit the round buttons */
+  #kickBtn.long { font-size:14px; } #useBtn.long, #runBtn.long { font-size:11px; }
+  /* the ball far away (kicked off): it comes back to Petyus (on a keyboard: R) */
+  #ballBtn { position:fixed; right:40px; bottom:166px; width:84px; height:44px; border-radius:22px; z-index:11; border:0; display:none;
+    background:rgba(255,255,255,.88); color:#151515; font-weight:bold; font-size:14px; box-shadow:0 4px 0 rgba(0,0,0,.25); }
   /* ---------- phones (body.mobile, quality.js MOBILE) ---------- */
   /* held upright during the game: the game waits, a notice asks to turn the phone */
   #rotate { position:fixed; inset:0; z-index:70; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px;
@@ -299,6 +304,8 @@
     #kickBtn { right:16px; bottom:18px; width:86px; height:86px; font-size:15px; }
     #useBtn { right:112px; bottom:86px; width:60px; height:60px; font-size:11px; }
     #runBtn { right:112px; bottom:14px; width:60px; height:60px; font-size:11px; }
+    #ballBtn { right:20px; bottom:112px; width:76px; height:36px; font-size:12px; }
+    #kickBtn.long { font-size:12px; } #useBtn.long, #runBtn.long { font-size:9px; }
     #polaroids { top:42px; } #polaroids .pol { width:78px; }
     #fishTip { top:42px; font-size:14px; }
     #big { font-size:min(18vh, 64px); }
@@ -382,6 +389,7 @@
   <button id="useBtn">HASZNÁL</button>
   <button id="runBtn">FUTÁS</button>
   <button id="kickBtn">RÚGÁS</button>
+  <button id="ballBtn">⚽ IDE</button>
 </div>
 
 <script type="module" src="/src/main.js"></script>

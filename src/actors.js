@@ -45,15 +45,16 @@ export class Actor {
     this.sit = clamp(this.sit + Math.sign(this.sitTarget - this.sit) * dt * 1.8, 0, 1);
     if (r.foot) for (let i = 0; i < 2; i++) r.foot[i].rotation.x = 0;
     if (this.sit > 0) {
-      const s = smooth(this.sit), kneeSit = sitKnee(r, this.seatH);
+      // the hip joint (the middle of the thigh) is half a thigh above the seat, so the thighs rest on it, not in it
+      const hy = this.seatH + (r.thighR || 0), s = smooth(this.sit), kneeSit = sitKnee(r, hy + 0.04);
       // short legs on a high seat (Angi): the thighs slope down until the soles reach the floor (instead of dangling)
-      const drop = r.kneeH ? (this.seatH - 0.04) - r.kneeH : 0, thigh = (r.hipH || 0) - (r.kneeH || 0);
+      const drop = r.kneeH ? hy - r.kneeH : 0, thigh = (r.hipH || 0) - (r.kneeH || 0);
       const tilt = drop > 0 && thigh > 0.05 ? Math.asin(Math.min(0.8, drop / thigh)) : 0;
       for (let i = 0; i < 2; i++) {
         r.hip[i].rotation.x = lerp(r.hip[i].rotation.x, -1.5 + tilt, s); r.knee[i].rotation.x = lerp(r.knee[i].rotation.x, kneeSit - tilt, s); r.sh[i].rotation.x = lerp(r.sh[i].rotation.x, -0.35, s);
         if (r.foot) r.foot[i].rotation.x = (1.5 - kneeSit) * s;   // keep the sole flat on the ground
       }
-      r.inner.position.y = lerp(r.inner.position.y, this.seatH - r.hipH, s);
+      r.inner.position.y = lerp(r.inner.position.y, hy - r.hipH, s);
       r.inner.position.z = lerp(0, -0.05, s);
     }
     if (this.cheer > 0) {

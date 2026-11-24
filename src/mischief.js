@@ -37,6 +37,8 @@ const starsOf = (b) => b.list.reduce((s, m) => s + ((b.saved[m.id] && b.saved[m.
 export const MAX_STARS = MISCHIEFS.length * 3;
 // part 1's stars (the September episode opens with 15 of them)
 export const totalStars = () => starsOf(BOOKS[1]);
+// the best stars of one mischief so far (0: not done yet)
+export const starsFor = (id) => { const b = bookOf(id); return (b && b.saved[id] && b.saved[id].stars) || 0; };
 export const doneCount = () => MISCHIEFS.filter((m) => BOOKS[1].saved[m.id]).length;
 
 // score a finished mischief: returns the stars of this attempt
