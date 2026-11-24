@@ -223,6 +223,10 @@
     border-radius:16px / 12px; box-shadow:8px 8px 0 #151515; padding:14px 18px 10px; font-family:'Patrick Hand', cursive; }
   #journal h2 { margin:0; font-family:'Bangers', Impact, sans-serif; font-weight:400; font-size:32px; letter-spacing:1px; }
   #jrSub { font-size:16px; color:#555; margin-top:-2px; }
+  /* one tab per episode: every part's mischiefs can be looked at (also from the start screen) */
+  #jrTabs { display:flex; gap:6px; flex-wrap:wrap; margin:6px 44px 8px 0; }
+  #jrTabs button { font-family:'Bangers', Impact, sans-serif; font-size:16px; letter-spacing:.6px; border:3px solid #151515; border-radius:10px; padding:3px 10px; background:#f1ead3; color:#151515; cursor:pointer; box-shadow:2px 2px 0 #151515; }
+  #jrTabs button.on { background:#ffd166; transform:translateY(-1px); }
   #jrSum { font-family:'Bangers', Impact, sans-serif; font-size:20px; letter-spacing:1px; color:#c2410c; margin:6px 0 4px; }
   #jrClose { position:absolute; top:8px; right:10px; border:3px solid #151515; background:#fff; border-radius:10px; font:inherit; font-size:20px; width:38px; height:38px; cursor:pointer; box-shadow:2px 2px 0 #151515; }
   .jr { display:flex; align-items:center; gap:10px; padding:4px 2px 5px; border-top:2px dashed #cfc6a8; }
@@ -338,7 +342,7 @@
 <div id="mAward"><div class="t1"></div><div class="t2"></div><div class="st"></div><div class="t3"></div></div>
 <div id="journal" role="dialog" aria-label="Csibészség-napló"><div class="book">
   <button id="jrClose" type="button" aria-label="Bezárás">✕</button>
-  <h2>📒 Csibészség-napló</h2><div id="jrSub">1. rész: Augusztus – Egy nap a parkban</div>
+  <h2>📒 Csibészség-napló</h2><div id="jrTabs"></div><div id="jrSub">1. rész: Augusztus – Egy nap a parkban</div>
   <div id="jrSum"></div><div id="jrList"></div>
 </div></div>
 <div id="tower">
