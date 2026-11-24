@@ -1,7 +1,7 @@
 # 1. rész (Augusztus – Egy nap a parkban): csibészség-ötletek
 
 Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** a közös pontozó rendszer (`mischief.js` + napló) és mind a 10 csibészség kész (tetszés szerinti sorrendben).
+**Állapot:** ✅ a közös pontozó rendszer (`mischief.js` + napló) és ✅ mind a 10 csibészség kész (tetszés szerinti sorrendben); ✅ a felvett javítandók is (lent). ⬜ Nyitott: a szökőkút-ivás 11. csibészségként (javaslat, lent).
 
 ## Pontozás és csibészség-napló (közös rendszer, minden csibészségre)
 
@@ -11,10 +11,11 @@ Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni
   - **Elvégzett:** név, csillagok (★★☆), legjobb eredmény (pl. „7 tárgy a fején”).
   - **Még hátravan:** szürke „???” név és egy rövid **tipp**, hol keresse (lásd a táblázatban) – a felfedezés is a játék része. A teljes nevet csak a teljesítés után mutatja.
   - Fejléc: összesen **⭐ x / 30** és „y / 10 csibészség”.
+  - ✅ Fülek részenként („1. Augusztus ⭐ x/30”, „2. Szeptember ⭐ y/9”): a kezdőképernyőről is minden rész csibészségei megnézhetők; játék közben az aktuális rész füle nyílik.
 - **Összesítés máshol:** a HUD-on a gólok és a dekázás-rekord mellett ⭐ x/30; a kezdőképernyő augusztusi csempéjén is (pl. „⭐ 7/30”).
 - **Mentés:** a böngészőben (`localStorage`, kulcs pl. `petyus.r1.csibeszsegek`: `{ id: { stars, best, at } }`), mint a dekázás-rekord.
 - **Kód (kész):** `src/mischief.js`: a csibészségek listája (`MISCHIEFS`: `id`, `title`, `hint`, `fmt(érték, extra)` a napló szövegéhez, `stars(érték, extra)` → 1–3, `lower: true`, ha a kisebb eredmény a jobb), `award(id, érték, extra)` → csillagszám, mentés, felirat; a napló felülete (`#journal` panel, képregényes stílus). Minden mini játék a végén csak `award(...)`-ot hív.
-- **Javaslat:** a már meglévő **szökőkút-ivás** is bekerülhetne 11. csibészségként (★ ivás; ★★ legalább 3 korty, mielőtt apa odaér; ★★★ 5 korty és Angi védelmére kel). Ekkor az összesen ⭐ 33.
+- ⬜ **Javaslat (nincs megcsinálva):** a már meglévő **szökőkút-ivás** is bekerülhetne 11. csibészségként (★ ivás; ★★ legalább 3 korty, mielőtt apa odaér; ★★★ 5 korty és Angi védelmére kel). Ekkor az összesen ⭐ 33.
 
 | # | Csibészség | ★ | ★★ | ★★★ | Tipp a naplóban (amíg nincs meg) | Állapot |
 |---|---|---|---|---|---|---|

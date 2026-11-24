@@ -152,7 +152,7 @@ export function toggleFps(on = !fp.on) {
 }
 // mouse look: gentle (pointer lock reports raw pixels, often many per event); one event's jump is capped (browser spikes)
 const LOOK_X = 0.0022, LOOK_Y = 0.0018;
-const look = (dx, dy) => { dx = clamp(dx, -60, 60); dy = clamp(dy, -60, 60); fp.yaw -= dx * LOOK_X; fp.pitch = clamp(fp.pitch - dy * LOOK_Y, -1.0, 0.8); };
+const look = (dx, dy) => { dx = clamp(dx, -60, 60); dy = clamp(dy, -60, 60); fp.yaw -= dx * LOOK_X; fp.pitch = clamp(fp.pitch - dy * LOOK_Y, -1.45, 1.35); };   // pitch: down to the floor at his feet, up to the ceiling (≈ ±80°)
 {
   const app = $('app');
   // mouse: a click locks the pointer (then just moving the mouse looks round, like in FPS games; Esc frees it);

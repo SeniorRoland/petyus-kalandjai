@@ -24,9 +24,10 @@ export const MISCHIEFS2 = [
   { id: 'r2-kulcs', title: 'Hol a kulcs, Angi?', hint: 'Anya kulcsa mindig a cipősszekrényen van. (és ha nem ott lenne?)', fmt: (v, x) => `${v} mp keresés` + (x && x.odd ? ', fura helyen' : '') + (x && x.hint ? ', lebukott' : ''), stars: (v, x) => 1 + (v >= 120 ? 1 : 0) + (x && x.odd && !x.hint ? 1 : 0) },
 ];
 const BOOKS = {
-  1: { list: MISCHIEFS, key: 'petyus.r1.csibeszsegek', sub: '1. rész: Augusztus – Egy nap a parkban' },
-  2: { list: MISCHIEFS2, key: 'petyus.r2.csibeszsegek', sub: '2. rész: Szeptember – Otthon és iskola' },
+  1: { list: MISCHIEFS, key: 'petyus.r1.csibeszsegek', sub: '1. rész: Augusztus – Egy nap a parkban', tab: '1. Augusztus' },
+  2: { list: MISCHIEFS2, key: 'petyus.r2.csibeszsegek', sub: '2. rész: Szeptember – Otthon és iskola', tab: '2. Szeptember' },
 };
+let jrBook = 1;   // the episode shown in the journal (its tab)
 for (const b of Object.values(BOOKS)) {
   try { b.saved = JSON.parse(localStorage.getItem(b.key) || '{}') || {}; } catch (e) { b.saved = {}; }   // storage blocked → this session only
 }
@@ -78,12 +79,23 @@ export function refreshTotals() {
 export function journalOpen() { return $('journal').classList.contains('open'); }
 export function toggleJournal(open = !journalOpen()) {
   const el = $('journal');
+  if (open && !journalOpen() && G.mode === 'play') jrBook = G.episode === 2 ? 2 : 1;   // in a game: its own episode first
   if (open) renderJournal();
   el.classList.toggle('open', open);
   G.paused = open && G.mode === 'play';    // the game waits while you read
 }
 function renderJournal() {
-  const b = curBook(), L = b.list;
+  const b = BOOKS[jrBook] || curBook(), L = b.list;
+  const tabs = $('jrTabs');
+  if (tabs) {
+    tabs.textContent = '';
+    for (const [k, bk] of Object.entries(BOOKS)) {
+      const t = document.createElement('button'); t.type = 'button'; t.className = +k === jrBook ? 'on' : '';
+      t.textContent = `${bk.tab} ⭐ ${starsOf(bk)}/${bk.list.length * 3}`;
+      t.onclick = () => { jrBook = +k; renderJournal(); };
+      tabs.appendChild(t);
+    }
+  }
   $('jrSub').textContent = b.sub;
   $('jrSum').textContent = `⭐ ${starsOf(b)} / ${L.length * 3} · ${L.filter((m) => b.saved[m.id]).length} / ${L.length} csibészség`;
   const list = $('jrList'); list.textContent = '';

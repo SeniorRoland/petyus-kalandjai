@@ -1,6 +1,22 @@
 # 2. rész: Szeptember – terv
 
-**Állapot:** az első lépés kész (`feature/2-resz-otthon`): a lakás, reggel, pizsamában; megnyitás 15 ⭐-tól, fejlesztői elérés. Ezt a dokumentumot lépésenként bővítjük.
+**Állapot:** az otthoni reggel kész (a lakás, a ház és környéke, eszközök, leltár, mindhárom reggeli csibészség); az átöltözés, az indulás, az iskola és a délután még hátravan. Ezt a dokumentumot lépésenként bővítjük.
+
+| | Tétel | Állapot |
+|---|---|---|
+| ✅ | Megnyitás 15 ⭐-tól, fejlesztői elérés (`?resz=2`) | kész |
+| ✅ | Csibészség-rendszer részenként (saját lista és mentés, a naplóban külön fül) | kész |
+| ✅ | Otthon reggel: a lakás az alaprajz szerint, a ház és környéke, falak/nézet, FPS, ajtók, kapcsolók, lámpák | kész |
+| ✅ | Kapcsolható eszközök, reggeli, hűtő, leltár (tárgyak felvétele, lerakása, bögre töltése) | kész |
+| ✅ | Karcsi, a tengerimalac (kalitkában és szabadon) | kész |
+| ✅ | Hangok: külvilág belső nézetben elnémul, lépések, eszközök, szereplők beszédhangja | kész |
+| ✅ | Reggeli csibészségek: „A tejszínes kávé”, „Karcsi nagy szökése”, „Hol a kulcs, Angi?” | kész |
+| ◐ | Naptár és óra a HUD-on, késés (⏰) – a napok léptetése és a napszak-váltás még nincs | részben |
+| ⬜ | Átöltözés (iskolai ruha / munkaruha), iskolatáska, cipő, indulás a bejárati ajtón | hátravan |
+| ⬜ | Napok léptetése, hétvégi átvezető, a hónap vége | hátravan |
+| ⬜ | Iskola (helyszín, 4 csibészség), otthon délután (3 csibészség) | hátravan |
+| ⬜ | „Új rész nyílt meg!” jelzés a kezdőképernyőn | hátravan |
+| ⬜ | Tesztelés valódi telefonon | hátravan |
 
 ## Röviden
 
@@ -149,14 +165,14 @@ Mindhárom a meglévő lakásra épül (leltár, eszközök, ajtók, Karcsi). K�
 
 ## Technikai terv (váz)
 
-1. **Részek szétválasztása:** ma a játék egyetlen pályára (a parkra) épül. Kell egy rész/helyszín-betöltő: a közös motor (rigek, `Actor`, buborékok, input, minőség, kamera, csibészség-rendszer) marad, a világ (`world.js` park) és a rész-specifikus tevékenységek részenként külön modulba kerülnek (pl. `src/ep1/…` és `src/ep2/…`), és a kezdőképernyőről indított rész tölti be a sajátját.
-2. **Csibészség-rendszer részenként:** `MISCHIEFS` és a mentési kulcs részenként; az összesítés (⭐) részenként és összesen.
-3. **Megnyitás + fejlesztői elérés** (fent).
-4. **Naptár és napszakok:** állapot (`nap`, `napszak`, játékóra), mentés `localStorage`-ba, HUD-elem, átvezetők a váltáshoz.
-5. **Otthon – reggel:** a lakás voxelből az alaprajz alapján (falak, ajtók, ablakok, padló, bútorok), babaház-nézet, reggeli fények, Petyus/Petya/Angi elhelyezése, mozgás, ütközés. **← ez az első fejlesztési lépés.**
-6. Iskola, délutáni otthon, csibészségek – később.
+1. ✅ **Részek szétválasztása:** ma a játék egyetlen pályára (a parkra) épül. Kell egy rész/helyszín-betöltő: a közös motor (rigek, `Actor`, buborékok, input, minőség, kamera, csibészség-rendszer) marad, a világ (`world.js` park) és a rész-specifikus tevékenységek részenként külön modulba kerülnek (pl. `src/ep1/…` és `src/ep2/…`), és a kezdőképernyőről indított rész tölti be a sajátját.
+2. ✅ **Csibészség-rendszer részenként:** `MISCHIEFS` és a mentési kulcs részenként; az összesítés (⭐) részenként és összesen.
+3. ✅ **Megnyitás + fejlesztői elérés** (fent).
+4. ◐ **Naptár és napszakok** (a naptár, az óra és a HUD kész; a napok léptetése, az átvezetők még nem): állapot (`nap`, `napszak`, játékóra), mentés `localStorage`-ba, HUD-elem, átvezetők a váltáshoz.
+5. ✅ **Otthon – reggel:** a lakás voxelből az alaprajz alapján (falak, ajtók, ablakok, padló, bútorok), babaház-nézet, reggeli fények, Petyus/Petya/Angi elhelyezése, mozgás, ütközés. **← ez az első fejlesztési lépés.**
+6. ◐ Iskola, délutáni otthon (⬜), csibészségek (✅ a reggeliek) – később.
 
-## Első lépés – kész
+## Első lépés – kész ✅
 
 - **Kód:** `src/ep2/ep2.js` (indítás: a park eltűnik, a lakás jön – `startEp2()`; fő lépés: `stepEp2(dt)` a `main.js`-ből, ha `G.episode === 2`; naptár + óra a HUD-on; apa és anya szövegei; ajtók: kopogás a testvérnél, a bejárati ajtó „Pizsamában?!”), `src/ep2/home.js` (szobák `ROOMS`, falak `WALLS` ajtókkal/ablakokkal, padlók, bútorok, erkélyek, ütközők; a belső falak lesüllyednek, ha Petyus vagy a szobája mögöttük van – `updateHome`), `src/ep2/pajama.js` (a ruha átszínezése vertex-színekben + minta a shaderben: Petyus csíkos, apa kockás, anya pöttyös), `src/voxels-home.js` (22 bútor a katalógusban, „Lakás” kategória).
 - **Megnyitás:** a szeptemberi csempe (`need: 15` az `EPISODES`-ban) zárva „🔒 15 ⭐ kell (most: x)”; ha megvan, indítható. Fejlesztői szerveren mindig nyitva („DEV: nyitva”), és `?resz=2` egyből indítja; a buildben ez nincs benne (ellenőrizve).
@@ -172,14 +188,15 @@ Mindhárom a meglévő lakásra épül (leltár, eszközök, ajtók, Karcsi). K�
 - **Konyha:** széles, kétajtós hűtő a nyugati falon, mellette L alakban fordul a pult (egy elem a nyugati falon, négy az északin).
 - **Szobanövények:** a szülők szobájában a keleti ablak alatt virágpolc kis növényekkel (rajta és alatta: futóka, kaktusz és pozsgás, flamingóvirág, páfrány), előtte a padlón nagyobbak: monstera, anyósnyelv, páfrány, fikuszfa a sarokban. Az állólámpa a kanapé mellé került.
 - **Képek, berendezés:** a falakon bekeretezett képek az 1. részből (`public/kepek/`, 512 px): az előszobában, a konyhában (2), Petyus ágya és a szülők ágya fölött, a szülők alacsony szekrénye fölött (2); a fallal együtt áttetszők lesznek. A szülők gardróbja helyett fél magas (1,05 m), a testvér szobájának teljes falát beborító fiókos-ajtós szekrénysor. WC: fel- és lehajtható ülőke (E), WC-pumpa, WC-papír-tartó tartalék tekercsekkel. Fürdő: zuhany a kád fölött (csaptelep, rúd, zuhanyfej, gégecső) és zuhanyfüggöny. Előszoba: fali fogas kabátokkal, sállal, kalappal, alatta cipősszekrény.
-- **Kapcsolható és nyitható eszközök** (`src/ep2/appliances.js`, E; a mikrónál Szóköz is): nyitható kétajtós hűtő (polcok, ételek, ajtópolcok, lámpa) · részletes mikró (nyitható ajtó ablakkal, forgótányér, kijelző, gombok; Szóköz: tányér, majd pohár berakása / kivétele, csukva indítás 10 mp-re, a végén DING) · vízforraló (kék fény, gőz, magától kikapcsol) · tűzhely (izzó főzőlapok, gőz a lábasból; reggel be van kapcsolva, anya főz) · mosogatócsap, kádcsap (vízsugár), zuhany (csepegő víz) · mosógép (forgó dob) · a szülők tévéje (mese) · Petyus részletes számítógépe (monitor webkamerával, billentyűzet narancs WASD-vel és világítással, egér, hangfalak, gépház világító ventilátorokkal; képernyőn: indulás → asztal → ugrálós játék).
-- **Reggeli és hűtő** (`src/ep2/food.js`): az asztalon részletes tányérok (peremcsíkkal), bögrék teával, poharak (tej, narancslé), evőeszközök, müzli tejjel (zabpehely, mazsola, dió darabok, kanál), szeletelt kenyér a vágódeszkán késsel, szalámiszeletek, gyümölcstál (alma, narancs, banán, szőlő), tejesdoboz, müzlisdoboz, teáskanna, vaj, méz, szalvéta. A hűtőben: a jobb ajtó alsó rekeszében tej, **tejszín** (TEJSZÍN feliratú doboz) és **tejszínhab** (TEJSZÍNHAB spray piros kupakkal) – az ajtóval együtt nyílnak; a polcokon sajt, egész szalámi szeletekkel, kóla, narancsos üdítő, doboz üdítő, gyümölcs a zöldségfiókban.
+- **Kapcsolható és nyitható eszközök** (`src/ep2/appliances.js`, E; a mikrónál Szóköz is): nyitható kétajtós hűtő (polcok, ételek, ajtópolcok, lámpa) · részletes mikró (nyitható ajtó ablakkal, forgótányér, kijelző, gombok; Szóköz: tányér, majd pohár berakása / kivétele, csukva indítás 10 mp-re, a végén DING) · vízforraló (kék fény, gőz, magától kikapcsol) · tűzhely (izzó főzőlapok, gőz a lábasból; reggel be van kapcsolva, anya főz) · mosogatócsap, kádcsap (vízsugár), zuhany (csepegő víz) · mosógép (forgó dob) · a szülők tévéje (focimeccs: Real Madrid – Barcelona) · Petyus részletes számítógépe (monitor webkamerával, billentyűzet narancs WASD-vel és világítással, egér, hangfalak, gépház világító ventilátorokkal; képernyőn: indulás → asztal → ugrálós játék).
+- **Reggeli és hűtő** (`src/ep2/food.js`): az asztalon részletes tányérok (peremcsíkkal), bögrék teával, poharak (tej, narancslé), evőeszközök, müzli tejjel (zabpehely, mazsola, dió darabok, kanál), szeletelt kenyér a vágódeszkán késsel, szalámiszeletek, gyümölcstál (alma, narancs, banán, szőlő), tejesdoboz, müzlisdoboz, teáskanna, vaj, méz, szalvéta. A hűtőben: a második polc elején tej, **tejszín** (TEJSZÍN feliratú doboz) és **tejszínhab** (TEJSZÍNHAB spray piros kupakkal); az első polcon három répa (Karcsinak), mögöttük sajt, egész szalámi szeletekkel; a harmadik polcon kóla, narancsos üdítő, doboz üdítő, gyümölcs a zöldségfiókban.
 - **Árnyékok:** a 2. részben a nap nem vet árnyékot; a felkapcsolt mennyezeti lámpák (lefelé világító spotlámpák, egyszerre legfeljebb 2 – a Petyushoz legközelebbiek) vetnek árnyékot, felülnézetben és belső nézetben is.
 - **A szülők tévéje előtt:** fotel, amibe **E**-vel le lehet ülni (bármelyik mozgásgomb feláll; belső nézetben ülőmagasságból látni). A TV-szekrényen egy részletes **Xbox Series X** (állva, zöldes szellőzőnyílások felül, világító gomb, lemezrés, USB) és egy **kontroller** (két markolat, két kar, D-pad, színes A/B/X/Y, Xbox-gomb, vállgombok, ravaszok); az Xboxot külön, **E**-vel lehet bekapcsolni (indulóhang, világító gomb); ha a tévé is megy, rajta az Xbox indulása, kezdőképernyő, majd focijáték látszik. A franciaágy mellett jobbra, az erkélyajtó felé könyvespolc (színes könyvek, növény, fénykép, dobozok, földgömb).
-- **Tárgyak, leltár** (`src/ep2/inventory.js`): felvehető (E) a kontroller, a WC-papír (a WC-tartályon), a bögre (a pulton a mikró mellett), a tej, a tejszín és a tejszínhab (a hűtő jobb ajtajában – csak nyitott hűtőből); a nálad lévők a felső sávban (1–6 / Tab / kattintás: választás). **F** (telefonon a gomb): a kiválasztott lerakása a közeli helyre – kontroller és WC-papír: TV-állvány, íróasztal, hűtő, mikró, kád széle (a papír a WC-tartályra is); bögre: mikró, hűtő, étkezőasztal, TV-állvány, íróasztal, konyhapult; tej, tejszín, tejszínhab: hűtő (a saját rekeszükbe), étkezőasztal, konyhapult (hűtő és mikró csak nyitva). A bögrébe: tea (a teáskannánál), kávé (a kávéfőzőnél – apa szól), tej, tejszín, tejszínhab (a nálad lévő vagy közeli dobozból); a színe ettől változik, a tejszínhabtól habkorona lesz rajta; a mosogatónál kiönthető. Az Xbox bekapcsolása a tévét is bekapcsolja; ha megy az Xbox és Petyus a fotelben ül, a kontroller a kezében van.
+- **Tárgyak, leltár** (`src/ep2/inventory.js`): felvehető (E) a kontroller, a WC-papír (a WC-tartályon), a bögre (a pulton a mikró mellett), a tej, a tejszín, a tejszínhab és három répa (a hűtőben – csak nyitott hűtőből), Angi kulcsa (a cipősszekrényen), Karcsi (répával kicsalogatva); a nálad lévők a felső sávban (1–9 / Tab / kattintás: választás). **F** (telefonon a gomb): a kiválasztott lerakása a közeli helyre – kontroller és WC-papír: TV-állvány, íróasztal, hűtő, mikró, kád széle (a papír a WC-tartályra is); bögre: mikró, hűtő, étkezőasztal, TV-állvány, íróasztal, konyhapult; tej, tejszín, tejszínhab: hűtő (a saját rekeszükbe), étkezőasztal, konyhapult (hűtő és mikró csak nyitva). A bögrébe: tea (a teáskannánál), kávé (a kávéfőzőnél – apa szól), tej, tejszín, tejszínhab (a nálad lévő vagy közeli dobozból); a színe ettől változik, a tejszínhabtól habkorona lesz rajta; a mosogatónál kiönthető. Az Xbox bekapcsolása a tévét is bekapcsolja; ha megy az Xbox és Petyus a fotelben ül, a kontroller a kezében van.
 - **Célzás belső nézetben:** a képernyő közepén kis pont; minden interakció (ajtó, kapcsoló, eszköz, tárgy felvétele, lerakóhely, bögretöltés) csak akkor elérhető, ha a pont az adott tárgyra mutat (legfeljebb ~1,9 m-ről; a nagy tárgyakat – ajtó, hűtő, tévé – bárhol, a kicsiket – kapcsoló, bögre – pontosan kell megcélozni). Felülnézetben továbbra is a közelség számít.
 - **Karcsi, a tengerimalac** (`src/ep2/karcsi.js`): Petyus szobájában az északi ablak előtti asztalon nagy kalitka (kék tálca, alom, rácsok) kis faházzal, etető- és itatótállal, répával; a kalitka ajtaja E-vel nyílik. Karcsi vöröses, fehér foltokkal. Félénk: ha valaki 1,5 m-nél közelebb jön, a házába bújik, és kikukucskál az ajtón; ha senki sincs a közelben, körbe-körbe mászkál, és minden második körben megáll a répánál enni. Ha anya a hűtőhöz megy, Karcsi visít („UÍ-UÍ-UÍ!”).
-- **Még nincs:** átöltözés, iskolatáska/cipő és indulás az iskolába, a napok léptetése, „Új rész nyílt meg!” jelzés, telefonos gombok finomhangolása, a csibészségek.
+- **Azóta kész:** ✅ a telefonos gombfeliratok, ✅ a három reggeli csibészség, ✅ hangok és beszédhang, ✅ a belső nézetben nagyobb szögben lehet le- és felnézni (kb. ±80°).
+- **Még nincs:** ⬜ átöltözés, ⬜ iskolatáska/cipő és indulás az iskolába, ⬜ a napok léptetése, ⬜ „Új rész nyílt meg!” jelzés.
 
 ## Első lépés (eredeti leírás)
 
