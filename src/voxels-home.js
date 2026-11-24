@@ -239,7 +239,7 @@ function shoeCabinet(seed) {   // 1.0 × 0.35 × 0.9 m, two tilt-out flaps, shoe
   bx(g, -0.5, 0.04, -0.17, 0.5, 0.9, 0.17, (i, j, k) => (k === vi(0.17) - 1 && (i === 0 || j === 9) ? C.white2 : C.white));
   bx(g, -0.48, 0, -0.15, 0.48, 0.04, 0.15, C.dark);
   for (const [x, y] of [[-0.25, 0.4], [0.25, 0.4], [-0.25, 0.82], [0.25, 0.82]]) bx(g, x - 0.06, y, 0.17, x + 0.06, y + 0.02, 0.2, C.steelDark);
-  bx(g, -0.42, 0.9, -0.1, -0.3, 0.93, 0.08, 0xc9a227); bx(g, -0.2, 0.9, -0.05, -0.05, 0.92, 0.05, 0xb5793f);   // keys, a wallet
+  bx(g, -0.2, 0.9, -0.05, -0.05, 0.92, 0.05, 0xb5793f);   // a wallet (Angi's keys lie next to it: a separate object in the game – ep2/food.js keyRing)
   bx(g, 0.1, 0.9, -0.12, 0.38, 0.95, 0.12, 0xd9d4c8); bx(g, 0.15, 0.95, -0.06, 0.3, 1.1, 0.06, 0x5fae6a);   // a tray, a small plant
   return g;
 }

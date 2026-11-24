@@ -171,6 +171,24 @@ export function napkins() { return mesh(new THREE.BoxGeometry(0.1, 0.012, 0.1), 
 // place a built thing (a Group) into a parent at x, y, z, turned ry
 export function at(parent, obj, x, y, z, ry = 0) { obj.position.set(x, y, z); obj.rotation.y = ry; parent.add(obj); return obj; }
 
+// Angi's key ring: two keys (brass and steel), the ring and a pink fob – lying flat
+export function keyRing() {
+  const g = grp();
+  const ring = mesh(new THREE.TorusGeometry(0.022, 0.004, 6, 16), mat(0xb8bfc6), 0, 0.005, 0); ring.rotation.x = Math.PI / 2; g.add(ring);
+  for (const [a, c] of [[0.5, 0xc9a227], [-0.4, 0xb8bfc6]]) {
+    const k = grp(mesh(new THREE.BoxGeometry(0.055, 0.004, 0.012), mat(c), 0.045, 0.004, 0), mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.005, 10), mat(c), 0.015, 0.004, 0));
+    k.rotation.y = a; g.add(k);
+  }
+  g.add(mesh(new THREE.BoxGeometry(0.03, 0.012, 0.045), mat(0xf28cb1), -0.035, 0.007, 0.01));
+  return g;
+}
+// a carrot (with its green top): Karcsi's favourite – lying on its side
+export function carrot() {
+  const g = grp();
+  const c = mesh(new THREE.ConeGeometry(0.022, 0.15, 10), mat(0xf08a24), 0, 0.022, 0); c.rotation.z = Math.PI / 2; g.add(c);
+  for (const a of [-0.5, 0, 0.5]) { const l = mesh(new THREE.BoxGeometry(0.05, 0.006, 0.012), mat(0x5fae6a), -0.095, 0.025, a * 0.02); l.rotation.y = a; g.add(l); }
+  return g;
+}
 // a toilet roll: white paper round a cardboard core (radius 5.5 cm, 10 cm tall, standing; turn it for a holder's arm)
 export function toiletRoll() {
   const g = new THREE.Group();

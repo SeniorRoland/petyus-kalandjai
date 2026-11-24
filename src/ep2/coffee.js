@@ -63,6 +63,7 @@ invHooks.placed = (id, pid) => {
   if (id !== 'mug' || pid !== 'dad') return;
   if (cf.st === 'done') { say(G.petya, 'Köszönöm, fiam, de ma már… nem kérek kávét.', 2.8); return; }
   if (busy()) return;
+  if (G.petya.sit < 0.5) { say(G.petya, 'Most nem érek rá, Petyus!', 2); return; }   // (chasing Karcsi on all fours …)
   cf.st = 'look'; cf.t = 0;
 };
 
@@ -161,10 +162,10 @@ export function coffeeTick(dt) {
   const dad = G.petya; cf.t += dt;
   switch (cf.st) {
     case 'wait':
-      if ((cf.askT -= dt) <= 0) { say(dad, ASK[0], 3.2); dad.point = 1.4; cf.st = 'asked'; cf.nagT = 32; }
+      if (dad.sit > 0.9 && (cf.askT -= dt) <= 0) { say(dad, ASK[0], 3.2); dad.point = 1.4; cf.st = 'asked'; cf.nagT = 32; }
       break;
     case 'asked':
-      if ((cf.nagT -= dt) <= 0) { say(dad, pick(ASK.slice(1)), 2.8); cf.nagT = 35 + Math.random() * 10; }
+      if (dad.sit > 0.9 && (cf.nagT -= dt) <= 0) { say(dad, pick(ASK.slice(1)), 2.8); cf.nagT = 35 + Math.random() * 10; }
       break;
     case 'look':
       if (cf.t > 0.9) judge();
