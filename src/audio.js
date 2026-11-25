@@ -15,8 +15,15 @@ if (typeof document !== 'undefined') {
 }
 export function initAudio() {
   if (actx) return; try { actx = new (window.AudioContext || window.webkitAudioContext)(); master = actx.createGain(); master.gain.value = masterVol; master.connect(actx.destination);
-    outBus = actx.createGain(); outBus.connect(master); startAmbience(); } catch (e) { actx = null; }
+    outBus = actx.createGain(); outBus.connect(master); startAmbience(); } catch (e) { actx = null; return; }
+  // started without a click (the dev server's ?resz=2): the browser keeps the sound suspended until the first click / key
+  if (actx.state !== 'running') {
+    const go = () => { actx.resume().then(() => { if (actx.state === 'running') for (const ev of EVS) window.removeEventListener(ev, go, true); }); };
+    const EVS = ['pointerdown', 'keydown', 'touchstart'];
+    for (const ev of EVS) window.addEventListener(ev, go, true);
+  }
 }
+export const audioWaiting = () => !!actx && actx.state !== 'running';
 // constant park ambience: wind in the leaves (slowly swelling) + far-away traffic rumble
 function startAmbience() {
   const s = actx.createBufferSource(); s.buffer = noiseBuf(4); s.loop = true;
