@@ -104,7 +104,8 @@ function wall(x0, z0, x1, z1, open = [], outer = 0) {   // outer: ±1 – which 
   const glass = GLASS; GLASS = null;
   const glassMat = new THREE.MeshLambertMaterial({ color: 0xcfe6f2, transparent: true, opacity: 0.22, depthWrite: false });
   for (const q of glass) {
-    const gm = new THREE.Mesh(new THREE.BoxGeometry(q.alongX ? q.w : 0.02, q.h, q.alongX ? 0.02 : q.w), glassMat);
+    // a hair smaller than the opening: its edges would lie on the frame bars' faces (the same plane – flicker)
+    const gm = new THREE.Mesh(new THREE.BoxGeometry(q.alongX ? q.w - 0.02 : 0.02, q.h - 0.02, q.alongX ? 0.02 : q.w - 0.02), glassMat);
     gm.position.set(q.alongX ? q.c : q.at, q.y + q.h / 2, q.alongX ? q.at : q.c); gm.renderOrder = 2; g.add(gm);
   }
   m.castShadow = true; m.receiveShadow = true; g.add(m);
@@ -127,7 +128,8 @@ function onWall(meshes, axis, at) {
 }
 function pband(b, alongX, face, out, a, c) {
   if (c - a < 0.01) return;
-  if (alongX) b.bx((a + c) / 2, 0, face + out * 0.02, c - a, 0.9, 0.05, C.orange, 0, 0.02); else b.bx(face + out * 0.02, 0, (a + c) / 2, 0.05, 0.9, c - a, C.orange, 0, 0.02);
+  // (up to just under the windows' bottom frame bar – its top at 0.9 would share a plane with the bar's: flicker)
+  if (alongX) b.bx((a + c) / 2, 0, face + out * 0.02, c - a, 0.83, 0.05, C.orange, 0, 0.02); else b.bx(face + out * 0.02, 0, (a + c) / 2, 0.05, 0.83, c - a, C.orange, 0, 0.02);
 }
 
 // ---------------------------------------------------------------- the main building: the ground floor (inside) + the upper floors

@@ -315,3 +315,4 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 - [x] **Villanykapcsolók az ajtó másik oldalán:** ✅ a kilincs felőli oldalon (a nyitott ajtó nem takarja).
 - [x] **FPS nézetben ne tűnjön el a külső épület:** ✅ az emeletek és a déli épület belső nézetben is megmaradnak (az ablakon át látszanak).
 - [x] **Az épület belsejébe néző ablakok:** a főépület déli falán, ahol a déli épület átjárója csatlakozik (földszint, 1. emelet). ✅ Ott nincs ablak.
+- [x] **Az átlátszó ablakok külső pereme villogott** (az üveg széle a keretlécek oldalával, az alsó léc teteje a narancs lábazat tetejével egy síkban). ✅ Az üveg 1–1 cm-rel kisebb, a lábazat a keret alja alatt ér véget.
