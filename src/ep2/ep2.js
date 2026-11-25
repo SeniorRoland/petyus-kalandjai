@@ -196,7 +196,7 @@ export function startEp2() {
   const ep = EPISODES[1];
   document.title = `${SERIES} – ${ep.n}. rész: ${ep.month}`;
   $('hud').innerHTML = '<span class="chip">📅 <span id="e2Date"></span></span> <span class="chip">🕕 <span id="e2Clock"></span></span> <span class="chip" id="e2RoomChip">📍 <span id="e2Room"></span></span> <span class="chip" id="e2Late" style="display:none">⏰ +<span id="e2LateN"></span> perc</span>'
-    + (SCHOOL ? ' <span class="chip" id="e2Lesson"></span>' : '');   // at school: the lesson or the break
+    + (SCHOOL ? '<span class="chip row" id="e2Lesson"></span>' : '');   // at school: the lesson or the break (a line of its own)
   $('help').innerHTML = SCHOOL
     ? '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>leülés a helyedre (6. b, első pad) · a kapunál: hazaindulás</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>'
     : '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat: ajtó nyitása / csukása, villany, kopogás' + (EVE ? ', lefekvés (Petyus ágyánál)' : ', indulás (a bejárati ajtónál)') + '</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>E · F</dt><dd>tárgy felvétele · a kiválasztott lerakása / bögre töltése</dd><dt>1–9 · Tab</dt><dd>tárgy kiválasztása</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
@@ -210,7 +210,7 @@ export function startEp2() {
   // the evening: every room's light on (a resumed evening keeps the saved switches)
   if (EVE && resumed !== true) for (const sw of switches) if (!sw.on) toggleSwitch(sw);
   if (resumed === 'fresh' && EVE) { G.petike.place(0.9, 3.3, Math.PI / 2); G.petike.pos.y = FY; }   // just home: in the hallway, by the front door
-  $('e2Date').textContent = dateText(); hudClock(true); hudLate();
+  $('e2Date').textContent = dateText(); hudClock(true); hudLate(); fitHud();
   // compile every material now (also the hidden ones: ceiling, lamps, the WC's water), so nothing stalls the game later when it
   // first shows up (a shader compiled on first use is a visible hitch)
   { const hidden = []; scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
@@ -238,6 +238,12 @@ function placeFamily() {
   G.angi.path = null; G.angi.sit = G.angi.sitTarget = 0; G.angi.place(s.momCook.x, s.momCook.z, s.momCook.h);
   for (const a of [G.petike, G.petya, G.angi]) { a.pos.y = FY; a.sync(); }   // occlude.js measures from here
 }
+// the HUD must not run under the top-right buttons (their number differs by place and screen): it may be as wide as the gap
+function fitHud() {
+  const tr = $('topright'), hud = $('hud'); if (!tr || !hud) return;
+  hud.style.maxWidth = Math.max(140, tr.getBoundingClientRect().left - hud.getBoundingClientRect().left - 10) + 'px';
+}
+window.addEventListener('resize', () => { if (G.episode === 2) fitHud(); });
 let shownMin = -1;
 function hudClock(force) { const m = Math.floor(ep2.min); if (m !== shownMin || force) { shownMin = m; $('e2Clock').textContent = clockText(m); } }
 
@@ -580,6 +586,7 @@ function updateParents(dt) {
 // ---------------------------------------------------------------- the step
 export function stepEp2(dt) {
   G.clockT += dt;
+  if ((ep2.fitT = (ep2.fitT || 0) - dt) <= 0) { ep2.fitT = 0.5; fitHud(); }   // (buttons come and go: the HUD keeps clear of them)
   door.knockT -= dt;
   if (G.mode === 'play' && ep2.phase === 'school') {   // the school (school.js): walking about, the gate home
     movePetyus(dt); updateSchool(dt, ep2.min, fp.on || G.zoom > 1.55);   // (walls solid, the roof on: first person or zoomed out)

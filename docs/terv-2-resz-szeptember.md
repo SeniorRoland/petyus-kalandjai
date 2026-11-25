@@ -318,3 +318,4 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 - [x] **Az épület belsejébe néző ablakok:** a főépület déli falán, ahol a déli épület átjárója csatlakozik (földszint, 1. emelet). ✅ Ott nincs ablak.
 - [x] **Az átlátszó ablakok külső pereme villogott** (az üveg széle a keretlécek oldalával, az alsó léc teteje a narancs lábazat tetejével egy síkban). ✅ Az üveg 1–1 cm-rel kisebb, a lábazat a keret alja alatt ér véget.
 - [x] **Villany alapból, óra / szünet jelzése, a gyerekek szünetben kint:** ✅ az osztálytermekben ég a villany; HUD-címke az órával / szünettel és felirat csengetéskor; szünetben az osztálytársak is kimennek (fiúk foci, lányok ugróiskola), órára visszaülnek a helyükre.
+- [x] **A tanórát mutató HUD belelógott a gombokba.** ✅ Az óra / szünet címke külön sorban; a HUD szélessége mindig a jobb felső gombok bal széléig tart (`fitHud`), a chipek új sorba törnek.
