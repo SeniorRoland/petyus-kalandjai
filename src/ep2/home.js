@@ -255,7 +255,7 @@ function furnish() {
     [11.98, -1.05, 0.85, 1], [11.98, -0.6, 1.1, 2], [15.35, -1.05, 1.0, 3], [15.35, -0.6, 0.85, 0], [14.2, -1.1, 0.75, 4]].forEach(([x, z, sc, v], n) => put('bougainvillea', x, z, n * 1.3, v, { s: sc }));
   put('potted_plant', 17.7, 4.7); put('chair', 17.3, 8.3, W, 1);
 }
-function buildFurniture() {
+export function buildFurniture() {   // (also the school: school.js)
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), ps = new THREE.Vector3();
   for (const [K, list] of lists) {
     const [id, v] = K.split(':'); const def = DEF[id];
@@ -318,8 +318,14 @@ export function lightPool() {
   }
   return LIGHT_POOL;
 }
+// the evening (ep2.js): a few soft room lights more, without shadows – every lit room glows, not only the two nearest
+const FILL = [];
+export function addFillLights(n) {   // (short reach: they should not light up the facade outside)
+  for (let i = 0; i < n; i++) { const l = new THREE.PointLight(0xffdcae, 3.0, 4.8, 1.2); l.visible = false; homeRoot.add(l); FILL.push(l); }
+}
 function updateLights(P) {
   const on = switches.filter((s) => s.on).sort((a, b) => Math.hypot(a.light.position.x - P.x, a.light.position.z - P.z) - Math.hypot(b.light.position.x - P.x, b.light.position.z - P.z));
+  FILL.forEach((l, i) => { const s = on[i]; l.visible = !!s; if (s) l.position.set(s.light.position.x, WALL_H - 0.4, s.light.position.z); });
   lightPool().forEach((l, i) => {
     const s = on[i]; l.visible = !!s;
     if (s) { l.position.set(s.light.position.x, WALL_H - 0.12, s.light.position.z); l.target.position.set(s.light.position.x, 0, s.light.position.z); l.target.updateMatrixWorld(); }
