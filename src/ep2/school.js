@@ -15,9 +15,12 @@ import { Actor } from '../actors.js';
 import { makePerson } from '../rigs.js';
 import { CAM_OFF, scene } from '../scene.js';
 import { G } from '../state.js';
+import { isTouch } from '../input.js';
 import { say } from '../ui.js';
 import { R, V3, damp, pick } from '../util.js';
-import { addBoxCol, partMesh, vcMat } from '../world.js';
+import { addBoxCol, colliders, partMesh, vcMat } from '../world.js';
+import { TOILET, toiletSeatGeometry } from '../voxels-home.js';
+import { canPee, pee, peeFlushed, startPee } from './pee.js';
 import { noise, soundAt, tone } from '../audio.js';
 import { buildFurniture, put, wallView } from './home.js';
 import { WRITERS, boardText, hungaryMap, makeClock, portrait, timesTable, timetable } from './posters.js';
@@ -103,8 +106,8 @@ function onWall(meshes, axis, at) {
   const w = walls.find((q) => q.alongX === (axis === 'z') && Math.abs(q.c - at) < 0.2);
   for (const m of meshes) {
     if (!w) { scene.add(m); continue; }
-    m.material = m.material.clone(); m.material.transparent = true;
-    w.g.add(m); w.mats.push(m.material); w.pics.push(m);
+    m.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); o.material.transparent = true; w.mats.push(o.material); } });
+    w.g.add(m); w.pics.push(m);
   }
 }
 function pband(b, alongX, face, out, a, c) {
@@ -122,11 +125,11 @@ function buildMain() {
   wall(x0, z1, x1 + TW, z1 + TW, [D(1.2, 4.0), W(6.2, 8.4), W(9.6, 11.8), W(15.4, 17.6), W(21.6, 23.8), W(27.4, 29.6), W(31.6, 33.8)], 1);   // south: the entrance, corridor windows
   wall(x1, z0, x1 + TW, z1, [W(9.9, 11.7)], 1);                                                       // east: a window only at the corridor (the last room's board is not there, but its bookcases are)
   // inside: the corridor's north wall with the classroom doors, the walls between the rooms
-  wall(x0, CORR - 0.12, x1, CORR, [D(4.6, 5.6), D(16.6, 17.6), D(28.6, 29.6)]);
-  wall(11.94, z0, 12.06, CORR - 0.12); wall(23.94, z0, 24.06, CORR - 0.12);
+  wall(x0, CORR - 0.12, x1, CORR, [D(4.6, 5.6), D(16.6, 17.6), D(25.6, 26.6), D(32.6, 33.6)]);   // 6. b, 6. a, the boys' and the girls' toilet
+  wall(11.94, z0, 12.06, CORR - 0.12); wall(23.94, z0, 24.06, CORR - 0.12); wall(29.94, z0, 30.06, CORR - 0.12);
   // the floors: wood in the classrooms, stone in the corridor
   scene.add(partMesh((b) => {
-    for (const x of [6, 18, 30]) b.bx(x, 0, (z0 + CORR) / 2, 12, 0.04, CORR - z0, C.floorClass, 0, 0.03);
+    for (const x of [6, 18]) b.bx(x, 0, (z0 + CORR) / 2, 12, 0.04, CORR - z0, C.floorClass, 0, 0.03);   // (the toilets: tiles – buildToilets)
     b.bx(18, 0, CORR / 2, 36, 0.04, -CORR, C.floorHall, 0, 0.03);
   }));
   // the upper floors (outside only) and the roof with its solar panels
@@ -170,7 +173,6 @@ function buildMain() {
     b.bx(ex, 2.65, ez + 1.6, 4.6, 0.12, 3.4, 0x4a3122, 0, 0.02); b.bx(ex, 2.45, ez + 3.25, 4.6, 0.36, 0.1, C.wood, 0, 0.02);   // the canopy, its fascia
     for (const s of [-1, 1]) b.bx(ex + s * 1.9, 0, ez + 3.0, 0.12, 2.65, 0.12, C.cream, 0, 0);                         // the posts
     for (const x of [-1.2, 1.2]) b.bx(ex + x, 2.6, ez + 1.6, 0.6, 0.04, 0.12, 0xffe9a8, 0, 0);                        // lights under it
-    b.bx(ex, 0, ez + 0.04, 2.6, 2.3, 0.05, 0x3b3f45, 0, 0); b.bx(ex - 0.62, 0.05, ez + 0.07, 1.1, 2.15, 0.02, 0x9fc4dd, 0, 0.02); b.bx(ex + 0.62, 0.05, ez + 0.07, 1.1, 2.15, 0.02, 0x9fc4dd, 0, 0.02);
   }));
   for (const s of [-1, 1]) addBoxCol(2.6 + s * 1.65 - 0.15, 0.25, 2.6 + s * 1.65 + 0.15, 3.25, 0.75);
   // the name on the canopy's fascia
@@ -322,7 +324,6 @@ function buildSquare() {
 const ROOMS3 = [
   { x0: 0, cls: '6. b', kind: 'ours', board: ['Matematika – Törtek', '3/4 + 1/8 = ?        2 1/2 · 4 = ?', 'Házi feladat: 47. oldal, 3–5.'] },
   { x0: 12, cls: '6. a', kind: 'other', board: ['Irodalom – Arany János: Toldi', '„Ég a napmelegtől a kopár szik sarja…”', 'Memoriter: az első versszak'] },
-  { x0: 24, cls: '5. b', kind: 'other', board: ['Természettudomány', 'A térkép: méretarány, jelek', '1 : 100 000 → 1 cm = 1 km'] },
 ];
 const desks = [];   // Petyus's class: where the pupils sit { x, z }
 export const seat = { x: 0, z: 0 };   // Petyus's own place (his chair in the 6. b)
@@ -369,10 +370,10 @@ function buildClassroom(r) {
   put('bin', x0 + 0.5, -3.3, 0, 0, { ground: true, col: true });
 }
 function buildCorridor() {
-  // coats and bags on hooks along the corridor wall (they belong to that wall), a trophy cabinet, notice boards, benches;
+  // coats and bags on hooks along the corridor wall (they belong to that wall; none on the doors), a trophy cabinet, notice boards, benches;
   // on the outer wall between the windows the writers' gallery
   const coats = partMesh((b) => {
-    for (let x = 0.8; x < 35.5; x += 0.6) { if (Math.abs(x - 5.1) < 0.8 || Math.abs(x - 17.1) < 0.8 || Math.abs(x - 29.1) < 0.8 || Math.abs(x - 11) < 1) continue; b.bx(x, 1.55, CORR + 0.05, 0.05, 0.05, 0.12, 0x555555, 0, 0); if (Math.round(x * 10) % 3) b.bx(x, 0.9, CORR + 0.1, 0.38, 0.65, 0.12, pick([0xe63946, 0x3a86ff, 0xffca3a, 0x2a9d8f, 0xff70a6]), 0, 0.03); }
+    for (let x = 0.8; x < 35.5; x += 0.6) { if ([5.1, 17.1, 26.1, 33.1].some((d) => Math.abs(x - d) < 0.8) || Math.abs(x - 11) < 1) continue; b.bx(x, 1.55, CORR + 0.05, 0.05, 0.05, 0.12, 0x555555, 0, 0); if (Math.round(x * 10) % 3) b.bx(x, 0.9, CORR + 0.1, 0.38, 0.65, 0.12, pick([0xe63946, 0x3a86ff, 0xffca3a, 0x2a9d8f, 0xff70a6]), 0, 0.03); }
     b.bx(11, 0, CORR + 0.2, 1.6, 1.8, 0.4, 0x8a6238, 0, 0.02); b.bx(11, 0.9, CORR + 0.41, 1.4, 0.8, 0.02, 0x9fd4ef, 0, 0);
     for (const x of [8.0, 22.5]) b.bx(x, 1.3, CORR + 0.03, 1.6, 1.0, 0.04, 0xc9a06a, 0, 0.02);
   });
@@ -439,6 +440,7 @@ function updatePeople(dt) {
       p.t -= dt; if (p.t <= 0 && !a.path) { p.t = R(3, 7); a.walkTo([[p.home.x + R(0, 0.5), p.home.z + R(-1.8, 1.8)]], 0.8); }
       if (!a.path) a.targetHeading = Math.PI / 2;
       a.update(dt);
+    } else if (p.kind === 'still') { a.targetHeading = p.h; a.update(dt);
     } else {
       p.t -= dt; if (!a.path && p.t <= 0) { p.t = R(0.5, 2.5); a.walkTo(p.field ? [[R(FIELD.x0 + 3, FIELD.x1 - 3), R(FIELD.z0 + 3, FIELD.z1 - 3)]] : [[R(-13, 11), R(6, 13)]], R(1.6, 3.0)); }
       a.update(dt);
@@ -447,6 +449,111 @@ function updatePeople(dt) {
     const dx = P.x - a.pos.x, dz = P.z - a.pos.z, d = Math.hypot(dx, dz), m = a.sit > 0.5 ? 0.42 : 0.5;
     if (d < m && d > 1e-4) { P.x = a.pos.x + dx / d * m; P.z = a.pos.z + dz / d * m; }
   }
+}
+
+// ---------------------------------------------------------------- doors that open (E): the entrance (two glass wings), the
+// classrooms (wood, the class on a plate), the toilets (white, a boy / a girl sign). All in walls running along x; they open
+// inwards (north). A closed door has a collider; the leaves belong to their wall (they fade / sink with it).
+const doors = [];
+function signTex(kind, text) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256; const x = c.getContext('2d');
+  if (kind === 'class') {
+    x.fillStyle = '#f7f3e8'; x.fillRect(0, 0, 256, 160); x.strokeStyle = '#2a4a7a'; x.lineWidth = 10; x.strokeRect(5, 5, 246, 150);
+    x.fillStyle = '#2a4a7a'; x.font = 'bold 86px Bangers, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, 128, 84);
+  } else {   // a toilet sign: the figure (blue boy / red girl in a dress) and FIÚ / LÁNY
+    const girl = kind === 'girl', col = girl ? '#e63946' : '#2a6fd6';
+    x.fillStyle = '#ffffff'; x.fillRect(0, 0, 256, 256); x.strokeStyle = col; x.lineWidth = 12; x.strokeRect(6, 6, 244, 244);
+    x.fillStyle = col; x.beginPath(); x.arc(128, 58, 24, 0, Math.PI * 2); x.fill();
+    if (girl) { x.beginPath(); x.moveTo(128, 86); x.lineTo(86, 170); x.lineTo(170, 170); x.closePath(); x.fill(); x.fillRect(108, 168, 12, 30); x.fillRect(136, 168, 12, 30); }
+    else { x.fillRect(102, 86, 52, 72); x.fillRect(104, 156, 18, 44); x.fillRect(134, 156, 18, 44); }
+    x.fillRect(88, 90, 14, 52); x.fillRect(154, 90, 14, 52);
+    x.font = 'bold 40px Bangers, sans-serif'; x.textAlign = 'center'; x.fillText(text, 128, 238);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function makeDoor(cx, wallZ, width, o) {
+  const leaves = o.double ? 2 : 1, lw = width / leaves, h = 2.2, d = { x: cx, z: wallZ, open: false, t: 0, piv: [], name: o.name };
+  const mat = new THREE.MeshLambertMaterial({ color: o.color });
+  const hinges = leaves === 1 ? [[cx - width / 2, 1]] : [[cx - width / 2, 1], [cx + width / 2, -1]];
+  const parts = [];
+  for (const [hx, s] of hinges) {
+    const pv = new THREE.Group(); pv.position.set(hx, 0, wallZ);
+    if (o.glass) {   // a dark frame round a glass pane
+      const fr = new THREE.MeshLambertMaterial({ color: 0x3b3f45 }), gl = new THREE.MeshLambertMaterial({ color: 0x9fc4dd, transparent: true, opacity: 0.6 });
+      for (const [w, hh, x, y] of [[lw - 0.02, 0.1, 0, 0.05], [lw - 0.02, 0.1, 0, h - 0.05], [0.08, h, -lw / 2 + 0.05, h / 2], [0.08, h, lw / 2 - 0.05, h / 2], [lw - 0.02, 0.06, 0, 1.0]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, hh, 0.06), fr); m.position.set(s * lw / 2 + x, y, 0); pv.add(m); }
+      const g = new THREE.Mesh(new THREE.BoxGeometry(lw - 0.16, h - 0.2, 0.02), gl); g.position.set(s * lw / 2, h / 2, 0); pv.add(g);
+      const hd = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.5, 0.06), new THREE.MeshLambertMaterial({ color: 0xc8ccd0 })); hd.position.set(s * (lw - 0.15), 1.05, 0.07); pv.add(hd);
+    } else {
+      const leaf = new THREE.Mesh(new THREE.BoxGeometry(lw - 0.02, h, 0.05), mat); leaf.position.set(s * lw / 2, h / 2, 0); leaf.castShadow = true; pv.add(leaf);
+      const hd = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.06), new THREE.MeshLambertMaterial({ color: 0xa7abb0 })); hd.position.set(s * (lw - 0.12), 1.0, 0.05); pv.add(hd);
+      if (o.sign) {   // the plate on the corridor side
+        const sz = o.sign.kind === 'class' ? [0.42, 0.26] : [0.34, 0.34];
+        const sg = new THREE.Mesh(new THREE.PlaneGeometry(...sz), new THREE.MeshLambertMaterial({ map: signTex(o.sign.kind, o.sign.text), transparent: true }));
+        sg.position.set(s * lw / 2, 1.6, 0.03); pv.add(sg);
+      }
+    }
+    pv.userData.s = s; d.piv.push(pv); parts.push(pv);
+  }
+  addBoxCol(cx - width / 2, wallZ - 0.1, cx + width / 2, wallZ + 0.1, FLOOR); d.col = colliders[colliders.length - 1];
+  onWall(parts, 'z', wallZ);
+  doors.push(d);
+  return d;
+}
+function toggleDoor(d) {
+  d.open = !d.open; d.col.h = d.open ? -1 : FLOOR;
+  soundAt(d.x, d.z, () => { tone('sine', d.open ? 320 : 220, d.open ? 200 : 140, 0.12, 0.07); if (!d.open) noise(0.08, 400, 1, 0.12, 0.2); }, 1);
+}
+function updateDoors(dt) {
+  for (const d of doors) { d.t = damp(d.t, d.open ? 1 : 0, 6, dt); for (const pv of d.piv) pv.rotation.y = pv.userData.s * d.t * 1.55; }   // (+: swings north for both hinges)
+}
+
+// ---------------------------------------------------------------- the toilets (boys x 24 … 30, girls x 30 … 36): stalls with
+// toilets (a seat that flips up – E), sinks with mirrors, urinals for the boys; tiled floor. Space at a toilet: peeing (pee.js),
+// or flushing. A girl stands at the girls' sinks – if Petyus walks in…
+const toilets = [];
+export const WC = { boys: { x0: 24, x1: 30 }, girls: { x0: 30, x1: 36 } };
+function buildToilets() {
+  scene.add(partMesh((b) => {
+    for (let x = 24; x < 36; x += 0.5) for (let z = SCHOOL.z0; z < CORR - 0.12; z += 0.5) b.bx(x + 0.25, 0, z + 0.25, 0.5, 0.045, 0.5, ((x + z) * 2) % 2 === 0 ? 0xe9edf0 : 0xc9d3db, 0, 0.01);
+    for (const [x0, xs] of [[24, [24.55, 25.95, 27.35]], [30, [30.55, 31.95, 33.35, 34.75]]]) {   // the stall partitions (1.9 m), a back panel line
+      for (const x of xs) b.bx(x, 0.12, SCHOOL.z0 + 0.8, 0.05, 1.8, 1.6, 0x8fb7d6, 0, 0.01);
+      b.bx(x0 + 0.05, 0, SCHOOL.z0 + 1.6, 0.02, 0.02, 0.02, 0xffffff, 0, 0);
+    }
+    // wall tiles up to 1.5 m on the walls of both rooms (on the corridor wall's room face)
+    b.bx(30, 0, CORR - 0.135, 12, 1.5, 0.01, 0xdfe8ee, 0, 0.01);
+    // the sinks with mirrors (on the corridor wall), the boys' urinals (on the west wall)
+    for (const x of [28.3, 29.3, 34.5, 35.4]) { b.bx(x, 0.75, CORR - 0.32, 0.5, 0.12, 0.36, 0xffffff, 0, 0); b.bx(x, 0, CORR - 0.24, 0.12, 0.75, 0.12, 0xeeeeee, 0, 0); b.bx(x, 0.9, CORR - 0.2, 0.04, 0.12, 0.12, 0xb8bcc0, 0, 0); b.bx(x, 1.2, CORR - 0.14, 0.45, 0.6, 0.02, 0xbfe3f5, 0, 0.02); }
+    for (const z of [-9.2, -8.3, -7.4]) { b.bx(24.25, 0.45, z, 0.3, 0.6, 0.36, 0xffffff, 0, 0); b.bx(24.33, 0.55, z, 0.14, 0.4, 0.26, 0xdbe7ef, 0, 0); }
+  }));
+  for (const x of [28.3, 29.3, 34.5, 35.4]) addBoxCol(x - 0.25, CORR - 0.5, x + 0.25, CORR - 0.12, 0.9);
+  for (const z of [-9.2, -8.3, -7.4]) addBoxCol(24.06, z - 0.18, 24.4, z + 0.18, 1.0);
+  for (const x of [24.55, 25.95, 27.35, 30.55, 31.95, 33.35, 34.75]) addBoxCol(x - 0.03, SCHOOL.z0, x + 0.03, SCHOOL.z0 + 1.6, 1.9);
+  // the toilets: the catalogue's (without its seat) and a seat that flips up
+  for (const [x, girls] of [[25.25, false], [26.65, false], [31.25, true], [32.65, true], [34.05, true]]) {
+    const z = SCHOOL.z0 + 0.37;
+    put('toilet', x, z, 0, 1, { ground: true, col: true });
+    const pv = new THREE.Group(); pv.position.set(x, TOILET.hinge.y - 0.005, z + TOILET.hinge.z); scene.add(pv);
+    const seatM = new THREE.Mesh(toiletSeatGeometry(), vcMat); seatM.castShadow = true; pv.add(seatM);
+    const t = { x, z, girls, st: 1, seatT: 0, pv };
+    t.wc = { x, z, state: () => t.st, root: scene, wet: () => {}, scold: (seat) => say(cleaner(), seat ? 'Ki pisilt az ülőkére?! Fel kell hajtani, gyerekek!!' : 'Ki pisilt mellé?! Megmondom az osztályfőnöknek!!', 2.8, 'Takarító néni') };
+    toilets.push(t);
+  }
+  // a girl at the girls' sinks
+  const g = new Actor(makePerson({ scale: 0.7, shirt: 0xff70a6, pants: 0x3d405b, hair: 0x5a3825, dress: true, hat: false }), 'Réka');
+  g.place(34.9, CORR - 0.85, Math.PI); people.push({ a: g, kind: 'still', h: Math.PI });
+}
+const cleaner = () => ({ name: 'Takarító néni', rig: { root: { visible: true } }, headWorld: (v) => v.set(18, 2.2, -1.3) });
+function updateToilets(dt) {
+  for (const t of toilets) { t.seatT = damp(t.seatT, t.st === 2 ? 1 : 0, 8, dt); t.pv.rotation.x = -t.seatT * Math.PI * 0.46; }
+  // Petyus in the girls' toilet
+  const P = G.petike.pos, inGirls = P.x > WC.girls.x0 + 0.1 && P.z < CORR - 0.2;
+  if (inGirls && !school.inGirls) { const r = people.find((p) => p.a.name === 'Réka'); if (r) { r.a.targetHeading = Math.atan2(P.x - r.a.pos.x, P.z - r.a.pos.z); say(r.a, pick(['Iiiii! Petyus! Ez a lányvécé! Kifelé!!', 'KIFELÉ!! Ez a LÁNYVÉCÉ!!']), 2.6); } }
+  school.inGirls = inGirls;
+}
+function flush(t) {
+  soundAt(t.x, t.z, () => { tone('square', 900, 700, 0.05, 0.05); noise(1.7, 700, 0.5, 0.3, 0.1); noise(1.2, 1600, 0.7, 0.12, 0.3); tone('sine', 260, 110, 1.3, 0.05, 0.2); }, 1.4);
+  say({ headWorld: (o) => o.set(t.x, 1.1, t.z + 0.2) }, 'HÚÚÚSSS!', 1.6, '');
+  peeFlushed();
 }
 
 // ---------------------------------------------------------------- the walls' view: see-through or sunk (T, like at home), solid in
@@ -496,9 +603,23 @@ function updateSounds(dt, min) {
 // ---------------------------------------------------------------- Petyus's place: E – sitting down / standing up (ep2.js: seating)
 export function schoolAction() {
   const P = G.petike.pos;
+  if (pee.on) return null;
+  for (const t of toilets) if (Math.hypot(P.x - t.x, P.z - (t.z + 0.62)) < 0.55) return { toilet: t, txt: (t.st === 2 ? 'E – ülőke lehajtása' : 'E – ülőke felhajtása') + (isTouch ? '' : canPee(t.wc) ? ' · Szóköz – pisilés' : ' · Szóköz – lehúzás'), kick: canPee(t.wc) ? 'PISILÉS' : 'LEHÚZÁS' };
+  let bd = null, bdist = 1.1;
+  for (const d of doors) { const r = Math.hypot(P.x - d.x, P.z - d.z); if (r < bdist) { bdist = r; bd = d; } }
+  if (bd) return { door: bd, txt: (bd.open ? 'E – ajtó becsukása' : 'E – ajtó kinyitása') + ` (${bd.name})` };
   if (nearGate()) return { txt: 'E – hazaindulás', gate: true };
   if (Math.hypot(P.x - (seat.x + 0.45), P.z - seat.z) < 0.8 || (school.seated && Math.hypot(P.x - seat.x, P.z - seat.z) < 0.6)) return { txt: school.seated ? 'E – felállás' : 'E – leülés (a helyed)', seat: true };
   return null;
+}
+// E and Space on what schoolAction found (the gate and the seat: ep2.js)
+export function schoolUse(act) {
+  if (act.door) toggleDoor(act.door);
+  else if (act.toilet) { act.toilet.st = act.toilet.st === 2 ? 1 : 2; tone('sine', 700, 500, 0.05, 0.05); }
+}
+export function schoolKick(act) {
+  if (!act || !act.toilet) return;
+  if (canPee(act.toilet.wc)) startPee(act.toilet.wc); else flush(act.toilet);
 }
 export function toggleSeat(seating) {
   school.seated = !school.seated;
@@ -509,22 +630,27 @@ export function toggleSeat(seating) {
 
 // ---------------------------------------------------------------- build / tick
 export function buildSchool() {
-  walls.length = 0; desks.length = 0; people.length = 0; clocks.length = 0;
+  walls.length = 0; desks.length = 0; people.length = 0; clocks.length = 0; doors.length = 0; toilets.length = 0;
   buildGround(); buildMain(); buildLow(); buildHall(); buildSquare();
   for (const r of ROOMS3) buildClassroom(r);
-  buildCorridor(); buildCeiling();
+  buildCorridor(); buildCeiling(); buildToilets();
+  makeDoor(2.6, SCHOOL.z1 + TW / 2, 2.8, { double: true, glass: true, name: 'bejárat' });
+  makeDoor(5.1, CORR - 0.06, 1.0, { color: 0xb5793f, sign: { kind: 'class', text: '6. b' }, name: '6. b' });
+  makeDoor(17.1, CORR - 0.06, 1.0, { color: 0xb5793f, sign: { kind: 'class', text: '6. a' }, name: '6. a' });
+  makeDoor(26.1, CORR - 0.06, 1.0, { color: 0xf4f4f4, sign: { kind: 'boy', text: 'FIÚ' }, name: 'fiú WC' });
+  makeDoor(33.1, CORR - 0.06, 1.0, { color: 0xf4f4f4, sign: { kind: 'girl', text: 'LÁNY' }, name: 'lány WC' });
   buildFurniture();
   buildPeople();
 }
 export function schoolRoom(x, z) {
-  if (x > SCHOOL.x0 && x < SCHOOL.x1 && z > SCHOOL.z0 && z < SCHOOL.z1) return z > CORR ? 'Iskola – folyosó' : 'Iskola – a ' + ROOMS3[Math.min(2, Math.floor(x / 12))].cls + ' osztályterme';
+  if (x > SCHOOL.x0 && x < SCHOOL.x1 && z > SCHOOL.z0 && z < SCHOOL.z1) return z > CORR ? 'Iskola – folyosó' : x >= 30 ? 'Iskola – lány WC' : x >= 24 ? 'Iskola – fiú WC' : 'Iskola – a ' + ROOMS3[Math.floor(x / 12)].cls + ' osztályterme';
   if (x < CAMPUS.x0 || z > CAMPUS.z1) return 'Az utca';
   return 'Iskola – udvar';
 }
-export const schoolFloor = (x, z) => (x > SCHOOL.x0 && x < SCHOOL.x1 && z > SCHOOL.z0 && z < SCHOOL.z1 ? (z > CORR ? 'stone' : 'wood') : 'stone');
+export const schoolFloor = (x, z) => (x > SCHOOL.x0 && x < SCHOOL.x1 && z > SCHOOL.z0 && z < SCHOOL.z1 ? (z > CORR ? 'stone' : x >= 24 ? 'tile' : 'wood') : 'stone');
 // solid: the first-person view or zoomed out – walls solid, the roof on
 export function updateSchool(dt, min, solid) {
-  updateWalls(dt, solid); updatePeople(dt); updateSounds(dt, min);
+  updateWalls(dt, solid); updatePeople(dt); updateSounds(dt, min); updateDoors(dt); updateToilets(dt);
   if (Math.floor(min) !== school.lastMin) { school.lastMin = Math.floor(min); for (const c of clocks) c.draw(min); }
   if (school.seated && !G.petike.sitTarget && G.petike.sit < 0.05) school.seated = false;   // stood up with a movement key
   const P = G.petike.pos, inClass = P.x < 12 && P.z < CORR && P.z > SCHOOL.z0;
