@@ -65,6 +65,31 @@ export function dressPajama(rig, who) {
     }
     col.needsUpdate = true;
     g.setAttribute('pat', new THREE.BufferAttribute(pat, 4));
+    if (!o.userData.dayMat) o.userData.dayMat = o.material;
     o.material = pajamaMaterial(who);
+  });
+}
+
+// ---------------------------------------------------------------- day clothes (getting dressed: dressing.js)
+// back to the model's own clothes (part 1's); top: a colour for Petyus's football shirt (its light, colourless voxels between
+// the waist and the neck – the sleeves too, not the skin), the shading kept
+export const TOPS = { white: null, black: 0x26272b, blue: 0x2f5f9e };   // (blue: the darker blue of his pajamas)
+export function dressClothes(rig, top = null, band = [0.66, 1.32]) {
+  const tc = top != null ? new THREE.Color(top) : null;
+  rig.root.traverse((o) => {
+    if (!o.isMesh || !o.geometry.attributes.color) return;
+    const g = o.geometry, col = g.attributes.color, pos = g.attributes.position, orig = g.userData.origColor;
+    if (!orig) { if (!tc) return; g.userData.origColor = col.array.slice(); }
+    const src = g.userData.origColor;
+    for (let i = 0; i < col.count; i++) {
+      let r = src[i * 3], gg = src[i * 3 + 1], b = src[i * 3 + 2];
+      const y = pos.getY(i);
+      if (tc && y > band[0] && y < band[1] && Math.max(r, gg, b) - Math.min(r, gg, b) < 0.07 && r > 0.6) {
+        const k = r / 0.95; r = tc.r * k; gg = tc.g * k; b = tc.b * k;
+      }
+      col.setXYZ(i, r, gg, b);
+    }
+    col.needsUpdate = true;
+    if (o.userData.dayMat) o.material = o.userData.dayMat;
   });
 }

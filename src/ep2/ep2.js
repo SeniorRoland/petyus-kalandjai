@@ -21,7 +21,8 @@ import { buildOutside, placeOutsideProps, setEvening, updateOutside } from './ou
 import { buildAppliances, devices, fx, seating, updateAppliances } from './appliances.js';
 import { buildInventory, cycleItem, holdingController, inv, invAction, invTake, itemObj, pickLabel, pickUp, pickables, selectItem, updateInventory } from './inventory.js';
 import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, wheek } from './karcsi.js';
-import { dressPajama } from './pajama.js';
+import { TOPS, dressClothes, dressPajama } from './pajama.js';
+import { buildWardrobe, dress, dressLoad, dressSave, dressTick, hurryParents, leaveBlock, wardrobeCand, wardrobeLabel, wardrobeUse } from './dressing.js';
 import { buildSister, updateSister } from './sister.js';
 import { canPee, pee, peeFlushed, peeLabel, peeTick, startPee } from './pee.js';
 import { startWakeup, wakeTick, wakeupFocus } from './wakeup.js';
@@ -54,7 +55,7 @@ const SAVE_KEY = 'petyus.r2.allapot';
 export function ep2HasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
 function saveEp2() {
   const p = G.petike, st = { v: 1, phase: ep2.phase, day: ep2.day, min: ep2.min, x: p.pos.x, z: p.pos.z, h: p.heading,
-    doors: doors.filter((d) => d.pivot).map((d) => d.open), seat: toiletSeat.state, lights: switches.map((s) => s.on), walls: wallView.mode, cage: cageDoorOpen(), late: ep2.lateMin };
+    doors: doors.filter((d) => d.pivot).map((d) => d.open), seat: toiletSeat.state, lights: switches.map((s) => s.on), walls: wallView.mode, cage: cageDoorOpen(), late: ep2.lateMin, dress: ep2.phase === 'morning' ? dressSave() : null, top: ep2.phase === 'morning' ? dress.top : ep2.top };
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(st)); } catch (e) { /* storage blocked */ }
 }
 function loadEp2() {
@@ -71,11 +72,13 @@ function loadEp2() {
   switches.forEach((s, i) => { if (typeof st.lights?.[i] === 'boolean' && s.on !== st.lights[i]) toggleSwitch(s); });
   if (st.walls === 'fade' || st.walls === 'sink') wallView.mode = st.walls;
   if (typeof st.cage === 'boolean' && st.cage !== cageDoorOpen()) toggleCageDoor();
+  if (ep2.phase === 'morning') dressLoad(st.dress);
   if (typeof st.seat === 'number') { toiletSeat.state = clamp(st.seat | 0, 0, 2); toiletSeat.lidT = toiletSeat.state >= 1 ? 1 : 0; toiletSeat.seatT = toiletSeat.state === 2 ? 1 : 0; }
   return true;
 }
 window.addEventListener('pagehide', () => { if (G.episode === 2 && G.mode === 'play' && !ep2.leaving) saveEp2(); });
 // which part of the day the saved game is in (read before building anything)
+function savedTop() { try { const st = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return st && TOPS[st.top] !== undefined ? st.top : null; } catch (e) { return null; } }
 function savedPhase() { try { const st = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return st && st.v === 1 && PHASES[st.phase] ? st.phase : 'morning'; } catch (e) { return 'morning'; } }
 
 // ---------------------------------------------------------------- the parts of a day: home in the morning → school → home in
@@ -96,7 +99,7 @@ const morningDone = () => MORNING_IDS.filter((id) => starsFor(id) > 0).length;
 const NEXT_KEY = 'petyus.r2.tovabb';
 function goPhase(phase, day, note = '') {
   ep2.leaving = true;
-  const st = { v: 1, phase, day, min: PHASES[phase].start, fresh: true, late: phase === 'morning' ? 0 : ep2.lateMin };
+  const st = { v: 1, phase, day, min: PHASES[phase].start, fresh: true, late: phase === 'morning' ? 0 : ep2.lateMin, top: phase === 'morning' ? null : dress.top || ep2.top };
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(st)); sessionStorage.setItem(NEXT_KEY, JSON.stringify({ phase, day, note })); } catch (e) { /* storage blocked */ }
   G.mode = 'leaving'; setPrompt('');
   $('filmDip').classList.add('on');
@@ -122,11 +125,14 @@ export function showPhaseCard(n, onGo) {
 // the three ways on
 function leaveMorning() {
   const done = morningDone();
+  const block = leaveBlock();
+  if (block === 'dress') { say(G.angi, 'Pizsamában?! Előbb öltözz fel! A ruháid a szobádban vannak, a szekrényben.', 3.4); toast('Öltözés: Petyus szobájában a <b>szekrénynél</b> (E).', 3); return; }
   if (ep2.min < MORNING_END && done < MORNING_IDS.length) {
     say(G.angi, `Még csak ${clockText(ep2.min)} van! Fél nyolckor indulunk.`, 3.0);
     toast(`Indulás: <b>7:30</b>-kor – vagy ha mindhárom reggeli csibészség megvolt (<b>${done}/3</b>).`, 3.4);
     return;
   }
+  if (block === 'parents') { say(G.petya, 'Várj meg minket, Petyus! Mi is felöltözünk!', 2.6); hurryParents(); return; }
   if (weekend(ep2.day)) goPhase('evening', ep2.day, 'Hétvége: ma nincs iskola – egész nap a nagyiéknál voltatok.');
   else goPhase('school', ep2.day);
 }
@@ -167,11 +173,12 @@ export function startEp2() {
   if (SCHOOL) buildSchool();
   else {
     buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances(); buildInventory();
-    if (!EVE) buildSister();   // (in the evening she is out)
+    if (!EVE) { buildSister(); buildWardrobe(); }   // (in the evening she is out) · Petyus's wardrobe: getting dressed (dressing.js)
     if (EVE) { setEvening(); addFillLights(Q.level >= 2 ? 6 : 3); }   // (the lamps: every lit room glows)
   }
   // in the morning the three of them are in pajamas (Petyus: the football kit's model – the walking one)
   if (ep2.phase === 'morning') { dressPajama(rigs.foci, 'petyus'); dressPajama(rigs.petya, 'petya'); dressPajama(rigs.angi, 'angi'); }
+  else { ep2.top = savedTop(); if (ep2.top) dressClothes(rigs.foci, TOPS[ep2.top]); }   // what he put on in the morning
   G.petike.riding = false; G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7;
   if (SCHOOL) {   // the parents are not there
     ep2.bounds = SCHOOL_BOUNDS;
@@ -328,6 +335,7 @@ const step = { n: 0 };
 function movePetyus(dt) {
   const a = G.petike;
   if (peeTick(dt)) return;   // at the WC (pee.js): standing, aiming
+  if (dress.choosing || dress.changeT >= 0) { a.animate(dt, false, 0); a.sync(); return; }   // at the wardrobe (dressing.js)
   // sitting in the armchair: no walking; a movement key (or the stick) stands him up again
   if (seating.on) {
     const moveKey = keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || (!fp.on && (keys.ArrowLeft || keys.ArrowRight)) || touch.active;
@@ -399,6 +407,7 @@ function interactHome() {
   cands.push({ o: { seat: true }, r: Math.hypot(p.x - toiletSeat.x, p.z - (toiletSeat.z + 0.6)), reach: 0.75, aim: new V3(toiletSeat.x, 0.45, toiletSeat.z + 0.1), size: 0.25 });
   for (const dv of devices) cands.push({ o: { dev: dv }, r: Math.hypot(p.x - dv.x, p.z - dv.z), reach: dv.r, aim: dv.aim || new V3(dv.x, 0.9, dv.z), size: dv.size || 0.14 });
   for (const pc of pickables(p)) cands.push({ o: { item: pc.item }, r: pc.d - 0.2, reach: 0.55, aimW: pc.w, size: 0.08 });
+  if (ep2.phase === 'morning') cands.push(wardrobeCand(p));   // getting dressed (dressing.js)
   if (ep2.phase === 'evening') cands.push({ o: { bed: true }, r: Math.hypot(p.x - 12.75, p.z - 1.95), reach: 0.8, aim: new V3(12.22, 0.5, 1.95), size: 0.5 });   // Petyus's bed: sleep
   { const hl = keyHintLabel(); if (hl) cands.push({ o: { hint: hl }, r: Math.hypot(p.x - G.angi.pos.x, p.z - G.angi.pos.z) - 0.3, reach: 1.1, aimW: new V3(G.angi.pos.x, FY + 1.2, G.angi.pos.z), size: 0.35 }); }
   if (karcsiTakeable()) { const w = new V3(); pigObj().getWorldPosition(w); cands.push({ o: { karcsi: true }, r: Math.hypot(p.x - w.x, p.z - w.z) - 0.6, reach: 0.4, aimW: w, size: 0.12 }); }   // he wins over the cage door next to him
@@ -417,7 +426,10 @@ function interactHome() {
   const kb = $('kickBtn'), altBusy = !!(best && (best.seat || (best.dev && best.dev.alt)));
   if (kb) { const lbl = isTouch ? (best && best.seat ? (canPee() ? 'PISILÉS' : 'LEHÚZÁS') : best && best.dev && best.dev.alt ? best.dev.alt.short() : act ? act.short : '') : ''; kb.style.display = lbl ? 'block' : 'none'; if (lbl && kb.textContent !== lbl) kb.textContent = lbl; }
   if (act && (G.invPressed || (isTouch && G.kickPressed && !altBusy))) act.run();
-  if (best && best.bed) {
+  if (best && best.wardrobe) {
+    txt = wardrobeLabel();
+    if (G.usePressed) wardrobeUse();
+  } else if (best && best.bed) {
     txt = 'E – lefekvés (jó éjt!)';
     if (G.usePressed) { say(G.petike, 'Jó éjt, anya! Jó éjt, apa!', 1.8); setTimeout(goToBed, 1200); }
   } else if (best && best.hint) {
@@ -534,6 +546,10 @@ function momLook() {
 // ---------------------------------------------------------------- the parents
 function updateParents(dt) {
   const MORNING = ep2.phase === 'morning';
+  if (MORNING) {   // getting dressed (dressing.js): once Petyus is dressed and it is time, the parents get ready and wait at the door
+    const ready = ep2.min >= MORNING_END || morningDone() === MORNING_IDS.length;
+    if (dressTick(dt, ready, dadBusy() || dadChasing() || momBusy() || keyBusy())) { if (dress.parents !== 'change') { G.petya.update(dt); G.angi.update(dt); } return; }
+  }
   G.petya.update(dt); if (MORNING) coffeeTick(dt);   // the creamy coffee may take dad over (coffee.js)
   const m = G.angi;
   momRoutine(dt);
@@ -586,7 +602,7 @@ export function stepEp2(dt) {
     if (r !== ep2.room) {
       ep2.room = r; $('e2Room').textContent = r ? r.name : '';
       const l = ep2.phase === 'morning' && r && ROOM_LINES[r.id];   // (the rooms' morning lines)
-      if (l && !ep2.seen.has(r.id) && !(l[0](G) === G.petya && dadBusy())) { ep2.seen.add(r.id); say(l[0](G), l[1], 3); ep2.talkT = Math.max(ep2.talkT, 5); }
+      if (l && !(r.id === 'eloter' && dress.top) && !ep2.seen.has(r.id) && !(l[0](G) === G.petya && dadBusy())) { ep2.seen.add(r.id); say(l[0](G), l[1], 3); ep2.talkT = Math.max(ep2.talkT, 5); }   // (the hallway's „pajamas” line: only in pajamas)
     }
     ep2.min = Math.min(PHASES[ep2.phase].end, ep2.min + dt * minPerSec()); hudClock();
     G.usePressed = false; G.qPressed = false; G.kickPressed = G.kickReleased = false; G.invPressed = false;
