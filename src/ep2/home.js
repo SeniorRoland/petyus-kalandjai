@@ -20,7 +20,7 @@ export const FY = 6;
 export const homeRoot = new THREE.Group(); homeRoot.position.y = FY;
 const TE = 0.25, CUT = 0.17, FADE = 0.16, FADE_OUT = 0.2;   // outer wall thickness, a sunk wall's height (× WALL_H), a see-through (inner / outer) wall's opacity
 export const wallView = { mode: 'fade' };   // 'fade' | 'sink'
-const XE = 15.6, ZS = 9.2;   // the flat's inner east and south edges
+export const XE = 15.6, ZS = 9.2;   // the flat's inner east and south edges
 
 // ---------------------------------------------------------------- rooms (inner floor areas)
 export const ROOMS = [
@@ -53,8 +53,8 @@ const WIN = (a, b, y0 = 0.85, y1 = 2.2) => ({ a, b, y0, y1 });
 const WALLS = [
   // outer north: bathroom, WC, kitchen ×2 windows; Petyus's room: the door to the north balcony + a window
   { kind: 'out', n: [0, -1], x0: -TE, z0: -TE, x1: XE + TE, z1: 0, open: [WIN(1.3, 2.3, 1.5), WIN(4.2, 4.9, 1.6, 2.1), WIN(6.4, 8.0, 1.05), WIN(8.6, 10.2, 1.05), { a: 12.2, b: 13.1, glass: true, swing: 1 }, WIN(13.6, 15.0)] },
-  // outer west: the front door (hallway), the sibling's window
-  { kind: 'out', n: [-1, 0], x0: -TE, z0: 0, x1: 0, z1: ZS + TE, open: [{ a: 2.85, b: 3.8, leaf: 'front' }, WIN(5.6, 7.8)] },
+  // outer west: the front door (hallway); the sibling's room has pictures above the bed there (no window)
+  { kind: 'out', n: [-1, 0], x0: -TE, z0: 0, x1: 0, z1: ZS + TE, open: [{ a: 2.85, b: 3.8, leaf: 'front' }] },
   // outer south: two windows in each of the south rooms
   { kind: 'out', n: [0, 1], x0: -TE, z0: ZS, x1: XE + TE, z1: ZS + TE, open: [WIN(1.0, 3.0), WIN(3.8, 5.8), WIN(8.0, 10.2), WIN(11.6, 14.6)] },
   // outer east: Petyus's window; the parents' room: the door to the east balcony + a window
@@ -232,7 +232,7 @@ function furnish() {
   // Petyus's room: bed on the kitchen wall, desk with the monitor by the east window, wardrobe on the south wall, play rug, school bag
   put('bed_single', 12.22, 1.95, 0, 0); put('desk', 15.28, 1.45, W, 1);   // the computer on it: appliances.js put('chair', 14.7, 1.45, E, 2);
   put('desk', 14.3, 0.32, 0, 1);   // the table before the north window, with Karcsi's cage on it (karcsi.js)
-  put('wardrobe', 14.3, 3.88, P, 0); put('rug', 13.7, 2.2, 0, 2); put('schoolbag', 13.25, 3.95, P);
+  put('wardrobe', 14.3, 3.88, P, 0); put('rug', 13.7, 2.2, 0, 2); put('schoolbag', 15.32, 2.32, W);   // the bag next to the desk (the scooter: appliances.js)
   // the sibling's room (locked): double bed, built-in wardrobe, dresser
   put('bed_double', 1.12, 6.8, E, 2); put('wardrobe', 4.4, 4.64, 0, 0); put('wardrobe', 5.4, 4.64, 0, 0); put('dresser', 4.6, 8.92, P, 0); put('rug', 3.4, 6.8, 0, 0);
   // the parents' room: bed on the north wall, the sofa opposite on the south wall, TV on the south wall near the sibling's
@@ -361,6 +361,10 @@ const PICTURES = [
   { img: 'kep-10-szundikalo-apa', x: 12.6, z: 4.32, n: [0, 1], y: 1.7, w: 1.1, frame: 0x8a5a2e },       // the parents' bed
   { img: 'kep-03-lufis-bacsi', x: 6.92, z: 5.6, n: [1, 0], y: 1.8, w: 0.8, frame: 0x2c2f33 },           // above the low cabinet
   { img: 'kep-05-fotobomba', x: 6.92, z: 7.8, n: [1, 0], y: 1.8, w: 0.8, frame: 0x2c2f33 },
+  // the sibling's room: three above the bed on the west wall (where the window was)
+  { img: 'kep-04-galambraj', x: 0, z: 5.95, n: [1, 0], y: 1.55, w: 0.55, frame: 0xf3f1ec },
+  { img: 'kep-01-csaladi-nap', x: 0, z: 6.8, n: [1, 0], y: 1.65, w: 0.75, frame: 0xe76f9a },
+  { img: 'kep-03-lufis-bacsi', x: 0, z: 7.65, n: [1, 0], y: 1.55, w: 0.55, frame: 0xf3f1ec },
 ];
 function wallAt(x, z) { return cutWalls.find((w) => x >= w.box[0] - 0.03 && x <= w.box[2] + 0.03 && z >= w.box[1] - 0.03 && z <= w.box[3] + 0.03); }
 function buildPictures() {

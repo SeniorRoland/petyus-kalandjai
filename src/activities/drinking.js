@@ -19,7 +19,7 @@ import { canHide, startHide } from './hide.js';
 import { canBalloon, startBalloon } from './balloon.js';
 
 // ---------------------------------------------------------------- play activities: drinking fountain, scooter, worried dad
-const DRINK = { x: 28.3, z: -12.9, stand: [28.3, -12.36] };
+const DRINK = { x: 28.3, z: -12.9, stand: [28.3, -12.25] };   // far enough that leaning over the basin the chest stays above it
             // free | toDrink | drinking | riding | toFountain | ftnDrink | caught | chased | atMom
 
 export function setPrompt(txt) {
@@ -36,11 +36,17 @@ export function interactions() {
   const canDrink = dDrink < 1.6, canRide = dRoll < 1.5 && !roller.rider, canFtn = dFtn < FOUNTAIN.r + 1.0;
   const canJug = canJuggle(), canCoach = canChallengeDad(), canDmp = canDump(), canTwr = canTower(), canCrumb = canAskCrumbs(), canHd = canHide(), canBl = canBalloon();
   // the bench mischiefs win over the scooter leaning right next to dad
-  setPrompt(canDrink ? (pig.active ? 'E – inni az ivókútból' : isTouch ? 'HASZNÁL – inni · RÚGÁS – vízipisztoly!' : 'E – inni · Szóköz – vízipisztoly!') : canDmp ? 'E – Morzsa apára!' : canTwr ? 'E – Torony apa fejére (csitt!)' : canHd ? 'E – Apa, bújócskázzunk!' : canBl ? 'E – Kérek egy lufit!' : canRide ? 'E – felszállni a rollerre' : canFtn ? (pig.active ? 'E – inni a szökőkútból' : isTouch ? 'HASZNÁL – inni a szökőkútból · RÚGÁS – pénzhalászat' : 'E – inni a szökőkútból · Szóköz – pénzhalászat')
-    : canCoach ? 'E – Mutasd te, apa!' : canCrumb ? 'E – Anya, van egy kis morzsád?' : pig.active && !pig.done ? (isTouch ? 'RÚGÁS – morzsát szórni' : 'Szóköz – morzsát szórni') : canJug ? (isTouch ? 'Dekázás' : 'Q – dekázás') : '');
+  const atRim = canFtn && !canDrink && !canDmp && !canTwr && !canHd && !canBl && !canRide;
+  // what the touch buttons do here: their labels (touchui.js) – the RÚGÁS button (Space) and the HASZNÁL button (E)
+  const fishOk = atRim && !pig.active && canFish();
+  G.touchKick = canDrink && !pig.active ? 'FRÖCSKÖL' : fishOk ? 'HALÁSZ' : pig.active && !pig.done ? 'MORZSA' : null;
+  G.touchUse = canDrink ? 'IVÁS' : canDmp ? 'MORZSA' : canTwr ? 'TORONY' : canHd ? 'BÚJÓCSKA' : canBl ? 'LUFI' : canRide ? 'ROLLER' : canFtn ? 'IVÁS'
+    : canCoach ? 'MUTASD!' : canCrumb ? 'MORZSA?' : canJug ? 'DEKÁZÁS' : null;
+  const K = isTouch ? G.touchKick : 'Szóköz', U = isTouch ? G.touchUse : 'E';
+  setPrompt(canDrink ? (pig.active ? `${U} – inni az ivókútból` : `${U} – inni · ${K} – vízipisztoly!`) : canDmp ? `${U} – Morzsa apára!` : canTwr ? `${U} – Torony apa fejére (csitt!)` : canHd ? `${U} – Apa, bújócskázzunk!` : canBl ? `${U} – Kérek egy lufit!` : canRide ? `${U} – felszállni a rollerre` : canFtn ? (fishOk ? `${U} – inni a szökőkútból · ${K} – pénzhalászat` : `${U} – inni a szökőkútból`)
+    : canCoach ? `${U} – Mutasd te, apa!` : canCrumb ? `${U} – Anya, van egy kis morzsád?` : pig.active && !pig.done ? `${K} – morzsát szórni` : canJug ? (isTouch ? `${U} – dekázás` : 'Q – dekázás') : '');
   if (G.qPressed) { G.qPressed = false; if (canJug) { startJuggle(); return true; } }
   if (canDrink && G.kickPressed && !pig.active) { G.kickPressed = false; startSquirt(); return true; }   // 4. csibészség: „Vízipisztoly az ivókútból”
-  const atRim = canFtn && !canDrink && !canDmp && !canTwr && !canHd && !canBl && !canRide;
   if (atRim && G.kickPressed && !pig.active && canFish()) { G.kickPressed = false; startFish(); return true; }   // 7. csibészség: „Pénzhalászat a szökőkútból”
   if (!G.usePressed) return false;
   G.usePressed = false;
@@ -69,7 +75,7 @@ export function updateDrinking(dt) {
   }
   G.drinkT += dt; a.heading = dampAngle(a.heading, Math.PI, 10, dt); a.animate(dt, false, 0);
   const r = a.rig, k = Math.max(0, Math.min(1, G.drinkT * 3, (3.0 - G.drinkT) * 3));
-  r.inner.rotation.x = 0.5 * k; r.sh[0].rotation.x = -0.85 * k; r.sh[1].rotation.x = -0.85 * k; r.sh[0].rotation.z = -0.3 * k; r.sh[1].rotation.z = 0.3 * k;
+  a.bow(0.6 * k); r.sh[0].rotation.x = -0.85 * k; r.sh[1].rotation.x = -0.85 * k; r.sh[0].rotation.z = -0.3 * k; r.sh[1].rotation.z = 0.3 * k;
   if (G.drinkT > 0.35 && G.drinkT < 2.6) {
     if (rand() < 0.7) spawnFx(new V3(DRINK.x + R(-0.02, 0.02), 1.13, DRINK.z - 0.03), new V3(R(-0.05, 0.05), R(0.9, 1.2), R(0.7, 0.95)), pick([0x8fd8ff, 0xc9efff, 0x5ec2f2]), 0.04, 0.35, 6);
     G.gulpT -= dt; if (G.gulpT <= 0) { G.gulpT = 0.42; tone('sine', 260, 140, 0.09, 0.12); }

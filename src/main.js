@@ -11,7 +11,7 @@ import { ftn } from './activities/fountain.js';
 import { jug, jugPress } from './activities/juggle.js';
 import { Actor, updateFx } from './actors.js';
 import { updateAmbience } from './ambience.js';
-import { initAudio } from './audio.js';
+import { audioWaiting, initAudio } from './audio.js';
 import { makeBall, updateBall } from './ball.js';
 import { updateCamera } from './camera.js';
 import { cine, tickCine } from './cine.js';
@@ -106,7 +106,7 @@ async function boot() {
   buildWorld();
   makeBall();
   const loader = new GLTFLoader();
-  const files = ['petya.glb', 'angi.glb', 'petike_roller.glb', 'petike_foci.glb', 'roller_kicsi.glb'];
+  const files = ['petya.glb', 'angi.glb', 'petike_roller.glb', 'petike_foci.glb', 'roller_kicsi.glb', 'nover.glb'];
   let done = 0; const bar = $('loadbar').firstElementChild;
   let res;
   try {
@@ -115,11 +115,12 @@ async function boot() {
     $('err').innerHTML = 'Nem sikerült betölteni a modelleket (' + (e.message || e) + ').<br>Ellenőrizd, hogy a <code>public/</code> mappában valódi .glb fájlok vannak.';
     setStartLabel('Hiba'); console.error(e); return;
   }
-  const [gPetya, gAngi, gRoller, gFoci, gScooter] = res;
+  const [gPetya, gAngi, gRoller, gFoci, gScooter, gNover] = res;
   rigs.petya = rigFromGLTF(gPetya, CFG.petya);
   rigs.angi = rigFromGLTF(gAngi, CFG.angi);
   rigs.roller = rigFromGLTF(gRoller, CFG.roller);
   rigs.foci = rigFromGLTF(gFoci, CFG.foci);
+  rigs.nover = rigFromGLTF(gNover, CFG.nover);   // Petyus's big sister (part 2)
   // scooter
   G.rollerModel = gScooter.scene; G.rollerModel.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   const sc = new THREE.Group(); sc.add(G.rollerModel); G.rollerModel.scale.setScalar(ROLLER_SCALE); G.rollerModel.rotation.y = Math.PI / 2; G.rollerModel.position.x = 0.07 * ROLLER_SCALE;
@@ -141,7 +142,10 @@ async function boot() {
   // 2. rész: Szeptember – its tile opens once part 1 has 15 ⭐ (always on the dev server); the park is swapped for the flat
   const b2 = $('ep2Btn');
   if (b2 && ep2Unlocked()) { b2.disabled = false; setStartLabel(ep2HasSave() ? 'Folytatás ▶' : 'Indítás ▶', b2); b2.onclick = () => { initAudio(); if (MOBILE) goFullscreen(); $('overlay').classList.add('hide'); startEp2(); }; }
-  if (ep2DevStart()) { $('overlay').classList.add('hide'); startEp2(); }   // dev only: ?resz=2
+  if (ep2DevStart()) {   // dev only: ?resz=2 – no click before it, so the sound starts with the first click / key
+    initAudio(); $('overlay').classList.add('hide'); startEp2();
+    if (audioWaiting()) toast('🔊 A hanghoz kattints vagy nyomj meg egy billentyűt!', 4);
+  }
   requestAnimationFrame(frame);
   window.__game = { THREE, scene, camera, renderer, petike: () => G.petike, petya: () => G.petya, angi: () => G.angi, ball, roller, keys, skipIntro, get mode() { return G.mode; }, get pstate() { return G.pstate; }, get petyaMode() { return G.petyaMode; }, use: () => { G.usePressed = true; }, roller, setZoom: (z) => { G.zoomOverride = z; G.viewSizeTarget = z; G.viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { G.kickPressed = true; setTimeout(() => { G.kickReleased = true; }, p); },
     // manual stepping (works even when the tab is hidden and rAF is paused): __game.tick(seconds)

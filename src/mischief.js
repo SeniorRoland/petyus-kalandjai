@@ -20,13 +20,14 @@ export const MISCHIEFS = [
 // part 2 (Szeptember): its own list and its own save – the morning at home (the school and the afternoon come later)
 export const MISCHIEFS2 = [
   { id: 'r2-tejszin', title: 'A tejszínes kávé', hint: 'Apa kávét kér, de a gyomra nem bír mindent. (a hűtőben van tej, tejszín és tejszínhab)', fmt: (v, x) => (v >= 3 ? 'apa a WC-n – első próbára, tanúk nélkül' : v === 2 ? 'apa a WC-n – első próbára' : 'apa a WC-n') + (x && x.paper ? ', papírért kiabált' : ''), stars: (v) => v },
-  { id: 'r2-karcsi', title: 'Karcsi nagy szökése', hint: 'Karcsi is szeretne körülnézni a lakásban. (hamarosan)', stars: () => 1 },
-  { id: 'r2-kulcs', title: 'Hol a kulcs, Angi?', hint: 'Anya kulcsa mindig a cipősszekrényen van. (hamarosan)', stars: () => 1 },
+  { id: 'r2-karcsi', title: 'Karcsi nagy szökése', hint: 'Karcsi is szeretne körülnézni a lakásban. (a hűtőben van répa – azt nagyon szereti)', fmt: (v, x) => `${v} mp szabadon` + (x && x.scream ? ', anya a széken' : ''), stars: (v, x) => 1 + (x && x.scream ? 1 : 0) + (x && x.scream && v >= 60 ? 1 : 0) },
+  { id: 'r2-kulcs', title: 'Hol a kulcs, Angi?', hint: 'Anya kulcsa mindig a cipősszekrényen van. (és ha nem ott lenne?)', fmt: (v, x) => `${v} mp keresés` + (x && x.odd ? ', fura helyen' : '') + (x && x.hint ? ', lebukott' : ''), stars: (v, x) => 1 + (v >= 120 ? 1 : 0) + (x && x.odd && !x.hint ? 1 : 0) },
 ];
 const BOOKS = {
-  1: { list: MISCHIEFS, key: 'petyus.r1.csibeszsegek', sub: '1. rész: Augusztus – Egy nap a parkban' },
-  2: { list: MISCHIEFS2, key: 'petyus.r2.csibeszsegek', sub: '2. rész: Szeptember – Otthon és iskola' },
+  1: { list: MISCHIEFS, key: 'petyus.r1.csibeszsegek', sub: '1. rész: Augusztus – Egy nap a parkban', tab: '1. Augusztus' },
+  2: { list: MISCHIEFS2, key: 'petyus.r2.csibeszsegek', sub: '2. rész: Szeptember – Otthon és iskola', tab: '2. Szeptember' },
 };
+let jrBook = 1;   // the episode shown in the journal (its tab)
 for (const b of Object.values(BOOKS)) {
   try { b.saved = JSON.parse(localStorage.getItem(b.key) || '{}') || {}; } catch (e) { b.saved = {}; }   // storage blocked → this session only
 }
@@ -37,6 +38,8 @@ const starsOf = (b) => b.list.reduce((s, m) => s + ((b.saved[m.id] && b.saved[m.
 export const MAX_STARS = MISCHIEFS.length * 3;
 // part 1's stars (the September episode opens with 15 of them)
 export const totalStars = () => starsOf(BOOKS[1]);
+// the best stars of one mischief so far (0: not done yet)
+export const starsFor = (id) => { const b = bookOf(id); return (b && b.saved[id] && b.saved[id].stars) || 0; };
 export const doneCount = () => MISCHIEFS.filter((m) => BOOKS[1].saved[m.id]).length;
 
 // score a finished mischief: returns the stars of this attempt
@@ -76,12 +79,23 @@ export function refreshTotals() {
 export function journalOpen() { return $('journal').classList.contains('open'); }
 export function toggleJournal(open = !journalOpen()) {
   const el = $('journal');
+  if (open && !journalOpen() && G.mode === 'play') jrBook = G.episode === 2 ? 2 : 1;   // in a game: its own episode first
   if (open) renderJournal();
   el.classList.toggle('open', open);
   G.paused = open && G.mode === 'play';    // the game waits while you read
 }
 function renderJournal() {
-  const b = curBook(), L = b.list;
+  const b = BOOKS[jrBook] || curBook(), L = b.list;
+  const tabs = $('jrTabs');
+  if (tabs) {
+    tabs.textContent = '';
+    for (const [k, bk] of Object.entries(BOOKS)) {
+      const t = document.createElement('button'); t.type = 'button'; t.className = +k === jrBook ? 'on' : '';
+      t.textContent = `${bk.tab} ⭐ ${starsOf(bk)}/${bk.list.length * 3}`;
+      t.onclick = () => { jrBook = +k; renderJournal(); };
+      tabs.appendChild(t);
+    }
+  }
   $('jrSub').textContent = b.sub;
   $('jrSum').textContent = `⭐ ${starsOf(b)} / ${L.length * 3} · ${L.filter((m) => b.saved[m.id]).length} / ${L.length} csibészség`;
   const list = $('jrList'); list.textContent = '';

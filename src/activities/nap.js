@@ -55,6 +55,7 @@ export function updateDoze(dt) {
     nap.jolt -= dt; const k = Math.sin(Math.max(0, nap.jolt) / 0.35 * Math.PI);
     if (p.sit > 0.95) { const r = p.rig; r.inner.rotation.x = -0.12 - 0.22 * k; r.inner.position.y += 0.05 * k; r.sh[0].rotation.x = r.sh[1].rotation.x = -0.15 - 0.35 * k; p.sync(); }
   }
+  if (nap.tower && nap.fallT < 0) placeTower();   // after his pose is set (slumped back, the snort), so it sits on his head
   if (!nap.game && nap.fallT < 0 && nap.t > WAKE_AFTER) wake(pick(['Hm? Nem aludtam! Csak pihentettem a szemem.', 'Mi? Nem horkoltam. Az egy galamb volt.']), false);
 }
 // called from dad.js every frame: tidy up if something else (e.g. the fountain alarm) took dad away mid-nap
@@ -93,7 +94,7 @@ export function updateTower(dt) {
   a.sync();
   if (!nap.game) return;
   // the marker sways faster as the tower grows; a big snore makes it jitter and the zone shrink
-  nap.phase += dt * (2.0 + nap.n * 0.32);
+  nap.phase += dt * (1.4 + nap.n * 0.2);   // a little slower than before (was 2.0 + n·0.32)
   const m = clamp(Math.sin(nap.phase) + (nap.loud > 0 ? Math.sin(G.clockT * 37) * 0.18 : 0), -1, 1), w = zoneW();
   $('twMark').style.left = ((m + 1) * 50).toFixed(1) + '%';
   $('twZone').style.left = ((1 - w) * 50).toFixed(1) + '%'; $('twZone').style.width = (w * 100).toFixed(1) + '%';
@@ -128,7 +129,7 @@ function addItem() {
   }
 }
 function placeTower() {
-  const v = G.petya.headWorld(new V3()); nap.tower.position.set(v.x, v.y - 0.27, v.z);
+  const v = G.petya.headTop(new V3()); nap.tower.position.set(v.x, v.y - 0.02, v.z);
 }
 function clearTower() { if (nap.tower) { scene.remove(nap.tower); nap.tower = null; nap.items = []; } }
 function flash() { const el = $('filmDip'); el.style.background = '#fff'; el.classList.add('on'); setTimeout(() => { el.classList.remove('on'); setTimeout(() => { el.style.background = ''; }, 200); }, 90); }

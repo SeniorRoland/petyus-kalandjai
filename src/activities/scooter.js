@@ -41,6 +41,7 @@ export function updateRiding(dt) {
   const dog = sledDog();   // 5. csibészség: „Kutyaszán” – a dog walker right here
   const oldie = dog ? null : raceOldie();   // 8. csibészség: „Rollerverseny a nyugdíjassal” – the old man on his bench
   if (G.usePressed) { G.usePressed = false; if (dog) return startSled(dog); if (oldie) return startRace(oldie); dismountScooter(); return; }
+  G.touchUse = dog ? 'KUTYASZÁN' : oldie ? 'VERSENY' : 'LESZÁLL';
   setPrompt(dog ? 'E – Megsétáltatom a kutyát!' : oldie ? 'E – Verseny a bácsival!' : 'E – leszállni a rollerről');
   rideStep(dt);
 }

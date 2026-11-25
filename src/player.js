@@ -5,11 +5,12 @@ import { updateFountainDrink } from './activities/fountain.js';
 import { updateJuggle } from './activities/juggle.js';
 import { updateRiding } from './activities/scooter.js';
 import { spawnFx } from './actors.js';
-import { sKick, tone } from './audio.js';
+import { noise, sKick, tone } from './audio.js';
+import { say } from './ui.js';
 import { FTN_STATES } from './dad.js';
 import { keys, touch } from './input.js';
 import { G, ball } from './state.js';
-import { $, R, V3, clamp, damp, dampAngle, lerp, smooth } from './util.js';
+import { $, R, V3, clamp, damp, dampAngle, lerp, pick, rand, smooth } from './util.js';
 import { GX0, GX1, GZ0, GZ1, PITCH, collide } from './world.js';
 import { updateCoach } from './activities/coach.js';
 import { updateTower } from './activities/nap.js';
@@ -58,7 +59,7 @@ export function updatePlayer(dt) {
   if (auto) { wx = auto.wx; wz = auto.wz; }
   const il = Math.hypot(wx, wz);
   const sprint = keys.ShiftLeft || keys.ShiftRight || touch.run;
-  const maxSp = (sprint ? 5.4 : 3.3) * (G.charging ? 0.6 : 1);
+  const maxSp = (sprint ? 5.4 : 3.3) * (G.charging ? 0.6 : 1) * (ouchT > 0 ? 0.35 : 1);
   pvel.x = damp(pvel.x, wx * maxSp, 10, dt); pvel.z = damp(pvel.z, wz * maxSp, 10, dt);
   a.pos.x += pvel.x * dt; a.pos.z += pvel.z * dt;
   collide(a.pos, 0.26, 0, null);
@@ -67,6 +68,7 @@ export function updatePlayer(dt) {
   if (il > 0.1) a.targetHeading = Math.atan2(wx, wz);
   a.heading = dampAngle(a.heading, a.targetHeading, 14, dt);
   a.animate(dt, spd > 0.25, spd);
+  if (ouchT > 0) hopOuch(dt);
 
   // kick input (with the bag of crumbs SPACE scatters crumbs instead)
   if (pig.active && !pig.done) { if (G.kickPressed) scatterCrumbs(); G.kickPressed = G.kickReleased = false; G.charging = false; }
@@ -121,6 +123,34 @@ function tryKick(fx_, fz_) {
     const gx = fx_ > 0 ? PITCH.x1 : PITCH.x0, gdx = gx - ball.pos.x, gdz = -ball.pos.z, gl = Math.hypot(gdx, gdz) || 1;
     G.lastKick = { t: G.clockT, power: p, toward: (fx_ * gdx + fz_ * gdz) / gl > 0.9 };
     for (let i = 0; i < 6; i++) spawnFx(new V3(ball.pos.x, 0.1, ball.pos.z), new V3(R(-1, 1), R(0.5, 1.5), R(-1, 1)), 0x6bb94e, 0.06, 0.4, 5);
-  } else { tone('sine', 300, 200, 0.06, 0.05); G.lastKick = { t: G.clockT, power: -1 }; }
+  } else {
+    G.lastKick = { t: G.clockT, power: -1 };
+    if (kickedSolid(fx_, fz_)) ouch(); else tone('sine', 300, 200, 0.06, 0.05);
+  }
+}
+// ---------- kicked something hard instead of the ball (a bench, a tree, the fence, a lamp post, the scooter …):
+// he hops on one leg holding his foot and cries out
+let ouchT = 0;
+const probe = new V3();
+function kickedSolid(fx_, fz_) {
+  const a = G.petike; probe.set(a.pos.x + fx_ * 0.42, 0, a.pos.z + fz_ * 0.42);
+  const x = probe.x, z = probe.z; collide(probe, 0.16, 0.05, null);
+  return Math.hypot(probe.x - x, probe.z - z) > 0.005;
+}
+function ouch() {
+  const a = G.petike; ouchT = 2.2;
+  noise(0.12, 260, 0.9, 0.5); tone('square', 140, 70, 0.12, 0.08);   // the thud
+  say(a, pick(['AÚÚÚ!! A LÁBAM!!', 'JAJJ-JAJJ-JAJJ!!', 'AÚ! Ez nem a labda volt!!', 'JAAAJ! A lábujjam!!']), 2.0);
+  if (G.petyaMode === 'bench' && rand() < 0.7) setTimeout(() => { say(G.petya, pick(['Nézz a lábad elé, Petyus!', 'A labdát rúgd, ne a padot!', 'Na tessék. Fáj?']), 2.2); G.petya.point = 1.2; }, 1100);
+}
+function hopOuch(dt) {
+  const a = G.petike, r = a.rig; ouchT -= dt;
+  const k = Math.min(1, ouchT * 3, (2.2 - ouchT) * 6), hop = Math.abs(Math.sin((2.2 - ouchT) * 9));
+  // the kicking (right) foot pulled up behind, both hands on it; hopping on the left one
+  r.hip[0].rotation.x = 0.15 * k; r.knee[0].rotation.x = 1.9 * k;
+  r.hip[1].rotation.x = -0.1 * k * hop; r.knee[1].rotation.x = 0.25 * k * (1 - hop);
+  r.sh[0].rotation.x = 0.5 * k; r.sh[1].rotation.x = 0.2 * k; r.sh[0].rotation.z = -0.25 * k;
+  r.inner.position.y += hop * 0.13 * k; r.inner.rotation.z = Math.sin((2.2 - ouchT) * 4.5) * 0.12 * k;
+  if (Math.floor((2.2 - ouchT) * 9 / Math.PI) !== Math.floor((2.2 - ouchT - dt) * 9 / Math.PI)) tone('sine', 180, 120, 0.04, 0.04);   // the landings
 }
 

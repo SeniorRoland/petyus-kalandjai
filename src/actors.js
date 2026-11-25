@@ -21,7 +21,18 @@ export class Actor {
   setRig(r) { scene.remove(this.rig.root); this.rig = r; scene.add(r.root); this.sync(); }
   walkTo(pts, speed = 1.5, keepHeading = false) { this.path = pts.map((p) => new V3(p[0], 0, p[1])); this.speed = speed; this.keepHeading = keepHeading; }
   place(x, z, h) { this.pos.set(x, 0, z); if (h !== undefined) this.heading = this.targetHeading = h; this.sync(); }
-  headWorld(out) { this.rig.root.getWorldPosition(out); out.y += this.rig.height + 0.25 - (this.sit > 0.5 ? this.rig.hipH - this.seatH + 0.0 : 0); return out; }
+  headWorld(out) {   // 0.25 m above the top of the head
+    if (this.rig.headBone) { this.rig.root.updateMatrixWorld(true); out.copy(this.rig.headTopLocal); this.rig.headBone.localToWorld(out); out.y += 0.25; return out; }
+    this.rig.root.getWorldPosition(out); out.y += this.rig.height + 0.25 - (this.sit > 0.5 ? this.rig.hipH - this.seatH + 0.0 : 0); return out;
+  }
+  // bend forward at the hips by th radians: the legs stay upright, the feet stay put (drinking, peeking …)
+  bow(th) {
+    const r = this.rig, h = r.hipH || 0.6;
+    r.inner.rotation.x = th; r.inner.position.y += h * (1 - Math.cos(th)); r.inner.position.z = -h * Math.sin(th);
+    if (r.hip[0]) for (let i = 0; i < 2; i++) r.hip[i].rotation.x -= th;
+  }
+  // the top of the head (the crown), following the head bone
+  headTop(out) { this.headWorld(out); out.y -= 0.25; return out; }
   update(dt) {
     if (this.riding) return;
     let moving = false;
@@ -45,15 +56,18 @@ export class Actor {
     this.sit = clamp(this.sit + Math.sign(this.sitTarget - this.sit) * dt * 1.8, 0, 1);
     if (r.foot) for (let i = 0; i < 2; i++) r.foot[i].rotation.x = 0;
     if (this.sit > 0) {
-      const s = smooth(this.sit), kneeSit = sitKnee(r, this.seatH);
-      // short legs on a high seat (Angi): the thighs slope down until the soles reach the floor (instead of dangling)
-      const drop = r.kneeH ? (this.seatH - 0.04) - r.kneeH : 0, thigh = (r.hipH || 0) - (r.kneeH || 0);
-      const tilt = drop > 0 && thigh > 0.05 ? Math.asin(Math.min(0.8, drop / thigh)) : 0;
+      // the hip joint (the middle of the thigh) is half a thigh above the seat, so the thighs rest on it, not in it
+      const hy = this.seatH + (r.thighR || 0) + 0.02, s = smooth(this.sit), kneeSit = sitKnee(r, hy + 0.04);
+      // the thighs lie flat on the seat (sloping them down would cut into its front edge). Legs too short for the seat (the
+      // stylised models): the soles don't reach – the feet point down, so the toes touch the floor (sitting on tiptoe)
+      // (the toe tip, footLen from the ankle, lies on the floor with the ankle at ankleH: turn the foot down until it does again)
+      const dangle = r.kneeH ? hy - r.kneeH : 0, a0 = r.ankleH || 0;
+      const toe = dangle > 0.005 && r.footLen ? Math.asin(Math.min(0.97, (a0 + dangle) / r.footLen)) - Math.asin(Math.min(0.97, a0 / r.footLen)) : 0;
       for (let i = 0; i < 2; i++) {
-        r.hip[i].rotation.x = lerp(r.hip[i].rotation.x, -1.5 + tilt, s); r.knee[i].rotation.x = lerp(r.knee[i].rotation.x, kneeSit - tilt, s); r.sh[i].rotation.x = lerp(r.sh[i].rotation.x, -0.35, s);
-        if (r.foot) r.foot[i].rotation.x = (1.5 - kneeSit) * s;   // keep the sole flat on the ground
+        r.hip[i].rotation.x = lerp(r.hip[i].rotation.x, -Math.PI / 2, s); r.knee[i].rotation.x = lerp(r.knee[i].rotation.x, kneeSit, s); r.sh[i].rotation.x = lerp(r.sh[i].rotation.x, -0.35, s);
+        if (r.foot) r.foot[i].rotation.x = (Math.PI / 2 - kneeSit + toe) * s;   // the sole flat on the ground (or the toes down)
       }
-      r.inner.position.y = lerp(r.inner.position.y, this.seatH - r.hipH, s);
+      r.inner.position.y = lerp(r.inner.position.y, hy - r.hipH, s);
       r.inner.position.z = lerp(0, -0.05, s);
     }
     if (this.cheer > 0) {

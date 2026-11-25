@@ -6,9 +6,10 @@
 import * as THREE from 'three';
 import { G } from '../state.js';
 import { say } from '../ui.js';
-import { clamp, damp, dampAngle } from '../util.js';
+import { clamp, damp, dampAngle, pick } from '../util.js';
+import { findPath } from './navgrid.js';
 import { partMesh } from '../world.js';
-import { FY, homeRoot } from './home.js';
+import { FY, homeRoot, roomAt } from './home.js';
 
 // the table (home.js puts a desk here) and the cage on it
 export const CAGE = { x: 14.3, z: 0.32, w: 1.0, d: 0.46, y: 0.77, h: 0.48 };
@@ -19,7 +20,9 @@ const SHY_R = 1.5;                                // closer than this → into t
 
 const cage = { door: null, open: false, t: 0 };
 let pig = null, head = null;
-const st = { x: CAGE.x + 0.15, z: CAGE.z - 0.08, h: 0, ang: 0, mode: 'walk', t: 0, lap: 0, eatT: 0, hideT: 0, peek: 0, greeted: false };
+const st = { x: CAGE.x + 0.15, z: CAGE.z - 0.08, h: 0, ang: 0, mode: 'walk', t: 0, lap: 0, eatT: 0, hideT: 0, peek: 0, greeted: false,
+  where: 'cage',   // cage | carried (by Petyus) | dad (dad carries him) | free (out on the floor of the flat)
+  path: null, hide: -1, bolts: 0, squeakT: 4, threatT: 0, carrot: null };
 
 function buildCage() {
   const x0 = CAGE.x - CAGE.w / 2, x1 = CAGE.x + CAGE.w / 2, z0 = CAGE.z - CAGE.d / 2, z1 = CAGE.z + CAGE.d / 2, y = CAGE.y, top = y + CAGE.h;
@@ -95,6 +98,16 @@ function moveTo(tx, tz, sp, dt) {
 export function updateKarcsi(dt) {
   if (!pig) return;
   cage.t = damp(cage.t, cage.open ? 1 : 0, 8, dt); cage.door.rotation.y = -cage.t * Math.PI * 0.6;
+  if (st.where !== 'cage') { updateOut(dt); return; }
+  // lured with a carrot (Petyus offers it at the open cage door): he comes to the door and nibbles, brave for a while
+  if (st.mode === 'lured') {
+    st.t += dt; const door = { x: CAGE.x + 0.15, z: CAGE.z + CAGE.d / 2 - 0.09 };
+    const moving = !moveTo(door.x, door.z, 0.5, dt); if (!moving) st.h = dampAngle(st.h, 0, 8, dt);
+    pig.position.set(st.x, FLOOR_Y + (moving ? Math.abs(Math.sin(G.clockT * 16)) * 0.008 : 0), st.z); pig.rotation.y = st.h;
+    head.rotation.x = moving ? 0.05 : 0.25 + Math.sin(G.clockT * 22) * 0.08;
+    if (st.t > 9 || !cage.open) { st.mode = 'hide'; st.hideT = 0; }
+    return;
+  }
   // somebody close to the cage?
   let near = 1e9;
   for (const a of [G.petike, G.petya, G.angi]) if (a) near = Math.min(near, Math.hypot(a.pos.x - CAGE.x, a.pos.z - CAGE.z));
@@ -132,3 +145,89 @@ export function updateKarcsi(dt) {
 }
 // a wheek: guinea pigs squeal when they hear the fridge (mum at the fridge)
 export function wheek() { if (pig) say({ headWorld: (v) => v.set(st.x, FY + FLOOR_Y + 0.35, st.z) }, 'UÍ-UÍ-UÍ!', 1.6, ''); }
+
+// ---------------------------------------------------------------- out of the cage: „Karcsi nagy szökése” (runaway.js runs the scene)
+// Where he hides in the flat: under low furniture (the grid lets him crawl under it – navgrid.js)
+export const HIDES = [
+  { x: 12.22, z: 1.95, name: 'Petyus ágya alá' }, { x: 10.7, z: 1.95, name: 'az asztal alá' }, { x: 12.6, z: 5.6, name: 'a nagyágy alá' },
+  { x: 12.6, z: 8.62, name: 'a kanapé alá' }, { x: 8.3, z: 7.35, name: 'a fotel alá' }, { x: 15.15, z: 1.45, name: 'az íróasztal alá' },
+];
+const FLEE_R = 1.15, EAT_FLEE_R = 0.5, RUN = 1.35, SNIFF = 0.45;
+export const karcsiState = () => st;
+export const karcsiPos = () => ({ x: st.x, z: st.z });
+export const pigObj = () => pig;
+export const karcsiFree = () => st.where === 'free';
+export const karcsiHidden = () => st.where === 'free' && st.mode === 'hidden';
+// he can be picked up: in the cage, lured to the open door with a carrot – or out, nibbling the carrot on the floor
+export const karcsiTakeable = () => (st.where === 'cage' && cage.open && st.mode === 'lured' && st.t > 1.2) || (st.where === 'free' && st.mode === 'eat');
+export function lureKarcsi() { if (st.where !== 'cage') return false; st.mode = 'lured'; st.t = 0; return true; }
+export function takeKarcsi(by = 'carried') { st.where = by; st.path = null; st.mode = 'held'; }
+export function releaseKarcsi(x, z) { st.where = 'free'; st.x = x; st.z = z; st.mode = 'sniff'; st.t = 0; st.path = null; st.hide = -1; st.threatT = 0; }
+export function putKarcsiBack() { st.where = 'cage'; st.x = CAGE.x + 0.15; st.z = CAGE.z; st.mode = 'wait'; st.t = 0; st.path = null; pig.visible = true; }
+export function closeCage() { cage.open = false; }
+// the carrot on the floor (inventory.js tells where it lies: { x, z } or null)
+export function setFloorCarrot(c) { st.carrot = c; }
+
+function squeak() { say({ headWorld: (v) => v.set(st.x, FY + 0.45, st.z) }, pick(['UÍ-UÍ!', 'UÍÍÍ!', 'Uí-uí-uí!']), 1.3, ''); }
+// the nearest person (and how far)
+function threat() {
+  let best = null, bd = 1e9;
+  for (const a of [G.petike, G.petya, G.angi]) { if (!a) continue; const d = Math.hypot(a.pos.x - st.x, a.pos.z - st.z); if (d < bd) { bd = d; best = a; } }
+  return { a: best, d: bd };
+}
+function go(x, z) { const p = findPath(st.x, st.z, x, z); st.path = p && p.length ? p : null; return !!st.path; }
+function runToHide(from) {
+  // the hiding place furthest from whoever scares him (and not the one he is under), that can be reached
+  const order = HIDES.map((h, i) => ({ i, d: from ? Math.hypot(h.x - from.pos.x, h.z - from.pos.z) : Math.random() })).filter((h) => h.i !== st.hide).sort((a, b) => b.d - a.d);
+  for (const h of order) if (go(HIDES[h.i].x, HIDES[h.i].z)) { st.hide = h.i; st.mode = 'run'; st.t = 0; return true; }
+  return false;
+}
+// out of a hiding place: dad reached in – he bolts to another one (runaway.js)
+export function boltKarcsi() { st.bolts++; runToHide(G.petya); squeak(); }
+function wander() {
+  // sniffing round: often towards the kitchen (the smell of breakfast – and mum's feet), else somewhere near
+  const m = G.angi, toKitchen = m && Math.random() < 0.7;
+  const tx = toKitchen ? m.pos.x + (Math.random() - 0.5) * 0.8 : st.x + (Math.random() - 0.5) * 3, tz = toKitchen ? m.pos.z + 0.35 + Math.random() * 0.4 : st.z + (Math.random() - 0.5) * 3;
+  if (go(clamp(tx, 0.3, 15.3), clamp(tz, 0.3, 8.9))) { st.mode = 'sniff'; st.t = 0; } else { st.mode = 'hidden'; st.t = 0; }
+}
+function follow(dt, sp) {
+  if (!st.path) return false;
+  const [tx, tz] = st.path[0];
+  if (moveTo(tx, tz, sp, dt)) { st.path.shift(); if (!st.path.length) st.path = null; }
+  return true;
+}
+function updateOut(dt) {
+  st.t += dt;
+  let moving = false, chew = false;
+  if (st.where === 'carried' || st.where === 'dad') {   // in someone's hands
+    const a = st.where === 'dad' ? G.petya : G.petike, f = 0.24;
+    st.x = a.pos.x + Math.sin(a.heading) * f; st.z = a.pos.z + Math.cos(a.heading) * f; st.h = a.heading;
+    pig.position.set(st.x, st.where === 'dad' ? 1.0 : 0.78, st.z); pig.rotation.y = st.h; head.rotation.x = Math.sin(G.clockT * 3) * 0.1;
+    pig.visible = !(st.where === 'carried' && G.fps);
+    return;
+  }
+  pig.visible = true;
+  if ((st.squeakT -= dt) <= 0) { st.squeakT = 6 + Math.random() * 6; squeak(); }
+  const t = threat();
+  if (st.mode === 'eat') {   // at the carrot on the floor: brave – only someone right next to him makes him run
+    chew = true;
+    if (t.d < EAT_FLEE_R || !st.carrot || st.t > 12) { if (t.d < EAT_FLEE_R) runToHide(t.a); else st.mode = 'sniff'; st.t = 0; }
+  } else if (st.mode === 'hidden') {   // under furniture: out again when nobody is near for a while
+    st.threatT = t.d < 0.75 ? st.threatT + dt : 0;
+    if (t.d > 1.6 && st.t > 6) wander();
+  } else {
+    if (t.d < FLEE_R && st.mode !== 'run') runToHide(t.a);
+    else if (st.carrot && st.mode !== 'run' && st.mode !== 'toCarrot' && Math.hypot(st.carrot.x - st.x, st.carrot.z - st.z) < 7) { if (go(st.carrot.x, st.carrot.z)) st.mode = 'toCarrot'; }
+    const sp = st.mode === 'run' ? RUN : st.mode === 'toCarrot' ? 0.9 : SNIFF;
+    moving = follow(dt, sp);
+    if (!st.path) {
+      if (st.mode === 'run') { st.mode = 'hidden'; st.t = 0; st.threatT = 0; }
+      else if (st.mode === 'toCarrot' && st.carrot && Math.hypot(st.carrot.x - st.x, st.carrot.z - st.z) < 0.35) { st.mode = 'eat'; st.t = 0; }
+      else if (st.t > 1.2) wander();
+    }
+  }
+  const hop = moving ? Math.abs(Math.sin(G.clockT * (st.mode === 'run' ? 22 : 14))) * 0.012 : 0;
+  pig.position.set(st.x, hop, st.z); pig.rotation.y = st.h;
+  head.rotation.x = chew ? 0.25 + Math.sin(G.clockT * 22) * 0.08 : moving ? 0.05 : Math.sin(G.clockT * 2.6) * 0.12;   // sniffing
+}
+export const karcsiRoom = () => { const r = roomAt(st.x, st.z); return r ? r.id : null; };

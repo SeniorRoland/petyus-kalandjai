@@ -17,11 +17,17 @@ import { setPrompt } from '../activities/drinking.js';
 import { FY, SPOTS, roomAt, buildHome, lightPool, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, flushToilet, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
 import { noise, sStep, setMasterVol, setOutdoor, tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, updateOutside } from './outside.js';
-import { buildAppliances, devices, seating, updateAppliances } from './appliances.js';
-import { buildInventory, cycleItem, holdingController, inv, invAction, itemObj, pickLabel, pickUp, pickables, selectItem, updateInventory } from './inventory.js';
+import { buildAppliances, devices, fx, seating, updateAppliances } from './appliances.js';
+import { buildInventory, cycleItem, holdingController, inv, invAction, invTake, itemObj, pickLabel, pickUp, pickables, selectItem, updateInventory } from './inventory.js';
 import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, wheek } from './karcsi.js';
 import { dressPajama } from './pajama.js';
+import { buildSister, updateSister } from './sister.js';
+import { canPee, pee, peeFlushed, peeLabel, peeTick, startPee } from './pee.js';
+import { startWakeup, wakeTick, wakeupFocus } from './wakeup.js';
 import { cf, coffeeTick, dadBusy } from './coffee.js';
+import { dadChasing, momBusy, runawayTick, rw } from './runaway.js';
+import { giveKeyHint, kh, keyBusy, keyHintLabel, keyTick } from './keyhunt.js';
+import { karcsiState, karcsiTakeable, pigObj, takeKarcsi } from './karcsi.js';
 
 // ---------------------------------------------------------------- unlocking
 export const EP2_STARS = 15;   // part 1's mischief stars needed
@@ -81,18 +87,15 @@ export function startEp2() {
   // the sky light's ground colour was the park's grass (green): indoors every downward face (a fridge's ceiling, the underside
   // of a shelf) would look green – a warm neutral instead
   scene.traverse((o) => { if (o.isHemisphereLight) o.groundColor.set(0xb9ab98); });
-  buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances(); buildInventory();
+  buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances(); buildInventory(); buildSister();
   // the three of them in pajamas (Petyus: the football kit's model – the walking one)
   dressPajama(rigs.foci, 'petyus'); dressPajama(rigs.petya, 'petya'); dressPajama(rigs.angi, 'angi');
   G.petike.riding = false; G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7;
   scene.add(G.petya.rig.root, G.angi.rig.root);
-  const s = SPOTS;
-  G.petike.place(s.petyusWake.x, s.petyusWake.z, s.petyusWake.h);
-  G.petya.path = null; G.petya.place(s.dadChair.x, s.dadChair.z, s.dadChair.h); G.petya.seatH = 0.45; G.petya.seatBase = FY; G.petya.sit = G.petya.sitTarget = 1;
-  G.angi.path = null; G.angi.sit = G.angi.sitTarget = 0; G.angi.place(s.momCook.x, s.momCook.z, s.momCook.h);
-  for (const a of [G.petike, G.petya, G.angi]) a.pos.y = FY;   // occlude.js measures from here
+  placeFamily();
   G.saveHook = saveEp2;
-  const resumed = loadEp2();   // where the player left off (back to the menu / closed the page)
+  // where the player left off (back to the menu / closed the page); dev only: ?nyitany=1 starts a new morning with the opening film
+  const resumed = !(import.meta.env.DEV && new URLSearchParams(location.search).has('nyitany')) && loadEp2();
   G.mode = 'play'; G.pstate = 'home'; G.petyaMode = 'home';
   // the base framing (zoom 1) shows most of the flat; zooming out stops at 2× (the house and the yard), zooming in is free
   G.viewSizeTarget = G.viewSize = 8; G.zoom = 1; G.zoomMax = 2;   // starts at zoom 1; out to 2× (the house and its surroundings)
@@ -101,7 +104,7 @@ export function startEp2() {
   const ep = EPISODES[1];
   document.title = `${SERIES} – ${ep.n}. rész: ${ep.month}`;
   $('hud').innerHTML = '<span class="chip">📅 <span id="e2Date"></span></span> <span class="chip">🕕 <span id="e2Clock"></span></span> <span class="chip" id="e2RoomChip">📍 <span id="e2Room"></span></span> <span class="chip" id="e2Late" style="display:none">⏰ +<span id="e2LateN"></span> perc</span>';
-  $('help').innerHTML = '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat: ajtó nyitása / csukása, villany, kopogás</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>E · F</dt><dd>tárgy felvétele · a kiválasztott lerakása / bögre töltése</dd><dt>1–6 · Tab</dt><dd>tárgy kiválasztása</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
+  $('help').innerHTML = '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat: ajtó nyitása / csukása, villany, kopogás</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>E · F</dt><dd>tárgy felvétele · a kiválasztott lerakása / bögre töltése</dd><dt>1–9 · Tab</dt><dd>tárgy kiválasztása</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
   for (const id of ['kickBtn', 'runBtn']) { const el = $(id); if (el) el.style.display = id === 'kickBtn' ? 'none' : ''; }
   $('skipBtn').style.display = 'none'; $('hud').style.display = 'block'; $('help').style.display = isTouch ? 'none' : 'block';
   if (isTouch) $('touch').style.display = 'block';
@@ -118,7 +121,20 @@ export function startEp2() {
     pool.forEach((l) => { l.visible = false; });
     for (const o of hidden) o.visible = false; }
   if (resumed) toast(`Folytatás: <b>${dateText()}</b>, ${clockText(ep2.min)}`, 3);
-  else setTimeout(() => say(G.angi, 'Jó reggelt, Petyus! Kelj fel, mosd meg a fogad!', 3.6), 900);
+  else {   // a new game: the opening film first (wakeup.js), then the morning
+    startWakeup(() => {
+      placeFamily(); camTarget.set(G.petike.pos.x, FY, G.petike.pos.z);
+      setTimeout(() => say(G.angi, 'Jó reggelt, Petyus! Na végre fent vagy. Mosd meg a fogad!', 3.4), 700);
+    });
+  }
+}
+// where everyone is when the morning starts: Petyus by his bed, dad at the table, mum at the cooktop
+function placeFamily() {
+  const s = SPOTS;
+  G.petike.place(s.petyusWake.x, s.petyusWake.z, s.petyusWake.h);
+  G.petya.path = null; G.petya.place(s.dadChair.x, s.dadChair.z, s.dadChair.h); G.petya.seatH = 0.45; G.petya.seatBase = FY; G.petya.sit = G.petya.sitTarget = 1;
+  G.angi.path = null; G.angi.sit = G.angi.sitTarget = 0; G.angi.place(s.momCook.x, s.momCook.z, s.momCook.h);
+  for (const a of [G.petike, G.petya, G.angi]) { a.pos.y = FY; a.sync(); }   // occlude.js measures from here
 }
 let shownMin = -1;
 function hudClock(force) { const m = Math.floor(ep2.min); if (m !== shownMin || force) { shownMin = m; $('e2Clock').textContent = clockText(m); } }
@@ -126,7 +142,7 @@ function hudClock(force) { const m = Math.floor(ep2.min); if (m !== shownMin || 
 // ---------------------------------------------------------------- turning the view (Q / R, or the ⟲ ⟳ buttons): 90° steps
 // CAM_OFF (scene.js) and the screen-relative walking directions CAM_FWD / CAM_RIGHT (player.js) turn together; the walls
 // (home.js), the fading props (occlude.js) and dragging the view (input.js) read them every frame.
-if (import.meta.env.DEV) window.__ep2 = { coffee: cf, inv, itemObj, take(id) { const c = pickables(G.petike.pos).find((q) => q.item.id === id); if (c) pickUp(c.item); return !!c; }, view: viewTurn, cutWalls, wallView, CAM_OFF, toggleFps, get fp() { return fp; } };   // debugging (dev server only)
+if (import.meta.env.DEV) window.__ep2 = { coffee: cf, rw, kh, karcsi: karcsiState, inv, itemObj, take(id) { const c = pickables(G.petike.pos).find((q) => q.item.id === id); if (c) pickUp(c.item); return !!c; }, view: viewTurn, cutWalls, wallView, CAM_OFF, toggleFps, get fp() { return fp; } };   // debugging (dev server only)
 export function toggleWalls() {
   wallView.mode = wallView.mode === 'fade' ? 'sink' : 'fade';
   toast(wallView.mode === 'fade' ? 'Falak: <b>átlátszók</b> (T)' : 'Falak: <b>lesüllyednek</b> (T)', 2);
@@ -149,7 +165,7 @@ export function toggleFps(on = !fp.on) {
 }
 // mouse look: gentle (pointer lock reports raw pixels, often many per event); one event's jump is capped (browser spikes)
 const LOOK_X = 0.0022, LOOK_Y = 0.0018;
-const look = (dx, dy) => { dx = clamp(dx, -60, 60); dy = clamp(dy, -60, 60); fp.yaw -= dx * LOOK_X; fp.pitch = clamp(fp.pitch - dy * LOOK_Y, -1.0, 0.8); };
+const look = (dx, dy) => { dx = clamp(dx, -60, 60); dy = clamp(dy, -60, 60); fp.yaw -= dx * LOOK_X; fp.pitch = clamp(fp.pitch - dy * LOOK_Y, -1.45, 1.35); };   // pitch: down to the floor at his feet, up to the ceiling (≈ ±80°)
 {
   const app = $('app');
   // mouse: a click locks the pointer (then just moving the mouse looks round, like in FPS games; Esc frees it);
@@ -189,7 +205,7 @@ window.addEventListener('keydown', (e) => {
   if (G.episode !== 2 || G.mode !== 'play' || e.repeat) return;
   if (e.code === 'KeyV') toggleFps();
   if (e.code === 'KeyF') G.invPressed = true;
-  if (/^Digit[1-6]$/.test(e.code)) selectItem(+e.code.slice(5) - 1);
+  if (/^Digit[1-9]$/.test(e.code)) selectItem(+e.code.slice(5) - 1);
   if (e.code === 'Tab') { e.preventDefault(); cycleItem(); }
   if (fp.on) return;
   if (e.code === 'KeyQ') turnView(1);
@@ -214,6 +230,7 @@ const pvel = new V3();
 const step = { n: 0 };
 function movePetyus(dt) {
   const a = G.petike;
+  if (peeTick(dt)) return;   // at the WC (pee.js): standing, aiming
   // sitting in the armchair: no walking; a movement key (or the stick) stands him up again
   if (seating.on) {
     const moveKey = keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || (!fp.on && (keys.ArrowLeft || keys.ArrowRight)) || touch.active;
@@ -270,6 +287,11 @@ function movePetyus(dt) {
 const door = { knockT: 0 };
 function interactHome() {
   const p = G.petike.pos;
+  if (pee.on) {   // peeing: only the aiming and the end
+    setPrompt(isTouch ? 'Célozz a botkormánnyal!' : 'A / D – célzás · Szóköz – kész');
+    const kb = $('kickBtn'); if (kb && isTouch) { kb.style.display = 'block'; if (kb.textContent !== 'KÉSZ') kb.textContent = 'KÉSZ'; }
+    return;
+  }
   // everything that can be used, with where it is (aim: a point of it in the flat's frame, y from the floor). Top view: the
   // nearest within reach wins (things to pick up up to 20 cm further). First-person view: only what the dot in the middle
   // of the screen points at (and not further than ~1.9 m from the eyes) – the best aimed one wins.
@@ -280,6 +302,8 @@ function interactHome() {
   cands.push({ o: { seat: true }, r: Math.hypot(p.x - toiletSeat.x, p.z - (toiletSeat.z + 0.6)), reach: 0.75, aim: new V3(toiletSeat.x, 0.45, toiletSeat.z + 0.1), size: 0.25 });
   for (const dv of devices) cands.push({ o: { dev: dv }, r: Math.hypot(p.x - dv.x, p.z - dv.z), reach: dv.r, aim: dv.aim || new V3(dv.x, 0.9, dv.z), size: dv.size || 0.14 });
   for (const pc of pickables(p)) cands.push({ o: { item: pc.item }, r: pc.d - 0.2, reach: 0.55, aimW: pc.w, size: 0.08 });
+  { const hl = keyHintLabel(); if (hl) cands.push({ o: { hint: hl }, r: Math.hypot(p.x - G.angi.pos.x, p.z - G.angi.pos.z) - 0.3, reach: 1.1, aimW: new V3(G.angi.pos.x, FY + 1.2, G.angi.pos.z), size: 0.35 }); }
+  if (karcsiTakeable()) { const w = new V3(); pigObj().getWorldPosition(w); cands.push({ o: { karcsi: true }, r: Math.hypot(p.x - w.x, p.z - w.z) - 0.6, reach: 0.4, aimW: w, size: 0.12 }); }   // he wins over the cage door next to him
   let best = null;
   if (fp.on) {
     let ba = 1e9;
@@ -288,14 +312,20 @@ function interactHome() {
     let bd = 1e9;
     for (const c of cands) if (c.r < c.reach && c.r < bd) { bd = c.r; best = c.o; }
   }
-  const act = invAction(p, fp.on ? (w) => lookAngle(w, 0.1) < 1e8 : null);   // what F would do with the selected thing here (aimed in first person)
+  const act = invAction(p, fp.on ? (w, size = 0.1) => lookAngle(w, size) < 1e8 : null);   // what F would do with the selected thing here (aimed in first person)
   let txt = '';
   // next to the toilet: Space (on touch: the LEHÚZÁS button) flushes
   // (a device with a second action – the microwave – uses Space too; on touch the RÚGÁS button shows that action's name)
   const kb = $('kickBtn'), altBusy = !!(best && (best.seat || (best.dev && best.dev.alt)));
-  if (kb) { const lbl = isTouch ? (best && best.seat ? 'LEHÚZÁS' : best && best.dev && best.dev.alt ? best.dev.alt.short() : act ? act.short : '') : ''; kb.style.display = lbl ? 'block' : 'none'; if (lbl && kb.textContent !== lbl) kb.textContent = lbl; }
+  if (kb) { const lbl = isTouch ? (best && best.seat ? (canPee() ? 'PISILÉS' : 'LEHÚZÁS') : best && best.dev && best.dev.alt ? best.dev.alt.short() : act ? act.short : '') : ''; kb.style.display = lbl ? 'block' : 'none'; if (lbl && kb.textContent !== lbl) kb.textContent = lbl; }
   if (act && (G.invPressed || (isTouch && G.kickPressed && !altBusy))) act.run();
-  if (best && best.item) {
+  if (best && best.hint) {
+    txt = best.hint;
+    if (G.usePressed) giveKeyHint();
+  } else if (best && best.karcsi) {
+    txt = 'E – Karcsi felvétele';
+    if (G.usePressed) { takeKarcsi('carried'); invTake('karcsi'); say(G.petike, 'Megvagy, Karcsi!', 1.6); }
+  } else if (best && best.item) {
     txt = pickLabel(best.item);
     if (G.usePressed) pickUp(best.item);
   } else if (best && best.dev) {
@@ -303,9 +333,11 @@ function interactHome() {
     if (G.usePressed) dv.use();
     if (G.kickPressed && dv.alt) dv.alt.use();
   } else if (best && best.seat) {
-    txt = toiletSeatLabel() + (isTouch ? '' : ' · Szóköz – lehúzás');
+    txt = toiletSeatLabel() + (isTouch ? '' : canPee() ? ' · ' + peeLabel() : ' · Szóköz – lehúzás');
     if (G.usePressed) { toggleToiletSeat(); sClick(); }
-    if (G.kickPressed && flushToilet()) {
+    if (G.kickPressed && canPee()) startPee();
+    else if (G.kickPressed && flushToilet()) {
+      peeFlushed();
       tone('square', 900, 700, 0.05, 0.05); noise(1.7, 700, 0.5, 0.3, 0.1); noise(1.2, 1600, 0.7, 0.12, 0.3); tone('sine', 260, 110, 1.3, 0.05, 0.2); noise(1.8, 2800, 1.2, 0.04, 1.6);
       say({ headWorld: (o) => o.set(toiletSeat.x, FY + 1.1, toiletSeat.z + 0.2) }, 'HÚÚÚSSS!', 1.6);
     }
@@ -333,30 +365,81 @@ function interactHome() {
       if (G.usePressed) { toggleDoor(d); sClick(); }
     }
   }
-  if (act && !isTouch) txt += (txt ? ' · ' : '') + 'F – ' + act.label;
+  // touch screens: no E / F / Space keys – the prompt names the on-screen buttons, and the HASZNÁL button says what it does
+  // (NYIT, ZÁR, BE, KI, FELVESZ, VILLANY, KOPOG …); the action of F (and of a device's second action) is the RÚGÁS button's
+  if (isTouch) {
+    const short = touchVerb(txt);
+    txt = txt.replace(/^E – /, short + ' – ');
+    if (best && best.dev && best.dev.alt) txt += ' · ' + best.dev.alt.label().replace(/^Szóköz – /, best.dev.alt.short() + ' – ');
+    if (best && best.seat) txt += ' · LEHÚZÁS – lehúzás';
+    if (act && !altBusy) txt += (txt ? ' · ' : '') + act.short + ' – ' + act.label;
+    const ub = $('useBtn'); if (ub && ub.textContent !== short) { ub.textContent = short; ub.classList.toggle('long', short.length > 7); }
+  } else if (act) txt += (txt ? ' · ' : '') + 'F – ' + act.label;
   setPrompt(txt);
+  if (isTouch && !best) $('useBtn').style.display = 'none';   // only F's action here: the RÚGÁS button does it
 }
+// the HASZNÁL button's label from a prompt ('E – hűtő kinyitása' → NYIT …)
+const VERBS = [[/felvétele/, 'FELVESZ'], [/kinyitása|megnyitása|felnyitása/, 'NYIT'], [/becsukása|elzárása/, 'ZÁR'], [/bekapcsolása|indítása/, 'BE'],
+  [/kikapcsolása|leállítása/, 'KI'], [/felhajtása/, 'FELHAJT'], [/lehajtása/, 'LEHAJT'], [/leülés/, 'LEÜL'], [/felállás/, 'FELÁLL'],
+  [/villany/, 'VILLANY'], [/kopogás/, 'KOPOG'], [/indulás/, 'INDULÁS'], [/Anya, nem/, 'TIPP']];
+function touchVerb(txt) { const m = /^E – (.*?)( · |$)/.exec(txt); if (!m) return 'HASZNÁL'; for (const [re, v] of VERBS) if (re.test(m[1])) return v; return 'HASZNÁL'; }
 // a short click (switch, door handle)
 function sClick() { tone('square', 1400, 900, 0.03, 0.04); }
+
+// ---------------------------------------------------------------- mum's morning: at the cooktop; now and then to the fridge – she
+// opens it, looks around in it, shuts it and goes back. When Petyus stands in front of the fridge she does not go there: she
+// busies herself at the sink, the kettle or the cooktop instead. (Karcsi hears the fridge: wheek.)
+const MOM_JOBS = { sink: { x: 8.6, z: 0.95, h: Math.PI }, kettle: { x: 9.3, z: 0.9, h: Math.PI }, cooktop: { x: 7.75, z: 0.95, h: Math.PI } };
+const FRIDGE_FRONT = { x: 6.55, z: 1.5 };
+const petyusAtFridge = () => Math.hypot(G.petike.pos.x - FRIDGE_FRONT.x, G.petike.pos.z - FRIDGE_FRONT.z) < 1.3;
+function momRoutine(dt) {
+  const m = G.angi;
+  if (momBusy() || keyBusy()) { if (fx.fridge && ep2.momAt === 'fridge' && fx.fridge.open() && !petyusAtFridge()) fx.fridge.setOpen(false); return; }
+  ep2.momT -= dt;
+  // on the way to the fridge, Petyus steps in front of it: she turns to something else
+  if (ep2.momAt === 'toFridge' && m.path && petyusAtFridge()) { momJob(); return; }
+  if (ep2.momAt === 'toFridge' && !m.path) { ep2.momAt = 'fridge'; ep2.momT = 2.5 + Math.random() * 1.5; fx.fridge.setOpen(true); wheek(); }
+  if (ep2.momAt === 'toJob' && !m.path) { ep2.momAt = 'job'; ep2.momT = 3 + Math.random() * 2; }
+  if (ep2.momAt === 'job' && ep2.momJob === 'sink' && Math.random() < dt * 1.5) noise(0.4, 1800, 0.6, 0.03);   // a little water
+  if (ep2.momT > 0 || m.path) {
+    if (!m.path && ep2.momAt !== 'fridge') m.targetHeading = ep2.momAt === 'job' ? MOM_JOBS[ep2.momJob].h : Math.PI;   // the counter (north)
+    return;
+  }
+  // the time is up for what she is doing
+  if (ep2.momAt === 'fridge') { fx.fridge.setOpen(false); goCook(); }
+  else if (ep2.momAt === 'job') goCook();
+  else if (ep2.momAt === 'cook') {
+    if (petyusAtFridge()) momJob();
+    else { ep2.momAt = 'toFridge'; m.walkTo([[FRIDGE_FRONT.x, FRIDGE_FRONT.z]], 1.2); }
+  }
+}
+function goCook() { ep2.momAt = 'cook'; ep2.momT = 10 + Math.random() * 8; G.angi.walkTo([[SPOTS.momCook.x, SPOTS.momCook.z]], 1.2); }
+function momJob() {
+  const k = pick(['sink', 'kettle', 'cooktop']), j = MOM_JOBS[k];
+  ep2.momAt = 'toJob'; ep2.momJob = k; G.angi.walkTo([[j.x, j.z]], 1.2);
+}
+// at the open fridge: facing it, bending a little to look in, a hand on the door
+function momLook() {
+  const m = G.angi, r = m.rig, w = Math.sin(G.clockT * 2.2);
+  m.targetHeading = -Math.PI / 2; m.heading = dampAngle(m.heading, -Math.PI / 2, 8, 1 / 60);
+  r.inner.rotation.x = 0.18 + w * 0.05; r.sh[1].rotation.x = -1.2; r.sh[0].rotation.x = -0.5 + w * 0.2; m.sync();
+}
 
 // ---------------------------------------------------------------- the parents
 function updateParents(dt) {
   G.petya.update(dt); coffeeTick(dt);   // the creamy coffee may take dad over (coffee.js)
   const m = G.angi;
-  // mum: at the cooktop, now and then to the fridge and back (Karcsi hears the fridge: wheek)
-  ep2.momT -= dt;
-  if (ep2.momT <= 0 && !m.path) {
-    ep2.momT = 10 + Math.random() * 8;
-    if (ep2.momAt === 'cook') { m.walkTo([[SPOTS.momFridge.x, SPOTS.momFridge.z]], 1.2); ep2.momAt = 'fridge'; setTimeout(wheek, 1800); } else { m.walkTo([[SPOTS.momCook.x, SPOTS.momCook.z]], 1.2); ep2.momAt = 'cook'; }
-  }
-  if (!m.path) m.targetHeading = ep2.momAt === 'fridge' ? -Math.PI / 2 : Math.PI;   // facing the fridge (west) or the counter (north)
+  momRoutine(dt);
   m.update(dt);
+  if (ep2.momAt === 'fridge' && !m.path && !momBusy() && !keyBusy()) momLook();
+  runawayTick(dt);   // „Karcsi nagy szökése”: mum on the chair, dad on all fours (runaway.js)
+  keyTick(dt);       // „Hol a kulcs, Angi?”: mum looking for her keys (keyhunt.js)
   // talking: dad (and now and then mum), more often when Petyus is close
   ep2.talkT -= dt;
   if (ep2.talkT <= 0) {
     const near = Math.hypot(G.petike.pos.x - G.petya.pos.x, G.petike.pos.z - G.petya.pos.z) < 5;
     ep2.talkT = (near ? 9 : 15) + Math.random() * 6;
-    if (Math.random() < 0.6 && !dadBusy()) { say(G.petya, pick(DAD_LINES), 3); G.petya.point = 1.4; } else say(G.angi, pick(MOM_LINES), 3);
+    if (Math.random() < 0.6 && !dadBusy() && !dadChasing()) { say(G.petya, pick(DAD_LINES), 3); G.petya.point = 1.4; } else if (!momBusy() && !keyBusy()) say(G.angi, pick(MOM_LINES), 3);
   }
 }
 
@@ -370,7 +453,7 @@ export function stepEp2(dt) {
     // the world outside: indoors in the first-person view not at all (only the dog barking in the yard), indoors in the top
     // view faintly, on a balcony fully
     { const r = roomAt(G.petike.pos.x, G.petike.pos.z), out = !!(r && r.floor === 'balcony'); setOutdoor(out ? 1 : fp.on ? 0 : 0.3); }
-    updateParents(dt); updateOutside(dt); updateKarcsi(dt); updateAppliances(dt); updateInventory();
+    updateParents(dt); updateOutside(dt); updateKarcsi(dt); updateAppliances(dt); updateInventory(); updateSister(dt);
     // walls solid in the first-person view and when zoomed far out (the roof is on then: the house looks whole)
     const r = updateHome(dt, G.petike.pos, fp.on || G.zoom > 1.55);
     if (r !== ep2.room) {
@@ -381,6 +464,7 @@ export function stepEp2(dt) {
     ep2.min = Math.min(MORNING_END, ep2.min + dt * MIN_PER_SEC); hudClock();
     G.usePressed = false; G.qPressed = false; G.kickPressed = G.kickReleased = false; G.invPressed = false;
   }
+  if (G.mode === 'intro') { wakeTick(dt); updateSister(dt); updateOutside(dt); updateHome(dt, wakeupFocus(), false); }   // the opening film (wakeup.js)
   updateViewTurn(dt);
   updateFx(dt); updateCamera(dt); if (fp.on) updateFpsCam(); updateOcclusion(dt); updateBubbles(dt);
   if (G.toastT > 0) { G.toastT -= dt; if (G.toastT <= 0) $('toast').classList.remove('show'); }

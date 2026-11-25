@@ -13,6 +13,7 @@ function makeRigShell(scale) {
 }
 export const CFG = {
   petya:  { scale: 0.93, hipY: 0.758, kneeY: 0.361, split: 0, armX: [-0.345, 0.345], armY: [0.77, 1.42] },
+  nover:  { scale: 0.82, hipY: 0.598, kneeY: 0.281, split: 0, armX: [-0.265, 0.265], armY: [0.95, 1.6] },   // Petyus's big sister (part 2)
   angi:   { scale: 0.86, hipY: 0.598, kneeY: 0.281, split: 0, armX: [-0.265, 0.265], armY: [0.95, 1.6] },
   foci:   { scale: 0.833, hipY: 0.398, kneeY: 0.201, split: 0, armX: [-0.265, 0.265], armY: [0.58, 1.27] },
   roller: { scale: 1.14, hipY: 0.56, hipPivot: 0.53, kneeY: -1, split: 0.085, armX: [-0.06, 0.22], armY: [0.5, 0.95], perMesh: true },
@@ -43,7 +44,20 @@ function rigFromSkinned(gltf, cfg) {
   rig.root.updateMatrixWorld(true);
   const hp = new V3(); rig.hip[0].getWorldPosition(hp); rig.hipH = hp.y;
   rig.knee[0].getWorldPosition(hp); rig.kneeH = hp.y;   // standing knee height ≈ shin + foot length (used for sitting)
+  { // half the thigh's thickness (front to back): seated, the hip joint is that much above the seat (else the thighs sink in)
+    const P = sm.geometry.attributes.position, si = sm.geometry.attributes.skinIndex, ul = sm.skeleton.bones.indexOf(rig.hip[1]);
+    let z0 = 1e9, z1 = -1e9; for (let i = 0; i < P.count; i++) if (si.getX(i) === ul) { z0 = Math.min(z0, P.getZ(i)); z1 = Math.max(z1, P.getZ(i)); }
+    rig.thighR = z1 > z0 ? Math.min(0.14, (z1 - z0) / 2 * cfg.scale) : 0.06;
+    // the foot from the ankle joint to the tip of the toes (the farthest foot vertex): for sitting on tiptoe
+    const fb = sm.skeleton.bones.indexOf(rig.foot[1]), fp = new V3(), v = new V3(); rig.foot[1].getWorldPosition(fp); let fl = 0;
+    rig.root.updateMatrixWorld(true);
+    for (let i = 0; i < P.count; i++) if (si.getX(i) === fb) { sm.getVertexPosition(i, v); v.applyMatrix4(sm.matrixWorld); fl = Math.max(fl, v.distanceTo(fp)); }
+    rig.footLen = fl || 0.2; rig.ankleH = fp.y;
+  }
   rig.height = new THREE.Box3().setFromObject(rig.root).max.y;
+  // the head bone: speech bubbles and things put on the head follow it (sitting, dozing, bending)
+  const hb = sm.skeleton.bones.find((x) => x.name.replace(/^mixamorig:?/, '') === 'Head');
+  if (hb) { rig.root.updateMatrixWorld(true); const hp = new V3(); hb.getWorldPosition(hp); rig.headBone = hb; rig.headTop = rig.height - hp.y; rig.headTopLocal = hb.worldToLocal(new V3(hp.x, rig.height, hp.z)); }   // the crown in the head bone's frame: it tilts with the head
   return rig;
 }
 // The models blend the joint rings 50/50 between two bones (shoulder: Arm + Spine2, elbow: Arm + ForeArm, knee: UpLeg + Leg).

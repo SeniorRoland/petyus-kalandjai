@@ -36,7 +36,7 @@ const FTN_CHASE = ['Futás anyához! És ne nézz vissza!', 'Majd otthon megbesz
 export function startFountain() {
   G.pstate = 'toFountain'; pvel.set(0, 0, 0); G.charging = false; G.petike.kickT = -1; setPrompt(''); $('charge').style.display = 'none';
   const dx = G.petike.pos.x - FOUNTAIN.x, dz = G.petike.pos.z - FOUNTAIN.z, d = Math.hypot(dx, dz) || 1;
-  ftn.spot = [FOUNTAIN.x + dx / d * (FOUNTAIN.r + 0.3), FOUNTAIN.z + dz / d * (FOUNTAIN.r + 0.3)];
+  ftn.spot = [FOUNTAIN.x + dx / d * (FOUNTAIN.r + 0.06), FOUNTAIN.z + dz / d * (FOUNTAIN.r + 0.06)];   // right at the rim: he hangs over it on his belly
   ftn.t = 0; ftn.lineT = 1.6; seqs.length = 0; ftn.count++;
   dadFountainAlarm();
 }
@@ -70,10 +70,13 @@ export function updateFountainDrink(dt) {
     // leans over the rim and slurps straight from the basin, blissfully unaware
     G.drinkT += dt; a.heading = dampAngle(a.heading, Math.atan2(FOUNTAIN.x - a.pos.x, FOUNTAIN.z - a.pos.z), 10, dt); a.animate(dt, false, 0);
     const k = Math.min(1, G.drinkT * 2.5);
-    r.inner.rotation.x = 0.85 * k; r.sh[0].rotation.x = -1.2 * k; r.sh[1].rotation.x = -1.2 * k; r.sh[0].rotation.z = -0.35 * k; r.sh[1].rotation.z = 0.35 * k;
+    // on his belly over the rim (0.7 m): hips lifted onto the stone, the upper body over the water, the feet off the ground kicking
+    a.bow(1.35 * k); r.inner.position.y += 0.29 * k;
+    for (let i = 0; i < 2; i++) { r.hip[i].rotation.x += 0.3 * k; r.knee[i].rotation.x = k * (0.7 + 0.45 * Math.sin(ftn.t * 7 + i * Math.PI)); }
+    r.sh[0].rotation.x = -1.5 * k; r.sh[1].rotation.x = -1.5 * k; r.sh[0].rotation.z = -0.35 * k; r.sh[1].rotation.z = 0.35 * k;
     if (G.drinkT > 0.4) {
       const fx = Math.sin(a.heading), fz = Math.cos(a.heading);
-      if (rand() < 0.5) spawnFx(new V3(a.pos.x + fx * 0.55, 0.5, a.pos.z + fz * 0.55), new V3(R(-0.4, 0.4), R(0.6, 1.2), R(-0.4, 0.4)), pick([0x8fd8ff, 0xc9efff, 0x5ec2f2]), 0.05, 0.4, 6);
+      if (rand() < 0.5) spawnFx(new V3(a.pos.x + fx * 0.85, 0.62, a.pos.z + fz * 0.85), new V3(R(-0.4, 0.4), R(0.6, 1.2), R(-0.4, 0.4)), pick([0x8fd8ff, 0xc9efff, 0x5ec2f2]), 0.05, 0.4, 6);
       G.gulpT -= dt; if (G.gulpT <= 0) { G.gulpT = 0.36; tone('sine', 230, 120, 0.09, 0.12); }
       ftn.lineT -= dt; if (ftn.lineT <= 0) { ftn.lineT = R(2.6, 3.4); say(a, pick(FTN_SIP), 2.2); }
     }

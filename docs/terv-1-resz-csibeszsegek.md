@@ -1,7 +1,7 @@
 # 1. rész (Augusztus – Egy nap a parkban): csibészség-ötletek
 
 Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** a közös pontozó rendszer (`mischief.js` + napló) és mind a 10 csibészség kész (tetszés szerinti sorrendben).
+**Állapot:** ✅ a közös pontozó rendszer (`mischief.js` + napló) és ✅ mind a 10 csibészség kész (tetszés szerinti sorrendben); ✅ a felvett javítandók is (lent, 11. 23. és 11. 25.). ⬜ Nyitott: a szökőkút-ivás 11. csibészségként (javaslat, lent).
 
 ## Pontozás és csibészség-napló (közös rendszer, minden csibészségre)
 
@@ -11,10 +11,11 @@ Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni
   - **Elvégzett:** név, csillagok (★★☆), legjobb eredmény (pl. „7 tárgy a fején”).
   - **Még hátravan:** szürke „???” név és egy rövid **tipp**, hol keresse (lásd a táblázatban) – a felfedezés is a játék része. A teljes nevet csak a teljesítés után mutatja.
   - Fejléc: összesen **⭐ x / 30** és „y / 10 csibészség”.
+  - ✅ Fülek részenként („1. Augusztus ⭐ x/30”, „2. Szeptember ⭐ y/9”): a kezdőképernyőről is minden rész csibészségei megnézhetők; játék közben az aktuális rész füle nyílik.
 - **Összesítés máshol:** a HUD-on a gólok és a dekázás-rekord mellett ⭐ x/30; a kezdőképernyő augusztusi csempéjén is (pl. „⭐ 7/30”).
 - **Mentés:** a böngészőben (`localStorage`, kulcs pl. `petyus.r1.csibeszsegek`: `{ id: { stars, best, at } }`), mint a dekázás-rekord.
 - **Kód (kész):** `src/mischief.js`: a csibészségek listája (`MISCHIEFS`: `id`, `title`, `hint`, `fmt(érték, extra)` a napló szövegéhez, `stars(érték, extra)` → 1–3, `lower: true`, ha a kisebb eredmény a jobb), `award(id, érték, extra)` → csillagszám, mentés, felirat; a napló felülete (`#journal` panel, képregényes stílus). Minden mini játék a végén csak `award(...)`-ot hív.
-- **Javaslat:** a már meglévő **szökőkút-ivás** is bekerülhetne 11. csibészségként (★ ivás; ★★ legalább 3 korty, mielőtt apa odaér; ★★★ 5 korty és Angi védelmére kel). Ekkor az összesen ⭐ 33.
+- ⬜ **Javaslat (nincs megcsinálva):** a már meglévő **szökőkút-ivás** is bekerülhetne 11. csibészségként (★ ivás; ★★ legalább 3 korty, mielőtt apa odaér; ★★★ 5 korty és Angi védelmére kel). Ekkor az összesen ⭐ 33.
 
 | # | Csibészség | ★ | ★★ | ★★★ | Tipp a naplóban (amíg nincs meg) | Állapot |
 |---|---|---|---|---|---|---|
@@ -113,3 +114,21 @@ Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni
 - **Mire épül:** fák és `treeTop()`, a macskás jelenet folytatása (`activities/cat.js`, `evt = 'tree'`).
 - **Csillagok:** ★ felszáll a lufikkal · ★★ eléri a fára akadt labdát · ★★★ eléri, és egy lufi sem pukkad ki.
 - **Megvalósítás** (`src/activities/balloon.js`): a pálya melletti sétány nyugati végén (23,6; −12,2) áll a lufis bácsi egy csokor lufival. **E – Kérek egy lufit!** → „Egyet? Minek egyet! Vegyél ötöt!” – Petyus 5 lufit kap (`pstate = 'balloon'`): könnyű lesz, **Szóköz** = hatalmas ugrás (5 lufival kb. 7 m), lassan száll le (max. 2,2 m/s), a levegőben **WASD**-dal kormányozható, és a szél ide-oda sodorja (falevelek mutatják). Minden lufi kevesebb súlyt jelent: kevesebb lufival kisebbet ugrik. A fán, ahol a macska ül (ha apa már feldobott egyet, azon; különben egy macska most mászik fel a lufis bácsihoz legközelebbi tölgyre), fennakadt egy piros-fehér labda – kézzel kell elérni. A macska közelében („Psssz!”) PUKK – egy lufi kidurran. Apa már az első nagy ugrásnál kiabál; a labdával földet érve egy széllökés felkapja Petyust („Elvisz a szél!! APAAA!”), apa odarohan és az utolsó pillanatban elkapja a bokáját; a lufik elszállnak. A lufis bácsi: „A lufik ára nem tartalmazza a repülést!” `award('lufi', 1|2|3)`. HUD: `#mini` (🎈 db · 🎯 távolság · ⏱ 50 mp · ⬆ magasság). A kamera a levegőben Petyus magasságát követi (`G.petike.flyY`).
+
+## Javítandók (felvéve: 2026. 11. 23.)
+
+- [x] **Fotóbomba csak 3 csillagig:** Angi addig hív magától fotózni a szökőkúthoz, amíg Petyus el nem érte a ★★★-ot a fotóbombában; utána már nem (`activities/photo.js`, `photoTick` – `starsFor('fotobomba')` a `mischief.js`-ben). ✅
+- [x] **Telefonos gombfeliratok:** az érintéses gombok felirata nem mindig a valódi műveletet mutatja – pl. az ivókútnál „RÚGÁS” áll a fröcskölés helyett. Minden helyzetben a tényleges műveletet írja ki (`touchui.js` `updateTouchUI`, `touchText()` a `util.js`-ben). ✅ Az `interactions()` adja a `G.touchKick` / `G.touchUse` feliratot (FRÖCSKÖL, HALÁSZ, MORZSA · IVÁS, ROLLER, LUFI, DEKÁZÁS …; rolleren KUTYASZÁN / VERSENY / LESZÁLL), a súgósor is ezeket írja; a hosszú felirat kisebb betűvel.
+- [x] **Labda visszahívása telefonon:** messzire rúgott labda után nincs gomb a visszaszerzésére (böngészőben ez az **R**). Kell egy érintéses gomb is („LABDA IDE”). ✅ `#ballBtn` („⚽ IDE”): akkor látszik, ha a labda 7 m-nél messzebb van (vagy nincs játékban).
+- [x] **Pénzhalászat vége:** utána Petyus kerülje ki a szökőkutat (ne menjen át rajta), és a fagyis kocsi ne a virágágyásba álljon, hanem a járdára (`activities/fish.js`). ✅ A kocsi a szökőkúttól keletre, a kövezett úton áll meg (`CART`), az árus az utakon jön-megy, Petyus a gyűrűs úton kerüli meg a szökőkutat (`ringRoute`).
+- [x] **Ülés a padon:** a padon ülő Petya és Angi lába ne lógjon bele a padba (ülőmagasság / comb-lábszár póz a padon – `actors.js` ülés, `sitKnee`). ✅ Ülve a csípő a comb félvastagságával (`rig.thighR`) az ülés fölött van – minden ülésre (pad, szék, WC).
+
+## Javítandók (felvéve: 2026. 11. 25.)  ✅ mind kész
+
+- [x] **Torony apa fején:** a tárgyak nem a fejére kerültek, és a gyorsasági próba (QTE) túl gyors volt. ✅ A fej helyét a fejcsont adja (`rig.headBone`, `rig.headTop` a `rigs.js`-ben; `Actor.headWorld` / `headTop`) – ülve, szundikálva is pontos, a buborékok is ezt használják; a jelölő lassabban leng (`nap.js`: 1,4 + n·0,2 a korábbi 2,0 + n·0,32 helyett).
+- [x] **Ivás a szökőkútból:** Petyus teste belelógott a szökőkútba. ✅ A perem mellé áll, a csípőjét a peremre téve hasra fekszik rajta, a felsőteste a víz fölött, a lába kalimpál (`fountain.js`; `Actor.bow()`: hajlás a csípőnél, a láb a helyén marad).
+- [x] **Ivás az ivókútból:** Petyus teste belelógott az ivókútba. ✅ Kicsit hátrébb áll, és a csípőjénél hajol a medence fölé (`drinking.js`, `Actor.bow()`).
+- [x] **Bújócska:** apa elakadt a tárgyakban (pl. a pálya kerítésében). ✅ A búvóhely mellett szabad helyet keres (nem bokorban, nem a kerítés másik oldalán), és ha elakad, oldalra lép, kerül; ha háromszor sem jut tovább, a következő búvóhelyet nézi meg (`hide.js`: `walkGoal`, `isFree`).
+- [x] **Félrerúgás:** ha Petyus a labda helyett valami keménybe rúg (pad, fa, kerítés, lámpa, roller, autó), felhúzott lábbal fél lábon ugrál és jajgat, apa néha megjegyzést tesz (`player.js`: `kickedSolid`, `ouch`, `hopOuch`).
+- [x] **Kutyaszán vége:** Petyus nem esett bele a szökőkútba. ✅ Bodri beugrik, a roller a peremnél megáll, Petyus fejest repül ívben a vízbe, ott csobban (`sled.js`: `startFly`, `flyTick`, `splash`).
+- [x] **Autók:** ✅ jobb oldalon közlekednek (keletre a déli sávban, z 17; nyugatra az északiban, z 15); tartják a távolságot, nem mennek át egymáson; megállnak bárki előtt, aki előttük van az úton; ha Petyus áll az úton: dudálnak, a sofőr szitkozódik (buborék „Sofőr” névvel), apa rákiabál; minden autón mozgó ütköző van, így a szereplők és a labda nem mennek át rajtuk (`npcs.js`: `updateCars`).

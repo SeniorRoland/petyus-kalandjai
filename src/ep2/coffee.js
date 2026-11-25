@@ -63,6 +63,7 @@ invHooks.placed = (id, pid) => {
   if (id !== 'mug' || pid !== 'dad') return;
   if (cf.st === 'done') { say(G.petya, 'Köszönöm, fiam, de ma már… nem kérek kávét.', 2.8); return; }
   if (busy()) return;
+  if (G.petya.sit < 0.5) { say(G.petya, 'Most nem érek rá, Petyus!', 2); return; }   // (chasing Karcsi on all fours …)
   cf.st = 'look'; cf.t = 0;
 };
 
@@ -131,10 +132,24 @@ function mugInHand() {
   mug.position.set(_h.x, _h.y - FY - 0.06, _h.z);
 }
 
+// ---------------------------------------------------------------- the WC door: dad shuts it behind him, opens it when he is done
+const wcDoor = () => doors.find((d) => d.pivot && Math.abs(d.x - 4.5) < 0.3 && Math.abs(d.z - 2.36) < 0.3);
+function setWcDoor(open, slam = false) {
+  const d = wcDoor(); if (!d || d.open === open) return;
+  toggleDoor(d);
+  soundAt(4.5, 2.4, () => { if (slam) { noise(0.12, 300, 1, 0.45); tone('square', 90, 50, 0.12, 0.12); } else noise(0.15, 1200, 1, 0.2); });
+  if (slam) say(at(4.5, FY + 2.2, 2.5), 'BUMM!', 1.1);
+}
 // ---------------------------------------------------------------- the stink: green puffs drifting out of the WC
 const STINK = [0x8fbf3a, 0x9ccc4a, 0x7aa83a, 0xa8c85a];
 function puff(n = 1, strong = 1) {
+  const d = wcDoor(), shut = d && !d.open;
   for (let i = 0; i < n; i++) {
+    if (shut) {   // the door is shut: it seeps out under it and over it, thinner
+      const p = new V3(4.5 + (Math.random() - 0.5) * 0.7, FY + (Math.random() < 0.6 ? 0.04 : 2.12), 2.47);
+      spawnFx(p, new V3((Math.random() - 0.5) * 0.3, 0.06 + Math.random() * 0.1, 0.2 + Math.random() * 0.25), pick(STINK), 0.1 + Math.random() * 0.1 * strong, 4 + Math.random() * 2, 0, true);
+      continue;
+    }
     const p = new V3(4.5 + (Math.random() - 0.5) * 0.5, FY + 0.5 + Math.random() * 0.5, 0.75 + (Math.random() - 0.5) * 0.4);
     // out through the door (+z) and up; some spread into the hallway
     const v = new V3((Math.random() - 0.5) * 0.35, 0.12 + Math.random() * 0.12, 0.25 + Math.random() * 0.35 * strong);
@@ -147,10 +162,10 @@ export function coffeeTick(dt) {
   const dad = G.petya; cf.t += dt;
   switch (cf.st) {
     case 'wait':
-      if ((cf.askT -= dt) <= 0) { say(dad, ASK[0], 3.2); dad.point = 1.4; cf.st = 'asked'; cf.nagT = 32; }
+      if (dad.sit > 0.9 && (cf.askT -= dt) <= 0) { say(dad, ASK[0], 3.2); dad.point = 1.4; cf.st = 'asked'; cf.nagT = 32; }
       break;
     case 'asked':
-      if ((cf.nagT -= dt) <= 0) { say(dad, pick(ASK.slice(1)), 2.8); cf.nagT = 35 + Math.random() * 10; }
+      if (dad.sit > 0.9 && (cf.nagT -= dt) <= 0) { say(dad, pick(ASK.slice(1)), 2.8); cf.nagT = 35 + Math.random() * 10; }
       break;
     case 'look':
       if (cf.t > 0.9) judge();
@@ -179,7 +194,7 @@ export function coffeeTick(dt) {
         if (cf.growls === 3) setTimeout(() => say(dad, 'Hmm…', 1.6), 1500);
         if (cf.growls === 4) setTimeout(() => say(dad, 'Ajjaj…', 1.8), 1400);
         if (cf.growls >= 5) {
-          cf.st = 'rush'; cf.t = 0; cf.shoved = false; cf.doorOpened = false;
+          cf.st = 'rush'; cf.t = 0; cf.shoved = false; cf.inWc = false; cf.outT = 0;
           setTimeout(() => say(dad, 'JAJ! Most azonnal!!', 2), 500);
         }
       }
@@ -193,9 +208,10 @@ export function coffeeTick(dt) {
       }
       if (cf.t > 0.6) { cf.chairA = Math.min(1.38, cf.chairA + dt * 4); chairTo(cf.chairA); }
       if (dad.path || !cf.walking) { poseBelly(0.8, 0.15); dad.sync(); }
-      // the WC door opens before him, the lid flies up
-      const wcDoor = doors.find((d) => d.pivot && Math.abs(d.x - 4.5) < 0.3 && Math.abs(d.z - 2.36) < 0.3);
-      if (wcDoor && !wcDoor.open && Math.hypot(dad.pos.x - wcDoor.x, dad.pos.z - wcDoor.z) < 1.3) { toggleDoor(wcDoor); soundAt(4.5, 2.4, () => noise(0.15, 1200, 1, 0.2)); }
+      // the WC door opens before him (and slams shut behind him), the lid flies up
+      const wd = wcDoor();
+      if (wd && !cf.inWc && Math.hypot(dad.pos.x - wd.x, dad.pos.z - wd.z) < 1.3) setWcDoor(true);
+      if (wd && !cf.inWc && dad.pos.z < 1.3 && Math.abs(dad.pos.x - 4.5) < 0.7) { cf.inWc = true; setWcDoor(false, true); }
       if (Math.hypot(dad.pos.x - 4.5, dad.pos.z - 1.2) < 0.8 && toiletSeat.state !== 1) { toiletSeat.state = 1; soundAt(4.5, 0.5, () => tone('square', 700, 300, 0.06, 0.08)); }
       // Petyus in the way: pushed aside
       const p = G.petike.pos, dx = p.x - dad.pos.x, dz = p.z - dad.pos.z, d = Math.hypot(dx, dz);
@@ -240,8 +256,10 @@ export function coffeeTick(dt) {
       }
       break;
     }
-    case 'back': {   // slow, bent, back to his chair
+    case 'back': {   // slow, bent, back to his chair: he opens the door (the cloud rolls out), comes out and shuts it again
       if (cf.t > 1.5 && !dad.path && !cf.backWalk) { cf.backWalk = true; dad.walkTo([[4.5, 1.2], ...TO_WC.slice(0, -1).reverse(), [SPOTS.dadChair.x - 0.4, SPOTS.dadChair.z], [SPOTS.dadChair.x, SPOTS.dadChair.z]], 0.85); }
+      if (cf.backWalk && cf.inWc && dad.pos.z > 0.85) { cf.inWc = false; setWcDoor(true); puff(24, 1.8); }
+      if (cf.backWalk && !cf.inWc && !cf.outT && dad.pos.z > 3.0) { cf.outT = 1; setWcDoor(false); say(G.petya, 'Most egy darabig ne menjen be senki…', 2.6); }
       if (dad.path) { poseBelly(0.5, 0.22); dad.sync(); if (Math.random() < dt * 0.7) puff(1, 0.5); }
       // the chair stands up again before he sits
       if (cf.backWalk && Math.hypot(dad.pos.x - SPOTS.dadChair.x, dad.pos.z - SPOTS.dadChair.z) < 1.4) { cf.chairA = Math.max(0, cf.chairA - dt * 3); chairTo(cf.chairA); }
