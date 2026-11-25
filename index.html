@@ -97,6 +97,8 @@
   #hud { position:fixed; left:14px; top:12px; z-index:10; color:#fff; font-weight:bold; font-size:22px;
     text-shadow:0 2px 0 rgba(0,0,0,.35); display:none; }
   #hud .chip { background:rgba(43,45,66,.55); padding:6px 14px; border-radius:12px; display:inline-block; }
+  #hud .chip { margin-bottom:6px; }   /* (the HUD is kept left of the top-right buttons: ep2.js fitHud – chips wrap) */
+  #hud .chip.row { display:table; }   /* a chip on a line of its own (part 2: the lesson / the break at school) */
   /* help: right-hand side, one key per row (key column right-aligned, description left) */
   #help { position:fixed; right:14px; bottom:12px; z-index:10; color:#fff; background:rgba(43,45,66,.6);
     padding:9px 14px; border-radius:12px; font-size:13.5px; line-height:1.45; display:none; max-width:min(390px, 46vw); }
