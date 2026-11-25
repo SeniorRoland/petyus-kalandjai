@@ -3,7 +3,7 @@
 // sideways (towards where you push). The dog runs along the park path, then cuts through the park to the fountain
 // (flower beds, benches, lamps in the way – every bump counts; it goes after cats it spots), and jumps in. So does Petyus.
 import { spawnFx } from '../actors.js';
-import { noise, sBark, sThunk, soundAt } from '../audio.js';
+import { noise, sBark, sThunk, soundAt, tone } from '../audio.js';
 import { dadReturn } from '../dad.js';
 import { keys, touch } from '../input.js';
 import { dismount } from '../intro.js';
@@ -116,7 +116,10 @@ export function updateSled(dt) {
     // the dog jumps into the fountain, the scooter stops dead at the rim and Petyus flies in after it
     sl.leapT += dt; const k = Math.min(1, sl.leapT / 0.55);
     an.pos.lerpVectors(sl.from, sl.to, k); an.y = Math.sin(k * Math.PI) * 0.9; an.sledSpd = 2;
-    if (k >= 1 && !sl.splashed) splash();
+    if (k >= 1 && !sl.dogIn) { sl.dogIn = true; for (let i = 0; i < 25; i++) spawnFx(new V3(an.pos.x, 0.45, an.pos.z), new V3(R(-1.5, 1.5), R(1.5, 3.5), R(-1.5, 1.5)), pick([0x8fd8ff, 0xc9efff, 0xffffff]), 0.06, 0.8, 9.8); soundAt(an.pos.x, an.pos.z, () => noise(0.4, 900, 0.6, 0.3), 1.5); }
+    // the leash yanks him off: the scooter stops dead at the rim, Petyus flies over it head first
+    if (sl.leapT > 0.22 && sl.flyT < 0) startFly();
+    if (sl.flyT >= 0) { flyTick(dt); return leash(); }
   } else if (sl.phase === 'wet') {
     sl.wetT -= dt; an.sledSpd = 0; an.y = -0.15;
     const r = a.rig; a.animate(dt, false, 0); r.inner.position.y = -0.35; r.sh[0].rotation.x = r.sh[1].rotation.x = -2.6; a.sync();   // sitting in the water, arms up
@@ -135,23 +138,40 @@ function leash() {
   an.sledLeash = [hp, new V3(an.pos.x + Math.sin(an.heading) * 0.2 * an.a.s, 0.38 * an.a.s + (an.y || 0), an.pos.z + Math.cos(an.heading) * 0.2 * an.a.s)];
 }
 function leap() {
-  const an = sl.dog; sl.phase = 'leap'; sl.leapT = 0; sl.splashed = false;
+  const an = sl.dog; sl.phase = 'leap'; sl.leapT = 0; sl.splashed = false; sl.flyT = -1; sl.dogIn = false;
   const d = Math.hypot(an.pos.x, an.pos.z) || 1;
   sl.from = an.pos.clone(); sl.to = new V3(an.pos.x / d * 1.4, 0, an.pos.z / d * 1.4);
   sBark(); say({ headWorld: (v) => v.set(an.pos.x, 1.0, an.pos.z) }, 'VAUUU!', 1.2, '');
   say(G.petike, 'Bodri, ne! A szökőkút! NEEEE!', 1.6);
 }
-function splash() {
-  const an = sl.dog, ro = roller, a = G.petike; sl.splashed = true;
-  // Petyus lands in the basin, the scooter is left at the rim
+// the scooter is left at the rim; Petyus (in his football kit again) flies in an arc over the rim into the basin
+function startFly() {
+  const ro = roller, a = G.petike; sl.flyT = 0;
   roller.scripted = false;
-  const d = Math.hypot(ro.pos.x, ro.pos.z) || 1, rimX = ro.pos.x / d * (FOUNTAIN.r + 0.45), rimZ = ro.pos.z / d * (FOUNTAIN.r + 0.45);
+  const d = Math.hypot(ro.pos.x, ro.pos.z) || 1, ux = ro.pos.x / d, uz = ro.pos.z / d, rimX = ux * (FOUNTAIN.r + 0.45), rimZ = uz * (FOUNTAIN.r + 0.45);
   ro.pos.set(rimX, 0, rimZ); ro.speed = 0; ro.lean = 0.1;
   ro.group.position.set(rimX, groundH(rimX, rimZ), rimZ); ro.group.rotation.set(0, ro.heading, ro.lean, 'YXZ');
-  dismount(ro.pos.x / d * 1.9, ro.pos.z / d * 1.9);
-  a.setRig(rigs.foci); a.stride = 6.5; a.swing = 0.7; a.heading = Math.atan2(-ro.pos.x, -ro.pos.z);
+  dismount(rimX, rimZ);
+  a.setRig(rigs.foci); a.stride = 6.5; a.swing = 0.7; a.heading = a.targetHeading = Math.atan2(-ux, -uz);
   addCircleCol(rimX, rimZ, 0.3, 1.0); G.rollerCol = colliders[colliders.length - 1]; G.rollerCol.soft = true;
-  for (let i = 0; i < 70; i++) spawnFx(new V3(R(-1.6, 1.6) + an.pos.x * 0.6, 0.5, R(-1.6, 1.6) + an.pos.z * 0.6), new V3(R(-2.5, 2.5), R(2, 5), R(-2.5, 2.5)), pick([0x8fd8ff, 0xc9efff, 0x5ec2f2, 0xffffff]), 0.07, 1.1, 9.8);
+  // a little to the side of the dog
+  const side = 0.35; sl.flyFrom = new V3(rimX, 0, rimZ); sl.flyTo = new V3(ux * 1.75 - uz * side, 0, uz * 1.75 + ux * side);
+  tone('triangle', 600, 1200, 0.35, 0.08);
+}
+function flyTick(dt) {
+  const a = G.petike, r = a.rig; sl.flyT += dt; const k = Math.min(1, sl.flyT / 0.75);
+  a.pos.lerpVectors(sl.flyFrom, sl.flyTo, k);
+  a.animate(dt, false, 0);
+  // head first, arms stretched out in front, legs trailing
+  r.inner.rotation.x = 1.5 * Math.sin(Math.min(1, k * 1.3) * Math.PI / 2) - (k > 0.85 ? (k - 0.85) * 4 : 0);
+  r.sh[0].rotation.x = r.sh[1].rotation.x = -2.9 * Math.min(1, k * 3); r.sh[0].rotation.z = -0.2; r.sh[1].rotation.z = 0.2;
+  r.hip[0].rotation.x = 0.35 + Math.sin(sl.flyT * 18) * 0.25; r.hip[1].rotation.x = 0.35 - Math.sin(sl.flyT * 18) * 0.25;
+  a.sync(); a.rig.root.position.y = 0.25 + Math.sin(k * Math.PI) * 1.05 - k * 0.25;
+  if (k >= 1 && !sl.splashed) splash();
+}
+function splash() {
+  const an = sl.dog, a = G.petike; sl.splashed = true; sl.flyT = -1;
+  for (let i = 0; i < 70; i++) spawnFx(new V3(R(-0.8, 0.8) + a.pos.x, 0.5, R(-0.8, 0.8) + a.pos.z), new V3(R(-2.5, 2.5), R(2, 5), R(-2.5, 2.5)), pick([0x8fd8ff, 0xc9efff, 0x5ec2f2, 0xffffff]), 0.07, 1.1, 9.8);
   soundAt(0, 0, () => { noise(0.9, 700, 0.5, 0.5); noise(1.2, 2200, 0.6, 0.22, 0.1); }, 2);
   bigText('CSOBBANÁS!', 1.8);
   sl.phase = 'wet'; sl.wetT = 6.5; $('mini').style.display = 'none';

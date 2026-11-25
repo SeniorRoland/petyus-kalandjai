@@ -21,7 +21,18 @@ export class Actor {
   setRig(r) { scene.remove(this.rig.root); this.rig = r; scene.add(r.root); this.sync(); }
   walkTo(pts, speed = 1.5, keepHeading = false) { this.path = pts.map((p) => new V3(p[0], 0, p[1])); this.speed = speed; this.keepHeading = keepHeading; }
   place(x, z, h) { this.pos.set(x, 0, z); if (h !== undefined) this.heading = this.targetHeading = h; this.sync(); }
-  headWorld(out) { this.rig.root.getWorldPosition(out); out.y += this.rig.height + 0.25 - (this.sit > 0.5 ? this.rig.hipH - this.seatH + 0.0 : 0); return out; }
+  headWorld(out) {   // 0.25 m above the top of the head
+    if (this.rig.headBone) { this.rig.root.updateMatrixWorld(true); out.copy(this.rig.headTopLocal); this.rig.headBone.localToWorld(out); out.y += 0.25; return out; }
+    this.rig.root.getWorldPosition(out); out.y += this.rig.height + 0.25 - (this.sit > 0.5 ? this.rig.hipH - this.seatH + 0.0 : 0); return out;
+  }
+  // bend forward at the hips by th radians: the legs stay upright, the feet stay put (drinking, peeking …)
+  bow(th) {
+    const r = this.rig, h = r.hipH || 0.6;
+    r.inner.rotation.x = th; r.inner.position.y += h * (1 - Math.cos(th)); r.inner.position.z = -h * Math.sin(th);
+    if (r.hip[0]) for (let i = 0; i < 2; i++) r.hip[i].rotation.x -= th;
+  }
+  // the top of the head (the crown), following the head bone
+  headTop(out) { this.headWorld(out); out.y -= 0.25; return out; }
   update(dt) {
     if (this.riding) return;
     let moving = false;

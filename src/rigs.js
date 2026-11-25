@@ -54,6 +54,9 @@ function rigFromSkinned(gltf, cfg) {
     rig.footLen = fl || 0.2; rig.ankleH = fp.y;
   }
   rig.height = new THREE.Box3().setFromObject(rig.root).max.y;
+  // the head bone: speech bubbles and things put on the head follow it (sitting, dozing, bending)
+  const hb = sm.skeleton.bones.find((x) => x.name.replace(/^mixamorig:?/, '') === 'Head');
+  if (hb) { rig.root.updateMatrixWorld(true); const hp = new V3(); hb.getWorldPosition(hp); rig.headBone = hb; rig.headTop = rig.height - hp.y; rig.headTopLocal = hb.worldToLocal(new V3(hp.x, rig.height, hp.z)); }   // the crown in the head bone's frame: it tilts with the head
   return rig;
 }
 // The models blend the joint rings 50/50 between two bones (shoulder: Arm + Spine2, elbow: Arm + ForeArm, knee: UpLeg + Leg).
