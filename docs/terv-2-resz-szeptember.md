@@ -240,11 +240,17 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 
 ## Helyszín: Iskola  ✅ kész (csibészségek nélkül)
 
-- **Megvalósítás** (`src/ep2/school.js`): földszintes iskola (x 0…22, z −11…0; „Tököli Általános Iskola” felirat) – folyosó fogasokkal, kabátokkal, táskákkal, vitrinnel, faliújságokkal, padokkal; **Petyus osztályterme (3. b)**: tábla krétaírással, tanári asztal, 3 × 3 pad két-két székkel, könyvespolc, szekrény, rajzok, óra, növények; a szomszéd terem (4. a). A kamera felőli falak lesüllyednek, ha Petyus bent van (a nézet forgatásával is).
-- **Udvar:** aszfalt pályavonalakkal, ugróiskola, kosárpalánk, két kis kapu, padok, fák, kandeláberek, kerékpártároló, kerítés; a déli kapu az utcára.
-- **Szereplők:** a tanító néni a táblánál sétál („Gyerekek, figyeljetek a táblára!”, „Petyus, ülj a helyedre!”), 12 osztálytárs ül a padokban (ha Petyus elmegy mellettük, felé fordulnak), hárman az udvaron szaladgálnak és megszólítják.
+- **Megvalósítás** (`src/ep2/school.js`) – a tököli **Weöres Sándor Általános Iskola** fényképe és légifotója alapján:
+  - **Főépület:** hosszú, kelet–nyugati, háromszintes, lapostetős; a tetőn napelemsorok. Fehér vakolat narancs sávokkal (földszinti lábazat, az 1. emelet ablakai alatt), a tető alatt krémszínű sáv; fehér keretes, osztott ablakok, bent világos függönyök.
+  - A nyugati végén a **narancs tömb** fehér szalagablakokkal; mellette a **bejárat**: sötétbarna fa előtető két vékony oszlopon, rajta a felirat („WEÖRES SÁNDOR ÁLTALÁNOS ISKOLA”), betonlépcső oldalfalakkal, üvegajtó.
+  - Délre hozzá kapcsolódik a **kétszintes, négyzetes épület** (tornaterem / ebédlő, tetőablakkal), attól délre a **füves pálya** két kapuval az Iskola utcáig.
+  - Északon a **városi sportcsarnok** (piros nyeregtető, napelemek), keletre mellette a **kék sportpálya** kerítéssel; mögötte murvás parkoló.
+  - A bejárat előtt **térkő**, kerékpártámaszok, betonpadok fa ülőlappal, fa szemetesek, nagy fák (platánok), lámpák; keletre vöröses térkő.
+  - Körben az iskola kerítése, a **kapu nyugaton a Kossuth Lajos utcára** nyílik; délen az Iskola utca, keleten az Aradi utca, az utcák mentén piros tetős családi házak.
+- **Bent** a főépület földszintje járható: a folyosó (fogasok kabátokkal és táskákkal, vitrin, faliújságok, padok) és három terem: **Petyus osztálya (3. b)** – tábla krétaírással, tanári asztal, 3 × 3 pad, könyvespolc, szekrény, rajzok, óra –, a 4. a és a 2. a terme. Amíg Petyus bent van, az emeletek eltűnnek, a kamera felőli falak lesüllyednek, a déli kisebb épületből csak a lábazata marad.
+- **Szereplők:** a tanító néni a táblánál sétál és beszél, 12 osztálytárs ül a padokban (Petyus felé fordulnak), négyen a téren és a pályán szaladgálnak, megszólítják.
 - **Óra:** 8:00 → 15:30; **E – hazaindulás** a kapunál (egyelőre bármikor).
-- ⬜ Később: a 4 iskolai csibészség, Petyus saját helye (leülés), tornaterem / ebédlő.
+- ⬜ Később: a 4 iskolai csibészség, Petyus saját helye (leülés), a tornaterem / ebédlő belseje, az emeletek.
 
 ## Fejlesztési lépések
 
@@ -288,3 +294,4 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 - [x] **Otthon délután–este** csibészségek nélkül: kint sötét, bent égnek a lámpák, a többi lakás ablakaiban fel-le kapcsolódó lámpák, utcai és udvari lámpák (az 1. rész kandeláberei); továbblépés a reggelbe feltétel nélkül. ✅ `setEvening`, `addFillLights`, lefekvés Petyus ágyánál.
 - [x] **Öltözködés az induláshoz:** a szekrénynél E, három szín (fehér / fekete / kék felső), a szülők berohannak, átöltöznek, az ajtóhoz mennek és sürgetnek; az indulás feltétele a felöltözés is. ✅ `dressing.js`, `dressClothes` a `pajama.js`-ben.
 - [x] **A szekrény működése:** a ruhák nem belül voltak, a fogantyúk furán viselkedtek (a voxel szekrény tömör volt, a fogantyúja a helyén maradt). ✅ Üreges szekrény a `dressing.js`-ben, a ruhák a rúdon és a polcon belül, a fogantyú az ajtószárnyon.
+- [x] **Az iskola áttervezése** a fénykép és a légifotó alapján (az épület és a környezete). ✅ `school.js`: háromszintes főépület narancs–fehér homlokzattal, előtetős bejárat, déli kisebb épület, füves pálya, sportcsarnok, kék pálya, tér, utcák, házak.
