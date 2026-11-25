@@ -7,7 +7,7 @@
 // Stars: ★ 20 s hidden · ★★ 40 s · ★★★ dad gives up.
 import { spawnFx } from '../actors.js';
 import { noise, tone } from '../audio.js';
-import { dad, dadReturn, navTarget, petyaFront } from '../dad.js';
+import { dad, dadReturn, inPitch, navTarget, petyaFront } from '../dad.js';
 import { isTouch, kickHeld, keys, touch } from '../input.js';
 import { award } from '../mischief.js';
 import { CAM_FWD, CAM_RIGHT, pvel } from '../player.js';
@@ -115,16 +115,48 @@ function nextSpot() {
   const byD = [...left].sort((u, v) => Math.hypot(u.x - p.x, u.z - p.z) - Math.hypot(v.x - p.x, v.z - p.z));
   const s = hs.visits > 0 && rand() < 0.3 ? byP[0] : byD[Math.floor(rand() * Math.min(3, byD.length))];
   s.seen = true; hs.target = s; hs.lookT = 0; hs.visits++;
-  // stand a step away from it, on the side facing him
-  const dx = p.x - s.x, dz = p.z - s.z, d = Math.hypot(dx, dz) || 1;
-  hs.goal = [s.x + dx / d * 1.3, s.z + dz / d * 1.3];
+  // stand a step away from it, on the side facing him – on a free spot (not in a bush, a bench or across the fence)
+  const base = Math.atan2(p.x - s.x, p.z - s.z), inP = inPitch(p.x, p.z);
+  hs.goal = null;
+  for (const da of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.3, -2.3, Math.PI]) {
+    for (const r of [1.3, 1.8]) {
+      const g = [s.x + Math.sin(base + da) * r, s.z + Math.cos(base + da) * r];
+      if (isFree(g) && (inPitch(g[0], g[1]) === inP || da === Math.PI)) { hs.goal = g; break; }
+    }
+    if (hs.goal) break;
+  }
+  if (!hs.goal) hs.goal = [s.x + Math.sin(base) * 1.3, s.z + Math.cos(base) * 1.3];
+  hs.stuckT = 0; hs.stuckN = 0; hs.lastP = [p.x, p.z]; hs.detour = null;
+}
+const tmpP = new V3();
+function isFree(g) { tmpP.set(g[0], 0, g[1]); collide(tmpP, 0.32, 0, null, true); return Math.hypot(tmpP.x - g[0], tmpP.z - g[1]) < 0.01; }
+// walking to the spot: if something (a tree, a bush, the fence) holds him up, he steps round it; stuck for good → the next spot
+function walkGoal(dt, g) {
+  const p = G.petya;
+  if (hs.detour) {
+    hs.detour.t -= dt;
+    if (hs.detour.t <= 0 || Math.hypot(p.pos.x - hs.detour.x, p.pos.z - hs.detour.z) < 0.3) hs.detour = null;
+    else { p.path = [new V3(hs.detour.x, 0, hs.detour.z)]; p.speed = 1.5; p.keepHeading = false; return; }
+  }
+  const t = navTarget(p.pos, g); p.path = [new V3(t[0], 0, t[1])]; p.speed = 1.5; p.keepHeading = false;
+  hs.stuckT += dt;
+  if (hs.stuckT > 0.7) {
+    const moved = Math.hypot(p.pos.x - hs.lastP[0], p.pos.z - hs.lastP[1]);
+    hs.lastP = [p.pos.x, p.pos.z]; hs.stuckT = 0;
+    if (moved < 0.35) {
+      if (++hs.stuckN > 3) { nextSpot(); return; }
+      // sidestep: perpendicular to the way he wants to go, alternating sides, a bit further each time
+      const dx = t[0] - p.pos.x, dz = t[1] - p.pos.z, d = Math.hypot(dx, dz) || 1, side = hs.stuckN % 2 ? 1 : -1, k = 1 + hs.stuckN * 0.6;
+      hs.detour = { x: p.pos.x + (-dz / d * side * 1.2 - dx / d * 0.4) * k, z: p.pos.z + (dx / d * side * 1.2 - dz / d * 0.4) * k, t: 1.4 };
+    } else hs.stuckN = Math.max(0, hs.stuckN - 1);
+  }
 }
 function seek(dt, moving, hold) {
   const p = G.petya, a = G.petike, P = a.pos;
   hs.hidden += dt;
   // walk to the spot / look around there
   const g = hs.goal, dg = Math.hypot(p.pos.x - g[0], p.pos.z - g[1]);
-  if (dg > 0.3 && hs.lookT <= 0) { const t = navTarget(p.pos, g); p.path = [new V3(t[0], 0, t[1])]; p.speed = 1.5; p.keepHeading = false; }
+  if (dg > 0.3 && hs.lookT <= 0) walkGoal(dt, g);
   else {
     p.path = null; hs.lookT += dt;
     const base = Math.atan2(hs.target.x - p.pos.x, hs.target.z - p.pos.z);

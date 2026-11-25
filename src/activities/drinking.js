@@ -19,7 +19,7 @@ import { canHide, startHide } from './hide.js';
 import { canBalloon, startBalloon } from './balloon.js';
 
 // ---------------------------------------------------------------- play activities: drinking fountain, scooter, worried dad
-const DRINK = { x: 28.3, z: -12.9, stand: [28.3, -12.36] };
+const DRINK = { x: 28.3, z: -12.9, stand: [28.3, -12.25] };   // far enough that leaning over the basin the chest stays above it
             // free | toDrink | drinking | riding | toFountain | ftnDrink | caught | chased | atMom
 
 export function setPrompt(txt) {
@@ -75,7 +75,7 @@ export function updateDrinking(dt) {
   }
   G.drinkT += dt; a.heading = dampAngle(a.heading, Math.PI, 10, dt); a.animate(dt, false, 0);
   const r = a.rig, k = Math.max(0, Math.min(1, G.drinkT * 3, (3.0 - G.drinkT) * 3));
-  r.inner.rotation.x = 0.5 * k; r.sh[0].rotation.x = -0.85 * k; r.sh[1].rotation.x = -0.85 * k; r.sh[0].rotation.z = -0.3 * k; r.sh[1].rotation.z = 0.3 * k;
+  a.bow(0.6 * k); r.sh[0].rotation.x = -0.85 * k; r.sh[1].rotation.x = -0.85 * k; r.sh[0].rotation.z = -0.3 * k; r.sh[1].rotation.z = 0.3 * k;
   if (G.drinkT > 0.35 && G.drinkT < 2.6) {
     if (rand() < 0.7) spawnFx(new V3(DRINK.x + R(-0.02, 0.02), 1.13, DRINK.z - 0.03), new V3(R(-0.05, 0.05), R(0.9, 1.2), R(0.7, 0.95)), pick([0x8fd8ff, 0xc9efff, 0x5ec2f2]), 0.04, 0.35, 6);
     G.gulpT -= dt; if (G.gulpT <= 0) { G.gulpT = 0.42; tone('sine', 260, 140, 0.09, 0.12); }

@@ -1,7 +1,7 @@
 # 1. rész (Augusztus – Egy nap a parkban): csibészség-ötletek
 
 Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** ✅ a közös pontozó rendszer (`mischief.js` + napló) és ✅ mind a 10 csibészség kész (tetszés szerinti sorrendben); ✅ a felvett javítandók is (lent). ⬜ Nyitott: a szökőkút-ivás 11. csibészségként (javaslat, lent).
+**Állapot:** ✅ a közös pontozó rendszer (`mischief.js` + napló) és ✅ mind a 10 csibészség kész (tetszés szerinti sorrendben); ✅ a felvett javítandók is (lent, 11. 23. és 11. 25.). ⬜ Nyitott: a szökőkút-ivás 11. csibészségként (javaslat, lent).
 
 ## Pontozás és csibészség-napló (közös rendszer, minden csibészségre)
 
@@ -122,3 +122,13 @@ Mini játékok és jelenetek, amelyeket a meglévő rendszerekre lehet építeni
 - [x] **Labda visszahívása telefonon:** messzire rúgott labda után nincs gomb a visszaszerzésére (böngészőben ez az **R**). Kell egy érintéses gomb is („LABDA IDE”). ✅ `#ballBtn` („⚽ IDE”): akkor látszik, ha a labda 7 m-nél messzebb van (vagy nincs játékban).
 - [x] **Pénzhalászat vége:** utána Petyus kerülje ki a szökőkutat (ne menjen át rajta), és a fagyis kocsi ne a virágágyásba álljon, hanem a járdára (`activities/fish.js`). ✅ A kocsi a szökőkúttól keletre, a kövezett úton áll meg (`CART`), az árus az utakon jön-megy, Petyus a gyűrűs úton kerüli meg a szökőkutat (`ringRoute`).
 - [x] **Ülés a padon:** a padon ülő Petya és Angi lába ne lógjon bele a padba (ülőmagasság / comb-lábszár póz a padon – `actors.js` ülés, `sitKnee`). ✅ Ülve a csípő a comb félvastagságával (`rig.thighR`) az ülés fölött van – minden ülésre (pad, szék, WC).
+
+## Javítandók (felvéve: 2026. 11. 25.)  ✅ mind kész
+
+- [x] **Torony apa fején:** a tárgyak nem a fejére kerültek, és a gyorsasági próba (QTE) túl gyors volt. ✅ A fej helyét a fejcsont adja (`rig.headBone`, `rig.headTop` a `rigs.js`-ben; `Actor.headWorld` / `headTop`) – ülve, szundikálva is pontos, a buborékok is ezt használják; a jelölő lassabban leng (`nap.js`: 1,4 + n·0,2 a korábbi 2,0 + n·0,32 helyett).
+- [x] **Ivás a szökőkútból:** Petyus teste belelógott a szökőkútba. ✅ A perem mellé áll, a csípőjét a peremre téve hasra fekszik rajta, a felsőteste a víz fölött, a lába kalimpál (`fountain.js`; `Actor.bow()`: hajlás a csípőnél, a láb a helyén marad).
+- [x] **Ivás az ivókútból:** Petyus teste belelógott az ivókútba. ✅ Kicsit hátrébb áll, és a csípőjénél hajol a medence fölé (`drinking.js`, `Actor.bow()`).
+- [x] **Bújócska:** apa elakadt a tárgyakban (pl. a pálya kerítésében). ✅ A búvóhely mellett szabad helyet keres (nem bokorban, nem a kerítés másik oldalán), és ha elakad, oldalra lép, kerül; ha háromszor sem jut tovább, a következő búvóhelyet nézi meg (`hide.js`: `walkGoal`, `isFree`).
+- [x] **Félrerúgás:** ha Petyus a labda helyett valami keménybe rúg (pad, fa, kerítés, lámpa, roller, autó), felhúzott lábbal fél lábon ugrál és jajgat, apa néha megjegyzést tesz (`player.js`: `kickedSolid`, `ouch`, `hopOuch`).
+- [x] **Kutyaszán vége:** Petyus nem esett bele a szökőkútba. ✅ Bodri beugrik, a roller a peremnél megáll, Petyus fejest repül ívben a vízbe, ott csobban (`sled.js`: `startFly`, `flyTick`, `splash`).
+- [x] **Autók:** ✅ jobb oldalon közlekednek (keletre a déli sávban, z 17; nyugatra az északiban, z 15); tartják a távolságot, nem mennek át egymáson; megállnak bárki előtt, aki előttük van az úton; ha Petyus áll az úton: dudálnak, a sofőr szitkozódik (buborék „Sofőr” névvel), apa rákiabál; minden autón mozgó ütköző van, így a szereplők és a labda nem mennek át rajtuk (`npcs.js`: `updateCars`).

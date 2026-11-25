@@ -2,14 +2,14 @@
 import * as THREE from 'three';
 import { updateEvtCat, updateFlock } from './activities/cat.js';
 import { Actor, animLegs, makeCat, makeDog, makePigeon, spawnFx } from './actors.js';
-import { sBark, sFlap, sMeow } from './audio.js';
+import { sBark, sFlap, sHorn, sMeow, soundAt } from './audio.js';
 import { makePerson } from './rigs.js';
 import { scene } from './scene.js';
 import { G, animals, ball, cars, npcs, pigeons } from './state.js';
 import { say } from './ui.js';
 import { R, V3, clamp, damp, dampAngle, pick, rand } from './util.js';
 import { getGeometry } from './voxels.js';
-import { FOUNTAIN, GX0, GX1, L, benchSpots, collide, groundH, vcMat } from './world.js';
+import { FOUNTAIN, GX0, GX1, L, benchSpots, collide, colliders, groundH, vcMat } from './world.js';
 import { pigeonHook } from './activities/pigeons.js';
 
 // ---------------------------------------------------------------- NPCs & animals
@@ -61,11 +61,14 @@ export function buildPeople() {
     const p = makePigeon(); scene.add(p.root); const a = rand() * Math.PI * 2, rr = R(3.2, 4.4);
     pigeons.push({ p, pos: new V3(Math.cos(a) * rr, 0, Math.sin(a) * rr), home: new V3(Math.cos(a) * rr, 0, Math.sin(a) * rr), heading: rand() * 6, state: 'idle', t: R(0, 3), vel: new V3(), y: 0 });
   }
-  // cars
-  for (const [z, dir, col, x] of [[15, 1, 0xe63946, -30], [17, -1, 0x3a86ff, 20], [15, 1, 0xffbe0b, 30]]) {
+  // cars – right-hand traffic: eastbound (+x) in the southern lane (z 17), westbound in the northern one (z 15)
+  for (const [z, dir, x] of [[17, 1, -30], [15, -1, 20], [17, 1, 30]]) {
     const g = new THREE.Mesh(getGeometry('car', CAR_IDX++ % 6), vcMat); g.castShadow = true; g.receiveShadow = true;
     const grp = new THREE.Group(); grp.add(g); scene.add(grp);
-    cars.push({ g: grp, x, z, dir, speed: R(5, 7) });
+    // a box collider that moves with it: people and the ball do not go through cars
+    const col = { box: true, e: 0.4, x0: 0, z0: z - CAR_W, x1: 0, z1: z + CAR_W, h: 1.5 }; colliders.push(col);
+    const cruise = R(5, 7);
+    cars.push({ g: grp, x, z, dir, speed: cruise, cruise, col, honkT: 0, stopT: 0 });
   }
 }
 export function updateNPCs(dt) {
@@ -155,7 +158,7 @@ export function updateAnimals(dt) {
     }
     p.root.position.set(pg.pos.x, groundH(pg.pos.x, pg.pos.z) + pg.y, pg.pos.z); p.root.rotation.y = pg.heading;
   }
-  for (const c of cars) { c.x += c.dir * c.speed * dt; if (c.x > GX1 + 4) c.x = GX0 - 4; if (c.x < GX0 - 4) c.x = GX1 + 4; c.g.position.set(c.x, 0, c.z); c.g.rotation.y = c.dir > 0 ? Math.PI / 2 : -Math.PI / 2; }
+  updateCars(dt);
 }
 // fountain water
 let jetT = 0;
@@ -163,3 +166,58 @@ export function updateFountain(dt) {
   jetT -= dt; while (jetT < 0) { jetT += 0.035; const a = rand() * Math.PI * 2; spawnFx(new V3(FOUNTAIN.x, 2.5, FOUNTAIN.z), new V3(Math.cos(a) * R(0.6, 1.0), R(2.2, 3), Math.sin(a) * R(0.6, 1.0)), pick([0x8fd8ff, 0xc9efff, 0x5ec2f2]), 0.08, 1.1, 6); }
 }
 
+
+// ---------------------------------------------------------------- cars
+// They keep their distance from the car in front (no driving through each other) and brake for anyone on the road in front of
+// them; if it is Petyus, the driver stops, honks and swears. Each car carries a box collider (people are pushed out of it).
+const CAR_HL = 1.9, CAR_W = 0.9, X0 = GX0 - 4, X1 = GX1 + 4, ROAD_LEN = X1 - X0;
+const SWEAR = ['Hé, kölyök! Nem látod, hogy jövök?!', 'A mindenit! Le az útról!!', 'Hova nézel, fiam?!', 'Kinek a gyereke ez?!', '#@&%! Majdnem elütöttelek!!', 'Ez nem játszótér, öcsi!!', 'Na mi lesz már?! Menj arrébb!!'];
+const ahead = (c, x) => { let d = (x - c.x) * c.dir; if (d < -ROAD_LEN / 2) d += ROAD_LEN; if (d > ROAD_LEN / 2) d -= ROAD_LEN; return d; };
+function walkers() {
+  const out = [G.petike, G.petya, G.angi].filter(Boolean).map((a) => ({ x: a.pos.x, z: a.pos.z, me: a === G.petike }));
+  for (const n of npcs) if (n.actor) out.push({ x: n.actor.pos.x, z: n.actor.pos.z });
+  for (const an of animals) if (an.pos && !(an.y > 0.5)) out.push({ x: an.pos.x, z: an.pos.z });
+  return out;
+}
+function updateCars(dt) {
+  const ws = walkers();
+  for (const c of cars) {
+    let want = c.cruise, kid = false;
+    // the car in front in the same lane: keep a gap of a car length and a half
+    for (const o of cars) {
+      if (o === c || o.dir !== c.dir || Math.abs(o.z - c.z) > 0.5) continue;
+      const d = ahead(c, o.x) - 2 * CAR_HL - 2.2;
+      if (ahead(c, o.x) > 0) want = Math.min(want, Math.sqrt(Math.max(0, 2 * 5 * d)), d < 4 ? o.speed : want);
+    }
+    // people (and animals) on the road in front of the bonnet: stop a metre before them
+    for (const w of ws) {
+      if (Math.abs(w.z - c.z) > CAR_W + 0.45) continue;
+      const d = ahead(c, w.x);
+      if (d < -CAR_HL || d > 16) continue;
+      const free = d - CAR_HL - 1.0;
+      want = Math.min(want, Math.sqrt(Math.max(0, 2 * 6 * free)));
+      if (w.me && d < 12) kid = true;
+    }
+    c.speed = want < c.speed ? Math.max(want, c.speed - 12 * dt) : Math.min(want, c.speed + 3 * dt);
+    c.x += c.dir * c.speed * dt;
+    if (c.x > X1) c.x -= ROAD_LEN; if (c.x < X0) c.x += ROAD_LEN;
+    c.g.position.set(c.x, 0, c.z); c.g.rotation.y = c.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+    c.col.x0 = c.x - CAR_HL; c.col.x1 = c.x + CAR_HL;
+    // Petyus is in the way: honk, then the driver leans out of the window and swears (and again if he stays there)
+    c.honkT -= dt;
+    if (kid && c.speed < 2.5 && G.mode === 'play') {
+      c.stopT += dt;
+      if (c.honkT <= 0) {
+        c.honkT = R(3.5, 5); const twice = rand() < 0.5;
+        soundAt(c.x, c.z, () => sHorn(twice), 1.6);
+        say({ headWorld: (v) => v.set(c.x, 1.7, c.z) }, twice ? 'TÜTÜ!' : 'TÜÜÜÜT!', 1.2, '');
+        setTimeout(() => say(driver(c), pick(SWEAR), 2.4, 'Sofőr'), 700);
+        if (c.stopT > 0.5 && G.petyaMode === 'bench' && rand() < 0.6) setTimeout(() => { say(G.petya, pick(['PETYUS! Azonnal gyere le az útról!!', 'Az úttest nem játszótér!!', 'Petyus! Az autók!!']), 2.4); G.petya.point = 1.5; }, 1800);
+      }
+    } else c.stopT = 0;
+  }
+}
+// the driver's head at the side window (on the left of the car: the side towards the middle of the road)
+function driver(c) {
+  return { name: 'Sofőr', rig: { root: { visible: true } }, headWorld: (v) => v.set(c.x + c.dir * 0.2, 1.75, c.z - c.dir * 0.35) };
+}
