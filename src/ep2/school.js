@@ -415,8 +415,7 @@ let ceil = null;
 function buildCeiling() {
   ceil = new THREE.Group(); ceil.visible = false; scene.add(ceil);
   const m = new THREE.Mesh(new THREE.PlaneGeometry(36, 12), new THREE.MeshBasicMaterial({ color: 0xeeebe4, side: THREE.DoubleSide })); m.rotation.x = Math.PI / 2; m.position.set(18, FLOOR - 0.02, -6); ceil.add(m);
-  const lampMat = new THREE.MeshBasicMaterial({ color: 0xfdfbf2 });
-  for (let x = 2; x < 36; x += 3) { const l = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.2), lampMat); l.position.set(x, FLOOR - 0.05, -1.3); ceil.add(l); }   // the corridor (always on; the rooms' lamps: buildLights)
+  // (the lamps on it: buildLights)
 }
 export function setSchoolFps(on) { if (ceil) ceil.visible = on; }
 
@@ -471,6 +470,9 @@ function updatePeople(dt) {
       p.t -= dt; if (p.t <= 0) { p.t = R(2, 6); p.look = pick([0, 0, 0.6, -0.6]); }
       const near = Math.hypot(P.x - a.pos.x, P.z - a.pos.z) < 1.6 && !school.seated;
       a.targetHeading = near ? Math.atan2(P.x - a.pos.x, P.z - a.pos.z) : -Math.PI / 2 + p.look;
+      a.update(dt);
+    } else if (p.kind === 'teacher' && p.out) {   // after 14:00 out on the square, watching the children
+      if (!a.path) a.targetHeading = Math.atan2(-2 - a.pos.x, 9 - a.pos.z) + Math.sin(G.clockT * 0.3 + p.home.x) * 0.8;
       a.update(dt);
     } else if (p.kind === 'teacher') {   // walking a little in front of the board, facing the class
       p.t -= dt; if (p.t <= 0 && !a.path) { p.t = R(3, 7); a.walkTo([[p.home.x + R(0, 0.5), p.home.z + R(-1.8, 1.8)]], 0.8); }
@@ -603,30 +605,34 @@ const LIGHTS = [
   { name: 'fiú WC', x0: 24, x1: 30, sw: 27.0, on: false }, { name: 'lány WC', x0: 30, x1: 36, sw: 34.0, on: false },
 ];
 const lamps = [];
+// every lamp is a rectangular panel on the ceiling with its light right under it (the light comes from the panels, nothing else):
+// a classroom 2 × 2, a toilet 1, the corridor 3 (always on)
+const FIX_ON = 0xffffff, FIX_OFF = 0xc9c9c3;
+function lampAt(x, z, list, fixes, on = true) {
+  const l = new THREE.PointLight(0xfff6e4, 0, 7.5, 1.2); l.position.set(x, FLOOR - 0.25, z); scene.add(l); list.push(l);
+  const f = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.06, 0.38), new THREE.MeshBasicMaterial({ color: on ? FIX_ON : FIX_OFF })); f.position.set(x, FLOOR - 0.06, z); ceil.add(f); fixes.push(f);
+}
 function buildLights() {
-  const fixOff = new THREE.MeshLambertMaterial({ color: 0xdcdcd6 });
   for (const L of LIGHTS) {
-    const cx = (L.x0 + L.x1) / 2, cz = (SCHOOL.z0 + CORR) / 2;
-    L.lights = [];
-    const n = L.x1 - L.x0 > 8 ? 2 : 1;
-    for (let k = 0; k < n; k++) { const l = new THREE.PointLight(0xfff6e4, 0, 9, 1.1); l.position.set(n === 1 ? cx : L.x0 + (k + 1) * (L.x1 - L.x0) / 3, FLOOR - 0.3, cz); scene.add(l); L.lights.push(l); }
-    // the tubes on the ceiling (seen in the first-person view): glowing when on
-    // the tubes: in even rows over the room (a classroom 3 × 3, a toilet 2 × 2), glowing when the switch is on
-    const wide = L.x1 - L.x0 > 8, xs = wide ? [2, 6, 10] : [1.5, 4.5], zs = wide ? [-10.0, -7.3, -4.6] : [-9.6, -5.6];
-    L.fix = []; for (const x of xs.map((d) => L.x0 + d)) for (const z of zs) { const f = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.2), fixOff.clone()); f.position.set(x, FLOOR - 0.06, z); ceil.add(f); L.fix.push(f); }
+    L.lights = []; L.fix = [];
+    const wide = L.x1 - L.x0 > 8;
+    if (wide) { for (const dx of [3.5, 8.5]) for (const z of [-9.4, -5.3]) lampAt(L.x0 + dx, z, L.lights, L.fix); L.I = 5; }
+    else { lampAt((L.x0 + L.x1) / 2, (SCHOOL.z0 + CORR) / 2, L.lights, L.fix); L.I = 7; }
     // the switch: a plate with a rocker on the room side of the corridor wall, by the door
     const plate = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.14, 0.02), new THREE.MeshLambertMaterial({ color: 0xf7f7f4 })); plate.position.set(L.sw, 1.05, CORR - 0.15);   // (in front of the toilets' wall tiles too)
     const rk = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.07, 0.02), new THREE.MeshLambertMaterial({ color: 0xdedbd2 })); rk.position.set(L.sw, 1.05, CORR - 0.165);
     L.rocker = rk; onWall([plate, rk], 'z', CORR - 0.06);
     lamps.push(L); showLight(L);
   }
-  // the corridor: always lit
-  for (const x of [6, 18, 30]) { const l = new THREE.PointLight(0xfff6e4, 5, 9, 1.1); l.position.set(x, FLOOR - 0.3, -1.3); scene.add(l); }
+  // the corridor: three panels, always on
+  const cl = [], cf = [];
+  for (const x of [6, 18, 30]) lampAt(x, -1.3, cl, cf);
+  for (const l of cl) l.intensity = 4.5;
 }
 function toggleLight(L) { L.on = !L.on; showLight(L); tone('square', 1200, 900, 0.03, 0.05); }
 function showLight(L) {
-  for (const l of L.lights) l.intensity = L.on ? 9 : 0;
-  for (const f of L.fix) f.material.color.set(L.on ? 0xfffbe8 : 0xdcdcd6);
+  for (const l of L.lights) l.intensity = L.on ? L.I : 0;
+  for (const f of L.fix) f.material.color.set(L.on ? FIX_ON : FIX_OFF);
   L.rocker.material.color.set(L.on ? 0xffc24d : 0xdedbd2); L.rocker.rotation.x = L.on ? -0.35 : 0;
 }
 // the daylight inside: k = 1 inside the building (or in the first-person view there), 0 outside
@@ -689,6 +695,10 @@ function crowdTick(dt, brk) {
       k.out = false;
       if (k.pupil) { k.state = 'seat'; k.a.place(k.seat.x, k.seat.z, -Math.PI / 2); k.a.sitTarget = 1; }
       else { k.state = 'in'; k.a.rig.root.visible = false; }
+    }
+    if (k.pupil && k.state === 'seat') {   // a lesson: always sitting, on their own chair
+      k.a.sitTarget = 1;
+      if (!k.a.path && Math.hypot(k.a.pos.x - k.seat.x, k.a.pos.z - k.seat.z) > 0.05) k.a.place(k.seat.x, k.seat.z, -Math.PI / 2);
     }
     if (k.pupil && (k.state === 'seat' || (k.state === 'leaving' && k.a.sit > 0.1))) {   // in their seats: facing the board, now and then a neighbour / Petyus
       k.t -= dt; if (k.t <= 0) { k.t = R(2, 6); k.look = pick([0, 0, 0.6, -0.6]); }
@@ -800,7 +810,7 @@ const lesson = (min) => { const t = min - 8 * 60, n = Math.floor(t / 55); return
 export function schoolStatus(min, wd) {
   const t = min - 8 * 60, n = Math.floor(t / 55), r = t - n * 55, subj = (k) => TIMETABLE[Math.max(0, Math.min(4, wd))][k];
   if (t < 0) return { brk: true, text: '🔔 Mindjárt becsengetnek' };
-  if (n >= LESSONS) return { brk: true, text: '🏠 Vége a tanításnak – napközi, játék az udvaron' };
+  if (n >= LESSONS || (n === LESSONS - 1 && r >= 45)) return { brk: true, text: min < AFTERNOON ? `🍽️ Ebédszünet · még ${Math.ceil(AFTERNOON - min)} perc` : '🏠 Délután – mindenki kint az udvaron' };
   if (r < 45) return { brk: false, text: `📚 ${n + 1}. óra · ${subj(n)} · még ${Math.ceil(45 - r)} perc` };
   return { brk: true, text: `🔔 Szünet · még ${Math.ceil(55 - r)} perc` + (n + 1 < LESSONS ? ` · utána: ${subj(n + 1)}` : '') };
 }
@@ -882,7 +892,20 @@ export function schoolRoom(x, z) {
 }
 export const schoolFloor = (x, z) => (x > SCHOOL.x0 && x < SCHOOL.x1 && z > SCHOOL.z0 && z < SCHOOL.z1 ? (z > CORR ? 'stone' : x >= 24 ? 'tile' : 'wood') : 'stone');
 // solid: the first-person view or zoomed out – walls solid, the roof on
+// from 14:00 the teachers go out too (the children are already out: the afternoon)
+const AFTERNOON = 14 * 60;
+function teachersOut(min) {
+  if (min < AFTERNOON || school.teachersOut) return;
+  school.teachersOut = true;
+  for (const d of doors) if (!d.open && (d.name === '6. b' || d.name === '6. a' || d.name === 'bejárat')) toggleDoor(d);
+  people.filter((p) => p.kind === 'teacher').forEach((p, i) => {
+    const r = ROOMS3.find((q) => p.home.x > q.x0 && p.home.x < q.x0 + 12), spot = i ? [6.5, 12.2] : [-7.5, 11.8];
+    p.out = true;
+    p.a.walkTo([[p.a.pos.x + 0.6, -3.4], [r.door, -3.3], [r.door, -1.4], [2.6, -1.1], [2.6, 1.2], [2.6, 4.4], spot], 1.3);
+  });
+}
 export function updateSchool(dt, min, solid) {
+  teachersOut(min);
   updateWalls(dt, solid); updatePeople(dt); updateSounds(dt, min); updateDoors(dt); updateToilets(dt); indoorLight(dt); crowdTick(dt, !lesson(min));
   if (Math.floor(min) !== school.lastMin) { school.lastMin = Math.floor(min); for (const c of clocks) c.draw(min); }
   if (school.seated && !G.petike.sitTarget && G.petike.sit < 0.05) school.seated = false;   // stood up with a movement key
