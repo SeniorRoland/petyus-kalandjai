@@ -48,16 +48,19 @@ const C = { white: 0xf2f1ec, orange: 0xef8f4e, orangeD: 0xe07c3c, cream: 0xf2dfb
 // GLASS: while it is set (the ground floor's walls), the glass is not drawn into the batch but collected – it becomes a
 // see-through pane of its own (one can look out of the ground floor's windows)
 let GLASS = null;
-function windowAt(b, alongX, at, out, c, y, w, h, panes = 3, curtain = true) {
+function windowAt(b, alongX, at, out, c, y, w, h, panes = 3, curtain = true, pane = true) {   // pane: false – only the frame (the inside of a see-through window)
   const o = 0.03 * out;
-  if (GLASS) GLASS.push({ alongX, at: at + o * 2, c, y, w, h });
+  if (GLASS && pane) GLASS.push({ alongX, at: at + o * 2, c, y, w, h });
   if (alongX) {
-    b.bx(c, y - 0.06, at + o, w + 0.12, h + 0.12, 0.06, C.frame, 0, 0); if (!GLASS) b.bx(c, y, at + o * 2, w, h, 0.03, C.glass, 0, 0.03);
+    // the frame: four bars round the opening (a slab behind the glass would hide what is beyond a see-through pane)
+    b.bx(c, y - 0.06, at + o, w + 0.12, 0.06, 0.06, C.frame, 0, 0); b.bx(c, y + h, at + o, w + 0.12, 0.06, 0.06, C.frame, 0, 0); b.bx(c - w / 2 - 0.03, y, at + o, 0.06, h, 0.06, C.frame, 0, 0); b.bx(c + w / 2 + 0.03, y, at + o, 0.06, h, 0.06, C.frame, 0, 0);
+    if (!GLASS && pane) b.bx(c, y, at + o * 2, w, h, 0.03, C.glass, 0, 0.03);
     if (curtain) b.bx(c, y + h * 0.35, at + o * 1.4, w * 0.96, h * 0.6, 0.02, C.curtain, 0, 0.02);
     for (let k = 1; k < panes; k++) b.bx(c - w / 2 + (w * k) / panes, y, at + o * 2.4, 0.05, h, 0.04, C.frame, 0, 0);
     b.bx(c, y + h * 0.72, at + o * 2.4, w, 0.05, 0.04, C.frame, 0, 0);   // the transom
   } else {
-    b.bx(at + o, y - 0.06, c, 0.06, h + 0.12, w + 0.12, C.frame, 0, 0); if (!GLASS) b.bx(at + o * 2, y, c, 0.03, h, w, C.glass, 0, 0.03);
+    b.bx(at + o, y - 0.06, c, 0.06, 0.06, w + 0.12, C.frame, 0, 0); b.bx(at + o, y + h, c, 0.06, 0.06, w + 0.12, C.frame, 0, 0); b.bx(at + o, y, c - w / 2 - 0.03, 0.06, h, 0.06, C.frame, 0, 0); b.bx(at + o, y, c + w / 2 + 0.03, 0.06, h, 0.06, C.frame, 0, 0);
+    if (!GLASS && pane) b.bx(at + o * 2, y, c, 0.03, h, w, C.glass, 0, 0.03);
     if (curtain) b.bx(at + o * 1.4, y + h * 0.35, c, 0.02, h * 0.6, w * 0.96, C.curtain, 0, 0.02);
     for (let k = 1; k < panes; k++) b.bx(at + o * 2.4, y, c - w / 2 + (w * k) / panes, 0.04, h, 0.05, C.frame, 0, 0);
     b.bx(at + o * 2.4, y + h * 0.72, c, 0.04, 0.05, w, C.frame, 0, 0);
@@ -95,7 +98,7 @@ function wall(x0, z0, x1, z1, open = [], outer = 0) {   // outer: ±1 – which 
       const mid = a0 + (o.a + o.b) / 2, w = o.b - o.a, face = alongX ? (outer >= 0 ? z1 : z0) : (outer >= 0 ? x1 : x0);
       windowAt(b, alongX, face, outer || 1, mid, 0.9, w, 1.6, 3, false);   // (no curtains: one can look out)
       const inFace = alongX ? (outer >= 0 ? z0 : z1) : (outer >= 0 ? x0 : x1);   // the frame inside too
-      const g0 = GLASS; GLASS = null; windowAt(b, alongX, inFace, -(outer || 1), mid, 0.9, w, 1.6, 3, false); GLASS = g0;
+      windowAt(b, alongX, inFace, -(outer || 1), mid, 0.9, w, 1.6, 3, false, false);   // (no pane: the glass is the see-through one outside)
     }
   });
   const glass = GLASS; GLASS = null;
@@ -134,7 +137,8 @@ function buildMain() {
   const { x0, x1, z0, z1 } = SCHOOL;
   const classWins = []; for (let r = 0; r < 3; r++) for (const x of [1.5, 4.9, 8.3]) classWins.push(W(r * 12 + x, r * 12 + x + 2.2));   // three per room (none at the partitions)
   wall(x0, z0 - TW, x1 + TW, z0, classWins, -1);                                                      // north (the classrooms' windows)
-  wall(x0, z1, x1 + TW, z1 + TW, [D(1.2, 4.0), W(6.2, 8.4), W(9.6, 11.8), W(15.4, 17.6), W(21.6, 23.8), W(27.4, 29.6), W(31.6, 33.8)], 1);   // south: the entrance, corridor windows
+  // (no window at x 19.5 … 25.5: there the passage to the low building joins on)
+  wall(x0, z1, x1 + TW, z1 + TW, [D(1.2, 4.0), W(6.2, 8.4), W(9.6, 11.8), W(15.4, 17.6), W(27.4, 29.6), W(31.6, 33.8)], 1);   // south: the entrance, corridor windows
   wall(x1, z0, x1 + TW, z1, [W(9.9, 11.7)], 1);                                                       // east: a window only at the corridor (the last room's board is not there, but its bookcases are)
   // inside: the corridor's north wall with the classroom doors, the walls between the rooms
   wall(x0, CORR - 0.12, x1, CORR, [D(4.6, 5.6), D(16.6, 17.6), D(25.6, 26.6), D(32.6, 33.6)]);   // 6. b, 6. a, the boys' and the girls' toilet
@@ -154,7 +158,10 @@ function buildMain() {
       const face = out > 0 ? z1 + TW : z0 - TW;
       b.bx(cx, FLOOR + 3.3 - 0.9, face + out * 0.02, w, 1.05, 0.05, C.orange, 0, 0.02);          // the orange band under the 2nd floor's windows
       b.bx(cx, 3 * FLOOR - 0.55, face + out * 0.02, w, 0.55, 0.05, C.cream, 0, 0.02);             // the cream band under the roof
-      for (let f = 1; f < 3; f++) for (let x = 1.4; x < 35; x += 3.0) windowAt(b, true, face, out, x + 1.1, f * FLOOR + 0.9, 2.2, 1.55, 3, true);
+      for (let f = 1; f < 3; f++) for (let x = 1.4; x < 35; x += 3.0) {
+        if (out > 0 && f === 1 && x + 1.1 > 18.8 && x + 1.1 < 26.2) continue;   // behind the passage to the low building (it is two storeys high): no window into it
+        windowAt(b, true, face, out, x + 1.1, f * FLOOR + 0.9, 2.2, 1.55, 3, true);
+      }
     }
     for (let f = 1; f < 3; f++) for (const z of [-9.5, -5.5, -2]) windowAt(b, false, x1 + TW, 1, z, f * FLOOR + 0.9, 2.2, 1.55, 3, true);
     // the roof: a parapet, rows of solar panels (dark blue, tilted to the south), vents
@@ -571,8 +578,9 @@ function flush(t) {
 // Inside the building the sun has (almost) no effect: the daylight is turned down while Petyus is in, the rooms are lit by
 // their own lamps and a soft, even light (indoorLight).
 const LIGHTS = [
-  { name: '6. b', x0: 0, x1: 12, sw: 4.2, on: false }, { name: '6. a', x0: 12, x1: 24, sw: 16.2, on: false },
-  { name: 'fiú WC', x0: 24, x1: 30, sw: 25.3, on: false }, { name: 'lány WC', x0: 30, x1: 36, sw: 32.3, on: false },
+  // (the switch: on the door's latch side – the door hangs on its west edge, so it does not hide the switch when open)
+  { name: '6. b', x0: 0, x1: 12, sw: 6.0, on: false }, { name: '6. a', x0: 12, x1: 24, sw: 18.0, on: false },
+  { name: 'fiú WC', x0: 24, x1: 30, sw: 27.0, on: false }, { name: 'lány WC', x0: 30, x1: 36, sw: 34.0, on: false },
 ];
 const lamps = [];
 function buildLights() {
@@ -585,8 +593,8 @@ function buildLights() {
     // the tubes on the ceiling (seen in the first-person view): glowing when on
     L.fix = []; for (let x = L.x0 + 1.5; x < L.x1 - 1; x += 3) for (const z of [-9.5, -5.6]) { const f = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.2), fixOff.clone()); f.position.set(x, FLOOR - 0.06, z); ceil.add(f); L.fix.push(f); }
     // the switch: a plate with a rocker on the room side of the corridor wall, by the door
-    const plate = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.14, 0.02), new THREE.MeshLambertMaterial({ color: 0xf7f7f4 })); plate.position.set(L.sw, 1.05, CORR - 0.13);
-    const rk = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.07, 0.02), new THREE.MeshLambertMaterial({ color: 0xdedbd2 })); rk.position.set(L.sw, 1.05, CORR - 0.145);
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.14, 0.02), new THREE.MeshLambertMaterial({ color: 0xf7f7f4 })); plate.position.set(L.sw, 1.05, CORR - 0.15);   // (in front of the toilets' wall tiles too)
+    const rk = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.07, 0.02), new THREE.MeshLambertMaterial({ color: 0xdedbd2 })); rk.position.set(L.sw, 1.05, CORR - 0.165);
     L.rocker = rk; onWall([plate, rk], 'z', CORR - 0.06);
     lamps.push(L);
   }
@@ -737,8 +745,8 @@ function updateWalls(dt, solid) {
     w.glass.opacity = 0.22 * w.o;
     for (const p of w.pics) p.visible = w.s > 0.9;
   }
-  if (upper) upper.visible = !G.fps && (!inn || solid);
-  if (low) { const full = !inn || (solid && !G.fps); low.m.visible = full; low.stub.visible = !full; }
+  if (upper) upper.visible = !inn || solid;   // (in the first-person view it stays: seen through the windows)
+  if (low) { const full = !inn || solid; low.m.visible = full; low.stub.visible = !full; }
 }
 
 // ---------------------------------------------------------------- the school's sounds: the bell (every lesson starts and ends with

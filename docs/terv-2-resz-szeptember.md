@@ -311,3 +311,7 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 - [x] **Iskolai ajtók és WC-k:** nyitható bejárati ajtó, a termeken ajtó az osztály számával, fiú és lány WC jelzéssel, használható vécék, pisilés. ✅ `school.js` (`makeDoor`, `buildToilets`), `pee.js` (`useToilet`).
 - [x] **A WC ajtajába belelógott egy geometria** (a vécék falcsempe-sávja végigfutott az ajtónyílásokon). ✅ A csempesáv az ajtóknál megszakad.
 - [x] **Szünet, ablakok, lámpák:** szünetben sok gyerek az udvaron (fiúk fociznak, lányok ugróiskoláznak), az udvarra néző ablakokon ki lehet látni, a termekben kapcsolható lámpa, bent nem hat a külső fény. ✅ `school.js`: `buildCrowd`/`crowdTick`, átlátszó üveg (`GLASS`), `buildLights`/`toggleLight`, `indoorLight`.
+- [x] **Ablakok fordítva, nem lehetett kilátni:** a keret tömör lapként az üveg mögött volt, belül pedig egy második, átlátszatlan üveg. ✅ A keret négy léc, belül csak keret van (üveg nélkül).
+- [x] **Villanykapcsolók az ajtó másik oldalán:** ✅ a kilincs felőli oldalon (a nyitott ajtó nem takarja).
+- [x] **FPS nézetben ne tűnjön el a külső épület:** ✅ az emeletek és a déli épület belső nézetben is megmaradnak (az ablakon át látszanak).
+- [x] **Az épület belsejébe néző ablakok:** a főépület déli falán, ahol a déli épület átjárója csatlakozik (földszint, 1. emelet). ✅ Ott nincs ablak.
