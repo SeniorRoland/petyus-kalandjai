@@ -11,7 +11,7 @@ import { CATALOG, getGeometry } from '../voxels.js';
 import { TOILET, toiletLidGeometry, toiletSeatGeometry } from '../voxels-home.js';
 import { Q } from '../quality.js';
 import * as F from './food.js';
-import { INSTANCES, addBoxCol, addCircleCol, colliders, partMesh, vcMat } from '../world.js';
+import { INSTANCES, addBoxCol, addCircleCol, colliders, mergeStatic, partMesh, vcMat } from '../world.js';
 
 export const WALL_H = 2.6;
 // the flat is on the 2nd floor of a block of flats (outside.js builds the rest): its floor is at FY; the home meshes live in
@@ -200,7 +200,8 @@ export function put(id, x, z, rot = 0, v = 0, o = {}) {
     return;
   }
   // one instanced mesh per kind, variant AND 16 m cell: a mesh is culled as a whole, so cells off screen are not drawn at all
-  const K = id + ':' + v + ':' + Math.floor(x / 16) + ':' + Math.floor(z / 16); if (!lists.has(K)) lists.set(K, []);
+  const cell = o.ground ? 64 : 16;   // (outside: bigger cells – far fewer meshes, i.e. draw calls)
+  const K = id + ':' + v + ':' + Math.floor(x / cell) + ':' + Math.floor(z / cell); if (!lists.has(K)) lists.set(K, []);
   lists.get(K).push({ x, y: (o.y || 0) + (o.ground ? 0 : FY), z, rot, sx: o.sx || 1, s: o.s || 1 });
   const c = DEF[id].collider;
   if (c && !o.noCol) {
@@ -313,7 +314,8 @@ const LIGHT_POOL = [];
 export function lightPool() {
   if (!LIGHT_POOL.length) for (let i = 0; i < 2; i++) {
     const l = new THREE.SpotLight(0xffd9a0, LIGHT_ON, 9, 1.25, 0.55, 1.6);
-    l.castShadow = Q.shadowSize > 0; l.shadow.mapSize.set(Q.level >= 2 ? 1024 : 512, Q.level >= 2 ? 1024 : 512);
+    l.castShadow = Q.shadowSize > 0 && i === 0;   // only the nearest room's light casts shadows (each shadow redraws the scene)
+    l.shadow.mapSize.set(Q.level >= 2 ? 1024 : 512, Q.level >= 2 ? 1024 : 512);
     l.shadow.bias = -0.0008; l.shadow.normalBias = 0.02; l.shadow.camera.near = 0.2; l.shadow.camera.far = 9;
     l.visible = false; homeRoot.add(l, l.target); LIGHT_POOL.push(l);
   }
@@ -397,6 +399,7 @@ function buildPictures() {
 // band (z 1.87 … 2.07) and along the south-east edge. Everything stays at least 4 cm inside the edge.
 function buildBreakfast() {
   const t = new THREE.Group(); t.position.y = 0.77; homeRoot.add(t);
+  queueMicrotask(() => mergeStatic(t));   // (performance: the set table – 130 little things – in one draw call; after it is laid)
   const H = Math.PI / 2;
   // dad: a plate with salami, knife and fork beside it (his mug: inventory.js – the 'dad' place, 10.18 / 2.22)
   F.at(t, F.plate(0x2a9d8f), 10.02, 0, 1.95); F.at(t, F.cutlery(1), 10.02, 0, 1.95, H);

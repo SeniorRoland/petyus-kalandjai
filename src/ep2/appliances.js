@@ -11,7 +11,7 @@ import { G, ROLLER_SCALE } from '../state.js';
 import { say } from '../ui.js';
 import { V3, damp } from '../util.js';
 import { VoxelGrid } from '../voxels.js';
-import { addBoxCol, vcMat } from '../world.js';
+import { addBoxCol, mergeStatic, vcMat } from '../world.js';
 import { FY, homeRoot } from './home.js';
 import * as F from './food.js';
 
@@ -121,6 +121,7 @@ function buildFridge(x, z, rot) {
   // (mum opens and closes it too – ep2.js)
   const setOpen = (v) => { if (st.open === v) return; st.open = v; tone('sine', v ? 220 : 160, v ? 180 : 120, 0.12, 0.08); if (!v) noise(0.08, 400, 1, 0.12); };
   fx.fridge = { grp, door: Rr, isOpen: () => st.open && st.t > 0.6, open: () => st.open, setOpen }; fx.dairy = { milk, cream, whip };
+  mergeStatic(grp, new Set([L, Rr, milk, cream, whip]));   // (performance: the fridge and what is fixed in it – one draw call; the doors and the cartons stay apart)
 }
 
 // ---------------------------------------------------------------- the microwave (on the counter): door, turntable, display, a cup and a plate
@@ -223,6 +224,7 @@ function buildScooterCorner(x, z) {
   helmet.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   helmet.position.set(top.x, top.y - 0.02, top.z); helmet.rotation.set(0.5, 0.4, 0);
   g.add(helmet);
+  mergeStatic(g);   // (performance: the scooter model has ~110 parts – one draw call)
   addBoxCol(x - 0.3, z - 0.5, x + 0.3, z + 0.5, 1.0);
 }
 function buildKettle(x, z, rot, y) {

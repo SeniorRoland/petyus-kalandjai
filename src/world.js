@@ -1,5 +1,6 @@
 // Petyus kalandjai – world: A világ: voxel-batch, csempék/talaj, ütközők, épületek, pálya, voxel-kellékek (voxels.js), fák.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { scene } from './scene.js';
 import { R, V3, clamp, distSeg, pick, rand } from './util.js';
 import { CATALOG, getGeometry } from './voxels.js';
@@ -396,3 +397,35 @@ export function buildWorld() {
   scene.add(world.mesh(true, true));
 }
 
+
+// ---------------------------------------------------------------- merging a static group into one mesh (performance)
+// Every mesh under root (except the skipped subtrees, and textured / see-through ones) becomes part of a single vertex-coloured
+// mesh in root's frame: hundreds of little parts (a set table, a scooter model) cost one draw call instead of hundreds.
+export function mergeStatic(root, skip = new Set()) {
+  root.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(root.matrixWorld).invert(), geos = [], done = [];
+  const walk = (o) => {
+    if (skip.has(o)) return;
+    if (o.isMesh && !o.isInstancedMesh && !o.isSkinnedMesh) {
+      const m = Array.isArray(o.material) ? null : o.material;
+      if (m && !m.map && !m.transparent && m.color && o.visible) {
+        let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+        for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal' && k !== 'color') g.deleteAttribute(k);
+        if (!g.attributes.normal) g.computeVertexNormals();
+        const n = g.attributes.position.count, col = new Float32Array(n * 3), src = m.vertexColors ? g.attributes.color : null;
+        for (let i = 0; i < n; i++) { const r = src ? src.getX(i) : 1, gg = src ? src.getY(i) : 1, b = src ? src.getZ(i) : 1; col[i * 3] = r * m.color.r; col[i * 3 + 1] = gg * m.color.g; col[i * 3 + 2] = b * m.color.b; }
+        g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+        g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
+        geos.push(g); done.push(o);
+      }
+    }
+    for (const c of [...o.children]) walk(c);
+  };
+  walk(root);
+  if (geos.length < 2) return null;
+  const merged = mergeGeometries(geos, false); if (!merged) return null;
+  for (const o of done) o.parent.remove(o);
+  const mesh = new THREE.Mesh(merged, new THREE.MeshLambertMaterial({ vertexColors: true })); mesh.castShadow = mesh.receiveShadow = true;
+  root.add(mesh);
+  return mesh;
+}
