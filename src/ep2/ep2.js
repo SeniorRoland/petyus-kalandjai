@@ -26,7 +26,7 @@ import { buildWardrobe, dress, dressLoad, dressSave, dressTick, hurryParents, le
 import { buildSister, updateSister } from './sister.js';
 import { canPee, pee, peeFlushed, peeLabel, peeTick, startPee } from './pee.js';
 import { startWakeup, wakeTick, wakeupFocus } from './wakeup.js';
-import { BOUNDS as SCHOOL_BOUNDS, SCHOOL_START, buildSchool, schoolAction, schoolFloor, schoolKick, schoolUse, schoolRoom, setSchoolFps, toggleSeat, updateSchool } from './school.js';
+import { BOUNDS as SCHOOL_BOUNDS, SCHOOL_START, buildSchool, schoolAction, schoolFloor, schoolKick, schoolStatus, schoolUse, schoolRoom, setSchoolFps, toggleSeat, updateSchool } from './school.js';
 import { starsFor } from '../mischief.js';
 import { cf, coffeeTick, dadBusy } from './coffee.js';
 import { dadChasing, momBusy, runawayTick, rw } from './runaway.js';
@@ -195,7 +195,8 @@ export function startEp2() {
   // HUD, help, tab title
   const ep = EPISODES[1];
   document.title = `${SERIES} – ${ep.n}. rész: ${ep.month}`;
-  $('hud').innerHTML = '<span class="chip">📅 <span id="e2Date"></span></span> <span class="chip">🕕 <span id="e2Clock"></span></span> <span class="chip" id="e2RoomChip">📍 <span id="e2Room"></span></span> <span class="chip" id="e2Late" style="display:none">⏰ +<span id="e2LateN"></span> perc</span>';
+  $('hud').innerHTML = '<span class="chip">📅 <span id="e2Date"></span></span> <span class="chip">🕕 <span id="e2Clock"></span></span> <span class="chip" id="e2RoomChip">📍 <span id="e2Room"></span></span> <span class="chip" id="e2Late" style="display:none">⏰ +<span id="e2LateN"></span> perc</span>'
+    + (SCHOOL ? ' <span class="chip" id="e2Lesson"></span>' : '');   // at school: the lesson or the break
   $('help').innerHTML = SCHOOL
     ? '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>leülés a helyedre (6. b, első pad) · a kapunál: hazaindulás</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>'
     : '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat: ajtó nyitása / csukása, villany, kopogás' + (EVE ? ', lefekvés (Petyus ágyánál)' : ', indulás (a bejárati ajtónál)') + '</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>E · F</dt><dd>tárgy felvétele · a kiválasztott lerakása / bögre töltése</dd><dt>1–9 · Tab</dt><dd>tárgy kiválasztása</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
@@ -593,7 +594,11 @@ export function stepEp2(dt) {
       if (G.usePressed) { if (act.gate) leaveSchool(); else if (act.seat) toggleSeat(seating); else schoolUse(act); }
       if (G.kickPressed) schoolKick(act);
     } else setPrompt('');
-    ep2.min = Math.min(PHASES.school.end, ep2.min + dt * minPerSec()); hudClock();
+    // the breaks pass slower (10 minutes ≈ 50 s): time to get out to the yard and play
+    { const inBreak = ep2.min >= 8 * 60 && ep2.min < 8 * 60 + 6 * 55 && (ep2.min - 8 * 60) % 55 >= 45;
+      ep2.min = Math.min(PHASES.school.end, ep2.min + dt * (inBreak ? 0.2 : minPerSec())); hudClock(); }
+    { const st = schoolStatus(ep2.min, (new Date(DAY0.getFullYear(), DAY0.getMonth(), DAY0.getDate() + ep2.day).getDay() + 6) % 7), el = $('e2Lesson');
+      if (el && el.textContent !== st.text) { el.textContent = st.text; el.style.background = st.brk ? 'rgba(42,157,143,.85)' : 'rgba(29,53,87,.85)'; } }
     G.usePressed = false; G.qPressed = false; G.kickPressed = G.kickReleased = false; G.invPressed = false;
   } else if (G.mode === 'play') {
     movePetyus(dt);

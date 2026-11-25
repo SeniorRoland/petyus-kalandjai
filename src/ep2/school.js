@@ -16,14 +16,14 @@ import { makePerson } from '../rigs.js';
 import { CAM_OFF, scene, sun } from '../scene.js';
 import { G } from '../state.js';
 import { isTouch } from '../input.js';
-import { say } from '../ui.js';
+import { bigText, say } from '../ui.js';
 import { R, V3, damp, pick } from '../util.js';
 import { addBoxCol, colliders, partMesh, vcMat } from '../world.js';
 import { TOILET, toiletSeatGeometry } from '../voxels-home.js';
 import { canPee, pee, peeFlushed, startPee } from './pee.js';
 import { noise, soundAt, tone } from '../audio.js';
 import { buildFurniture, put, wallView } from './home.js';
-import { WRITERS, boardText, hungaryMap, makeClock, portrait, timesTable, timetable } from './posters.js';
+import { TIMETABLE, WRITERS, boardText, hungaryMap, makeClock, portrait, timesTable, timetable } from './posters.js';
 
 const FLOOR = 3.3, TW = 0.25;
 // the main building (only its ground floor is inside the game): x 0 … 36, z −12 … 0; the corridor along its south side
@@ -371,7 +371,7 @@ function buildClassroom(r) {
   onWall([pic(portrait(WRITERS[i0 % WRITERS.length]), 0.5, 0.66, wx + 0.02, 1.75, -11.1, E), pic(portrait(WRITERS[(i0 + 1) % WRITERS.length]), 0.5, 0.66, wx + 0.02, 1.75, -10.4, E),
     pic(timesTable(), 1.0, 1.1, wx + 0.02, 1.55, -3.8, E)], 'x', wx);
   const sw = CORR - 0.12 - 0.012;   // the corridor wall's classroom face
-  onWall([pic(timetable(), 1.05, 0.8, x0 + 2.0, 1.6, sw, Math.PI), pic(hungaryMap(), 1.6, 1.06, x0 + 8.4, 1.6, sw, Math.PI),
+  onWall([pic(timetable(), 1.05, 0.92, x0 + 2.0, 1.6, sw, Math.PI), pic(hungaryMap(), 1.6, 1.06, x0 + 8.4, 1.6, sw, Math.PI),
     pic(portrait(WRITERS[(i0 + 2) % WRITERS.length]), 0.5, 0.66, x0 + 6.4, 1.7, sw, Math.PI), pic(portrait(WRITERS[(i0 + 3) % WRITERS.length]), 0.5, 0.66, x0 + 10.4, 1.7, sw, Math.PI),
     pic(portrait(WRITERS[(i0 + 4) % WRITERS.length]), 0.5, 0.66, x0 + 11.1, 1.7, sw, Math.PI)], 'z', CORR - 0.06);
   // the teacher's desk by the board (she sits west of it, facing the class), the pupils' desks: 3 rows × 3, two chairs each
@@ -424,6 +424,7 @@ export function setSchoolFps(on) { if (ceil) ceil.visible = on; }
 const people = [];
 const TEACHER_LINES = ['Gyerekek, figyeljetek a táblára!', 'Ki tudja a választ?', 'Csendet kérek!', 'Nyissátok ki a füzeteteket!', 'Szép munka!', 'Ki jön ki a táblához?', 'Holnap témazáró!'];
 const KID_LINES = ['Szia, Petyus!', 'Láttad a tegnapi meccset?', 'Kölcsönadod a radírod?', 'Mi lesz az uzsonna?', 'Fogócska a szünetben?', 'Megcsináltad a házit?', 'Petyus, gyere ide!'];
+const pupils = [];   // the 6. b's children (in their seats in a lesson, in the yard in a break)
 export const school = { teacher: null, talkT: 6, seated: false, seatedSaid: false, chalkT: 4, chatT: 0, bellMin: -1, lastMin: -1 };
 function buildPeople() {
   const T = new Actor(makePerson({ scale: 0.92, shirt: 0x6a4c93, pants: 0x3d405b, hair: 0x8a5a2b, dress: true, glasses: true, hat: false }), 'Tanító néni');
@@ -431,7 +432,7 @@ function buildPeople() {
   T.place(home.x, home.z, Math.PI / 2); T.stride = 4.4; school.teacher = T; people.push({ a: T, kind: 'teacher', home, t: R(2, 5) });
   const looks = [[0xe63946, 0x1d3557, 0x5a3825], [0xffca3a, 0x3d405b, 0xd8b45c], [0x8ac926, 0x264653, 0x2b1d14], [0xff70a6, 0x6b705c, 0x8a5a2b], [0x3a86ff, 0x22223b, 0x1b1b1b], [0xf4a261, 0x3d405b, 0x6f4e37],
     [0x2a9d8f, 0x1d3557, 0xc9a66b], [0xb5179e, 0x3d405b, 0x2b1d14], [0x90be6d, 0x264653, 0x5a3825], [0xffd166, 0x1d3557, 0x3b2b20], [0x118ab2, 0x2b2d42, 0x8a5a2b], [0xef476f, 0x264653, 0x1b1b1b]];
-  const names = ['Bence', 'Lili', 'Marci', 'Zsófi', 'Ádám', 'Dóri', 'Gergő', 'Panni', 'Levi', 'Bori', 'Máté', 'Kata'];
+  const names = ['Bence', 'Lili', 'Marci', 'Zsófi', 'Ádám', 'Dóri', 'Gergő', 'Panni', 'Levi', 'Bori', 'Máté', 'Kata'], GIRLS = new Set(['Lili', 'Zsófi', 'Dóri', 'Panni', 'Bori', 'Kata']);
   // Petyus's place: the front row (nearest the board), the middle desk, its window-side chair; four more places stay empty
   const mine = desks.findIndex((d) => d.row === 0 && Math.abs(d.z - (-7.6)) < 0.01);
   Object.assign(seat, desks[mine]);
@@ -439,9 +440,10 @@ function buildPeople() {
   let k = 0;
   desks.forEach((d, i) => {
     if (free.has(i) || k >= looks.length) return;
-    const [shirt, pants, hair] = looks[k], a = new Actor(makePerson({ scale: 0.7, shirt, pants, hair, hat: false, glasses: k % 5 === 2, dress: k % 3 === 1 }), names[k]); k++;
-    a.place(d.x, d.z, -Math.PI / 2); a.seatH = 0.45; a.sit = a.sitTarget = 1;
-    people.push({ a, kind: 'pupil', t: R(1, 6), look: 0 });
+    const girl = GIRLS.has(names[k]);
+    const [shirt, pants, hair] = looks[k], a = new Actor(makePerson({ scale: 0.7, shirt, pants, hair, hat: false, glasses: k % 5 === 2, dress: girl && k % 2 === 1, longHair: girl }), names[k]); k++;
+    a.place(d.x, d.z, -Math.PI / 2); a.seatH = 0.45; a.sit = a.sitTarget = 1; a.stride = 7;
+    pupils.push({ a, girl, seat: { x: d.x, z: d.z }, pupil: true, state: 'seat', t: R(1, 6), look: 0, out: false });   // (crowdTick moves them)
   });
 
 }
@@ -581,7 +583,7 @@ function flush(t) {
 // their own lamps and a soft, even light (indoorLight).
 const LIGHTS = [
   // (the switch: on the door's latch side – the door hangs on its west edge, so it does not hide the switch when open)
-  { name: '6. b', x0: 0, x1: 12, sw: 6.0, on: false }, { name: '6. a', x0: 12, x1: 24, sw: 18.0, on: false },
+  { name: '6. b', x0: 0, x1: 12, sw: 6.0, on: true }, { name: '6. a', x0: 12, x1: 24, sw: 18.0, on: true },   // (the classrooms: on from the start)
   { name: 'fiú WC', x0: 24, x1: 30, sw: 27.0, on: false }, { name: 'lány WC', x0: 30, x1: 36, sw: 34.0, on: false },
 ];
 const lamps = [];
@@ -598,17 +600,16 @@ function buildLights() {
     const plate = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.14, 0.02), new THREE.MeshLambertMaterial({ color: 0xf7f7f4 })); plate.position.set(L.sw, 1.05, CORR - 0.15);   // (in front of the toilets' wall tiles too)
     const rk = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.07, 0.02), new THREE.MeshLambertMaterial({ color: 0xdedbd2 })); rk.position.set(L.sw, 1.05, CORR - 0.165);
     L.rocker = rk; onWall([plate, rk], 'z', CORR - 0.06);
-    lamps.push(L);
+    lamps.push(L); showLight(L);
   }
   // the corridor: always lit
   for (const x of [6, 18, 30]) { const l = new THREE.PointLight(0xfff6e4, 5, 9, 1.1); l.position.set(x, FLOOR - 0.3, -1.3); scene.add(l); }
 }
-function toggleLight(L) {
-  L.on = !L.on;
+function toggleLight(L) { L.on = !L.on; showLight(L); tone('square', 1200, 900, 0.03, 0.05); }
+function showLight(L) {
   for (const l of L.lights) l.intensity = L.on ? 9 : 0;
   for (const f of L.fix) f.material.color.set(L.on ? 0xfffbe8 : 0xdcdcd6);
   L.rocker.material.color.set(L.on ? 0xffc24d : 0xdedbd2); L.rocker.rotation.x = L.on ? -0.35 : 0;
-  tone('square', 1200, 900, 0.03, 0.05);
 }
 // the daylight inside: k = 1 inside the building (or in the first-person view there), 0 outside
 const day = { k: 0, sun: 0, hemi: [] };
@@ -642,27 +643,64 @@ function buildCrowd() {
     a.stride = 7; a.place(DOOR_OUT.x, DOOR_OUT.z, 0); a.rig.root.visible = false;
     crowd.girls.push({ a, home: new V3(HOP.x + (i % 2 ? 1.1 : -1.1), 0, HOP.z0 + 0.5 + i * 0.6), out: false });
   });
+  // the class's own children too: the boys to the field (into the two teams), the girls round the hopscotch
+  pupils.forEach((p, i) => {
+    if (p.girl) { const an = (i / pupils.length) * Math.PI * 2; p.home = new V3(HOP.x + Math.cos(an) * 2.2, 0, HOP.z0 + 2.2 + Math.sin(an) * 1.8); crowd.girls.push(p); }
+    else { p.team = i % 2; p.home = new V3(p.team ? R(24, 34) : R(10, 20), 0, R(FIELD.z0 + 3, FIELD.z1 - 3)); crowd.boys.push(p); }
+  });
   const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.11, 1), new THREE.MeshLambertMaterial({ color: 0xf4f4f4, flatShading: true }));
   ball.castShadow = true; ball.visible = false; ball.position.set((FIELD.x0 + FIELD.x1) / 2, 0.11, (FIELD.z0 + FIELD.z1) / 2); scene.add(ball); crowd.ball = ball;
 }
 // the bell decides: out at the start of a break, back in at the start of a lesson
+// the way from a seat in the 6. b out to the yard (and back): along the aisle, through the classroom door, the corridor, the entrance
+const outRoute = (s) => [[s.x + 0.45, s.z], [s.x + 0.45, -3.4], [5.1, -3.3], [5.1, -1.4], [2.6, -1.1], [2.6, 1.2], [2.6, 4.4]];
+const AROUND = [11.5, 19.2];   // the field is beyond the low building: round its west side
 function crowdTick(dt, brk) {
-  if (brk && !crowd.on) {   // out they come, one after the other, through the entrance
+  const all = [...crowd.boys, ...crowd.girls];
+  if (brk && !crowd.on) {   // the break: the class stands up and goes out (the door is opened), the others come out of the entrance
     crowd.on = true;
-    [...crowd.boys, ...crowd.girls].forEach((k, i) => setTimeout(() => { if (!crowd.on) return; k.a.place(DOOR_OUT.x, DOOR_OUT.z, 0); k.a.rig.root.visible = true; k.out = true; k.a.walkTo([[DOOR_OUT.x + R(-1, 1), 6], [k.home.x, k.home.z]], R(2.4, 3.2)); }, i * 350));
+    for (const d of doors) if (!d.open && (d.name === '6. b' || d.name === 'bejárat')) toggleDoor(d);
+    if (inside()) setTimeout(() => say(school.teacher, pick(['Szünet! Irány az udvar!', 'Mindenki ki a friss levegőre!']), 2.2), 900);
+    all.forEach((k, i) => { k.wait = (k.pupil ? 0.4 : 3.0) + i * 0.3; k.play = false; k.state = 'leaving'; });
     crowd.ball.visible = true; crowd.ball.position.set((FIELD.x0 + FIELD.x1) / 2, 0.11, (FIELD.z0 + FIELD.z1) / 2); crowd.bv.set(0, 0, 0);
-  } else if (!brk && crowd.on) {   // the bell: everybody in
+  } else if (!brk && crowd.on) {   // the bell: everybody in – the class back to their seats
     crowd.on = false; crowd.hopper = -1;
-    for (const k of [...crowd.boys, ...crowd.girls]) if (k.out) k.a.walkTo([[DOOR_OUT.x + R(-0.8, 0.8), 6], [DOOR_OUT.x, DOOR_OUT.z - 0.4]], R(2.6, 3.4));
+    for (const k of all) {
+      k.play = false;
+      if (!k.out) { k.state = k.pupil ? 'seat' : 'in'; continue; }
+      k.state = 'returning';
+      const via = crowd.boys.includes(k) ? [AROUND] : [];
+      if (k.pupil) k.a.walkTo([...via, [k.a.pos.x > 12 ? 4.6 : k.a.pos.x, Math.max(Math.min(k.a.pos.z, 14), 4.6)], ...outRoute(k.seat).reverse()], R(2.6, 3.2));
+      else k.a.walkTo([...via, [DOOR_OUT.x + R(-0.8, 0.8), 6], [DOOR_OUT.x, DOOR_OUT.z - 0.4]], R(2.6, 3.4));
+    }
   }
-  for (const k of [...crowd.boys, ...crowd.girls]) {
+  const P = G.petike.pos;
+  for (const k of all) {
+    if (k.state === 'leaving' && (k.wait -= dt) <= 0) {   // off they go
+      const via = crowd.boys.includes(k) ? [AROUND] : [];
+      if (k.pupil) { k.a.sitTarget = 0; if (k.a.sit < 0.1) { k.state = 'out'; k.out = true; k.a.walkTo([...outRoute(k.seat), ...via, [k.home.x, k.home.z]], R(2.4, 3.0)); } }
+      else { k.state = 'out'; k.out = true; k.a.place(DOOR_OUT.x, DOOR_OUT.z, 0); k.a.rig.root.visible = true; k.a.walkTo([[DOOR_OUT.x + R(-1, 1), 6], ...via, [k.home.x, k.home.z]], R(2.4, 3.2)); }
+    }
+    if (k.state === 'out' && !k.a.path) k.play = true;   // arrived: now they play
+    if (k.state === 'returning' && !k.a.path) {   // back: the class in their seats, the others gone in
+      k.out = false;
+      if (k.pupil) { k.state = 'seat'; k.a.place(k.seat.x, k.seat.z, -Math.PI / 2); k.a.sitTarget = 1; }
+      else { k.state = 'in'; k.a.rig.root.visible = false; }
+    }
+    if (k.pupil && (k.state === 'seat' || (k.state === 'leaving' && k.a.sit > 0.1))) {   // in their seats: facing the board, now and then a neighbour / Petyus
+      k.t -= dt; if (k.t <= 0) { k.t = R(2, 6); k.look = pick([0, 0, 0.6, -0.6]); }
+      const near = Math.hypot(P.x - k.a.pos.x, P.z - k.a.pos.z) < 1.6 && !school.seated;
+      k.a.targetHeading = near ? Math.atan2(P.x - k.a.pos.x, P.z - k.a.pos.z) : -Math.PI / 2 + k.look;
+      k.a.update(dt);
+      if (!school.seated) { const dx = P.x - k.a.pos.x, dz = P.z - k.a.pos.z, d = Math.hypot(dx, dz); if (d < 0.42 && d > 1e-4) { P.x = k.a.pos.x + dx / d * 0.42; P.z = k.a.pos.z + dz / d * 0.42; } }
+      continue;
+    }
     if (!k.out) continue;
-    if (!crowd.on && !k.a.path) { k.out = false; k.a.rig.root.visible = false; continue; }   // gone in
     k.a.update(dt);
     const P = G.petike.pos, dx = P.x - k.a.pos.x, dz = P.z - k.a.pos.z, d = Math.hypot(dx, dz);   // nobody walks through Petyus
     if (d < 0.5 && d > 1e-4) { P.x = k.a.pos.x + dx / d * 0.5; P.z = k.a.pos.z + dz / d * 0.5; }
   }
-  if (!crowd.on) { if (![...crowd.boys].some((k) => k.out)) crowd.ball.visible = false; return; }
+  if (!crowd.on) { if (!crowd.boys.some((k) => k.out)) crowd.ball.visible = false; return; }
   footballTick(dt); hopscotchTick(dt);
 }
 // football: the nearest boy runs for the ball and kicks it on – to a team mate, or at the other team's goal
@@ -674,7 +712,7 @@ function footballTick(dt) {
   if (B.z < FIELD.z0 + 0.5 || B.z > FIELD.z1 - 0.5) { v.z *= -0.6; B.z = THREE.MathUtils.clamp(B.z, FIELD.z0 + 0.5, FIELD.z1 - 0.5); }
   if (B.x < FIELD.x0 + 1.6 || B.x > FIELD.x1 - 1.6) {
     if (Math.abs(B.z - cz) < 1.6 && crowd.goalT <= 0) {   // a goal!
-      crowd.goalT = 3; const scorers = crowd.boys.filter((k) => k.out); const sc = pick(scorers);
+      crowd.goalT = 3; const scorers = crowd.boys.filter((k) => k.play); const sc = pick(scorers);
       if (sc) say(sc.a, pick(['GÓÓÓL!!', 'Benne van!!', 'GÓL! Ez az!']), 1.8);
       soundAt(B.x, B.z, () => noise(0.6, 900, 0.4, 0.12), 1.2);
       setTimeout(() => { B.set((FIELD.x0 + FIELD.x1) / 2, 0.11, cz); v.set(0, 0, 0); }, 1200);
@@ -683,13 +721,13 @@ function footballTick(dt) {
   }
   crowd.goalT -= dt;
   let near = null, nd = 1e9;
-  for (const k of crowd.boys) { if (!k.out) continue; const d = Math.hypot(k.a.pos.x - B.x, k.a.pos.z - B.z); if (d < nd) { nd = d; near = k; } }
+  for (const k of crowd.boys) { if (!k.play) continue; const d = Math.hypot(k.a.pos.x - B.x, k.a.pos.z - B.z); if (d < nd) { nd = d; near = k; } }
   for (const k of crowd.boys) {
-    if (!k.out) continue;
+    if (!k.play) continue;
     if (k === near) {   // chase the ball, kick it when there
       k.chase = true;
       if (nd < 0.45) {
-        const goalX = k.team ? FIELD.x0 + 1 : FIELD.x1 - 1, mates = crowd.boys.filter((m) => m.out && m.team === k.team && m !== k);
+        const goalX = k.team ? FIELD.x0 + 1 : FIELD.x1 - 1, mates = crowd.boys.filter((m) => m.play && m.team === k.team && m !== k);
         const to = Math.random() < 0.45 || !mates.length ? new V3(goalX, 0, cz + R(-1.5, 1.5)) : pick(mates).a.pos;
         const dx = to.x - B.x, dz = to.z - B.z, d = Math.hypot(dx, dz) || 1, sp = R(5, 9);
         v.set(dx / d * sp, 0, dz / d * sp);
@@ -706,12 +744,12 @@ function footballTick(dt) {
 }
 // hopscotch: one girl hops the squares (one foot / two feet), the others watch and cheer; then the next one
 function hopscotchTick(dt) {
-  const gs = crowd.girls.filter((k) => k.out && !k.a.path);
+  const gs = crowd.girls.filter((k) => k.play && !k.a.path);
   if (crowd.hopper < 0) {
     if (gs.length >= 2) { crowd.hopper = crowd.girls.indexOf(pick(gs)); crowd.hopK = -1; crowd.hopT = 0.4; const g = crowd.girls[crowd.hopper]; g.a.path = [new V3(HOP.x, 0, HOP.z0 - 0.6)]; g.a.speed = 1.6; }
     return;
   }
-  const g = crowd.girls[crowd.hopper]; if (!g.out) { crowd.hopper = -1; return; }
+  const g = crowd.girls[crowd.hopper]; if (!g.play) { crowd.hopper = -1; return; }
   for (const k of gs) if (k !== g) k.a.targetHeading = Math.atan2(g.a.pos.x - k.a.pos.x, g.a.pos.z - k.a.pos.z);
   if (g.a.path) return;
   crowd.hopT -= dt;
@@ -719,7 +757,7 @@ function hopscotchTick(dt) {
   if (crowd.hopT <= 0) {
     crowd.hopK++;
     if (crowd.hopK >= HOP_SQ.length) {   // done: back to her place, the next one
-      const others = crowd.girls.filter((q) => q.out && q !== g); say((others.length ? pick(others) : g).a, pick(['Ügyes!', 'Hibátlan!', 'Most én jövök!']), 1.4);
+      const others = crowd.girls.filter((q) => q.play && q !== g); say((others.length ? pick(others) : g).a, pick(['Ügyes!', 'Hibátlan!', 'Most én jövök!']), 1.4);
       g.a.walkTo([[g.home.x, g.home.z]], 1.4); crowd.hopper = -1; return;
     }
     const [dx, dz] = HOP_SQ[crowd.hopK];
@@ -753,15 +791,27 @@ function updateWalls(dt, solid) {
 
 // ---------------------------------------------------------------- the school's sounds: the bell (every lesson starts and ends with
 // it – 45 minutes, 10 minutes' break), the children's chatter (loud in the breaks), the chalk on the board, shouts in the yard
-const lesson = (min) => { const t = (min - 8 * 60) % 55; return t >= 0 && t < 45; };
+const LESSONS = 6;
+const lesson = (min) => { const t = min - 8 * 60, n = Math.floor(t / 55); return t >= 0 && n < LESSONS && t - n * 55 < 45; };
+// what the HUD shows: which lesson (and what), or the break and how long it still lasts; wd: Monday 0 … Friday 4
+export function schoolStatus(min, wd) {
+  const t = min - 8 * 60, n = Math.floor(t / 55), r = t - n * 55, subj = (k) => TIMETABLE[Math.max(0, Math.min(4, wd))][k];
+  if (t < 0) return { brk: true, text: '🔔 Mindjárt becsengetnek' };
+  if (n >= LESSONS) return { brk: true, text: '🏠 Vége a tanításnak – napközi, játék az udvaron' };
+  if (r < 45) return { brk: false, text: `📚 ${n + 1}. óra · ${subj(n)} · még ${Math.ceil(45 - r)} perc` };
+  return { brk: true, text: `🔔 Szünet · még ${Math.ceil(55 - r)} perc` + (n + 1 < LESSONS ? ` · utána: ${subj(n + 1)}` : '') };
+}
 function sBellRing(x, z) {
   soundAt(x, z, () => { for (let k = 0; k < 44; k++) { tone('square', 1480, 1470, 0.03, 0.05, k * 0.05); tone('sine', 2960, 2950, 0.03, 0.025, k * 0.05 + 0.025); } }, 2.2);
 }
 function updateSounds(dt, min) {
   const P = G.petike.pos, inn = inside();
   // the bell at the start and the end of every lesson
-  const t = Math.floor(min - 8 * 60), mark = t % 55 === 0 || t % 55 === 45;
-  if (mark && school.bellMin !== t) { school.bellMin = t; sBellRing(18, -1.3); if (t > 0) setTimeout(() => say({ headWorld: (v) => v.set(18, 2.8, -1.3) }, 'CSENGŐ: RRRRRRING!', 1.6, ''), 50); }
+  const t = Math.floor(min - 8 * 60), n = Math.floor(t / 55), mark = t >= 0 && n < LESSONS && (t % 55 === 0 || t % 55 === 45);
+  if (mark && school.bellMin !== t) {   // the bell, and a big sign: the lesson begins / the break
+    school.bellMin = t; sBellRing(18, -1.3);
+    bigText(t % 55 === 0 ? `BECSENGETTEK! ${n + 1}. ÓRA` : (n + 1 >= LESSONS ? 'VÉGE A TANÍTÁSNAK!' : 'SZÜNET!'), 2.2);
+  }
   const brk = !lesson(min);
   // chatter: a murmur of children's voices – soft in a lesson, loud in a break (and in the yard in a break)
   school.chatT -= dt;
