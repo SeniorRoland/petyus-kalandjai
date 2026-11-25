@@ -520,7 +520,7 @@ function buildToilets() {
       b.bx(x0 + 0.05, 0, SCHOOL.z0 + 1.6, 0.02, 0.02, 0.02, 0xffffff, 0, 0);
     }
     // wall tiles up to 1.5 m on the walls of both rooms (on the corridor wall's room face)
-    b.bx(30, 0, CORR - 0.135, 12, 1.5, 0.01, 0xdfe8ee, 0, 0.01);
+    for (const [a0, a1] of [[24, 25.6], [26.6, 32.6], [33.6, 36]]) b.bx((a0 + a1) / 2, 0, CORR - 0.135, a1 - a0, 1.5, 0.01, 0xdfe8ee, 0, 0.01);   // (not across the doorways)
     // the sinks with mirrors (on the corridor wall), the boys' urinals (on the west wall)
     for (const x of [28.3, 29.3, 34.5, 35.4]) { b.bx(x, 0.75, CORR - 0.32, 0.5, 0.12, 0.36, 0xffffff, 0, 0); b.bx(x, 0, CORR - 0.24, 0.12, 0.75, 0.12, 0xeeeeee, 0, 0); b.bx(x, 0.9, CORR - 0.2, 0.04, 0.12, 0.12, 0xb8bcc0, 0, 0); b.bx(x, 1.2, CORR - 0.14, 0.45, 0.6, 0.02, 0xbfe3f5, 0, 0.02); }
     for (const z of [-9.2, -8.3, -7.4]) { b.bx(24.25, 0.45, z, 0.3, 0.6, 0.36, 0xffffff, 0, 0); b.bx(24.33, 0.55, z, 0.14, 0.4, 0.26, 0xdbe7ef, 0, 0); }
