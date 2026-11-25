@@ -80,19 +80,24 @@ export function hungaryMap() {
   x.font = 'bold 26px Bangers, sans-serif'; x.textAlign = 'center'; x.fillText('MAGYARORSZÁG', 256, 324);
   return tex(c);
 }
-// ---------------------------------------------------------------- the timetable of the 6. b
+// ---------------------------------------------------------------- the timetable of the 6. b: TIMETABLE[day: Mon … Fri][lesson 0 … 5]
+export const TIMETABLE = [
+  ['Matek', 'Magyar', 'Angol', 'Töri', 'Tesi', 'Ének'],
+  ['Magyar', 'Matek', 'Tesi', 'Info', 'Angol', 'Rajz'],
+  ['Angol', 'Termtud', 'Matek', 'Magyar', 'Tesi', 'Ofő'],
+  ['Töri', 'Matek', 'Magyar', 'Angol', 'Termtud', 'Technika'],
+  ['Tesi', 'Magyar', 'Rajz', 'Matek', 'Termtud', 'Angol'],
+];
 export function timetable() {
-  const [c, x] = canvas(420, 320);
-  x.fillStyle = '#ffffff'; x.fillRect(0, 0, 420, 320); x.strokeStyle = '#2a9d8f'; x.lineWidth = 8; x.strokeRect(4, 4, 412, 312);
+  const [c, x] = canvas(420, 370);
+  x.fillStyle = '#ffffff'; x.fillRect(0, 0, 420, 370); x.strokeStyle = '#2a9d8f'; x.lineWidth = 8; x.strokeRect(4, 4, 412, 362);
   x.fillStyle = '#1d3557'; x.font = 'bold 26px Bangers, sans-serif'; x.textAlign = 'center'; x.fillText('ÓRAREND – 6. B', 210, 36);
-  const days = ['H', 'K', 'Sze', 'Cs', 'P'], T = [
-    ['Matek', 'Magyar', 'Angol', 'Töri', 'Tesi'], ['Magyar', 'Matek', 'Termtud', 'Matek', 'Magyar'], ['Angol', 'Tesi', 'Matek', 'Magyar', 'Rajz'],
-    ['Töri', 'Ének', 'Magyar', 'Angol', 'Matek'], ['Tesi', 'Info', 'Tesi', 'Termtud', 'Ofő']];
+  const days = ['H', 'K', 'Sze', 'Cs', 'P'];
   x.font = '16px "Patrick Hand", sans-serif';
   days.forEach((d, i) => { x.fillStyle = '#2a9d8f'; x.fillRect(52 + i * 72, 50, 70, 26); x.fillStyle = '#fff'; x.fillText(d, 87 + i * 72, 69); });
-  for (let r = 0; r < 5; r++) {
+  for (let r = 0; r < 6; r++) {
     x.fillStyle = '#1d3557'; x.fillText(r + 1 + '.', 28, 102 + r * 44);
-    for (let i = 0; i < 5; i++) { x.fillStyle = (r + i) % 2 ? '#e9f5f3' : '#fff'; x.fillRect(52 + i * 72, 82 + r * 44, 70, 42); x.fillStyle = '#333'; x.fillText(T[r][i], 87 + i * 72, 108 + r * 44); }
+    for (let i = 0; i < 5; i++) { x.fillStyle = (r + i) % 2 ? '#e9f5f3' : '#fff'; x.fillRect(52 + i * 72, 82 + r * 44, 70, 42); x.fillStyle = '#333'; x.fillText(TIMETABLE[i][r], 87 + i * 72, 108 + r * 44); }
   }
   return tex(c);
 }
