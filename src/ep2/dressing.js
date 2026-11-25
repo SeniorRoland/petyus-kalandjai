@@ -37,7 +37,8 @@ export function buildWardrobe() {
   box(x1 - x0 - 2 * t, 0.025, 0.025, cx, 1.85, cz, steel);
   dress.shirts = {};
   [['white', 0xf1f2f3], ['black', TOPS.black], ['blue', TOPS.blue]].forEach(([k, c], n) => {
-    const g = new THREE.Group(); g.position.set(cx - 0.28 + n * 0.28, 1.85, cz); homeRoot.add(g);
+    // side by side they would overlap at the sleeves (the same plane: flicker) – each hangs a little deeper than the one before
+    const g = new THREE.Group(); g.position.set(cx - 0.28 + n * 0.28, 1.85, cz - 0.09 + n * 0.09); homeRoot.add(g);
     const hanger = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.02, 0.02), steel); hanger.position.y = -0.05; g.add(hanger);
     const hook = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.05, 0.015), steel); hook.position.y = -0.02; g.add(hook);
     const m = new THREE.MeshLambertMaterial({ color: c });
