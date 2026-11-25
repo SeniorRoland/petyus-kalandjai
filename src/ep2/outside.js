@@ -25,6 +25,8 @@ const C = { facade: 0xeeece6, facade2: 0xe6e3dc, plinth: 0xb49a8c, band: 0xf7f6f
   grass: [0x7db556, 0x86bd5c, 0x78b052], asphalt: 0x5d6066, line: 0xf2f2f2, walk: 0xcfc8bb, path: 0xd9c7a3, gravel: 0xb3ada2, gravel2: 0xa6a094, curb: 0xd6d2ca };
 
 // ---------------------------------------------------------------- buildings
+// every window of the other flats and houses (for the evening: some of them lit) – { x, y, z, w, h, nx, nz }
+export const WINDOWS = [];
 // a block with window rows on every side; skip(side, x) → no window there (the entrance)
 function block(b, x0, z0, x1, z1, y0, floors, col, opt = {}) {
   const h = floors * FLOOR, w = x1 - x0, d = z1 - z0;
@@ -38,6 +40,7 @@ function block(b, x0, z0, x1, z1, y0, floors, col, opt = {}) {
       if (opt.skip && opt.skip(cx, cz, f)) return;
       const ww = opt.winW || 1.1, wh = 1.3, wy = fy + 0.9;
       const bl = opt.blinds ? 0.22 : 0;   // the roller-blind box above the window (some blinds half down)
+      WINDOWS.push({ x: cx, y: wy + wh / 2, z: cz, w: ww, h: wh * (opt.blinds ? 0.5 : 1) - 0.04, yb: opt.blinds ? wy + wh * 0.25 : wy + wh / 2, nx: alongX ? 0 : out, nz: alongX ? out : 0 });
       if (alongX) {
         b.bx(cx, wy - 0.05, cz + out * 0.03, ww + 0.12, wh + 0.1, 0.08, C.frame, 0, 0); b.bx(cx, wy, cz + out * 0.05, ww, wh, 0.06, C.glass, 0, 0.03);
         if (bl) { b.bx(cx, wy + wh + 0.05, cz + out * 0.06, ww + 0.12, bl, 0.1, C.blind, 0, 0); b.bx(cx, wy + wh * 0.5, cz + out * 0.08, ww, wh * 0.5, 0.03, 0x8a5a40, 0, 0.02); }   // blinds half down
@@ -114,7 +117,7 @@ function buildRoof() {
 function familyHouse(b, cx, cz, w, d, roofCol, wall = 0xf1ece2) {
   b.bx(cx, 0, cz, w, 3.0, d, wall, 0, 0.02); b.bx(cx, 0, cz, w + 0.06, 0.45, d + 0.06, 0xb7a596, 0, 0.02);
   for (const x of [-w / 3, 0, w / 3]) {   // windows on the street side (north) and the garden side (south)
-    for (const s of [-1, 1]) { b.bx(cx + x, 0.95, cz + s * (d / 2 + 0.03), 1.0, 1.15, 0.06, 0xf8f7f3, 0, 0); b.bx(cx + x, 1.0, cz + s * (d / 2 + 0.06), 0.85, 1.0, 0.04, C.glass, 0, 0.03); }
+    for (const s of [-1, 1]) { b.bx(cx + x, 0.95, cz + s * (d / 2 + 0.03), 1.0, 1.15, 0.06, 0xf8f7f3, 0, 0); b.bx(cx + x, 1.0, cz + s * (d / 2 + 0.06), 0.85, 1.0, 0.04, C.glass, 0, 0.03); WINDOWS.push({ x: cx + x, y: 1.5, yb: 1.5, z: cz + s * (d / 2 + 0.06), w: 0.85, h: 0.96, nx: 0, nz: s }); }
   }
   b.bx(cx + w / 3 + 0.9, 0, cz - d / 2 - 0.04, 0.95, 2.1, 0.08, 0x7a4a32, 0, 0);   // the front door
   for (let n = 0; ; n++) {   // gable roof (ridge along x), stepped tile courses
@@ -222,6 +225,54 @@ function buildFence(b) {
   side(FENCE.x0, FENCE.z0, FENCE.x0, FENCE.z1); side(FENCE.x1, FENCE.z0, FENCE.x1, FENCE.z1);
 }
 
+// the lamps (the park's candelabra from part 1): by the door, round the house in the yard, along both sidewalks of the street
+export const LAMPS = [[-9, 10.2], [6, 10.2], [-17, -6], [-4, -14], [14, -13], [24, -6], [24, 8], [-16, 6]];
+for (let x = -60; x <= 70; x += 13) { LAMPS.push([x, 17.55]); LAMPS.push([x + 6.5, 24.55]); }
+
+// ---------------------------------------------------------------- the evening (part 2, home in the afternoon–evening): dark
+// outside, the lamps on (a glowing lamp house and a pool of light on the ground; real lights only for the few nearest the house),
+// in the other flats' and houses' windows lights going on and off
+const eve = { on: false, win: null, list: [], t: 0 };
+export function setEvening() {
+  eve.on = true;
+  // the lit windows: one instanced quad each, in front of the glass; an unlit one is scaled to nothing
+  const geo = new THREE.PlaneGeometry(1, 1), mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const im = new THREE.InstancedMesh(geo, mat, WINDOWS.length); im.frustumCulled = false; scene.add(im); eve.win = im;
+  const cols = [0xffd58a, 0xffe2a8, 0xffc56e, 0xf7f1d0, 0xbfd4ff];
+  WINDOWS.forEach((w, i) => {
+    eve.list.push({ ...w, on: Math.random() < 0.45, t: R(3, 20) });
+    im.setColorAt(i, new THREE.Color(pick(cols)));
+    setWin(i);
+  });
+  im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
+  // the lamps: the lamp house glows, a soft pool of light under it; the three nearest the house get a real light
+  const glow = new THREE.MeshBasicMaterial({ color: 0xfff0b8 }), pool = new THREE.MeshBasicMaterial({ color: 0xffe2a0, transparent: true, opacity: 0.22, depthWrite: false });
+  const gGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2), pGeo = new THREE.CircleGeometry(3.2, 24);
+  for (const [x, z] of LAMPS) {
+    const m = new THREE.Mesh(gGeo, glow); m.position.set(x, 3.15, z); scene.add(m);
+    const p = new THREE.Mesh(pGeo, pool); p.rotation.x = -Math.PI / 2; p.position.set(x, 0.035, z); p.renderOrder = 1; scene.add(p);
+  }
+  const near = [...LAMPS].sort((a, b) => Math.hypot(a[0] - 4, a[1] - 6) - Math.hypot(b[0] - 4, b[1] - 6)).slice(0, 3);
+  for (const [x, z] of near) { const l = new THREE.PointLight(0xffd9a0, 14, 12, 1.6); l.position.set(x, 3.0, z); scene.add(l); }
+}
+const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpS = new V3(), tmpP = new V3(), UP = new V3(0, 1, 0);
+function setWin(i) {
+  const w = eve.list[i];
+  tmpP.set(w.x + w.nx * 0.09, w.yb, w.z + w.nz * 0.09); tmpQ.setFromAxisAngle(UP, Math.atan2(w.nx, w.nz));
+  tmpS.set(w.on ? w.w : 0, w.on ? w.h : 0, 1);
+  eve.win.setMatrixAt(i, tmpM.compose(tmpP, tmpQ, tmpS));
+}
+// now and then a light goes on or off somewhere
+function updateEvening(dt) {
+  if (!eve.on) return;
+  let changed = false;
+  for (let i = 0; i < eve.list.length; i++) {
+    const w = eve.list[i];
+    if ((w.t -= dt) <= 0) { w.t = R(6, 30); if (Math.random() < 0.5) { w.on = !w.on; setWin(i); changed = true; } }
+  }
+  if (changed) eve.win.instanceMatrix.needsUpdate = true;
+}
+
 // ---------------------------------------------------------------- props (voxel catalogue, instanced via home.js put)
 export function placeOutsideProps() {
   const g = { ground: true };
@@ -239,7 +290,7 @@ export function placeOutsideProps() {
   // the trampoline behind the house (north), a bench and a bin by the door
   put('trampoline', 6, -9, 0, 0, g);
   put('bench', -6.2, 10.4, Math.PI, 0, g); put('bin', -0.8, 10.3, 0, 0, g);
-  put('lamp', -9, 10.2, 0, 0, g); put('lamp', 6, 10.2, 0, 0, g);
+  for (const [x, z] of LAMPS) put('lamp', x, z, 0, 0, g);   // the yard's and the street's lamps (lit in the evening: setEvening)
   // blossoming trees in front of the house (as on the photo), flower beds, hedges along the fence, a garden table, bike rack
   put('birch', 12.8, 12.2, 0.4, 1, { ground: true, s: 1.15 }); put('oak', -10.2, 10.3, 1.1, 2, { ground: true, s: 0.85 }); put('birch', 17.5, 11.5, 2.0, 3, { ground: true, s: 1.05 });
   put('bed_long', 19.0, 0.6, Math.PI / 2, 0, g); put('bed_long', 19.0, 3.6, Math.PI / 2, 1, g); put('bed_square', -8.5, -3.0, 0, 2, g); put('bed_small', 8.0, 10.05, 0, 0, g);
@@ -280,6 +331,7 @@ function keepOut(p) {
 }
 let chatT = 6;
 export function updateOutside(dt) {
+  updateEvening(dt);
   updateTraffic(dt);
   // the roof: hidden from close up (the flat must be seen), fades in as the player zooms out (and never in the first-person view)
   if (roof) { const o = G.fps ? 0 : clamp((G.zoom - 1.35) / 0.4, 0, 1); roof.material.opacity = o; roof.visible = o > 0.02; roof.material.depthWrite = o > 0.98; }
