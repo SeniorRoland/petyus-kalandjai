@@ -59,7 +59,7 @@ import { updateTouchUI } from './touchui.js';
 import { IS_TOUCH } from './util.js';
 import { setupInstall } from './install.js';
 import { updateOcclusion } from './occlude.js';
-import { ep2DevStart, ep2HasSave, ep2Unlocked, startEp2, stepEp2 } from './ep2/ep2.js';
+import { ep2DevStart, ep2HasSave, ep2Unlocked, showPhaseCard, startEp2, stepEp2, takeEp2Next } from './ep2/ep2.js';
 import { setupBackToMenu, updateBackButton } from './backmenu.js';
 import { setupTurnButtons, updateViewTurn } from './viewturn.js';
 
@@ -142,7 +142,9 @@ async function boot() {
   // 2. rész: Szeptember – its tile opens once part 1 has 15 ⭐ (always on the dev server); the park is swapped for the flat
   const b2 = $('ep2Btn');
   if (b2 && ep2Unlocked()) { b2.disabled = false; setStartLabel(ep2HasSave() ? 'Folytatás ▶' : 'Indítás ▶', b2); b2.onclick = () => { initAudio(); if (MOBILE) goFullscreen(); $('overlay').classList.add('hide'); startEp2(); }; }
-  if (ep2DevStart()) {   // dev only: ?resz=2 – no click before it, so the sound starts with the first click / key
+  const next2 = takeEp2Next();   // part 2 moved on to its next place (ep2.js goPhase): its card, then that place
+  if (next2 && ep2Unlocked()) { $('overlay').classList.add('hide'); showPhaseCard(next2, () => { initAudio(); if (MOBILE) goFullscreen(); startEp2(); }); }
+  else if (ep2DevStart()) {   // dev only: ?resz=2 – no click before it, so the sound starts with the first click / key
     initAudio(); $('overlay').classList.add('hide'); startEp2();
     if (audioWaiting()) toast('🔊 A hanghoz kattints vagy nyomj meg egy billentyűt!', 4);
   }

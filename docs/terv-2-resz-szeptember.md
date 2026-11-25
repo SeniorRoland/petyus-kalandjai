@@ -1,7 +1,7 @@
 # 2. rész (Szeptember – Otthon és iskola): terv
 
 Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ◐ A naptár és az óra kész, a napok léptetése még nem. ⬜ Hátravan: átöltözés és indulás, az iskola (4 csibészség), az otthoni délután (3 csibészség), a hétvégék, tesztelés telefonon.
+**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ✅ A napok köre is kész: indulás (7:30 vagy mindhárom reggeli csibészség után) → iskola (helyszín, csibészségek nélkül) → otthon délután–este (sötét, lámpák) → lefekvés → másnap reggel; hétvége és hónap vége átvezetővel. ⬜ Hátravan: átöltözés, az iskola 4 és a délután 3 csibészsége, tesztelés telefonon.
 
 ## Röviden
 
@@ -119,6 +119,15 @@ Az otthoni délutánnal együtt (16:00–22:00).
   8. Főcím (Petyus kalandjai · 2. rész · Szeptember), majd indul az otthoni reggel (Angi: „Na végre fent vagy…”).
 - **Technika:** saját kis idővonal (`W`, `until`, kihagyáskor elutasít), a kamera testmagasságra keretez (`atHeight`), a szereplő előtti magas bútor áttetsző (`G.occludeAt` → `occlude.js`), a falak a jelenet tárgya szerint fakulnak.
 
+## Helyszín: Otthon délután–este  ✅ kész (csibészségek nélkül)
+
+- **Megvalósítás** (`ep2.js` `EVE` ág, `outside.js` `setEvening`, `home.js` `addFillLights`): ugyanaz a lakás és környéke, mint reggel, de **kint sötét van** (éjszakai égbolt, halvány kék fény), **bent égnek a lámpák** (minden szoba villanya fel van kapcsolva – a két legközelebbi árnyékot vető spotfény mellett a többi szoba is lágy fényt kap).
+- **A ház többi lakása és a szomszéd házak** ablakaiban lámpák égnek, időnként (6–30 mp-enként) fel- és lekapcsolódnak (`WINDOWS`, egy instanced négyzetrács).
+- **Az utcán és az udvaron** az 1. rész park-lámpái (kandeláberek: `LAMPS`) – este világít a lámpaházuk, alattuk fényfolt a földön, a házhoz legközelebbi háromnak valódi fénye is van.
+- Nincs pizsama; a nővér nincs otthon; a reggeli csibészségek nem futnak; apa és anya esti mondatai („Megírtad a leckét?”, „Mindjárt kész a vacsora!”), 21:15 után anya lefekvésre küld. Petyus a bejárati ajtónál kezd (most ért haza).
+- **E – lefekvés** Petyus ágyánál → másnap reggel.
+- ⬜ Később: a délutáni 3 csibészség, vacsora, fürdés, tévézés.
+
 ## A reggel vége, a késés  ◐ részben
 
 - ✅ A csibészségek késése összeadódik, a HUD-on ⏰ +x perc.
@@ -137,7 +146,15 @@ Az otthoni délutánnal együtt (16:00–22:00).
   - Használat: ✅ `?resz=2` URL-paraméter (egyből a 2. részt indítja); ⬜ `?resz=2&hely=iskola&nap=5` jellegű ugrás a helyszínek / napok teszteléséhez; a kezdőképernyőn dev módban egy kis „DEV: minden rész nyitva” jelzés.
   - Ellenőrzés: a build után a `dist/` JS-ében nem szerepelhet a dev-ág (pl. egy keresés a `resz=` szövegre).
 
-## Napok, naptár, váltás a helyszínek között  ◐ részben
+## Napok, naptár, váltás a helyszínek között  ✅ kész
+
+- **Megvalósítás** (`ep2.js`): `ep2.phase` (`morning` · `school` · `evening`), mindegyiknek saját órája (`PHASES`: 6:00–7:30 · 8:00–15:30 · 16:00–22:00, kb. 10 valós perc alatt telik), a mentés (`petyus.r2.allapot`) a napszakot is tartalmazza. Továbblépéskor (`goPhase`) a következő napszak kezdete mentődik („fresh”), az oldal újraindul, és egy **átvezető kártya** jön (hely · dátum · óra, „Tovább ▶” – a kattintás indítja a hangot is); így minden napszak tiszta állapotból indul.
+- **Reggel → iskola:** a bejárati ajtónál **E – indulás az iskolába** – csak ha már **7:30** van, **vagy** mindhárom reggeli csibészség legalább egy csillaggal megvolt (a napló szerint); különben Angi: „Még csak 6:45 van! Fél nyolckor indulunk.” + felirat a feltételről.
+- **Iskola → otthon délután:** a kapunál **E – hazaindulás**, egyelőre feltétel nélkül.
+- **Este → másnap reggel:** Petyus ágyánál **E – lefekvés**, feltétel nélkül (a másnap reggel már film nélkül indul; a késés nullázódik).
+- **Hétvége:** szombaton–vasárnap reggel az indulás az iskola helyett egyből az esti otthonba visz („Hétvége: ma nincs iskola – egész nap a nagyiéknál voltatok.”).
+- **A hónap vége:** szeptember 30. este lefekvés után a hónap elölről kezdődik (szept. 2.), a csibészségek eredményei megmaradnak.
+- Fejlesztéshez: `?resz=2` a mentett napszakot folytatja.
 
 - ✅ Naptár és óra a HUD-on (2026. szeptember 2. …), a reggeli óra telik (6:00 → 7:30), mentés a rész állapotával.
 - ⬜ A napok léptetése, hétvégi átvezető, a hónap vége, a helyszínek közti váltás.
@@ -219,18 +236,22 @@ A lakás egyszintes, nagyjából **13 m × 7,5 m**, téglafalakkal, két erkéll
 
 A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (`?resz=2`) betölthető lakás az alaprajz szerint, berendezve, reggeli fényekkel, a három szereplővel; Petyus irányítható, a falak és bútorok ütköznek. A megnyitási feltétel (15 ⭐) és a kezdőképernyő-csempe ugyanebben a körben.
 
-## Helyszín: Iskola  ⬜ még nincs
+## Helyszín: Iskola  ✅ kész (csibészségek nélkül)
 
-Később részletezzük (osztályterem, folyosó, udvar/tornaterem, ebédlő?). A 4 iskolai csibészség és a tanár(ok) / osztálytársak itt jönnek majd.
+- **Megvalósítás** (`src/ep2/school.js`): földszintes iskola (x 0…22, z −11…0; „Tököli Általános Iskola” felirat) – folyosó fogasokkal, kabátokkal, táskákkal, vitrinnel, faliújságokkal, padokkal; **Petyus osztályterme (3. b)**: tábla krétaírással, tanári asztal, 3 × 3 pad két-két székkel, könyvespolc, szekrény, rajzok, óra, növények; a szomszéd terem (4. a). A kamera felőli falak lesüllyednek, ha Petyus bent van (a nézet forgatásával is).
+- **Udvar:** aszfalt pályavonalakkal, ugróiskola, kosárpalánk, két kis kapu, padok, fák, kandeláberek, kerékpártároló, kerítés; a déli kapu az utcára.
+- **Szereplők:** a tanító néni a táblánál sétál („Gyerekek, figyeljetek a táblára!”, „Petyus, ülj a helyedre!”), 12 osztálytárs ül a padokban (ha Petyus elmegy mellettük, felé fordulnak), hárman az udvaron szaladgálnak és megszólítják.
+- **Óra:** 8:00 → 15:30; **E – hazaindulás** a kapunál (egyelőre bármikor).
+- ⬜ Később: a 4 iskolai csibészség, Petyus saját helye (leülés), tornaterem / ebédlő.
 
 ## Fejlesztési lépések
 
 1. ✅ **Részek szétválasztása** (kész: `src/ep2/…`, `startEp2` / `stepEp2`): egy rész/helyszín-betöltő – a közös motor (rigek, `Actor`, buborékok, input, minőség, kamera, csibészség-rendszer) marad, a világ (`world.js` park) és a rész-specifikus tevékenységek részenként külön modulba kerülnek (pl. `src/ep1/…` és `src/ep2/…`), és a kezdőképernyőről indított rész tölti be a sajátját.
 2. ✅ **Csibészség-rendszer részenként:** `MISCHIEFS` és a mentési kulcs részenként; az összesítés (⭐) részenként és összesen.
 3. ✅ **Megnyitás + fejlesztői elérés** (fent).
-4. ◐ **Naptár és napszakok** (a naptár, az óra és a HUD kész; a napok léptetése, az átvezetők még nem): állapot (`nap`, `napszak`, játékóra), mentés `localStorage`-ba, HUD-elem, átvezetők a váltáshoz.
+4. ✅ **Naptár és napszakok** (naptár, óra, HUD, a napszakok köre, átvezető kártya, hétvége, a hónap vége): állapot (`nap`, `napszak`, játékóra), mentés `localStorage`-ba, HUD-elem, átvezetők a váltáshoz.
 5. ✅ **Otthon – reggel:** a lakás voxelből az alaprajz alapján (falak, ajtók, ablakok, padló, bútorok), babaház-nézet, reggeli fények, Petyus/Petya/Angi elhelyezése, mozgás, ütközés.
-6. ◐ Iskola, délutáni otthon (⬜), csibészségek (✅ a reggeliek) – később.
+6. ◐ Iskola (✅ helyszín), délutáni otthon (✅ helyszín), csibészségek (✅ a reggeliek, ⬜ az iskolaiak és a délutániak).
 
 ## Döntések
 
@@ -260,3 +281,6 @@ Később részletezzük (osztályterem, folyosó, udvar/tornaterem, ebédlő?). 
 - [x] **Petyus nővére:** feküdjön az ágyban betakarózva, időnként forgolódjon; Angi karakteréből, hosszú fekete hajjal és sötét szemekkel. ✅ `nover.glb` (`rebuild.py`: `reshape_nover`), `sister.js` + `sleep.js` (hanyatt fekszik, időnként oldalra fordul, a takaró vele púposodik és susog).
 - [x] **Pisilés a WC-be:** jobbra-balra célozva, néha mellé. ✅ `pee.js`: felnyitott fedélnél Szóköz (érintőn PISILÉS); A / D (botkormány) célzás, a sugár magától is kalandozik, a végén elfogy a nyomás; ami mellé megy, az tócsa a padlón, lent hagyott ülőkénél az ülőkére is jut; Petyus megjegyzése, Angi kiabál; lehúzás után újra lehet.
 - [x] **Bevezető film:** Tököl + dátum és a nap neve, horkoló apa a sötétben, 6:00-s ébresztőóra, „Megadom magam!”, anya leszidja, apa felébreszti Petyust – végül lufidurrantással. ✅ Lásd „Filmes nyitány: az ébresztés” (`wakeup.js`).
+- [x] **Iskola helyszín** csibészségek nélkül, továbblépés az otthon délutánba feltétel nélkül. ✅ `school.js`, a kapunál E.
+- [x] **Indulás reggel** csak 7:30-tól, vagy ha a reggeli csibészségek mind megvoltak (legalább 1 ⭐). ✅ `leaveMorning` az `ep2.js`-ben.
+- [x] **Otthon délután–este** csibészségek nélkül: kint sötét, bent égnek a lámpák, a többi lakás ablakaiban fel-le kapcsolódó lámpák, utcai és udvari lámpák (az 1. rész kandeláberei); továbblépés a reggelbe feltétel nélkül. ✅ `setEvening`, `addFillLights`, lefekvés Petyus ágyánál.
