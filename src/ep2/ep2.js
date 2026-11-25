@@ -26,7 +26,7 @@ import { buildWardrobe, dress, dressLoad, dressSave, dressTick, hurryParents, le
 import { buildSister, updateSister } from './sister.js';
 import { canPee, pee, peeFlushed, peeLabel, peeTick, startPee } from './pee.js';
 import { startWakeup, wakeTick, wakeupFocus } from './wakeup.js';
-import { BOUNDS as SCHOOL_BOUNDS, SCHOOL_START, buildSchool, schoolAction, schoolFloor, schoolRoom, setSchoolFps, toggleSeat, updateSchool } from './school.js';
+import { BOUNDS as SCHOOL_BOUNDS, SCHOOL_START, buildSchool, schoolAction, schoolFloor, schoolKick, schoolUse, schoolRoom, setSchoolFps, toggleSeat, updateSchool } from './school.js';
 import { starsFor } from '../mischief.js';
 import { cf, coffeeTick, dadBusy } from './coffee.js';
 import { dadChasing, momBusy, runawayTick, rw } from './runaway.js';
@@ -585,9 +585,14 @@ export function stepEp2(dt) {
     const P = G.petike.pos, room = schoolRoom(P.x, P.z);
     setOutdoor(room === 'Iskola – udvar' || room === 'Az utca' ? 1 : fp.on ? 0.15 : 0.4);
     if (room !== ep2.room) { ep2.room = room; $('e2Room').textContent = room; }
-    const act = schoolAction();   // the gate (home), Petyus's own place (sit down / stand up)
-    if (act) { setPrompt(isTouch ? act.txt.replace(/^E – /, 'HASZNÁL – ') : act.txt); if (G.usePressed) { if (act.gate) leaveSchool(); else toggleSeat(seating); } }
-    else setPrompt('');
+    const act = schoolAction();   // doors, the toilets, Petyus's own place (sit down / stand up), the gate (home)
+    const kb = $('kickBtn'); if (kb && isTouch) { const l = pee.on ? 'KÉSZ' : act && act.kick ? act.kick : ''; kb.style.display = l ? 'block' : 'none'; if (l && kb.textContent !== l) kb.textContent = l; }
+    if (pee.on) setPrompt(isTouch ? 'Célozz a botkormánnyal!' : 'A / D – célzás · Szóköz – kész');
+    else if (act) {
+      setPrompt(isTouch ? act.txt.replace(/^E – /, 'HASZNÁL – ') : act.txt);
+      if (G.usePressed) { if (act.gate) leaveSchool(); else if (act.seat) toggleSeat(seating); else schoolUse(act); }
+      if (G.kickPressed) schoolKick(act);
+    } else setPrompt('');
     ep2.min = Math.min(PHASES.school.end, ep2.min + dt * minPerSec()); hudClock();
     G.usePressed = false; G.qPressed = false; G.kickPressed = G.kickReleased = false; G.invPressed = false;
   } else if (G.mode === 'play') {
