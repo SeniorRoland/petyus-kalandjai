@@ -232,7 +232,8 @@ function furnish() {
   // Petyus's room: bed on the kitchen wall, desk with the monitor by the east window, wardrobe on the south wall, play rug, school bag
   put('bed_single', 12.22, 1.95, 0, 0); put('desk', 15.28, 1.45, W, 1);   // the computer on it: appliances.js put('chair', 14.7, 1.45, E, 2);
   put('desk', 14.3, 0.32, 0, 1);   // the table before the north window, with Karcsi's cage on it (karcsi.js)
-  put('wardrobe', 14.3, 3.88, P, 0); put('rug', 13.7, 2.2, 0, 2); put('schoolbag', 15.32, 2.32, W);   // the bag next to the desk (the scooter: appliances.js)
+  addBoxCol(13.8, 3.58, 14.8, 4.18, 2.1);   // Petyus's wardrobe: hollow, with doors that open – built in dressing.js (only its collider here)
+  put('rug', 13.7, 2.2, 0, 2); put('schoolbag', 15.32, 2.32, W);   // the bag next to the desk (the scooter: appliances.js)
   // the sibling's room (locked): double bed, built-in wardrobe, dresser
   put('bed_double', 1.12, 6.8, E, 2); put('wardrobe', 4.4, 4.64, 0, 0); put('wardrobe', 5.4, 4.64, 0, 0); put('dresser', 4.6, 8.92, P, 0); put('rug', 3.4, 6.8, 0, 0);
   // the parents' room: bed on the north wall, the sofa opposite on the south wall, TV on the south wall near the sibling's

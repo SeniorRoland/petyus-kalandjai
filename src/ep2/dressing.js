@@ -18,30 +18,44 @@ const NAMES = { white: 'fehér', black: 'fekete', blue: 'kék' };
 export const dress = { top: null, open: false, doorT: 0, leaves: [], inside: null, choosing: false, changeT: -1, pending: null,
   parents: 'home', pT: 0, urgeT: 6, readyT: 0 };
 
-// ---------------------------------------------------------------- the wardrobe: two door leaves that swing open, the shirts inside
+// ---------------------------------------------------------------- the wardrobe: a hollow cupboard (sides, back, top, bottom), two
+// door leaves hinged at the outer edges with their handles at the middle, inside a rail with the shirts and a shelf with shorts.
+// The doors open towards the room (north). The camera looks from the south-east – the wardrobe's back – so while Petyus stands
+// in front of it, the cupboard goes see-through (like the props occlude.js fades)
+const WD = { x0: WR.x - 0.5, x1: WR.x + 0.5, z0: WR.z, z1: WR.z + 0.6, y1: 2.1, t: 0.03 };
 export function buildWardrobe() {
-  const mat = new THREE.MeshLambertMaterial({ color: 0xf2efe8 }), knob = new THREE.MeshLambertMaterial({ color: 0x8a8f96 });
-  for (const s of [-1, 1]) {   // the hinges at the outer edges
-    const pivot = new THREE.Group(); pivot.position.set(WR.x + s * 0.5, 0.08, WR.z - 0.015); homeRoot.add(pivot);
-    const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.49, 2.0, 0.03), mat); leaf.position.set(-s * 0.245, 1.0, 0); leaf.castShadow = true; pivot.add(leaf);
-    const k = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.22, 0.03), knob); k.position.set(-s * 0.44, 1.0, -0.03); pivot.add(k);
-    dress.leaves.push({ pivot, s });
-  }
-  // inside (seen when open): the dark back, a rail, three shirts on hangers, a pair of shorts folded on a shelf
-  const ins = new THREE.Group(); homeRoot.add(ins); dress.inside = ins; ins.visible = false;
-  const back = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 2.0), new THREE.MeshLambertMaterial({ color: 0x5b4a3a, side: THREE.DoubleSide })); back.position.set(WR.x, 1.08, WR.z - 0.004); back.rotation.y = Math.PI; ins.add(back);
-  const rail = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.025, 0.025), knob); rail.position.set(WR.x, 1.82, WR.z - 0.12); ins.add(rail);
+  const body = new THREE.MeshLambertMaterial({ color: 0xf2efe8, transparent: true }), inner = new THREE.MeshLambertMaterial({ color: 0xd8cfc2, transparent: true });
+  const steel = new THREE.MeshLambertMaterial({ color: 0x8a8f96 });
+  dress.mats = [body, inner];
+  const box = (w, h, d, x, y, z, m) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; homeRoot.add(o); return o; };
+  const { x0, x1, z0, z1, y1, t } = WD, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+  box(t, y1, z1 - z0, x0 + t / 2, y1 / 2, cz, body); box(t, y1, z1 - z0, x1 - t / 2, y1 / 2, cz, body);   // the sides
+  box(x1 - x0, y1, t, cx, y1 / 2, z1 - t / 2, inner);                                                   // the back (against the wall)
+  box(x1 - x0, t, z1 - z0, cx, y1 - t / 2, cz, body); box(x1 - x0, 0.08, z1 - z0, cx, 0.04, cz, body);   // top, plinth
+  box(x1 - x0 - 2 * t, t, z1 - z0 - t, cx, 0.62, cz + t / 2, inner);                                    // the shelf for the shorts
+  // the rail across, with the three shirts on hangers (facing the doors), shorts folded on the shelf
+  box(x1 - x0 - 2 * t, 0.025, 0.025, cx, 1.85, cz, steel);
   dress.shirts = {};
   [['white', 0xf1f2f3], ['black', TOPS.black], ['blue', TOPS.blue]].forEach(([k, c], n) => {
-    const g = new THREE.Group(); g.position.set(WR.x - 0.28 + n * 0.28, 1.8, WR.z - 0.12); ins.add(g);
-    const hanger = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.02, 0.02), knob); hanger.position.y = -0.04; g.add(hanger);
+    // side by side they would overlap at the sleeves (the same plane: flicker) – each hangs a little deeper than the one before
+    const g = new THREE.Group(); g.position.set(cx - 0.28 + n * 0.28, 1.85, cz - 0.09 + n * 0.09); homeRoot.add(g);
+    const hanger = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.02, 0.02), steel); hanger.position.y = -0.05; g.add(hanger);
+    const hook = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.05, 0.015), steel); hook.position.y = -0.02; g.add(hook);
     const m = new THREE.MeshLambertMaterial({ color: c });
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.42, 0.05), m); body.position.y = -0.27; g.add(body);
-    for (const s of [-1, 1]) { const sl = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.05), m); sl.position.set(s * 0.15, -0.12, 0); sl.rotation.z = s * 0.5; g.add(sl); }
+    const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.42, 0.05), m); shirt.position.y = -0.28; g.add(shirt);
+    for (const s of [-1, 1]) { const sl = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.05), m); sl.position.set(s * 0.15, -0.13, 0); sl.rotation.z = s * 0.5; g.add(sl); }
     dress.shirts[k] = g;
   });
-  const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.03, 0.3), new THREE.MeshLambertMaterial({ color: 0xd8c6a2 })); shelf.position.set(WR.x, 0.6, WR.z - 0.15); ins.add(shelf);
-  const shorts = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.2), new THREE.MeshLambertMaterial({ color: 0x1d1d22 })); shorts.position.set(WR.x - 0.2, 0.65, WR.z - 0.15); ins.add(shorts);
+  box(0.3, 0.06, 0.22, cx - 0.2, 0.665, cz, new THREE.MeshLambertMaterial({ color: 0x1d1d22 }));
+  box(0.3, 0.06, 0.22, cx + 0.2, 0.665, cz, new THREE.MeshLambertMaterial({ color: 0x2b3a55 }));
+  // the doors: hinged at the outer edges, the handle on the outside near the middle; they open towards the room (−z)
+  for (const s of [-1, 1]) {
+    const pivot = new THREE.Group(); pivot.position.set(cx + s * 0.5, 0.08, z0 - 0.012); homeRoot.add(pivot);
+    const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.495, y1 - 0.11, 0.024), body); leaf.position.set(-s * 0.2475, (y1 - 0.11) / 2, 0); leaf.castShadow = true; pivot.add(leaf);
+    const k = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.24, 0.03), steel); k.position.set(-s * 0.44, 0.95, -0.028); pivot.add(k);
+    dress.leaves.push({ pivot, s });
+  }
+  dress.inside = { visible: true };
 }
 function setOpen(v) { if (dress.open === v) return; dress.open = v; tone('sine', v ? 300 : 220, v ? 200 : 140, 0.12, 0.08); noise(0.15, 500, 1, 0.06); }
 
@@ -88,7 +102,9 @@ export function dressTick(dt, ready, busy) {
   // the doors swing; they close by themselves when Petyus walks off
   dress.doorT = damp(dress.doorT, dress.open ? 1 : 0, 6, dt);
   for (const l of dress.leaves) l.pivot.rotation.y = -l.s * dress.doorT * 1.9;
-  dress.inside.visible = dress.doorT > 0.02;
+  { const near = !G.fps && Math.hypot(a.pos.x - WR.stand.x, a.pos.z - (WR.stand.z - 0.2)) < 1.4;   // the camera looks at its back
+    dress.fade = damp(dress.fade ?? 1, near ? 0.28 : 1, 8, dt);
+    for (const m of dress.mats) { m.opacity = dress.fade; m.depthWrite = dress.fade > 0.98; } }
   if (dress.open && !dress.choosing && dress.changeT < 0 && Math.hypot(a.pos.x - WR.stand.x, a.pos.z - WR.stand.z) > 1.6) setOpen(false);
   for (const [k, g] of Object.entries(dress.shirts)) g.visible = dress.top !== k;   // the one he wears is not on its hanger
   // changing: facing the wardrobe, a quick turn, then the new clothes
