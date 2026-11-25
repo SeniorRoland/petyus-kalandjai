@@ -29,7 +29,7 @@ export function tickCutscene(dt) {
     tw.t += dt; const k = Math.min(1, tw.t / tw.dur); tw.fn(k); if (k >= 1) { tweens.splice(i, 1); tw.res(); }
   }
 }
-export function skipIntro() { if (G.mode === 'intro' && !cs.done) { cs.skip = true; } }
+export function skipIntro() { if (G.skipHook) return G.skipHook(); if (G.mode === 'intro' && !cs.done) { cs.skip = true; } }   // (part 2's opening film: its own skip – ep2/wakeup.js)
 export function offsetPath(pts, d) {
   return pts.map((p, i) => {
     const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];

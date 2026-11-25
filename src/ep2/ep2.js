@@ -21,6 +21,9 @@ import { buildAppliances, devices, fx, seating, updateAppliances } from './appli
 import { buildInventory, cycleItem, holdingController, inv, invAction, invTake, itemObj, pickLabel, pickUp, pickables, selectItem, updateInventory } from './inventory.js';
 import { buildKarcsi, cageDoorOpen, cageFront, toggleCageDoor, updateKarcsi, wheek } from './karcsi.js';
 import { dressPajama } from './pajama.js';
+import { buildSister, updateSister } from './sister.js';
+import { canPee, pee, peeFlushed, peeLabel, peeTick, startPee } from './pee.js';
+import { startWakeup, wakeTick, wakeupFocus } from './wakeup.js';
 import { cf, coffeeTick, dadBusy } from './coffee.js';
 import { dadChasing, momBusy, runawayTick, rw } from './runaway.js';
 import { giveKeyHint, kh, keyBusy, keyHintLabel, keyTick } from './keyhunt.js';
@@ -84,18 +87,15 @@ export function startEp2() {
   // the sky light's ground colour was the park's grass (green): indoors every downward face (a fridge's ceiling, the underside
   // of a shelf) would look green – a warm neutral instead
   scene.traverse((o) => { if (o.isHemisphereLight) o.groundColor.set(0xb9ab98); });
-  buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances(); buildInventory();
+  buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances(); buildInventory(); buildSister();
   // the three of them in pajamas (Petyus: the football kit's model – the walking one)
   dressPajama(rigs.foci, 'petyus'); dressPajama(rigs.petya, 'petya'); dressPajama(rigs.angi, 'angi');
   G.petike.riding = false; G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7;
   scene.add(G.petya.rig.root, G.angi.rig.root);
-  const s = SPOTS;
-  G.petike.place(s.petyusWake.x, s.petyusWake.z, s.petyusWake.h);
-  G.petya.path = null; G.petya.place(s.dadChair.x, s.dadChair.z, s.dadChair.h); G.petya.seatH = 0.45; G.petya.seatBase = FY; G.petya.sit = G.petya.sitTarget = 1;
-  G.angi.path = null; G.angi.sit = G.angi.sitTarget = 0; G.angi.place(s.momCook.x, s.momCook.z, s.momCook.h);
-  for (const a of [G.petike, G.petya, G.angi]) a.pos.y = FY;   // occlude.js measures from here
+  placeFamily();
   G.saveHook = saveEp2;
-  const resumed = loadEp2();   // where the player left off (back to the menu / closed the page)
+  // where the player left off (back to the menu / closed the page); dev only: ?nyitany=1 starts a new morning with the opening film
+  const resumed = !(import.meta.env.DEV && new URLSearchParams(location.search).has('nyitany')) && loadEp2();
   G.mode = 'play'; G.pstate = 'home'; G.petyaMode = 'home';
   // the base framing (zoom 1) shows most of the flat; zooming out stops at 2× (the house and the yard), zooming in is free
   G.viewSizeTarget = G.viewSize = 8; G.zoom = 1; G.zoomMax = 2;   // starts at zoom 1; out to 2× (the house and its surroundings)
@@ -121,7 +121,20 @@ export function startEp2() {
     pool.forEach((l) => { l.visible = false; });
     for (const o of hidden) o.visible = false; }
   if (resumed) toast(`Folytatás: <b>${dateText()}</b>, ${clockText(ep2.min)}`, 3);
-  else setTimeout(() => say(G.angi, 'Jó reggelt, Petyus! Kelj fel, mosd meg a fogad!', 3.6), 900);
+  else {   // a new game: the opening film first (wakeup.js), then the morning
+    startWakeup(() => {
+      placeFamily(); camTarget.set(G.petike.pos.x, FY, G.petike.pos.z);
+      setTimeout(() => say(G.angi, 'Jó reggelt, Petyus! Na végre fent vagy. Mosd meg a fogad!', 3.4), 700);
+    });
+  }
+}
+// where everyone is when the morning starts: Petyus by his bed, dad at the table, mum at the cooktop
+function placeFamily() {
+  const s = SPOTS;
+  G.petike.place(s.petyusWake.x, s.petyusWake.z, s.petyusWake.h);
+  G.petya.path = null; G.petya.place(s.dadChair.x, s.dadChair.z, s.dadChair.h); G.petya.seatH = 0.45; G.petya.seatBase = FY; G.petya.sit = G.petya.sitTarget = 1;
+  G.angi.path = null; G.angi.sit = G.angi.sitTarget = 0; G.angi.place(s.momCook.x, s.momCook.z, s.momCook.h);
+  for (const a of [G.petike, G.petya, G.angi]) { a.pos.y = FY; a.sync(); }   // occlude.js measures from here
 }
 let shownMin = -1;
 function hudClock(force) { const m = Math.floor(ep2.min); if (m !== shownMin || force) { shownMin = m; $('e2Clock').textContent = clockText(m); } }
@@ -217,6 +230,7 @@ const pvel = new V3();
 const step = { n: 0 };
 function movePetyus(dt) {
   const a = G.petike;
+  if (peeTick(dt)) return;   // at the WC (pee.js): standing, aiming
   // sitting in the armchair: no walking; a movement key (or the stick) stands him up again
   if (seating.on) {
     const moveKey = keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || (!fp.on && (keys.ArrowLeft || keys.ArrowRight)) || touch.active;
@@ -273,6 +287,11 @@ function movePetyus(dt) {
 const door = { knockT: 0 };
 function interactHome() {
   const p = G.petike.pos;
+  if (pee.on) {   // peeing: only the aiming and the end
+    setPrompt(isTouch ? 'Célozz a botkormánnyal!' : 'A / D – célzás · Szóköz – kész');
+    const kb = $('kickBtn'); if (kb && isTouch) { kb.style.display = 'block'; if (kb.textContent !== 'KÉSZ') kb.textContent = 'KÉSZ'; }
+    return;
+  }
   // everything that can be used, with where it is (aim: a point of it in the flat's frame, y from the floor). Top view: the
   // nearest within reach wins (things to pick up up to 20 cm further). First-person view: only what the dot in the middle
   // of the screen points at (and not further than ~1.9 m from the eyes) – the best aimed one wins.
@@ -298,7 +317,7 @@ function interactHome() {
   // next to the toilet: Space (on touch: the LEHÚZÁS button) flushes
   // (a device with a second action – the microwave – uses Space too; on touch the RÚGÁS button shows that action's name)
   const kb = $('kickBtn'), altBusy = !!(best && (best.seat || (best.dev && best.dev.alt)));
-  if (kb) { const lbl = isTouch ? (best && best.seat ? 'LEHÚZÁS' : best && best.dev && best.dev.alt ? best.dev.alt.short() : act ? act.short : '') : ''; kb.style.display = lbl ? 'block' : 'none'; if (lbl && kb.textContent !== lbl) kb.textContent = lbl; }
+  if (kb) { const lbl = isTouch ? (best && best.seat ? (canPee() ? 'PISILÉS' : 'LEHÚZÁS') : best && best.dev && best.dev.alt ? best.dev.alt.short() : act ? act.short : '') : ''; kb.style.display = lbl ? 'block' : 'none'; if (lbl && kb.textContent !== lbl) kb.textContent = lbl; }
   if (act && (G.invPressed || (isTouch && G.kickPressed && !altBusy))) act.run();
   if (best && best.hint) {
     txt = best.hint;
@@ -314,9 +333,11 @@ function interactHome() {
     if (G.usePressed) dv.use();
     if (G.kickPressed && dv.alt) dv.alt.use();
   } else if (best && best.seat) {
-    txt = toiletSeatLabel() + (isTouch ? '' : ' · Szóköz – lehúzás');
+    txt = toiletSeatLabel() + (isTouch ? '' : canPee() ? ' · ' + peeLabel() : ' · Szóköz – lehúzás');
     if (G.usePressed) { toggleToiletSeat(); sClick(); }
-    if (G.kickPressed && flushToilet()) {
+    if (G.kickPressed && canPee()) startPee();
+    else if (G.kickPressed && flushToilet()) {
+      peeFlushed();
       tone('square', 900, 700, 0.05, 0.05); noise(1.7, 700, 0.5, 0.3, 0.1); noise(1.2, 1600, 0.7, 0.12, 0.3); tone('sine', 260, 110, 1.3, 0.05, 0.2); noise(1.8, 2800, 1.2, 0.04, 1.6);
       say({ headWorld: (o) => o.set(toiletSeat.x, FY + 1.1, toiletSeat.z + 0.2) }, 'HÚÚÚSSS!', 1.6);
     }
@@ -432,7 +453,7 @@ export function stepEp2(dt) {
     // the world outside: indoors in the first-person view not at all (only the dog barking in the yard), indoors in the top
     // view faintly, on a balcony fully
     { const r = roomAt(G.petike.pos.x, G.petike.pos.z), out = !!(r && r.floor === 'balcony'); setOutdoor(out ? 1 : fp.on ? 0 : 0.3); }
-    updateParents(dt); updateOutside(dt); updateKarcsi(dt); updateAppliances(dt); updateInventory();
+    updateParents(dt); updateOutside(dt); updateKarcsi(dt); updateAppliances(dt); updateInventory(); updateSister(dt);
     // walls solid in the first-person view and when zoomed far out (the roof is on then: the house looks whole)
     const r = updateHome(dt, G.petike.pos, fp.on || G.zoom > 1.55);
     if (r !== ep2.room) {
@@ -443,6 +464,7 @@ export function stepEp2(dt) {
     ep2.min = Math.min(MORNING_END, ep2.min + dt * MIN_PER_SEC); hudClock();
     G.usePressed = false; G.qPressed = false; G.kickPressed = G.kickReleased = false; G.invPressed = false;
   }
+  if (G.mode === 'intro') { wakeTick(dt); updateSister(dt); updateOutside(dt); updateHome(dt, wakeupFocus(), false); }   // the opening film (wakeup.js)
   updateViewTurn(dt);
   updateFx(dt); updateCamera(dt); if (fp.on) updateFpsCam(); updateOcclusion(dt); updateBubbles(dt);
   if (G.toastT > 0) { G.toastT -= dt; if (G.toastT <= 0) $('toast').classList.remove('show'); }

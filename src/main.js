@@ -106,7 +106,7 @@ async function boot() {
   buildWorld();
   makeBall();
   const loader = new GLTFLoader();
-  const files = ['petya.glb', 'angi.glb', 'petike_roller.glb', 'petike_foci.glb', 'roller_kicsi.glb'];
+  const files = ['petya.glb', 'angi.glb', 'petike_roller.glb', 'petike_foci.glb', 'roller_kicsi.glb', 'nover.glb'];
   let done = 0; const bar = $('loadbar').firstElementChild;
   let res;
   try {
@@ -115,11 +115,12 @@ async function boot() {
     $('err').innerHTML = 'Nem sikerült betölteni a modelleket (' + (e.message || e) + ').<br>Ellenőrizd, hogy a <code>public/</code> mappában valódi .glb fájlok vannak.';
     setStartLabel('Hiba'); console.error(e); return;
   }
-  const [gPetya, gAngi, gRoller, gFoci, gScooter] = res;
+  const [gPetya, gAngi, gRoller, gFoci, gScooter, gNover] = res;
   rigs.petya = rigFromGLTF(gPetya, CFG.petya);
   rigs.angi = rigFromGLTF(gAngi, CFG.angi);
   rigs.roller = rigFromGLTF(gRoller, CFG.roller);
   rigs.foci = rigFromGLTF(gFoci, CFG.foci);
+  rigs.nover = rigFromGLTF(gNover, CFG.nover);   // Petyus's big sister (part 2)
   // scooter
   G.rollerModel = gScooter.scene; G.rollerModel.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   const sc = new THREE.Group(); sc.add(G.rollerModel); G.rollerModel.scale.setScalar(ROLLER_SCALE); G.rollerModel.rotation.y = Math.PI / 2; G.rollerModel.position.x = 0.07 * ROLLER_SCALE;

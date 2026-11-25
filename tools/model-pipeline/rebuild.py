@@ -11,13 +11,14 @@ exec(open(os.path.join(HERE, 'tpose.py'), encoding='utf-8').read().split('# arm 
 import rig as RG
 from pygltflib import GLTF2
 
-ARMX = {'petya': 0.345, 'angi': 0.22, 'petike_foci': 0.265}   # angi: her slimmer torso (reshape_angi) ends at 0.20
-ARMY = {'petya': (0.77, 1.42), 'angi': (0.95, 1.52), 'petike_foci': (0.58, 1.27)}
+ARMX = {'petya': 0.345, 'angi': 0.22, 'petike_foci': 0.265, 'nover': 0.22}   # angi: her slimmer torso (reshape_angi) ends at 0.20
+ARMY = {'petya': (0.77, 1.42), 'angi': (0.95, 1.52), 'petike_foci': (0.58, 1.27), 'nover': (0.95, 1.52)}
 BODY = {  # torso / leg landmarks: hip = top of the trousers/shorts, knee just below the shorts (or mid-leg for long trousers)
 # (every landmark on a voxel boundary – a multiple of S = 0.04 –, or the faces of a limb would be torn between two bones)
 # legBox (optional): the leg column (|x| from … to, z from … to, above y): there, whatever is outside it belongs to the body
  'petya':       dict(hip=0.76, hipsTop=0.92, spineTop=1.12, spine1Top=1.32, neck=1.52, head=1.60, top=2.0, legX=0.15, legInner=0.06, knee=0.44, ankle=0.12, toeZ=0.2),
  'angi':        dict(hip=0.88, hipsTop=1.08, spineTop=1.20, spine1Top=1.36, neck=1.52, head=1.56, top=2.04, legX=0.10, legInner=0.02, knee=0.48, ankle=0.12, toeZ=0.2),   # lower body rebuilt: reshape_angi
+ 'nover':       dict(hip=0.88, hipsTop=1.08, spineTop=1.20, spine1Top=1.36, neck=1.52, head=1.56, top=2.04, legX=0.10, legInner=0.02, knee=0.48, ankle=0.12, toeZ=0.2),   # Angi's body (reshape_angi), own hair: reshape_nover
  'petike_foci': dict(hip=0.68, hipsTop=0.80, spineTop=0.92, spine1Top=1.08, neck=1.24, head=1.32, top=1.80, legX=0.12, legInner=0.06, knee=0.40, ankle=0.12, toeZ=0.2),
 }
 # Shin widening (y range, raw model metres): the footballer Petike's shin is only 2 voxels wide in the source
@@ -38,7 +39,7 @@ def widen_shins(vox, ctr, legInner, y0, y1):
 # ±0.16, 5 voxels deep, a little bust in front), thin arms (2 wide, 3 deep – thinner than the legs), hips as wide as the bust,
 # plain grey shorts down to mid-thigh, the legs part at 0.86 (longer legs), the thighs taper into the existing shins.
 GREY, GREY_D = (0.25, 0.255, 0.27), (0.16, 0.165, 0.18)   # vertex colours are linear: a mid grey on screen
-def reshape_angi(vox, OFFS):
+def reshape_angi(vox, OFFS, bun_=True):
     I = lambda x: int(round((x - OFFS[0]) / S)); J = lambda y: int(round((y - OFFS[1]) / S)); K = lambda z: int(round((z - OFFS[2]) / S))
     SKIN, SKIN_E = vox[(I(0.08), J(0.40), K(-0.02))], vox[(I(0.12), J(0.40), K(0.02))]   # the shin's edge and middle colours
     def colr(c): return tuple(float(v) for v in c)
@@ -87,9 +88,35 @@ def reshape_angi(vox, OFFS):
             for y in [y0 + 0.04 * n for n in range(int(round((y1 - y0) / 0.04)) + 1)]:
                 if round_ and abs(xi * S + OFFS[0]) > hx - 0.01 and (y < y0 + 0.01 or y > y1 - 0.01): continue   # cut the corners
                 vox[(xi, J(y), K(z))] = colr(c)
+    if not bun_: return vox
     bun(-0.18, 0.08, 1.86, 1.94, TOP_F)                 # the scrunchie
     bun(-0.22, 0.08, 1.82, 1.98, HAIR, True)            # the bun
     bun(-0.26, 0.04, 1.86, 1.94, HAIR_D)                # its back
+    return vox
+
+# Petyus's big sister (the sibling's room, part 2): Angi's body, but long black hair down her back and dark eyes
+def reshape_nover(vox, OFFS):
+    I = lambda x: int(round((x - OFFS[0]) / S)); J = lambda y: int(round((y - OFFS[1]) / S)); K = lambda z: int(round((z - OFFS[2]) / S))
+    reshape_angi(vox, OFFS, bun_=False)
+    BLACK, BLACK_D, BLACK_L = (0.09, 0.08, 0.09), (0.05, 0.045, 0.05), (0.17, 0.15, 0.17)
+    ctr = lambda k: (k[0] * S + OFFS[0], k[1] * S + OFFS[1], k[2] * S + OFFS[2])
+    # the hair (the browns on the head) → black; the light top of the head a little lighter (it catches the light)
+    for k, c in list(vox.items()):
+        x, y, z = ctr(k)
+        if y > 1.56 and c[0] < 0.6 and c[0] > c[2] + 0.1: vox[k] = BLACK_L if y > 2.0 else BLACK
+        # the eyes: the whites become dark brown irises (the pupils stay black)
+        if 1.76 < y < 1.88 and c[0] > 0.95 and c[1] > 0.95 and c[2] > 0.95: vox[k] = (0.28, 0.16, 0.09)
+    # long hair: down the back to the middle of the back (behind the torso, within the shoulders – not to be taken for an arm)
+    for y in [1.26 + 0.04 * n for n in range(18)]:
+        for xi in range(I(-0.20), I(0.20) + 1):
+            vox[(xi, J(y), K(-0.14))] = BLACK if y > 1.3 else BLACK_D
+    for y in [1.66 + 0.04 * n for n in range(8)]:   # and over the back of the head, a little fuller
+        for xi in range(I(-0.24), I(0.24) + 1): vox[(xi, J(y), K(-0.18))] = BLACK
+    # the locks in front of the shoulders: down beside the face to the shoulders
+    for sx in (-0.24, 0.24):
+        for y in [1.56 + 0.04 * n for n in range(10)]:
+            for z in (-0.10, -0.06, -0.02):
+                vox[(I(sx), J(y), K(z))] = BLACK
     return vox
 
 # Petya's head was bald at the back (skin from the nape up to the crown): short hair there – the back face and, behind the
@@ -153,12 +180,13 @@ def greedy(vox, keyfn):
     greedy.bones = vb
     return np.array(pos, np.float32), np.array(nor, np.float32), np.array(col, np.float32), np.array(idx, np.uint32)
 
-for name in ['petya', 'angi', 'petike_foci']:
-    src_path = os.path.join(SRC, f'{name}.glb')
+for name in [a for a in sys.argv[1:] if not a.startswith('-')] or ['petya', 'angi', 'petike_foci', 'nover']:
+    src_path = os.path.join(SRC, ('angi' if name == 'nover' else name) + '.glb')
     g0 = GLTF2().load(src_path); P0 = acc(g0, g0.meshes[0].primitives[0].attributes.POSITION); mn = P0.min(0)
     OFFS = np.array([(mn[0] % S) + S / 2, (mn[1] % S) + S / 2, (mn[2] % S) + S / 2])
     g, vox = voxelize(src_path); fill(vox)
     if name == 'angi': reshape_angi(vox, OFFS)
+    if name == 'nover': reshape_nover(vox, OFFS)
     if name == 'petya': reshape_petya(vox, OFFS)
     ctr = lambda k: np.array(k) * S + OFFS
     if name in SHIN_WIDEN: print(f'{name}: lábszár szélesítve, +{widen_shins(vox, ctr, BODY[name]["legInner"], *SHIN_WIDEN[name])} voxel')
