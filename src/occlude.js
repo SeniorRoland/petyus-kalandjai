@@ -49,8 +49,8 @@ function release(it, g) {
 // every frame (main.js), in play
 export function updateOcclusion(dt) {
   viewDir();
-  const P = G.petike && G.petike.pos;
-  const active = P && G.mode === 'play' && !G.fps;   // not in part 2's first-person view
+  const P = G.occludeAt || (G.petike && G.petike.pos);   // (G.occludeAt: a cutscene's subject – part 2's opening film)
+  const active = P && (G.mode === 'play' || !!G.occludeAt) && !G.fps;   // not in part 2's first-person view
   if (active) {
     // the nearby tall props in front of him: re-listed a few times a second (cheap), tested every frame
     if ((scanT -= dt) <= 0) { scanT = 0.25; candidates = INSTANCES.filter((it) => it.h >= MIN_H && Math.abs(it.x - P.x) < NEAR && Math.abs(it.z - P.z) < NEAR); }

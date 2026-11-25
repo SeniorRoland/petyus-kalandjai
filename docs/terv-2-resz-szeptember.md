@@ -1,7 +1,7 @@
 # 2. rész (Szeptember – Otthon és iskola): terv
 
 Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a hangok és mind a 3 reggeli csibészség. ◐ A naptár és az óra kész, a napok léptetése még nem. ⬜ Hátravan: átöltözés és indulás, az iskola (4 csibészség), az otthoni délután (3 csibészség), a hétvégék, tesztelés telefonon.
+**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ◐ A naptár és az óra kész, a napok léptetése még nem. ⬜ Hátravan: átöltözés és indulás, az iskola (4 csibészség), az otthoni délután (3 csibészség), a hétvégék, tesztelés telefonon.
 
 ## Röviden
 
@@ -105,6 +105,20 @@ Az otthoni délutánnal együtt (16:00–22:00).
 
 ---
 
+## Filmes nyitány: az ébresztés  ✅ kész
+
+- **Megvalósítás** (`src/ep2/wakeup.js`, az ágyak: `src/ep2/sleep.js`): új játék elején (folytatáskor nem; fejlesztéshez `?resz=2&nyitany=1`). Filmes kép (csíkok, szemcse), Enter / Kihagyás → azonnal a végállapot.
+- **Menet:**
+  1. Felirat: **Tököl** · a nap dátuma és neve (pl. „2026. szeptember 2. · szerda”).
+  2. Sötét hálószoba, holdfény; apa és anya alszik a franciaágyban betakarózva, apa hatalmasat horkol.
+  3. 6:00-kor megszólal apa éjjeliszekrényén az ébresztőóra (piros 6:00, villog, zörög, nagyon hangos).
+  4. Apa felriad, felül, kezét feltartva kiabál: „MEGADOM MAGAM! MEGADOM MAGAM!!” – anya is felül, lecsapja az órát, leszidja, és Petyus felébresztésére küldi.
+  5. Apa felkel, kioson (anya visszafordul aludni), hajnalodik; beoson Petyus szobájába (az ajtók kinyílnak).
+  6. Óvatos ébresztgetés: „Petyus… kisfiam… ébresztő…” – „Mmmm… még öt percet…”, Petyus elfordul.
+  7. Apa lufit fúj, Petyus feje mellé tartja és kidurrantja: PUKK! Petyus felriad: „ÁÁÁÁ!! MI VOLT EZ?!” – „Jó reggelt, bajnok!”
+  8. Főcím (Petyus kalandjai · 2. rész · Szeptember), majd indul az otthoni reggel (Angi: „Na végre fent vagy…”).
+- **Technika:** saját kis idővonal (`W`, `until`, kihagyáskor elutasít), a kamera testmagasságra keretez (`atHeight`), a szereplő előtti magas bútor áttetsző (`G.occludeAt` → `occlude.js`), a falak a jelenet tárgya szerint fakulnak.
+
 ## A reggel vége, a késés  ◐ részben
 
 - ✅ A csibészségek késése összeadódik, a HUD-on ⏰ +x perc.
@@ -169,7 +183,8 @@ A lakás egyszintes, nagyjából **13 m × 7,5 m**, téglafalakkal, két erkéll
 
 ### Szereplők otthon reggel (első kör)
 
-- **Petyus:** az ágyából kel a kis szobában, a játékos irányítja.
+- **Petyus:** az ágyából kel a kis szobában (a nyitány után), a játékos irányítja. ✅ A WC-be pisilni is tud (lent).
+- **Petyus nővére:** ✅ a testvér szobájában (zárva) alszik a franciaágyban, betakarózva, időnként forgolódik (`sister.js`; modell: `nover.glb` – Angi testéből, hosszú fekete hajjal, sötét szemmel, `reshape_nover` a modell-pipeline-ban).
 - **Petya (apa):** a konyhában kávét főz / újságot olvas az asztalnál, közben instruál („Fogmosás! Öltözz! Hol a tolltartód?”).
 - **Angi (anya):** reggelit készít, uzsonnát csomagol, a folyosón keresi a kulcsot.
 - **Ruhák:** reggel **mindhárman pizsamában** vannak; később átöltöznek – Petyus iskolai ruhába, Petya és Angi munkaruhába. Megvalósítás: a meglévő modellek színezett változatai (a ruha anyagszíneinek cseréje, esetleg minta), vagy új modellváltozatok a modell-pipeline-nal – az első lépésben a pizsama kell.
@@ -238,3 +253,10 @@ Később részletezzük (osztályterem, folyosó, udvar/tornaterem, ebédlő?). 
 - [x] **Petyus szobája:** a táska az íróasztal mellé, a roller a szekrény és a fal közé, a bukósisakkal együtt. ✅ A táska az íróasztal déli végénél, a keleti falnál (`home.js`); a park rollere (a `roller_kicsi.glb` másolata) a szekrény és a keleti fal között áll, kicsit megdőlve, a kormányán lóg a kék, narancs csíkos bukósisak (`buildScooterCorner` az `appliances.js`-ben, ütközővel).
 - [x] **Angi a hűtőnél:** ha Petyus nincs a hűtő előtt, Angi odamegy, kinyitja, nézelődik benne (előrehajol, benyúl), majd becsukja és visszamegy a tűzhelyhez. ✅ `momRoutine` az `ep2.js`-ben; a hűtő kódból is nyitható (`fx.fridge.setOpen`); Karcsi ilyenkor visít.
 - [x] **Ha Petyus a hűtő előtt áll:** Angi nem megy oda, hanem a főzőlaphoz, a mosogatóhoz vagy a vízforralóhoz (`MOM_JOBS`); ha útközben áll oda Petyus, Angi meggondolja magát. ✅
+
+## Javítandók (felvéve: 2026. 11. 25.)  ✅ mind kész
+
+- [x] **A testvér szobája:** a nyugati falon felesleges ablak volt. ✅ Az ablak megszűnt, a helyén az ágy fölött három bekeretezett kép (`home.js`: `WALLS`, `PICTURES`).
+- [x] **Petyus nővére:** feküdjön az ágyban betakarózva, időnként forgolódjon; Angi karakteréből, hosszú fekete hajjal és sötét szemekkel. ✅ `nover.glb` (`rebuild.py`: `reshape_nover`), `sister.js` + `sleep.js` (hanyatt fekszik, időnként oldalra fordul, a takaró vele púposodik és susog).
+- [x] **Pisilés a WC-be:** jobbra-balra célozva, néha mellé. ✅ `pee.js`: felnyitott fedélnél Szóköz (érintőn PISILÉS); A / D (botkormány) célzás, a sugár magától is kalandozik, a végén elfogy a nyomás; ami mellé megy, az tócsa a padlón, lent hagyott ülőkénél az ülőkére is jut; Petyus megjegyzése, Angi kiabál; lehúzás után újra lehet.
+- [x] **Bevezető film:** Tököl + dátum és a nap neve, horkoló apa a sötétben, 6:00-s ébresztőóra, „Megadom magam!”, anya leszidja, apa felébreszti Petyust – végül lufidurrantással. ✅ Lásd „Filmes nyitány: az ébresztés” (`wakeup.js`).
