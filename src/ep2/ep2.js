@@ -26,7 +26,7 @@ import { buildWardrobe, dress, dressLoad, dressSave, dressTick, hurryParents, le
 import { buildSister, updateSister } from './sister.js';
 import { canPee, pee, peeFlushed, peeLabel, peeTick, startPee } from './pee.js';
 import { startWakeup, wakeTick, wakeupFocus } from './wakeup.js';
-import { BOUNDS as SCHOOL_BOUNDS, SCHOOL_START, buildSchool, nearGate, schoolFloor, schoolRoom, updateSchool } from './school.js';
+import { BOUNDS as SCHOOL_BOUNDS, SCHOOL_START, buildSchool, schoolAction, schoolFloor, schoolRoom, setSchoolFps, toggleSeat, updateSchool } from './school.js';
 import { starsFor } from '../mischief.js';
 import { cf, coffeeTick, dadBusy } from './coffee.js';
 import { dadChasing, momBusy, runawayTick, rw } from './runaway.js';
@@ -190,19 +190,19 @@ export function startEp2() {
   const resumed = !forceNew && loadEp2();
   G.mode = 'play'; G.pstate = 'home'; G.petyaMode = 'home';
   // the base framing (zoom 1) shows most of the flat; zooming out stops at 2× (the house and the yard), zooming in is free
-  G.viewSizeTarget = G.viewSize = SCHOOL ? 9 : 8; G.zoom = 1; G.zoomMax = 2;
+  G.viewSizeTarget = G.viewSize = 8; G.zoom = 1; G.zoomMax = 2;   // (the school too: zoomed out its walls are solid, the roof on)
   camTarget.set(G.petike.pos.x, SCHOOL ? 0 : FY, G.petike.pos.z);
   // HUD, help, tab title
   const ep = EPISODES[1];
   document.title = `${SERIES} – ${ep.n}. rész: ${ep.month}`;
   $('hud').innerHTML = '<span class="chip">📅 <span id="e2Date"></span></span> <span class="chip">🕕 <span id="e2Clock"></span></span> <span class="chip" id="e2RoomChip">📍 <span id="e2Room"></span></span> <span class="chip" id="e2Late" style="display:none">⏰ +<span id="e2LateN"></span> perc</span>';
   $('help').innerHTML = SCHOOL
-    ? '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>a kapunál: hazaindulás</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>'
+    ? '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>leülés a helyedre (6. b, első pad) · a kapunál: hazaindulás</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>'
     : '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat: ajtó nyitása / csukása, villany, kopogás' + (EVE ? ', lefekvés (Petyus ágyánál)' : ', indulás (a bejárati ajtónál)') + '</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>E · F</dt><dd>tárgy felvétele · a kiválasztott lerakása / bögre töltése</dd><dt>1–9 · Tab</dt><dd>tárgy kiválasztása</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
   for (const id of ['kickBtn', 'runBtn']) { const el = $(id); if (el) el.style.display = id === 'kickBtn' ? 'none' : ''; }
   $('skipBtn').style.display = 'none'; $('hud').style.display = 'block'; $('help').style.display = isTouch ? 'none' : 'block';
   if (isTouch) $('touch').style.display = 'block';
-  if (!SCHOOL) for (const [t, ttl, fn] of [['🧱', 'Falak: átlátszó / lesüllyedő (T)', toggleWalls], ['👁', 'Belső nézet (V)', () => toggleFps()]]) {
+  for (const [t, ttl, fn] of [['🧱', 'Falak: átlátszó / lesüllyedő (T)', toggleWalls], ['👁', 'Belső nézet (V)', () => toggleFps()]]) {
     const b = document.createElement('button'); b.className = 'btn'; b.textContent = t; b.title = ttl; b.onclick = (e) => { fn(); e.currentTarget.blur(); };
     $('topright').insertBefore(b, $('menuBtn'));   // ⟲ ⟳ 🧱 👁 🏠 📒 🔊
   }
@@ -257,7 +257,7 @@ export function toggleFps(on = !fp.on) {
   fp.on = on; G.fps = on;
   let xh = $('xhair'); if (!xh) { xh = document.createElement('div'); xh.id = 'xhair'; xh.style.cssText = 'position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.65);z-index:14;pointer-events:none;'; document.body.appendChild(xh); }
   xh.style.display = on ? 'block' : 'none';
-  ceiling.visible = on; G.petike.rig.root.visible = !on;
+  if (ceiling) ceiling.visible = on; setSchoolFps(on && ep2.phase === 'school'); G.petike.rig.root.visible = !on;
   if (on) {
     fp.yaw = G.petike.heading; fp.pitch = -0.1;
     fpsCam.aspect = window.innerWidth / window.innerHeight; fpsCam.updateProjectionMatrix(); screen.cam = fpsCam;
@@ -297,14 +297,13 @@ function lookAngle(w, size = 0.12) {
 }
 function updateFpsCam() {
   const a = G.petike, fx = Math.sin(fp.yaw), fz = Math.cos(fp.yaw), cp = Math.cos(fp.pitch);
-  const eye = FY + 1.32 - (a.sit || 0) * 0.42;   // lower when he sits (the armchair)
+  const eye = (ep2.phase === 'school' ? 0 : FY) + 1.32 - (a.sit || 0) * 0.42;   // lower when he sits (the armchair)
   fpsCam.position.set(a.pos.x + fx * 0.1, eye, a.pos.z + fz * 0.1);
   fpsCam.lookAt(fpsCam.position.x + fx * cp, eye + Math.sin(fp.pitch), fpsCam.position.z + fz * cp);
 }
 
 window.addEventListener('keydown', (e) => {
   if (G.episode !== 2 || G.mode !== 'play' || e.repeat) return;
-  if (ep2.phase === 'school') { if (e.code === 'KeyQ') turnView(1); if (e.code === 'KeyR') turnView(-1); return; }
   if (e.code === 'KeyV') toggleFps();
   if (e.code === 'KeyF') G.invPressed = true;
   if (/^Digit[1-9]$/.test(e.code)) selectItem(+e.code.slice(5) - 1);
@@ -341,13 +340,13 @@ function movePetyus(dt) {
     const moveKey = keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || (!fp.on && (keys.ArrowLeft || keys.ArrowRight)) || touch.active;
     if (moveKey && a.sit > 0.95) seating.on = false;
     else {
-      a.seatH = seating.seatH; a.seatBase = FY; a.sitTarget = 1;
-      a.pos.x = damp(a.pos.x, seating.x, 10, dt); a.pos.z = damp(a.pos.z, seating.z + 0.06, 10, dt);   // a little forward: a child's legs reach out over the edge
+      a.seatH = seating.seatH; a.seatBase = seating.base ?? FY; a.sitTarget = 1;
+      a.pos.x = damp(a.pos.x, seating.x, 10, dt); a.pos.z = damp(a.pos.z, seating.z + (seating.chair ? 0 : 0.06), 10, dt);   // a little forward: a child's legs reach out over the edge
       if (!fp.on) a.heading = a.targetHeading = dampAngle(a.heading, seating.h, 10, dt);
       a.animate(dt, false, 0);
       // in the armchair the legs are stretched out in front, slightly raised (knees straight – the feet point up, over the seat's edge)
       const r = a.rig, k = a.sit * a.sit * (3 - 2 * a.sit);
-      for (let i = 0; i < 2; i++) { r.hip[i].rotation.x = lerp(r.hip[i].rotation.x, -1.62, k); r.knee[i].rotation.x = lerp(r.knee[i].rotation.x, 0.04, k); if (r.foot) r.foot[i].rotation.x = lerp(r.foot[i].rotation.x, 0, k); }
+      if (!seating.chair) for (let i = 0; i < 2; i++) { r.hip[i].rotation.x = lerp(r.hip[i].rotation.x, -1.62, k); r.knee[i].rotation.x = lerp(r.knee[i].rotation.x, 0.04, k); if (r.foot) r.foot[i].rotation.x = lerp(r.foot[i].rotation.x, 0, k); }
       if (holdingController()) for (let i = 0; i < 2; i++) { r.sh[i].rotation.x = -0.85; r.sh[i].rotation.z = i === 0 ? 0.3 : -0.3; if (r.elbow) r.elbow[i] = 0.95; }
       a.sync(); pvel.set(0, 0, 0);
       return;
@@ -582,11 +581,12 @@ export function stepEp2(dt) {
   G.clockT += dt;
   door.knockT -= dt;
   if (G.mode === 'play' && ep2.phase === 'school') {   // the school (school.js): walking about, the gate home
-    movePetyus(dt); updateSchool(dt);
+    movePetyus(dt); updateSchool(dt, ep2.min, fp.on || G.zoom > 1.55);   // (walls solid, the roof on: first person or zoomed out)
     const P = G.petike.pos, room = schoolRoom(P.x, P.z);
-    setOutdoor(room === 'Iskola – udvar' || room === 'Az utca' ? 1 : 0.4);
+    setOutdoor(room === 'Iskola – udvar' || room === 'Az utca' ? 1 : fp.on ? 0.15 : 0.4);
     if (room !== ep2.room) { ep2.room = room; $('e2Room').textContent = room; }
-    if (nearGate()) { setPrompt(isTouch ? 'HASZNÁL – hazaindulás' : 'E – hazaindulás'); if (G.usePressed) leaveSchool(); }
+    const act = schoolAction();   // the gate (home), Petyus's own place (sit down / stand up)
+    if (act) { setPrompt(isTouch ? act.txt.replace(/^E – /, 'HASZNÁL – ') : act.txt); if (G.usePressed) { if (act.gate) leaveSchool(); else toggleSeat(seating); } }
     else setPrompt('');
     ep2.min = Math.min(PHASES.school.end, ep2.min + dt * minPerSec()); hudClock();
     G.usePressed = false; G.qPressed = false; G.kickPressed = G.kickReleased = false; G.invPressed = false;
