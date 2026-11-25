@@ -191,7 +191,7 @@ const lists = new Map();
 // a voxel prop: in the flat (y from its floor, with a collider) or outside ({ ground: true }: on the ground, no collider)
 export const SOLO = {};   // single furniture meshes that move (dad's chair): { mesh, pivot, col }
 export function put(id, x, z, rot = 0, v = 0, o = {}) {
-  if (o.ground) o.noCol = true;
+  if (o.ground && !o.col) o.noCol = true;   // (outside props have no colliders; col: true keeps it – the school's furniture)
   if (o.solo) {   // its own mesh in a pivot at the floor (it can tip over)
     const pivot = new THREE.Group(); pivot.position.set(x, FY + (o.y || 0), z); scene.add(pivot);
     const mesh = new THREE.Mesh(getGeometry(id, v), vcMat); mesh.rotation.y = rot; mesh.castShadow = mesh.receiveShadow = true; pivot.add(mesh);

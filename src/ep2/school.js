@@ -17,8 +17,10 @@ import { CAM_OFF, scene } from '../scene.js';
 import { G } from '../state.js';
 import { say } from '../ui.js';
 import { R, V3, damp, pick } from '../util.js';
-import { addBoxCol, partMesh } from '../world.js';
-import { buildFurniture, put } from './home.js';
+import { addBoxCol, partMesh, vcMat } from '../world.js';
+import { noise, soundAt, tone } from '../audio.js';
+import { buildFurniture, put, wallView } from './home.js';
+import { WRITERS, boardText, hungaryMap, makeClock, portrait, timesTable, timetable } from './posters.js';
 
 const FLOOR = 3.3, TW = 0.25;
 // the main building (only its ground floor is inside the game): x 0 … 36, z −12 … 0; the corridor along its south side
@@ -88,11 +90,22 @@ function wall(x0, z0, x1, z1, open = [], outer = 0) {   // outer: ±1 – which 
     }
   });
   m.castShadow = true; m.receiveShadow = true; g.add(m);
+  const mat = vcMat.clone(); mat.transparent = true; m.material = mat;   // its own material: it can fade on its own
   const col = (a, c) => { if (c - a < 0.01) return; if (alongX) addBoxCol(a, z0, c, z1, FLOOR); else addBoxCol(x0, a, x1, c, FLOOR); };
   let at = a0;
   for (const o of ops) { col(at, a0 + o.a); if (o.win) col(a0 + o.a, a0 + o.b); at = a0 + o.b; }
   col(at, a0 + len);
-  walls.push({ g, alongX, c: alongX ? (z0 + z1) / 2 : (x0 + x1) / 2, s: 1 });
+  walls.push({ g, alongX, c: alongX ? (z0 + z1) / 2 : (x0 + x1) / 2, s: 1, o: 1, mats: [mat], pics: [] });
+}
+// things hung on a wall (the board, pictures, coats): they fade with it, and are put away while it is sunk.
+// axis 'x': a wall running along z at x = at; 'z': a wall running along x at z = at. No such wall (the orange block): just there
+function onWall(meshes, axis, at) {
+  const w = walls.find((q) => q.alongX === (axis === 'z') && Math.abs(q.c - at) < 0.2);
+  for (const m of meshes) {
+    if (!w) { scene.add(m); continue; }
+    m.material = m.material.clone(); m.material.transparent = true;
+    w.g.add(m); w.mats.push(m.material); w.pics.push(m);
+  }
 }
 function pband(b, alongX, face, out, a, c) {
   if (c - a < 0.01) return;
@@ -104,10 +117,10 @@ let upper = null, low = null;   // the two upper floors and the roof: hidden whi
 function buildMain() {
   const W = (a, b) => ({ a, b, win: true }), D = (a, b) => ({ a, b });
   const { x0, x1, z0, z1 } = SCHOOL;
-  const classWins = []; for (let x = 1.4; x < 35; x += 3.0) classWins.push(W(x, x + 2.2));
+  const classWins = []; for (let r = 0; r < 3; r++) for (const x of [1.5, 4.9, 8.3]) classWins.push(W(r * 12 + x, r * 12 + x + 2.2));   // three per room (none at the partitions)
   wall(x0, z0 - TW, x1 + TW, z0, classWins, -1);                                                      // north (the classrooms' windows)
   wall(x0, z1, x1 + TW, z1 + TW, [D(1.2, 4.0), W(6.2, 8.4), W(9.6, 11.8), W(15.4, 17.6), W(21.6, 23.8), W(27.4, 29.6), W(31.6, 33.8)], 1);   // south: the entrance, corridor windows
-  wall(x1, z0, x1 + TW, z1, [W(2.4, 4.6), W(6.2, 8.4)], 1);                                           // east
+  wall(x1, z0, x1 + TW, z1, [W(9.9, 11.7)], 1);                                                       // east: a window only at the corridor (the last room's board is not there, but its bookcases are)
   // inside: the corridor's north wall with the classroom doors, the walls between the rooms
   wall(x0, CORR - 0.12, x1, CORR, [D(4.6, 5.6), D(16.6, 17.6), D(28.6, 29.6)]);
   wall(11.94, z0, 12.06, CORR - 0.12); wall(23.94, z0, 24.06, CORR - 0.12);
@@ -294,76 +307,117 @@ function buildSquare() {
   }));
   for (const [x, z, w, d] of [[-12, 14, 4.5, 1.0], [-2, 15, 6, 1.0], [8, 14, 4.5, 1.0], [-14.5, 4, 1.0, 4]]) addBoxCol(x - w / 2, z - d / 2, x + w / 2, z + d / 2, 0.5);
   for (const x of [0.3, 4.9]) addBoxCol(x - 0.25, 3.75, x + 0.25, 4.25, 0.9);
-  const g = { ground: true };
+  const g = { ground: true, col: true };
   // plane trees on the square and along the buildings (big oaks stand in for them), birches and pines round the field
-  for (const [x, z, s] of [[-12, 9, 1.4], [-5, 11, 1.3], [9, 8, 1.4], [12.5, -14, 1.3], [-14, -8, 1.4], [-6, -20, 1.2], [36, 6, 1.3], [44, -6, 1.4], [44, 12, 1.3], [-12, 30, 1.3], [-6, 38, 1.2], [50, 30, 1.4], [56, 18, 1.3], [-14, -38, 1.3], [44, -50, 1.2], [58, -12, 1.3]]) put('oak', x, z, x * 0.7, Math.abs(Math.round(x)) % 4, { ground: true, s });
-  for (const [x, z] of [[-14, 22], [0, 41], [24, 41], [48, 40], [-16, -30], [2, -54], [36, -54], [60, -50], [60, 0]]) put('birch', x, z, x, Math.abs(Math.round(z)) % 4, { ground: true, s: 1.1 });
-  for (const [x, z] of [[-16, 40], [62, 40], [62, -56], [-16, -56]]) put('pine', x, z, x, 1, { ground: true, s: 1.2 });
+  for (const [x, z, s] of [[-12, 9, 1.4], [-5, 11, 1.3], [9, 8, 1.4], [12.5, -14, 1.3], [-14, -8, 1.4], [-6, -20, 1.2], [36, 6, 1.3], [44, -6, 1.4], [44, 12, 1.3], [-12, 30, 1.3], [-6, 38, 1.2], [50, 30, 1.4], [56, 18, 1.3], [-14, -38, 1.3], [44, -50, 1.2], [58, -12, 1.3]]) put('oak', x, z, x * 0.7, Math.abs(Math.round(x)) % 4, { ground: true, col: true, s });
+  for (const [x, z] of [[-14, 22], [0, 41], [24, 41], [48, 40], [-16, -30], [2, -54], [36, -54], [60, -50], [60, 0]]) put('birch', x, z, x, Math.abs(Math.round(z)) % 4, { ground: true, col: true, s: 1.1 });
+  for (const [x, z] of [[-16, 40], [62, 40], [62, -56], [-16, -56]]) put('pine', x, z, x, 1, { ground: true, col: true, s: 1.2 });
   for (const [x, z] of [[-10, 2.2], [11, 17], [34, 17], [-16, 17]]) put('bush', x, z, x, Math.abs(x) % 4, { ground: true, s: 1.0 });
   for (const [x, z] of [[-16, 2], [-3, 17.5], [13, 17.5], [30, 19.6], [38, -12], [-16, -16]]) put('lamp', x, z, 0, 0, g);
 }
 
 // ---------------------------------------------------------------- inside: the classrooms and the corridor
+// The board hangs on each room's west wall (no windows there – the default camera from the south-east looks at it); the pupils
+// face west, the windows (north) are on their right; under the windows only radiators and low plants (lower than the sill).
+const ROOMS3 = [
+  { x0: 0, cls: '6. b', kind: 'ours', board: ['Matematika – Törtek', '3/4 + 1/8 = ?        2 1/2 · 4 = ?', 'Házi feladat: 47. oldal, 3–5.'] },
+  { x0: 12, cls: '6. a', kind: 'other', board: ['Irodalom – Arany János: Toldi', '„Ég a napmelegtől a kopár szik sarja…”', 'Memoriter: az első versszak'] },
+  { x0: 24, cls: '5. b', kind: 'other', board: ['Természettudomány', 'A térkép: méretarány, jelek', '1 : 100 000 → 1 cm = 1 km'] },
+];
 const desks = [];   // Petyus's class: where the pupils sit { x, z }
-function buildClassroom(x0, kind) {
-  const cx = x0 + 6, P = Math.PI, z0 = SCHOOL.z0, ours = kind === 'ours';
-  scene.add(partMesh((b) => {
-    b.bx(cx, 0.95, z0 + 0.14, 4.6, 1.3, 0.06, C.boardFrame, 0, 0); b.bx(cx, 1.0, z0 + 0.18, 4.4, 1.2, 0.04, C.board, 0, 0.02);
-    b.bx(cx, 0.92, z0 + 0.22, 4.4, 0.04, 0.12, C.boardFrame, 0, 0);
-    b.bx(x0 + 11.4, 0, -7.0, 0.5, 2.0, 2.4, 0xb5793f, 0, 0.03);
-    for (let k = 0; k < 4; k++) b.bx(x0 + 0.35, 0.3 + k * 0.45, -7.4, 0.4, 0.04, 3.0, 0xd8c6a2, 0, 0);
-    for (let k = 0; k < 4; k++) for (let n = 0; n < 9; n++) b.bx(x0 + 0.35, 0.34 + k * 0.45, -8.7 + n * 0.3, 0.26, R(0.22, 0.32), 0.16, pick([0xe63946, 0x3a86ff, 0xffca3a, 0x8ac926, 0xff70a6, 0x6a4c93]), 0, 0.03);
-    for (let n = 0; n < 7; n++) b.bx(x0 + 1.2 + n * 1.55, 1.5, CORR - 0.2, 0.9, 0.65, 0.03, pick([0xfff3c4, 0xd8f0ff, 0xffe0ec, 0xe2ffd8]), 0, 0.02);
-    b.bx(cx, 2.45, z0 + 0.16, 0.36, 0.36, 0.05, 0xffffff, 0, 0);
-  }));
-  addBoxCol(x0 + 11.15, -8.2, x0 + 11.65, -5.8, 2);
-  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 140; const c = cv.getContext('2d');
-  c.fillStyle = '#2f4f3f'; c.fillRect(0, 0, 512, 140); c.fillStyle = '#f2f2ea'; c.font = '34px "Patrick Hand", sans-serif';
-  const txt = { ours: ['Szeptember – Matematika', '7 + 8 = ?     12 – 5 = ?'], a4: ['Szeptember', 'Üdv a 4. a osztályban!'], a2: ['Olvasás', 'Ősz – alma – dió – szilva'] }[kind];
-  c.fillText(txt[0], 24, 50); c.fillText(txt[1], 24, 104);
-  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
-  const bd = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 1.16), new THREE.MeshBasicMaterial({ map: tex })); bd.position.set(cx, 1.6, z0 + 0.21); scene.add(bd);
-  put('desk', cx + 1.6, z0 + 1.4, P, 1, { ground: true }); put('chair', cx + 1.6, z0 + 0.8, 0, 1, { ground: true });
-  for (const z of [-8.6, -6.7, -4.8]) for (const dx of [-3.4, 0, 3.4]) {
-    put('desk', cx + dx, z, 0, 0, { ground: true });
+export const seat = { x: 0, z: 0 };   // Petyus's own place (his chair in the 6. b)
+const clocks = [];
+function buildClassroom(r) {
+  const x0 = r.x0, z0 = SCHOOL.z0, ours = r.kind === 'ours', W = -Math.PI / 2, E = Math.PI / 2, bz = -7.3;
+  const wx = x0 === 0 ? 0 : x0 + 0.06;   // the west wall's inner face (the first room: the orange block's wall)
+  // the board, its chalk writing, the clock above it – they belong to the west wall (they fade / sink with it)
+  const board = partMesh((b) => {
+    b.bx(wx + 0.03, 0.95, bz, 0.06, 1.3, 4.6, C.boardFrame, 0, 0); b.bx(wx + 0.06, 1.0, bz, 0.04, 1.2, 4.4, C.board, 0, 0.02);
+    b.bx(wx + 0.1, 0.92, bz, 0.12, 0.04, 4.4, C.boardFrame, 0, 0);
+    for (let k = 0; k < 4; k++) b.bx(wx + 0.12, 0.96, bz - 1.6 + k * 0.3, 0.03, 0.02, 0.08, 0xf4f4f0, 0, 0);   // chalk sticks
+    b.bx(wx + 0.12, 0.96, bz + 1.4, 0.05, 0.04, 0.12, 0x8a6a4a, 0, 0);                                       // the sponge
+  });
+  const txt = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 1.16), new THREE.MeshBasicMaterial({ map: boardText(r.board), transparent: true })); txt.position.set(wx + 0.085, 1.6, bz); txt.rotation.y = E;
+  const ck = makeClock(); clocks.push(ck);
+  const clock = new THREE.Mesh(new THREE.CircleGeometry(0.22, 24), new THREE.MeshBasicMaterial({ map: ck.tex, transparent: true })); clock.position.set(wx + 0.05, 2.62, bz); clock.rotation.y = E;
+  onWall([board, txt, clock], 'x', wx);
+  // pictures: beside the board writers' portraits and the times table; on the back and corridor walls more portraits,
+  // the map, the timetable
+  const pic = (texture, w, h, x, y, z, face) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshLambertMaterial({ map: texture, transparent: true })); m.position.set(x, y, z); m.rotation.y = face; return m; };
+  const i0 = (x0 / 12) * 3;
+  onWall([pic(portrait(WRITERS[i0 % WRITERS.length]), 0.5, 0.66, wx + 0.02, 1.75, -11.1, E), pic(portrait(WRITERS[(i0 + 1) % WRITERS.length]), 0.5, 0.66, wx + 0.02, 1.75, -10.4, E),
+    pic(timesTable(), 1.0, 1.1, wx + 0.02, 1.55, -3.8, E)], 'x', wx);
+  const sw = CORR - 0.12 - 0.012;   // the corridor wall's classroom face
+  onWall([pic(timetable(), 1.05, 0.8, x0 + 2.0, 1.6, sw, Math.PI), pic(hungaryMap(), 1.6, 1.06, x0 + 8.4, 1.6, sw, Math.PI),
+    pic(portrait(WRITERS[(i0 + 2) % WRITERS.length]), 0.5, 0.66, x0 + 6.4, 1.7, sw, Math.PI), pic(portrait(WRITERS[(i0 + 3) % WRITERS.length]), 0.5, 0.66, x0 + 10.4, 1.7, sw, Math.PI),
+    pic(portrait(WRITERS[(i0 + 4) % WRITERS.length]), 0.5, 0.66, x0 + 11.1, 1.7, sw, Math.PI)], 'z', CORR - 0.06);
+  // the teacher's desk by the board (she sits west of it, facing the class), the pupils' desks: 3 rows × 3, two chairs each
+  put('desk', x0 + 1.9, -9.6, W, 0, { ground: true, col: true });   // (variant 0: the one with the monitor – the teacher's) put('chair', x0 + 1.32, -9.6, E, 1, { ground: true, col: true });
+  for (const [k, x] of [[0, 4.3], [1, 6.3], [2, 8.3]]) for (const z of [-9.9, -7.3, -4.7]) {
+    put('desk', x0 + x, z, E, 1, { ground: true, col: true });   // (variant 1: a plain desk)
     for (const s of [-0.3, 0.3]) {
-      put('chair', cx + dx + s, z + 0.55, P, ours ? 0 : 2, { ground: true, noCol: true });
-      if (ours) desks.push({ x: cx + dx + s, z: z + 0.55 });
+      put('chair', x0 + x + 0.55, z + s, W, ours ? 0 : 2, { ground: true, col: true });
+      if (ours) desks.push({ x: x0 + x + 0.55, z: z + s, row: k });
     }
   }
-  for (const x of [x0 + 2.5, x0 + 9.5]) put('potted_plant', x, z0 + 0.4, 0, 0, { ground: true });
-  put('bin', x0 + 11.4, z0 + 0.5, 0, 0, { ground: true });
+  // the back (east) wall: two bookcases and low cupboards; under the north windows radiators and low plants
+  const ex = x0 + 11.75;
+  put('bookshelf', ex, -10.9, W, 0, { ground: true, col: true }); put('bookshelf', ex, -9.8, W, 1, { ground: true, col: true });
+  put('sideboard', ex - 0.05, -5.0, W, 0, { ground: true, col: true }); put('sideboard', ex - 0.05, -3.8, W, 1, { ground: true, col: true });
+  for (const wxx of [2.6, 6.0, 9.4]) put('radiator', x0 + wxx, z0 + 0.12, 0, 0, { ground: true, col: true });
+  put('potted_plant', x0 + 0.5, z0 + 0.4, 0, 0, { ground: true, col: true }); put('potted_plant', x0 + 11.4, z0 + 0.45, 0, 0, { ground: true, col: true });
+  put('bin', x0 + 0.5, -3.3, 0, 0, { ground: true, col: true });
 }
 function buildCorridor() {
-  scene.add(partMesh((b) => {
-    for (let x = 0.8; x < 35.5; x += 0.6) { if (Math.abs(x - 5.1) < 0.8 || Math.abs(x - 17.1) < 0.8 || Math.abs(x - 29.1) < 0.8) continue; b.bx(x, 1.55, CORR + 0.05, 0.05, 0.05, 0.12, 0x555555, 0, 0); if (Math.round(x * 10) % 3) b.bx(x, 0.9, CORR + 0.1, 0.38, 0.65, 0.12, pick([0xe63946, 0x3a86ff, 0xffca3a, 0x2a9d8f, 0xff70a6]), 0, 0.03); }
-    b.bx(11, 0, CORR + 0.2, 1.6, 1.8, 0.4, 0x8a6238, 0, 0.02); b.bx(11, 0.9, CORR + 0.41, 1.4, 0.8, 0.02, 0x9fd4ef, 0, 0);   // a trophy cabinet
+  // coats and bags on hooks along the corridor wall (they belong to that wall), a trophy cabinet, notice boards, benches;
+  // on the outer wall between the windows the writers' gallery
+  const coats = partMesh((b) => {
+    for (let x = 0.8; x < 35.5; x += 0.6) { if (Math.abs(x - 5.1) < 0.8 || Math.abs(x - 17.1) < 0.8 || Math.abs(x - 29.1) < 0.8 || Math.abs(x - 11) < 1) continue; b.bx(x, 1.55, CORR + 0.05, 0.05, 0.05, 0.12, 0x555555, 0, 0); if (Math.round(x * 10) % 3) b.bx(x, 0.9, CORR + 0.1, 0.38, 0.65, 0.12, pick([0xe63946, 0x3a86ff, 0xffca3a, 0x2a9d8f, 0xff70a6]), 0, 0.03); }
+    b.bx(11, 0, CORR + 0.2, 1.6, 1.8, 0.4, 0x8a6238, 0, 0.02); b.bx(11, 0.9, CORR + 0.41, 1.4, 0.8, 0.02, 0x9fd4ef, 0, 0);
     for (const x of [8.0, 22.5]) b.bx(x, 1.3, CORR + 0.03, 1.6, 1.0, 0.04, 0xc9a06a, 0, 0.02);
-  }));
+  });
+  onWall([coats], 'z', CORR - 0.06);
   addBoxCol(10.2, CORR, 11.8, CORR + 0.4, 2);
-  put('bench', 9.0, -0.5, Math.PI, 0, { ground: true }); put('bench', 26.0, -0.5, Math.PI, 0, { ground: true });
-  put('potted_plant', 35.5, -2.2, 0, 1, { ground: true });
+  const gallery = [];
+  [[5.1, 4], [12.6, 5], [19.3, 6], [25.6, 7], [30.6, 0]].forEach(([x, i]) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.73), new THREE.MeshLambertMaterial({ map: portrait(WRITERS[i]), transparent: true })); m.position.set(x, 1.65, -0.02); m.rotation.y = Math.PI; gallery.push(m);
+  });
+  onWall(gallery, 'z', 0.12);
+  put('bench', 9.0, -0.55, Math.PI, 0, { ground: true, col: true }); put('bench', 26.0, -0.55, Math.PI, 0, { ground: true, col: true });
+  put('potted_plant', 35.5, -2.2, 0, 1, { ground: true, col: true });
 }
+// the ceiling of the ground floor with its fluorescent lamps: only in the first-person view
+let ceil = null;
+function buildCeiling() {
+  ceil = new THREE.Group(); ceil.visible = false; scene.add(ceil);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(36, 12), new THREE.MeshBasicMaterial({ color: 0xeeebe4, side: THREE.DoubleSide })); m.rotation.x = Math.PI / 2; m.position.set(18, FLOOR - 0.02, -6); ceil.add(m);
+  const lampMat = new THREE.MeshBasicMaterial({ color: 0xfdfbf2 });
+  for (let x = 2; x < 36; x += 3) for (const z of [-9.5, -6, -1.3]) { const l = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.2), lampMat); l.position.set(x, FLOOR - 0.05, z); ceil.add(l); }
+}
+export function setSchoolFps(on) { if (ceil) ceil.visible = on; }
 
 // ---------------------------------------------------------------- people: the teacher at the board, the class at their desks,
 // children on the square
 const people = [];
-const TEACHER_LINES = ['Gyerekek, figyeljetek a táblára!', 'Ki tudja a választ?', 'Petyus, ülj a helyedre!', 'Csendet kérek!', 'Nyissátok ki a füzeteteket!', 'Szép munka!'];
-const KID_LINES = ['Szia, Petyus!', 'Láttad a tegnapi meccset?', 'Kölcsönadod a radírod?', 'Mi lesz az uzsonna?', 'Fogócska a szünetben?', 'Petyus, gyere ide!'];
-export const school = { teacher: null, talkT: 6 };
+const TEACHER_LINES = ['Gyerekek, figyeljetek a táblára!', 'Ki tudja a választ?', 'Csendet kérek!', 'Nyissátok ki a füzeteteket!', 'Szép munka!', 'Ki jön ki a táblához?', 'Holnap témazáró!'];
+const KID_LINES = ['Szia, Petyus!', 'Láttad a tegnapi meccset?', 'Kölcsönadod a radírod?', 'Mi lesz az uzsonna?', 'Fogócska a szünetben?', 'Megcsináltad a házit?', 'Petyus, gyere ide!'];
+export const school = { teacher: null, talkT: 6, seated: false, seatedSaid: false, chalkT: 4, chatT: 0, bellMin: -1, lastMin: -1 };
 function buildPeople() {
   const T = new Actor(makePerson({ scale: 0.92, shirt: 0x6a4c93, pants: 0x3d405b, hair: 0x8a5a2b, dress: true, glasses: true, hat: false }), 'Tanító néni');
-  const home = new V3(6, 0, SCHOOL.z0 + 1.1);
-  T.place(home.x, home.z, 0); T.stride = 4.4; school.teacher = T; people.push({ a: T, kind: 'teacher', home, t: R(2, 5) });
+  const home = new V3(0.9, 0, -7.3);
+  T.place(home.x, home.z, Math.PI / 2); T.stride = 4.4; school.teacher = T; people.push({ a: T, kind: 'teacher', home, t: R(2, 5) });
   const looks = [[0xe63946, 0x1d3557, 0x5a3825], [0xffca3a, 0x3d405b, 0xd8b45c], [0x8ac926, 0x264653, 0x2b1d14], [0xff70a6, 0x6b705c, 0x8a5a2b], [0x3a86ff, 0x22223b, 0x1b1b1b], [0xf4a261, 0x3d405b, 0x6f4e37],
     [0x2a9d8f, 0x1d3557, 0xc9a66b], [0xb5179e, 0x3d405b, 0x2b1d14], [0x90be6d, 0x264653, 0x5a3825], [0xffd166, 0x1d3557, 0x3b2b20], [0x118ab2, 0x2b2d42, 0x8a5a2b], [0xef476f, 0x264653, 0x1b1b1b]];
   const names = ['Bence', 'Lili', 'Marci', 'Zsófi', 'Ádám', 'Dóri', 'Gergő', 'Panni', 'Levi', 'Bori', 'Máté', 'Kata'];
-  const free = new Set([1, 4, 9, 13, 16]);
+  // Petyus's place: the front row (nearest the board), the middle desk, its window-side chair; four more places stay empty
+  const mine = desks.findIndex((d) => d.row === 0 && Math.abs(d.z - (-7.6)) < 0.01);
+  Object.assign(seat, desks[mine]);
+  const free = new Set([mine, 3, 10, 14, 17]);
   let k = 0;
   desks.forEach((d, i) => {
     if (free.has(i) || k >= looks.length) return;
-    const [shirt, pants, hair] = looks[k], a = new Actor(makePerson({ scale: 0.68, shirt, pants, hair, hat: false, glasses: k % 5 === 2, dress: k % 3 === 1 }), names[k]); k++;
-    a.place(d.x, d.z, Math.PI); a.seatH = 0.45; a.sit = a.sitTarget = 1;
+    const [shirt, pants, hair] = looks[k], a = new Actor(makePerson({ scale: 0.7, shirt, pants, hair, hat: false, glasses: k % 5 === 2, dress: k % 3 === 1 }), names[k]); k++;
+    a.place(d.x, d.z, -Math.PI / 2); a.seatH = 0.45; a.sit = a.sitTarget = 1;
     people.push({ a, kind: 'pupil', t: R(1, 6), look: 0 });
   });
   for (const [n, x, z] of [[0, -8, 10], [1, -4, 12], [2, 6, 10], [3, 20, 30]]) {
@@ -376,58 +430,108 @@ function updatePeople(dt) {
   const P = G.petike.pos;
   for (const p of people) {
     const a = p.a;
-    if (p.kind === 'pupil') {
+    if (p.kind === 'pupil') {   // facing the board (west); now and then to a neighbour, or to Petyus going by
       p.t -= dt; if (p.t <= 0) { p.t = R(2, 6); p.look = pick([0, 0, 0.6, -0.6]); }
-      const near = Math.hypot(P.x - a.pos.x, P.z - a.pos.z) < 1.6;
-      a.targetHeading = near ? Math.atan2(P.x - a.pos.x, P.z - a.pos.z) : Math.PI + p.look;
+      const near = Math.hypot(P.x - a.pos.x, P.z - a.pos.z) < 1.6 && !school.seated;
+      a.targetHeading = near ? Math.atan2(P.x - a.pos.x, P.z - a.pos.z) : -Math.PI / 2 + p.look;
       a.update(dt);
-    } else if (p.kind === 'teacher') {
-      p.t -= dt; if (p.t <= 0 && !a.path) { p.t = R(3, 7); a.walkTo([[p.home.x + R(-2, 2), p.home.z + R(0, 0.8)]], 0.8); }
-      if (!a.path) a.targetHeading = 0;
+    } else if (p.kind === 'teacher') {   // walking a little in front of the board, facing the class
+      p.t -= dt; if (p.t <= 0 && !a.path) { p.t = R(3, 7); a.walkTo([[p.home.x + R(0, 0.5), p.home.z + R(-1.8, 1.8)]], 0.8); }
+      if (!a.path) a.targetHeading = Math.PI / 2;
       a.update(dt);
-    } else {   // on the square (one on the field): running about
+    } else {
       p.t -= dt; if (!a.path && p.t <= 0) { p.t = R(0.5, 2.5); a.walkTo(p.field ? [[R(FIELD.x0 + 3, FIELD.x1 - 3), R(FIELD.z0 + 3, FIELD.z1 - 3)]] : [[R(-13, 11), R(6, 13)]], R(1.6, 3.0)); }
       a.update(dt);
     }
+    if (school.seated) continue;
     const dx = P.x - a.pos.x, dz = P.z - a.pos.z, d = Math.hypot(dx, dz), m = a.sit > 0.5 ? 0.42 : 0.5;
     if (d < m && d > 1e-4) { P.x = a.pos.x + dx / d * m; P.z = a.pos.z + dz / d * m; }
   }
 }
 
-// ---------------------------------------------------------------- inside: the upper floors go, the camera-side walls sink
+// ---------------------------------------------------------------- the walls' view: see-through or sunk (T, like at home), solid in
+// the first-person view and when zoomed out (then the upper floors and the roof are on as well); the pictures go with their wall
 const inside = () => { const P = G.petike.pos; return P.x > SCHOOL.x0 - 0.3 && P.x < SCHOOL.x1 + 0.3 && P.z > SCHOOL.z0 - 0.3 && P.z < SCHOOL.z1 + 0.3; };
-function updateWalls(dt) {
-  const P = G.petike.pos, inn = inside();
+function updateWalls(dt, solid) {
+  const P = G.petike.pos, inn = inside(), fade = wallView.mode === 'fade';
   for (const w of walls) {
     let between = false;
-    if (inn) between = w.alongX ? (CAM_OFF.z > 0 ? w.c > P.z + 0.1 : w.c < P.z - 0.1) : (CAM_OFF.x > 0 ? w.c > P.x + 0.1 : w.c < P.x - 0.1);
-    w.s = damp(w.s, between ? 0.15 : 1, 8, dt); w.g.scale.y = w.s;
+    if (inn && !solid) between = w.alongX ? (CAM_OFF.z > 0 ? w.c > P.z + 0.1 : w.c < P.z - 0.1) : (CAM_OFF.x > 0 ? w.c > P.x + 0.1 : w.c < P.x - 0.1);
+    w.s = damp(w.s, between && !fade ? 0.15 : 1, 8, dt); w.o = damp(w.o, between && fade ? 0.16 : 1, 8, dt);
+    w.g.scale.y = w.s;
+    for (const m of w.mats) { m.opacity = w.o; m.depthWrite = w.o > 0.98; }
+    for (const p of w.pics) p.visible = w.s > 0.9;
   }
-  if (upper) upper.visible = !inn;
-  if (low) { low.m.visible = !inn; low.stub.visible = inn; }   // (it stands between the camera and the classrooms)
+  if (upper) upper.visible = !G.fps && (!inn || solid);
+  if (low) { const full = !inn || (solid && !G.fps); low.m.visible = full; low.stub.visible = !full; }
+}
+
+// ---------------------------------------------------------------- the school's sounds: the bell (every lesson starts and ends with
+// it – 45 minutes, 10 minutes' break), the children's chatter (loud in the breaks), the chalk on the board, shouts in the yard
+const lesson = (min) => { const t = (min - 8 * 60) % 55; return t >= 0 && t < 45; };
+function sBellRing(x, z) {
+  soundAt(x, z, () => { for (let k = 0; k < 44; k++) { tone('square', 1480, 1470, 0.03, 0.05, k * 0.05); tone('sine', 2960, 2950, 0.03, 0.025, k * 0.05 + 0.025); } }, 2.2);
+}
+function updateSounds(dt, min) {
+  const P = G.petike.pos, inn = inside();
+  // the bell at the start and the end of every lesson
+  const t = Math.floor(min - 8 * 60), mark = t % 55 === 0 || t % 55 === 45;
+  if (mark && school.bellMin !== t) { school.bellMin = t; sBellRing(18, -1.3); if (t > 0) setTimeout(() => say({ headWorld: (v) => v.set(18, 2.8, -1.3) }, 'CSENGŐ: RRRRRRING!', 1.6, ''), 50); }
+  const brk = !lesson(min);
+  // chatter: a murmur of children's voices – soft in a lesson, loud in a break (and in the yard in a break)
+  school.chatT -= dt;
+  if (school.chatT <= 0) {
+    school.chatT = brk ? R(0.08, 0.2) : R(0.3, 0.8);
+    const near = inn ? { x: P.x + R(-3, 3), z: P.z + R(-2, 2) } : { x: R(-12, 10), z: R(6, 14) };
+    if (inn || brk) soundAt(near.x, near.z, () => { noise(R(0.08, 0.22), R(700, 1900), 2.2, brk ? 0.05 : 0.018); if (Math.random() < 0.3) tone('triangle', R(380, 620), R(340, 700), 0.12, brk ? 0.03 : 0.01); }, 1);
+    if (brk && !inn && Math.random() < 0.02) { const kids = people.filter((p) => p.kind === 'yard'); if (kids.length) say(pick(kids).a, pick(['Hahó!', 'Fogóóó!', 'Nem ér!', 'Passzold ide!']), 1.4); }
+  }
+  // the chalk squeaks while the teacher writes (in a lesson)
+  if (!brk && (school.chalkT -= dt) <= 0) {
+    school.chalkT = R(4, 9);
+    if (Math.hypot(P.x - 1, P.z + 7.3) < 12) soundAt(0.4, -7.3, () => { for (let k = 0; k < 4; k++) tone('sine', R(2600, 3400), R(2800, 3600), 0.07, 0.025, k * 0.12); noise(0.4, 3000, 3, 0.02); }, 1);
+  }
+}
+
+// ---------------------------------------------------------------- Petyus's place: E – sitting down / standing up (ep2.js: seating)
+export function schoolAction() {
+  const P = G.petike.pos;
+  if (nearGate()) return { txt: 'E – hazaindulás', gate: true };
+  if (Math.hypot(P.x - (seat.x + 0.45), P.z - seat.z) < 0.8 || (school.seated && Math.hypot(P.x - seat.x, P.z - seat.z) < 0.6)) return { txt: school.seated ? 'E – felállás' : 'E – leülés (a helyed)', seat: true };
+  return null;
+}
+export function toggleSeat(seating) {
+  school.seated = !school.seated;
+  Object.assign(seating, { on: school.seated, x: seat.x, z: seat.z, h: -Math.PI / 2, seatH: 0.45, chair: true, base: 0 });
+  tone('sine', school.seated ? 180 : 240, school.seated ? 120 : 300, 0.15, 0.05);
+  if (school.seated && !school.seatedSaid) { school.seatedSaid = true; setTimeout(() => say(school.teacher, 'Na végre, Petyus! Örülök, hogy megtisztelsz minket.', 2.8), 600); }
 }
 
 // ---------------------------------------------------------------- build / tick
 export function buildSchool() {
-  walls.length = 0; desks.length = 0; people.length = 0;
+  walls.length = 0; desks.length = 0; people.length = 0; clocks.length = 0;
   buildGround(); buildMain(); buildLow(); buildHall(); buildSquare();
-  buildClassroom(0, 'ours'); buildClassroom(12, 'a4'); buildClassroom(24, 'a2'); buildCorridor();
+  for (const r of ROOMS3) buildClassroom(r);
+  buildCorridor(); buildCeiling();
   buildFurniture();
   buildPeople();
 }
 export function schoolRoom(x, z) {
-  if (x > SCHOOL.x0 && x < SCHOOL.x1 && z > SCHOOL.z0 && z < SCHOOL.z1) return z > CORR ? 'Iskola – folyosó' : x < 12 ? 'Iskola – a 3. b osztályterme' : x < 24 ? 'Iskola – a 4. a osztályterme' : 'Iskola – a 2. a osztályterme';
+  if (x > SCHOOL.x0 && x < SCHOOL.x1 && z > SCHOOL.z0 && z < SCHOOL.z1) return z > CORR ? 'Iskola – folyosó' : 'Iskola – a ' + ROOMS3[Math.min(2, Math.floor(x / 12))].cls + ' osztályterme';
   if (x < CAMPUS.x0 || z > CAMPUS.z1) return 'Az utca';
   return 'Iskola – udvar';
 }
 export const schoolFloor = (x, z) => (x > SCHOOL.x0 && x < SCHOOL.x1 && z > SCHOOL.z0 && z < SCHOOL.z1 ? (z > CORR ? 'stone' : 'wood') : 'stone');
-export function updateSchool(dt) {
-  updateWalls(dt); updatePeople(dt);
+// solid: the first-person view or zoomed out – walls solid, the roof on
+export function updateSchool(dt, min, solid) {
+  updateWalls(dt, solid); updatePeople(dt); updateSounds(dt, min);
+  if (Math.floor(min) !== school.lastMin) { school.lastMin = Math.floor(min); for (const c of clocks) c.draw(min); }
+  if (school.seated && !G.petike.sitTarget && G.petike.sit < 0.05) school.seated = false;   // stood up with a movement key
   const P = G.petike.pos, inClass = P.x < 12 && P.z < CORR && P.z > SCHOOL.z0;
   school.talkT -= dt;
   if (school.talkT <= 0) {
     school.talkT = R(7, 12);
-    if (inClass) say(school.teacher, pick(TEACHER_LINES), 2.8);
+    if (inClass && lesson(min)) say(school.teacher, school.seated ? pick(TEACHER_LINES) : pick(['Petyus, ülj a helyedre!', 'Petyus! Az első padban van a helyed!', ...TEACHER_LINES]), 2.8);
     else { const kids = people.filter((p) => p.kind !== 'teacher' && Math.hypot(p.a.pos.x - P.x, p.a.pos.z - P.z) < 5); if (kids.length) say(pick(kids).a, pick(KID_LINES), 2.4); }
   }
 }
