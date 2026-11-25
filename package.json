@@ -1,6 +1,6 @@
 {
   "name": "petyus-kalandjai",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Petyus kalandjai – izometrikus voxel 3D játék; minden rész egy nap Petyus, Petya és Angi életéből (Three.js + Vite)",
   "private": true,
   "type": "module",
