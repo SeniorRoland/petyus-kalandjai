@@ -177,7 +177,7 @@ export function startEp2() {
     if (EVE) ceiling.children[0].material.color.set(0x77726b);   // the ceiling (unlit): dimmer in the evening, lit only by the lamps
     buildWardrobe();   // Petyus's wardrobe (getting dressed in the morning: dressing.js)
     if (!EVE) buildSister();   // (in the evening she is out)
-    if (EVE) { setEvening(); addFillLights(Q.level >= 2 ? 4 : 2); }   // (the lamps: every lit room glows)
+    if (EVE) { setEvening(); addFillLights(Q.level >= 2 ? 2 : 1); }   // (the lamps: every lit room glows)
   }
   // in the morning the three of them are in pajamas (Petyus: the football kit's model – the walking one)
   if (ep2.phase === 'morning') { dressPajama(rigs.foci, 'petyus'); dressPajama(rigs.petya, 'petya'); dressPajama(rigs.angi, 'angi'); }

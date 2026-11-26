@@ -11,6 +11,7 @@ import { say } from '../ui.js';
 import { R, V3, clamp, dampAngle, pick } from '../util.js';
 import { partMesh, vcMat } from '../world.js';
 import { getGeometry } from '../voxels.js';
+import { Q } from '../quality.js';
 import { noise, sBark, soundAt, soundOut, tone } from '../audio.js';
 import { FY, put } from './home.js';
 
@@ -259,7 +260,7 @@ export function setEvening() {
   const gi = new THREE.InstancedMesh(gGeo, glow, LAMPS.length), pi = new THREE.InstancedMesh(pGeo, pool, LAMPS.length), m4 = new THREE.Matrix4();
   LAMPS.forEach(([x, z], i) => { gi.setMatrixAt(i, m4.makeTranslation(x, 3.15, z)); pi.setMatrixAt(i, m4.makeTranslation(x, 0.06, z)); });   // (the pools: clear of the paving and its joints – no flickering)
   pi.renderOrder = 1; gi.frustumCulled = pi.frustumCulled = false; scene.add(gi, pi);
-  const near = [...LAMPS].sort((a, b) => Math.hypot(a[0] - 4, a[1] - 6) - Math.hypot(b[0] - 4, b[1] - 6)).slice(0, 2);
+  const near = [...LAMPS].sort((a, b) => Math.hypot(a[0] - 4, a[1] - 6) - Math.hypot(b[0] - 4, b[1] - 6)).slice(0, Q.level >= 2 ? 2 : 1);   // (every light costs on every pixel: on phones only one)
   for (const [x, z] of near) { const l = new THREE.PointLight(0xffd9a0, 14, 12, 1.6); l.position.set(x, 3.0, z); scene.add(l); }
 }
 const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpS = new V3(), tmpP = new V3(), UP = new V3(0, 1, 0);

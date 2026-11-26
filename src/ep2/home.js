@@ -331,13 +331,16 @@ export function addFillLights(n) {   // (short reach: they should not light up t
 }
 function updateLights(P) {
   const on = switches.filter((s) => s.on).sort((a, b) => Math.hypot(a.light.position.x - P.x, a.light.position.z - P.z) - Math.hypot(b.light.position.x - P.x, b.light.position.z - P.z));
-  FILL.forEach((l, i) => { const s = on[i]; l.intensity = s ? 3.0 : 0; if (s) l.position.set(s.light.position.x, WALL_H - 0.4, s.light.position.z); });
+  // (the two nearest lit rooms have the pool's spot lights; the fill lights go to the next ones – not doubled on the same room)
+  FILL.forEach((l, i) => { const s = on[i + 2]; l.intensity = s ? 3.0 : 0; if (s) l.position.set(s.light.position.x, WALL_H - 0.4, s.light.position.z); });
   lightPool().forEach((l, i) => {
-    const s = on[i]; l.intensity = s ? LIGHT_ON : 0; if (l.castShadow) l.shadow.autoUpdate = !!s;
+    // the shadow map: redrawn every second frame while the light is used (it draws the furniture once more – half the cost)
+    const s = on[i]; l.intensity = s ? LIGHT_ON : 0; if (l.castShadow) { l.shadow.autoUpdate = false; if (s && (shadowTick ^= 1)) l.shadow.needsUpdate = true; }
     if (s) { l.position.set(s.light.position.x, WALL_H - 0.12, s.light.position.z); l.target.position.set(s.light.position.x, 0, s.light.position.z); l.target.updateMatrixWorld(); }
   });
 }
 const LIGHT_ON = 9;
+let shadowTick = 0;
 function buildSwitches() {
   for (const sd of SWITCHES) {
     const r = ROOMS.find((q) => q.id === sd.room), cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;

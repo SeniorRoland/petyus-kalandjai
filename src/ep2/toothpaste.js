@@ -20,6 +20,7 @@ import { FY, SPOTS, doors, homeRoot, switches, toggleDoor, toggleSwitch } from '
 import { brushCup, cosmeticBottle, perfume, smallJar } from './food.js';
 import { carrying, itemPlace, lockItem, moveItem } from './inventory.js';
 import { findPath } from './navgrid.js';
+import { mergeStatic } from '../world.js';
 import { PAJAMAS } from './pajama.js';
 
 const T_MOM = 20 * 60 + 45, T_DAD = 21 * 60 + 30;   // when they brush their teeth (ep2.min)
@@ -59,6 +60,9 @@ export function buildBath() {
   sh.add(box(0.42, 0.02, 0.13, WOOD, 0, 0.01, 0.065), box(0.015, 0.08, 0.1, EDGE, -0.17, -0.04, 0.05), box(0.015, 0.08, 0.1, EDGE, 0.17, -0.04, 0.05));
   [[0x3a86ff, 0x1d5fbf], [0xf4a6c6, 0xd6336c], [0x8ac926, 0x2d6a4f], [0xc77dff, 0x7b2cbf]].forEach(([c, b], i) => { const o = brushCup(c, b); o.position.set(-0.165 + i * 0.075, 0.02, 0.06); sh.add(o); });
   bath.shelf = sh;
+  // (performance: the fixed parts – the cabinet's body and its things, the shelf with the cups – one draw call each, no shadows)
+  for (const g of [cab, sh]) g.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+  mergeStatic(cab, new Set([pv])); mergeStatic(sh);
 }
 
 // ---------------------------------------------------------------- helpers
