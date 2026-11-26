@@ -190,7 +190,7 @@ Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **na
 - **Megvalósítás** (`ep2.js` `EVE` ág, `outside.js` `setEvening`, `home.js` `addFillLights`): ugyanaz a lakás és környéke, mint reggel, de **kint sötét van** (éjszakai égbolt, halvány kék fény), **bent égnek a lámpák** (minden szoba villanya fel van kapcsolva – a két legközelebbi árnyékot vető spotfény mellett a többi szoba is lágy fényt kap).
 - **A ház többi lakása és a szomszéd házak** ablakaiban lámpák égnek, időnként (6–30 mp-enként) fel- és lekapcsolódnak (`WINDOWS`, egy instanced négyzetrács).
 - **Az utcán és az udvaron** az 1. rész park-lámpái (kandeláberek: `LAMPS`) – este csak a lámpaházuk világít (fénykör és valódi fény nélkül); a ház bejáratánál nincs lámpa.
-- Nincs pizsama; a nővér nincs otthon; a reggeli csibészségek nem futnak; apa és anya esti mondatai („Megírtad a leckét?”, „Mindjárt kész a vacsora!”), 21:15 után anya lefekvésre küld. Petyus a bejárati ajtónál kezd (most ért haza).
+- Nincs pizsama; a nővér (mint reggel) az ágyában alszik és forgolódik; a reggeli csibészségek nem futnak; apa és anya esti mondatai („Megírtad a leckét?”, „Mindjárt kész a vacsora!”), 21:15 után anya lefekvésre küld. Petyus a bejárati ajtónál kezd (most ért haza).
 - **E – lefekvés** Petyus ágyánál → másnap reggel.
 - ✅ Az esti csibészségek: 8. A fogkrémcsere, 9. Meccs vagy sorozat?, 10. A lepedős kísértet. ⬜ Később: vacsora, fürdés.
 
@@ -400,3 +400,6 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 - [x] **A szobák fénye: az eredeti lámpák, hangolva.** ✅ (Egy próba – egyenletes „szobafény” dobozokkal – nem tetszett, nem került be.) A mennyezeti lámpák spotfények maradtak, árnyékkal (nem világítanak át a falon), de olyanok, mint egy mennyezeti lámpa: meleg szín, nagyon széles fénykúp (≈ 160°), puha szél, lassú lecsengés; egyszerre három égő helyiség kap fényt (Petyusé és a két legközelebbi), az árnyéktérképek felváltva frissülnek (képkockánként egy).
 - [x] **A karakterek mozgás közben vibrálnak a fényben.** ✅ A saját árnyékuk (a széles fénykúp miatt durva, és csak minden harmadik képkockán frissülő árnyéktérképből) késve ugrált rajtuk. Most a szereplők nem kapnak árnyékot magukra (a padlóra továbbra is vetnek), és Petyus helyiségének lámpája minden képkockán frissíti az árnyékát (a másik kettő felváltva).
 - [x] **A répa szára a vékony végén volt.** ✅ A répa kúpja meg volt fordítva: most a vastag végén van a zöld szár, a hegye a másik irányba mutat, a gyűrűk a felületén ülnek (nem lógnak ki a vékony részen).
+- [x] **Minden indításkor legyen csukva a fürdő és a WC ajtaja.** ✅ Folytatáskor is (a mentett ajtóállás után csukódnak).
+- [x] **Petyus is tudjon fogat mosni.** ✅ A mosdónál E – fogmosás (~6 mp, dúdolás, köpés); azzal mos, ami a fogkrém helyén van: sarokkrém → „Fúúúj!”, chilikrém → „Ez CSÍP!!”, arcmaszkkal nem mos, üres polcnál „Hol a fogkrém?”; amíg a szülők mosnak fogat, foglalt; ha elmegy, abbamarad.
+- [x] **A nővér este is az ágyában legyen, mint reggel.** ✅ Este is alszik a franciaágyban, betakarózva, forgolódik.

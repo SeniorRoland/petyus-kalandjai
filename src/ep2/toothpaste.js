@@ -60,6 +60,32 @@ export function buildBath() {
   sh.add(box(0.42, 0.02, 0.13, WOOD, 0, 0.01, 0.065), box(0.015, 0.08, 0.1, EDGE, -0.17, -0.04, 0.05), box(0.015, 0.08, 0.1, EDGE, 0.17, -0.04, 0.05));
   [[0x3a86ff, 0x1d5fbf], [0xf4a6c6, 0xd6336c], [0x8ac926, 0x2d6a4f], [0xc77dff, 0x7b2cbf]].forEach(([c, b], i) => { const o = brushCup(c, b); o.position.set(-0.165 + i * 0.075, 0.02, 0.06); sh.add(o); });
   bath.shelf = sh;
+  // Petyus brushes his teeth too (E at the basin): with whatever lies in the toothpaste's place
+  const kid = { on: false, t: 0, what: null, x: 0, z: 0 };
+  devices.push({ aim: new V3(3.3, 1.0, 1.05), size: 0.3, x: SINK.x, z: SINK.z, r: 0.55,
+    label: () => (kid.on ? 'E – fogmosás abbahagyása' : tp.cur ? 'Foglalt a mosdó' : 'E – fogmosás'),
+    use: () => {
+      if (tp.cur) return;
+      if (kid.on) { kid.on = false; return; }
+      kid.what = ['toothpaste', 'heelcream', 'facemask', 'chili'].find((id) => itemPlace(id) === 'paste') || null;
+      if (!kid.what) { say(G.petike, 'Hol a fogkrém?', 1.6); return; }
+      if (kid.what === 'facemask') { say(G.petike, 'Ez anya arcmaszkja… ezzel nem mosok fogat.', 2.2); return; }
+      kid.on = true; kid.t = 0; kid.x = G.petike.pos.x; kid.z = G.petike.pos.z;
+      G.petike.targetHeading = SINK.h; G.petike.heading = SINK.h;
+      say(G.petike, kid.what === 'toothpaste' ? pick(['Fogmosás… három percig, ahogy anya mondja.', 'Mentás!']) : 'Na, lássuk…', 1.8);
+    },
+    update: (dt) => {
+      if (!kid.on) return;
+      const P = G.petike;
+      if (Math.hypot(P.pos.x - kid.x, P.pos.z - kid.z) > 0.15) { kid.on = false; return; }   // he walked away: stops
+      kid.t += dt; brushPose(P, Math.min(1, kid.t * 3));
+      if (Math.random() < dt * 4) soundAt(P.pos.x, P.pos.z, () => noise(0.12, 3500, 1.5, 0.04));
+      if (kid.what === 'chili' && kid.t > 2.5 && kid.t - dt <= 2.5) say(P, 'ÁÁÁ! Ez CSÍP!! Vizet!!', 2);
+      if (kid.what === 'heelcream' && kid.t > 2.5 && kid.t - dt <= 2.5) say(P, 'Fúúúj! Ez sarokkrém!', 2);
+      if (kid.what !== 'toothpaste' && kid.t > 3) { kid.on = false; soundAt(P.pos.x, P.pos.z, () => noise(0.25, 900, 0.8, 0.12)); return; }
+      if (kid.t > 1.2 && kid.t - dt <= 1.2) say(head(P), '♪ hmm-hmm ♪', 1.4);
+      if (kid.t > 6) { kid.on = false; soundAt(P.pos.x, P.pos.z, () => noise(0.25, 900, 0.8, 0.12)); say(P, pick(['Kész! Ragyog!', 'Tiszta fogak!']), 1.6); }
+    } });
   // (performance: the fixed parts – the cabinet's body and its things, the shelf with the cups – one draw call each, no shadows)
   for (const g of [cab, sh]) g.traverse((o) => { if (o.isMesh) o.castShadow = false; });
   mergeStatic(cab, new Set([pv])); mergeStatic(sh);
