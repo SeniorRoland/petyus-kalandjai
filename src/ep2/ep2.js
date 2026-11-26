@@ -32,7 +32,7 @@ import { cf, coffeeTick, dadBusy } from './coffee.js';
 import { dadChasing, momBusy, runawayTick, rw } from './runaway.js';
 import { giveKeyHint, kh, keyBusy, keyHintLabel, keyTick } from './keyhunt.js';
 import { brushBusy, buildBath, toothTick, tp } from './toothpaste.js';
-import { navRoute } from './navgrid.js';
+import { doorCorridors, navRoute } from './navgrid.js';
 import { tm, tvBusy, tvTick } from './tvmatch.js';
 import { gh, ghostBusy, ghostTick, momGhostBusy, sheetLabel, sheetOffer, toggleSheet } from './ghost.js';
 import { karcsiState, karcsiTakeable, pigObj, takeKarcsi } from './karcsi.js';
@@ -191,7 +191,8 @@ export function startEp2() {
   // and the doors in their way open (updateParents)
   for (const a of [G.petya, G.angi]) if (!a.navWrap) {
     a.navWrap = true; const walk = a.walkTo.bind(a);
-    a.walkTo = (pts, speed, keep) => walk(G.episode === 2 && ep2.phase !== 'school' && pts.length ? navRoute(a.pos.x, a.pos.z, pts, doors) : pts, speed, keep);
+    const pad = a === G.petya ? 0.5 : 0.31;   // (half their width with the arms: dad's model is broad-shouldered)
+    a.walkTo = (pts, speed, keep) => { a.sideways = false; walk(G.episode === 2 && ep2.phase !== 'school' && pts.length ? navRoute(a.pos.x, a.pos.z, pts, doors, pad) : pts, speed, keep); };
   }
   G.petike.riding = false; G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7;
   if (SCHOOL) {   // the parents are not there
@@ -566,9 +567,36 @@ function momLook() {
 }
 
 // ---------------------------------------------------------------- the parents
+let parentDoorCors = null;
+function crossesSoon(a, r) {
+  const along = r.alongX, line = along ? (r.z0 + r.z1) / 2 : (r.x0 + r.x1) / 2, lo = (along ? r.x0 : r.z0) - 0.15, hi = (along ? r.x1 : r.z1) + 0.15;
+  const u = (p) => (along ? p.x : p.z), w = (p) => (along ? p.z : p.x);
+  if (Math.abs(w(a.pos) - line) < 0.5 && u(a.pos) > lo && u(a.pos) < hi) return true;   // in the doorway
+  let p = a.pos, left = 1.2;
+  for (const q of a.path) {
+    const s0 = w(p) - line, s1 = w(q) - line;
+    if (s0 * s1 <= 0 && s0 !== s1) { const t = s0 / (s0 - s1), cu = u(p) + (u(q) - u(p)) * t, d = Math.hypot(q.x - p.x, q.z - p.z) * t; if (cu > lo && cu < hi && d < left) return true; }
+    left -= Math.hypot(q.x - p.x, q.z - p.z); if (left <= 0) break; p = q;
+  }
+  return false;
+}
 function updateParents(dt) {
-  // a closed door in a walking parent's way opens (not the locked ones: the sister's room)
-  for (const a of [G.petya, G.angi]) if (a.path) for (const d of doors) if (d.pivot && !d.open && d.kind !== 'locked' && Math.hypot(d.x - a.pos.x, d.z - a.pos.z) < 0.8) { toggleDoor(d); soundAt(d.x, d.z, () => noise(0.12, 1200, 1, 0.15)); }
+  // through a doorway they turn sideways (dad is broader than the door with his arms): the shoulders along the opening
+  if (ep2.phase !== 'school') {
+    const cors = parentDoorCors || (parentDoorCors = doorCorridors(doors));
+    for (const a of [G.petya, G.angi]) {
+      // the door his way goes through within the next 1.2 m (or that he is just passing through) – a door he only walks
+      // past (the WC's, along the hallway) is left alone
+      const door = a.path && cors.find((r) => crossesSoon(a, r));
+      if (door && !door.d.open) { toggleDoor(door.d); soundAt(door.d.x, door.d.z, () => noise(0.12, 1200, 1, 0.15)); }   // (only the door he goes through opens)
+      if (door) {
+        // the shoulders across the wall's line, i.e. facing along the wall (a door in a wall along x: facing ±x); of the two
+        // the one nearer to his present heading
+        const h1 = door.alongX ? Math.PI / 2 : 0, h2 = h1 + Math.PI, dd = (h) => Math.abs(Math.atan2(Math.sin(h - a.heading), Math.cos(h - a.heading)));
+        a.sideways = true; a.keepHeading = true; a.targetHeading = dd(h1) < dd(h2) ? h1 : h2;
+      } else if (a.sideways) { a.sideways = false; a.keepHeading = false; }
+    }
+  }
   const MORNING = ep2.phase === 'morning';
   if (MORNING) {   // getting dressed (dressing.js): once Petyus is dressed and it is time, the parents get ready and wait at the door
     const ready = ep2.min >= MORNING_END || morningDone() === MORNING_IDS.length;

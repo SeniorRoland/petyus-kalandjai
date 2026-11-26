@@ -15,7 +15,6 @@ import { setPrompt } from '../activities/drinking.js';
 import { lerp, pick } from '../util.js';
 import { FY, SPOTS, doors, homeRoot, switches, toggleDoor, toggleSwitch } from './home.js';
 import { rubbishBag } from './food.js';
-import { findPath } from './navgrid.js';
 
 const T_OUT = 21 * 60, OUT_S = 18;                    // when he goes out; how long he is outside (real seconds)
 const DOOR_IN = { x: 0.4, z: 3.32 };                  // just inside the front door (the hallway's west wall)
@@ -24,8 +23,7 @@ export const gh = { st: 'off', t: 0, sheet: false, scared: false, dark: false, a
 export const ghostBusy = () => !['off', 'done'].includes(gh.st);
 export const momGhostBusy = () => gh.momGo;
 
-const passDoors = () => new Set(doors.filter((d) => d.pivot && d.kind !== 'locked').map((d) => d.col));
-function go(a, x, z, speed) { const p = findPath(a.pos.x, a.pos.z, x, z, passDoors()); a.walkTo(p && p.length ? p : [[x, z]], speed); }
+function go(a, x, z, speed) { a.walkTo([[x, z]], speed); }   // (the way: round the walls, down the middle – ep2.js / navgrid.js navRoute)
 const hallSwitch = () => switches.find((s) => s.room === 'eloter');
 const near = (a, b, r) => Math.hypot(a.pos.x - b.pos.x, a.pos.z - b.pos.z) < r;
 
@@ -68,7 +66,6 @@ export function ghostTick(dt, min, dadFree) {
     return;
   }
   if (gh.st === 'done') return;
-  if (d.path) for (const dr of doors) if (dr.pivot && !dr.open && dr.kind !== 'locked' && Math.hypot(dr.x - d.pos.x, dr.z - d.pos.z) < 0.9) { toggleDoor(dr); soundAt(dr.x, dr.z, () => noise(0.12, 1200, 1, 0.15)); }
   switch (gh.st) {
     case 'toDoor':
       if (gh.t > 0.8 && !gh.walking) { gh.walking = true; go(d, DOOR_IN.x, DOOR_IN.z, 1.25); }

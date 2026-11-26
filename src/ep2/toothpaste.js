@@ -19,7 +19,6 @@ import { devices, fx } from './appliances.js';
 import { FY, SPOTS, doors, homeRoot, switches, toggleDoor, toggleSwitch } from './home.js';
 import { brushCup, cosmeticBottle, perfume, smallJar } from './food.js';
 import { carrying, itemPlace, lockItem, moveItem } from './inventory.js';
-import { findPath } from './navgrid.js';
 import { mergeStatic } from '../world.js';
 import { PAJAMAS } from './pajama.js';
 
@@ -92,8 +91,7 @@ export function buildBath() {
 }
 
 // ---------------------------------------------------------------- helpers
-const passDoors = () => new Set(doors.filter((d) => d.pivot && d.kind !== 'locked').map((d) => d.col));
-function go(a, x, z, speed) { const p = findPath(a.pos.x, a.pos.z, x, z, passDoors()); a.walkTo(p && p.length ? p : [[x, z]], speed); }
+function go(a, x, z, speed) { a.walkTo([[x, z]], speed); }   // (the way: round the walls, down the middle – ep2.js / navgrid.js navRoute)
 const head = (a) => ({ headWorld: (o) => a.headWorld(o) });
 const bathSwitch = () => switches.find((s) => s.room === 'furdo');
 function sees(a, p, far, cone) {
@@ -190,7 +188,6 @@ export function toothTick(dt, min, busy = () => false) {
   const who = tp.cur, a = who === 'angi' ? G.angi : G.petya, mom = who === 'angi';
   tp.t += dt;
   // doors open before them on the way (the path counts them passable)
-  if (a.path) for (const d of doors) if (d.pivot && !d.open && d.kind !== 'locked' && Math.hypot(d.x - a.pos.x, d.z - a.pos.z) < 0.9) { toggleDoor(d); soundAt(d.x, d.z, () => noise(0.12, 1200, 1, 0.15)); }
   if (tp.red > 0) { tp.red = clamp(tp.red, 0, 1); redFace(a, 'petya', tp.red); if (tp.red > 0.5 && Math.random() < dt * 9) { const h = a.headWorld(new V3()); for (const s of [-1, 1]) spawnFx(new V3(h.x + s * 0.16, h.y - 0.35, h.z), new V3(s * 0.3, 0.6, 0), 0xf1f1f1, 0.05, 0.9, -0.2); } }
   switch (tp.st) {
     case 'stand':
