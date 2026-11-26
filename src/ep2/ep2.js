@@ -178,7 +178,7 @@ export function startEp2() {
     buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances(); buildBath(); buildInventory();
     if (EVE) ceiling.children[0].material.color.set(0x77726b);   // the ceiling (unlit): dimmer in the evening, lit only by the lamps
     buildWardrobe();   // Petyus's wardrobe (getting dressed in the morning: dressing.js)
-    if (!EVE) buildSister();   // (in the evening she is out)
+    buildSister();   // Petyus's sister: asleep in her bed (in the evening too – she goes to bed early)
     if (EVE) setEvening();   // (no fill lights: without shadows they shone through the walls – the three nearest lit rooms have the pool's lights)
   }
   // in the morning the three of them are in pajamas (Petyus: the football kit's model – the walking one)
@@ -216,7 +216,7 @@ export function startEp2() {
   }
   // the evening: every room's light on (a resumed evening keeps the saved switches)
   if (EVE && resumed !== true) for (const sw of switches) if (!sw.on && sw.room === 'konyha') toggleSwitch(sw);   // the evening: the kitchen's light on
-  if (!SCHOOL && resumed !== true) for (const d of doors) if (d.pivot && d.open && Math.abs(d.z - 2.36) < 0.2 && d.x < 5.5) { toggleDoor(d); d.t = 0; }   // the bathroom and the WC: shut
+  if (!SCHOOL) for (const d of doors) if (d.pivot && d.open && Math.abs(d.z - 2.36) < 0.2 && d.x < 5.5) { toggleDoor(d); d.t = 0; }   // the bathroom and the WC: shut at every start (a resumed game too)
   if (resumed === 'fresh' && EVE) { G.petike.place(0.9, 3.3, Math.PI / 2); G.petike.pos.y = FY; }   // just home: in the hallway, by the front door
   $('e2Date').textContent = dateText(); hudClock(true); hudLate(); fitHud();
   // compile every material now (also the hidden ones: ceiling, lamps, the WC's water), so nothing stalls the game later when it
