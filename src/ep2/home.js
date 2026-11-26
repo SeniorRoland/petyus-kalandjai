@@ -309,19 +309,20 @@ const SWITCHES = [
 ];
 export const switches = [];
 // Every point light costs on every pixel of every lit surface, switched on or not (and adding / removing one recompiles all
-// shaders): a fixed pool of two lights goes to the switched-on rooms nearest Petyus; with all lights off they are dark.
+// shaders): a fixed pool of three lights goes to the switched-on rooms nearest Petyus; with all lights off they are dark.
 const LIGHT_POOL = [];
 // The pool's lights are spot lights under the ceiling lamps pointing down: they cast the flat's shadows (the sun casts none
 // in part 2). A light that is not needed stays in the scene with no intensity (hiding it would change the number of lights
 // and recompile every shader – a visible hitch); the shadow map is redrawn only while its light is used.
 export function lightPool() {
-  if (!LIGHT_POOL.length) for (let i = 0; i < 2; i++) {
-    const l = new THREE.SpotLight(0xffd9a0, LIGHT_ON, 9, 1.25, 0.55, 1.6);
-    // both cast shadows: a light without them shines through the walls into the next room (the two shadow maps are redrawn in
+  if (!LIGHT_POOL.length) for (let i = 0; i < POOL_N; i++) {
+    // like a ceiling lamp: a warm light spreading almost all round (wide cone, a very soft edge), fading gently with distance
+    const l = new THREE.SpotLight(0xffe1b0, LIGHT_ON, 10, 1.38, 0.9, 1.15);
+    // all cast shadows: a light without them shines through the walls into the next room (the shadow maps are redrawn in
     // turns, one per frame – see updateLights)
     l.castShadow = Q.shadowSize > 0;
     l.shadow.mapSize.set(Q.level >= 2 ? 1024 : 512, Q.level >= 2 ? 1024 : 512);
-    l.shadow.bias = -0.0008; l.shadow.normalBias = 0.02; l.shadow.camera.near = 0.2; l.shadow.camera.far = 9;
+    l.shadow.bias = -0.0005; l.shadow.normalBias = 0.012; l.shadow.camera.near = 0.15; l.shadow.camera.far = 10;
     l.intensity = 0; l.shadow.autoUpdate = false; homeRoot.add(l, l.target); LIGHT_POOL.push(l);
   }
   return LIGHT_POOL;
@@ -331,11 +332,12 @@ function updateLights(P) {
   const on = switches.filter((s) => s.on).sort((a, b) => Math.hypot(a.light.position.x - P.x, a.light.position.z - P.z) - Math.hypot(b.light.position.x - P.x, b.light.position.z - P.z));
   lightPool().forEach((l, i) => {
     const s = on[i]; l.intensity = s ? LIGHT_ON : 0;
-    if (l.castShadow && s && (shadowTurn & 1) === i) l.shadow.needsUpdate = true;   // (in turns: one shadow map per frame)
+    // the light of Petyus's room (the nearest): every frame – the people move in it; the other two in turns
+    if (l.castShadow && s && (i === 0 || shadowTurn % (POOL_N - 1) === i - 1)) l.shadow.needsUpdate = true;
     if (s) { l.position.set(s.light.position.x, WALL_H - 0.12, s.light.position.z); l.target.position.set(s.light.position.x, 0, s.light.position.z); l.target.updateMatrixWorld(); }
   });
 }
-const LIGHT_ON = 9;
+const LIGHT_ON = 7.5, POOL_N = 3;   // (three lit rooms at once: the one Petyus is in and the two nearest)
 let shadowTurn = 0;
 function buildSwitches() {
   for (const sd of SWITCHES) {
