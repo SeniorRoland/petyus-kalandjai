@@ -1,7 +1,7 @@
 # 2. rész (Szeptember – Otthon és iskola): terv
 
 Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ✅ A napok köre is kész: indulás (7:30 vagy mindhárom reggeli csibészség után) → iskola (helyszín, csibészségek nélkül) → otthon délután–este (sötét, lámpák) → lefekvés → másnap reggel; hétvége és hónap vége átvezetővel. ⬜ Hátravan: az iskola 4 és az este 3 csibészsége (az estiek terve kész), tesztelés telefonon.
+**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ✅ A napok köre is kész: indulás (7:30 vagy mindhárom reggeli csibészség után) → iskola (helyszín, csibészségek nélkül) → otthon délután–este (sötét, lámpák) → lefekvés → másnap reggel; hétvége és hónap vége átvezetővel. ⬜ Hátravan: az iskola 4 és az este 3 csibészsége (az estiek terve kész, a fogkrémcsere elkészült), tesztelés telefonon.
 
 ## Röviden
 
@@ -25,7 +25,7 @@ Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, 
 | 2 | Karcsi nagy szökése | otthon, reggel | Karcsi szabadon | anya a széken | és ≥ 60 mp szabadon | „Karcsi is szeretne körülnézni a lakásban.” | **kész** |
 | 3 | Hol a kulcs, Angi? | otthon, reggel | anya keresni kezd | 2 percnél tovább keres | fura helyen volt, és Petyus nem árulta el | „Anya kulcsa mindig a cipősszekrényen van.” | **kész** |
 | 4–7 | (iskolai csibészségek) | iskola | | | | | ⬜ még nincs kitalálva |
-| 8 | A fogkrémcsere | otthon, este (fürdő) | anya a sarokkrémmel **vagy** apa a chilikrémmel mos fogat | ugyanazon az estén mindketten | és Petyust senki nem kapta rajta | „A fürdőben minden tubus egyforma… majdnem.” | ⬜ terv kész |
+| 8 | A fogkrémcsere | otthon, este (fürdő) | anya a sarokkrémmel **vagy** apa a chilikrémmel mos fogat | ugyanazon az estén mindketten | és Petyust senki nem kapta rajta | „A fürdőben minden tubus egyforma… majdnem.” | **kész** |
 | 9 | Meccs vagy sorozat? | otthon, este (nappali) | átkapcsolsz a meccs alatt | a tizenegyesnél | és apa anyát hibáztatja | „Este apa meccset néz, anya a sorozatát várja.” | ⬜ terv kész |
 | 10 | A lepedős kísértet | otthon, este (előtér) | apa megijed | sötétben: „MEGADOM MAGAM!” | és mire felkapcsolják a villanyt, Petyus az ágyában fekszik | „Este, sötétben minden lepedő gyanús.” | ⬜ terv kész |
 
@@ -101,13 +101,15 @@ Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, 
 
 Az iskola helyszínnel együtt (lásd lent).
 
-## 8–10. Esti csibészségek  ⬜ terv kész
+## 8–10. Esti csibészségek  ◐ részben (8. kész)
 
 Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **napirendre** épül: vacsora után apa meccset néz (20:00), anya a sorozatát várja (20:30); fogmosás (anya 20:45, apa 21:30); apa kiviszi a szemetet (21:40); lefekvés. Ehhez kell egy kis **esti ütemező** a játékórán (`ep2.min`), mint a reggeli kávénál és kulcsnál.
 
 ---
 
-## 8. A fogkrémcsere  ⬜ terv kész
+## 8. A fogkrémcsere  ✅ kész
+
+- **Megvalósítás** (`src/ep2/toothpaste.js`, a tárgyak modelljei: `food.js`, a leltár: `inventory.js`): `buildBath()` a mosdó két oldalára teszi Angi nyitható faliszekrényét (E – nyit / csuk; bent üvegek, tégelyek, parfüm, a felvehető sarokkrém és arcmaszk) és a polcot (négy pohár fogkefével, mellettük a fogkrém – a `paste` lerakóhely). A chilikrém a hűtő felső polcán van. Esti ütemező (`toothTick`): 20:45-kor anya, 21:30-kor apa megy fogat mosni (útkeresés, ajtót nyit, villanyt kapcsol), és azt használja, ami a fogkrém helyén van: anya + sarokkrém → öklendezve kirohan, kör a konyhában, kétszer iszik a csapból, „SAROKKRÉMEM!”, apát gyanúsítja; apa + chilikrém → vörösödő fej (az arc vertex-színei), gőz a füléből, rohan a csaphoz, káromkodik, anya rászól; arcmaszk → Petyust megkeresi és leszidja; anya + chili → visszaviszi a hűtőbe; apa + sarokkrém → „lábszagú…”; nincs semmi a helyén → „Hol a fogkrém?!”. Rajtakapás: ha a szülő látja Petyust a polcnál / a szekrénynél. Mentés: `r2-fogkrem` (`MISCHIEFS2`), érték: a becsapottak száma. Állapot: `tp`.
 
 - **Új tárgyak a fürdőben** (a mosdó fölött, a falon):
   - **A mosdó egyik oldalán Angi kozmetikai szekrénye:** kis, nyitható faliszekrény (E – ajtó nyit / csuk), bent polcokon Angi dolgai: krémes tégelyek, tubusok, flakonok, parfüm, vattakorong. Ezek közül **két krém felvehető:**
@@ -186,7 +188,7 @@ Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **na
 - **Az utcán és az udvaron** az 1. rész park-lámpái (kandeláberek: `LAMPS`) – este világít a lámpaházuk, alattuk fényfolt a földön, a házhoz legközelebbi háromnak valódi fénye is van.
 - Nincs pizsama; a nővér nincs otthon; a reggeli csibészségek nem futnak; apa és anya esti mondatai („Megírtad a leckét?”, „Mindjárt kész a vacsora!”), 21:15 után anya lefekvésre küld. Petyus a bejárati ajtónál kezd (most ért haza).
 - **E – lefekvés** Petyus ágyánál → másnap reggel.
-- ⬜ Később: a 3 esti csibészség (terv kész: 8. A fogkrémcsere, 9. Meccs vagy sorozat?, 10. A lepedős kísértet), vacsora, fürdés, tévézés.
+- ◐ Az esti csibészségek: ✅ 8. A fogkrémcsere; ⬜ 9. Meccs vagy sorozat?, ⬜ 10. A lepedős kísértet. ⬜ Később: vacsora, fürdés, tévézés.
 
 ## A reggel vége, a késés  ◐ részben
 
@@ -333,7 +335,7 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 4. ✅ **Naptár és napszakok** (naptár, óra, HUD, a napszakok köre, átvezető kártya, hétvége, a hónap vége): állapot (`nap`, `napszak`, játékóra), mentés `localStorage`-ba, HUD-elem, átvezetők a váltáshoz.
 5. ✅ **Otthon – reggel:** a lakás voxelből az alaprajz alapján (falak, ajtók, ablakok, padló, bútorok), babaház-nézet, reggeli fények, Petyus/Petya/Angi elhelyezése, mozgás, ütközés.
 6. ◐ Iskola (✅ helyszín), délutáni otthon (✅ helyszín), csibészségek (✅ a reggeliek, ⬜ az iskolaiak, ⬜ az estiek – terv kész).
-7. ⬜ **Esti csibészségek:** esti ütemező (fogmosás, meccs, szemétlevitel) → 8. A fogkrémcsere (fürdőszobai szekrény és polc, tubusok, a hűtő chilikréme) → 9. Meccs vagy sorozat? → 10. A lepedős kísértet.
+7. ◐ **Esti csibészségek:** ✅ esti ütemező a fogmosáshoz → ✅ 8. A fogkrémcsere → ⬜ 9. Meccs vagy sorozat? (meccs-ütemező) → ⬜ 10. A lepedős kísértet (szemétlevitel).
 
 ## Döntések
 

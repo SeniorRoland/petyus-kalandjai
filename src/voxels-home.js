@@ -151,7 +151,6 @@ function bathSink(seed) {   // vanity unit + basin + mirror on the wall (back at
   bx(g, -0.33, 0.78, -0.24, 0.33, 0.88, 0.24, C.white); hole(g, -0.2, 0.82, -0.12, 0.2, 0.88, 0.16);
   bx(g, -0.02, 0.88, -0.22, 0.02, 1.02, -0.18, C.chrome); bx(g, -0.02, 0.98, -0.18, 0.02, 1.02, -0.1, C.chrome);
   bx(g, -0.27, 1.1, -0.25, 0.27, 1.7, -0.22, C.white2); bx(g, -0.24, 1.13, -0.22, 0.24, 1.67, -0.21, 0xcfe8f3);
-  bx(g, 0.15, 0.88, -0.2, 0.21, 1.0, -0.14, 0x5fae6a); bx(g, 0.17, 1.0, -0.18, 0.19, 1.08, -0.16, 0xffc24d);   // cup + toothbrush
   return g;
 }
 // ---------------------------------------------------------------- the WC (2.5 cm voxels) and its two hinged parts
@@ -568,7 +567,7 @@ export const HOME_CATALOG = [
   { id: 'fridge_wide', name: 'Széles hűtő', cat: 'Lakás', variants: 1, build: fridgeWide, collider: { hx: 0.45, hz: 0.33, h: 1.85 }, desc: 'Kétajtós (side-by-side) hűtő vízadagolóval, hűtőmágnesekkel, egy rajzzal.', use: 'Konyha, a nyugati falon' },
   { id: 'coffee_maker', name: 'Kávéfőző', cat: 'Lakás', variants: 1, build: coffeeMaker, collider: null, desc: 'Kis presszógép csészével – apa reggeli kávéja.', use: 'Konyhapult' },
   { id: 'bathtub', name: 'Kád', cat: 'Lakás', variants: 1, build: bathtub, collider: { hx: 0.85, hz: 0.38, h: 0.6 }, desc: 'Kád vízzel, csapteleppel és gumikacsával a peremén.', use: 'Fürdőszoba' },
-  { id: 'bath_sink', name: 'Mosdó tükörrel', cat: 'Lakás', variants: 1, build: bathSink, collider: { hx: 0.33, hz: 0.24, h: 0.9 }, desc: 'Mosdószekrény, csap, fogmosó pohár, tükör a falon.', use: 'Fürdőszoba (reggeli fogmosás)' },
+  { id: 'bath_sink', name: 'Mosdó tükörrel', cat: 'Lakás', variants: 1, build: bathSink, collider: { hx: 0.33, hz: 0.24, h: 0.9 }, desc: 'Mosdószekrény, csap, tükör a falon (a fogmosó poharak a mellette lévő polcon: toothpaste.js).', use: 'Fürdőszoba (reggeli fogmosás)' },
   { id: 'washing_machine', name: 'Mosógép', cat: 'Lakás', variants: 1, build: washingMachine, collider: { hx: 0.3, hz: 0.3, h: 0.9 }, desc: 'Elöltöltős mosógép kerek üvegajtóval és kezelőpanellel.', use: 'Fürdőszoba' },
   { id: 'shelf', name: 'Polc', cat: 'Lakás', variants: 1, build: shelf, collider: { hx: 0.4, hz: 0.18, h: 1.4 }, desc: 'Álló fürdőszobapolc törölközőkkel, flakonokkal és szennyeskosárral.', use: 'Fürdőszoba' },
   { id: 'toilet', name: 'WC', cat: 'Lakás', variants: 2, build: toilet, collider: { hx: 0.2, hz: 0.33, h: 0.8 }, desc: 'Finomabb (2,5 cm-es) voxelekből: ívelt csésze vízzel, tartály kétrészes öblítőgombbal, zsanérok. Az 1. változaton lehajtott ülőke és fedél; a 2. változat nélkülük – a játékban az ülőke és a fedél külön, fel- és lehajtható (E).', use: 'WC' },
