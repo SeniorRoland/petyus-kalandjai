@@ -53,6 +53,7 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 | `occlude.js` | ami a kamera és Petyus közé kerül (fa, lámpa …, a `world.js` `INSTANCES` példánylistájából), áttetsző lesz: a példány elrejtve, helyette áttetsző másolat (`updateOcclusion`) |
 | `install.js` | telefonon a kezdőképernyőn „Telepítsd alkalmazásként!” (Android: `beforeinstallprompt` → Telepítés; iPhone: útmutató); „Most nem” után nem kérdez újra (`localStorage`) |
 | `touchui.js` | érintős eszközön a RÚGÁS / HASZNÁL / FUTÁS gombok felirata és láthatósága állapotonként (`updateTouchUI`); a szövegek gombnevei: `touchText()` a `util.js`-ben (a `setPrompt`, `toast` és a napló tippjei használják) |
+| `lightmask.js` | a lakás mennyezeti lámpái (spotfények) csak a saját helyiségükben világítanak: a shaderben a fényük a szoba határán megáll (`setSpotRoom(i, doboz)`, a `main.js` elsőként tölti be; a Lambert anyagok közös uniformot kapnak, saját `onBeforeCompile` esetén `lightMaskUniforms` – pizsama); így a vékony falakon, ajtókon nem szivárog át a fény |
 | `quality.js` | grafikai minőség: `Q.level` 2 asztal / 1 mobil / 0 minimális, `MOBILE`, `fxAllowed()` (részecske-ritkítás), `watchFrame()` (lassú eszközön automatikus visszaváltás), `?quality=high|mobile|low` |
 | `world.js` | voxel batch, csempék/talaj, ütközők, világépítés, voxel-kellékek, `TREES` |
 | `rigs.js` · `actors.js` | karakter-rigek · `Actor`, állatmodellek, FX |

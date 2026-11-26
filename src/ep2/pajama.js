@@ -3,6 +3,7 @@
 // and a pattern attribute (stripe colour + kind) tells the material where to draw the pattern. The pattern is computed from
 // the bind-pose position, so it moves with the body when the bones turn (stripes on the sleeves follow the arm).
 import * as THREE from 'three';
+import { lightMaskUniforms } from '../lightmask.js';
 
 // neck: the top of the shirt in model units (above it: face, hair – unchanged); kind: 1 stripes, 2 checks, 3 dots
 export const PAJAMAS = {
@@ -20,6 +21,7 @@ function pajamaMaterial(who) {
   const mat = mats[who] = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });   // double-sided like the plain character material (rigs.js)
   const u = pants[who] = { down: { value: 0 }, hip: { value: 1 }, knee: { value: 0.5 }, skin: { value: new THREE.Color(0xf0c09a) } };
   mat.onBeforeCompile = (sh) => {
+    lightMaskUniforms(sh);   // (its own hook replaces the Lambert one: the lamps' room limit by hand – lightmask.js)
     sh.uniforms.uPantsDown = u.down; sh.uniforms.uHipY = u.hip; sh.uniforms.uKneeY = u.knee; sh.uniforms.uSkin = u.skin;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec4 pat;\nvarying vec4 vPat;\nvarying vec3 vPP;')

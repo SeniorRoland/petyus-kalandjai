@@ -10,6 +10,7 @@ import { damp } from '../util.js';
 import { CATALOG, getGeometry } from '../voxels.js';
 import { TOILET, toiletLidGeometry, toiletSeatGeometry } from '../voxels-home.js';
 import { Q } from '../quality.js';
+import { setSpotRoom } from '../lightmask.js';
 import * as F from './food.js';
 import { INSTANCES, addBoxCol, addCircleCol, colliders, mergeStatic, partMesh, vcMat } from '../world.js';
 
@@ -334,6 +335,9 @@ function updateLights(P) {
     const s = on[i]; l.intensity = s ? LIGHT_ON : 0;
     // the light of Petyus's room (the nearest): every frame – the people move in it; the other two in turns
     if (l.castShadow && s && (i === 0 || shadowTurn % (POOL_N - 1) === i - 1)) l.shadow.needsUpdate = true;
+    // the light stays in its room (lightmask.js): a little over the walls' inner faces – the room's own walls and the near
+    // face of a door are lit, the next room's faces are not
+    { const r = s && ROOMS.find((q) => q.id === s.room), e = 0.04; setSpotRoom(i, r ? { x0: r.x0 - e, z0: r.z0 - e, x1: r.x1 + e, z1: r.z1 + e } : null); }
     if (s) { l.position.set(s.light.position.x, WALL_H - 0.12, s.light.position.z); l.target.position.set(s.light.position.x, 0, s.light.position.z); l.target.updateMatrixWorld(); }
   });
 }
