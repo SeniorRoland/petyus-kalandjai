@@ -147,7 +147,7 @@ function nextLeg() {
 }
 
 // ---------------------------------------------------------------- every frame (the evening – ep2.js, after the parents' update)
-export function toothTick(dt, min) {
+export function toothTick(dt, min, busy = () => false) {
   // somebody saw Petyus fiddling at the shelf / in the cabinet
   const P = G.petike.pos;
   tp.seenT -= dt;
@@ -157,8 +157,8 @@ export function toothTick(dt, min) {
     }
   }
   if (!tp.cur) {
-    if (!tp.momDone && min >= T_MOM && min < T_MOM + 40) { tp.momDone = true; begin('angi'); }
-    else if (!tp.dadDone && min >= T_DAD && min < T_DAD + 40) { tp.dadDone = true; begin('petya'); }
+    if (!tp.momDone && min >= T_MOM && min < T_MOM + 40 && !busy('angi')) { tp.momDone = true; begin('angi'); }
+    else if (!tp.dadDone && min >= T_DAD && min < T_DAD + 40 && !busy('petya')) { tp.dadDone = true; begin('petya'); }
     return;
   }
   const who = tp.cur, a = who === 'angi' ? G.angi : G.petya, mom = who === 'angi';

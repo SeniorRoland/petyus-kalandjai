@@ -243,3 +243,17 @@ export function smallJar(color, lid) {
   const g = grp(mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.03, 16), mat(color), 0, 0.015, 0));
   g.add(mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.012, 16), mat(lid), 0, 0.036, 0)); return g;
 }
+// the TV remote: a black bar with coloured buttons, lying flat (tvmatch.js)
+export function tvRemote() {
+  const g = grp(mesh(new THREE.BoxGeometry(0.05, 0.018, 0.16), mat(0x1f2124), 0, 0.009, 0));
+  g.add(mesh(new THREE.BoxGeometry(0.014, 0.006, 0.014), mat(0xd62828), 0, 0.02, -0.055));   // the red power button
+  for (let i = 0; i < 9; i++) g.add(mesh(new THREE.BoxGeometry(0.009, 0.005, 0.009), mat(i % 4 === 0 ? 0x3a86ff : 0x8d99ae), ((i % 3) - 1) * 0.013, 0.02, -0.02 + Math.floor(i / 3) * 0.018));
+  return g;
+}
+// the rubbish bag: black, tied at the top (ghost.js – dad takes it out)
+export function rubbishBag() {
+  const g = grp(mesh(new THREE.SphereGeometry(0.17, 12, 9), mat(0x1b1d20), 0, 0.17, 0));
+  g.children[0].scale.set(1, 1.15, 0.9);
+  g.add(mesh(new THREE.ConeGeometry(0.05, 0.1, 8), mat(0x1b1d20), 0, 0.39, 0));
+  return g;
+}

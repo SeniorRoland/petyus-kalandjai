@@ -1,7 +1,7 @@
 # 2. rész (Szeptember – Otthon és iskola): terv
 
 Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ✅ A napok köre is kész: indulás (7:30 vagy mindhárom reggeli csibészség után) → iskola (helyszín, csibészségek nélkül) → otthon délután–este (sötét, lámpák) → lefekvés → másnap reggel; hétvége és hónap vége átvezetővel. ⬜ Hátravan: az iskola 4 és az este 3 csibészsége (az estiek terve kész, a fogkrémcsere elkészült), tesztelés telefonon.
+**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ✅ A napok köre is kész: indulás (7:30 vagy mindhárom reggeli csibészség után) → iskola (helyszín, csibészségek nélkül) → otthon délután–este (sötét, lámpák) → lefekvés → másnap reggel; hétvége és hónap vége átvezetővel. ✅ Az este 3 csibészsége is kész. ⬜ Hátravan: az iskola 4 csibészsége, tesztelés telefonon.
 
 ## Röviden
 
@@ -26,8 +26,8 @@ Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, 
 | 3 | Hol a kulcs, Angi? | otthon, reggel | anya keresni kezd | 2 percnél tovább keres | fura helyen volt, és Petyus nem árulta el | „Anya kulcsa mindig a cipősszekrényen van.” | **kész** |
 | 4–7 | (iskolai csibészségek) | iskola | | | | | ⬜ még nincs kitalálva |
 | 8 | A fogkrémcsere | otthon, este (fürdő) | anya a sarokkrémmel **vagy** apa a chilikrémmel mos fogat | ugyanazon az estén mindketten | és Petyust senki nem kapta rajta | „A fürdőben minden tubus egyforma… majdnem.” | **kész** |
-| 9 | Meccs vagy sorozat? | otthon, este (nappali) | átkapcsolsz a meccs alatt | a tizenegyesnél | és apa anyát hibáztatja | „Este apa meccset néz, anya a sorozatát várja.” | ⬜ terv kész |
-| 10 | A lepedős kísértet | otthon, este (előtér) | apa megijed | sötétben: „MEGADOM MAGAM!” | és mire felkapcsolják a villanyt, Petyus az ágyában fekszik | „Este, sötétben minden lepedő gyanús.” | ⬜ terv kész |
+| 9 | Meccs vagy sorozat? | otthon, este (nappali) | átkapcsolsz a meccs alatt | a tizenegyesnél | és apa anyát hibáztatja | „Este apa meccset néz, anya a sorozatát várja.” | **kész** |
+| 10 | A lepedős kísértet | otthon, este (előtér) | apa megijed | sötétben: „MEGADOM MAGAM!” | és mire felkapcsolják a villanyt, Petyus már az ágyánál van, a lepedő az ágyon | „Este, sötétben minden lepedő gyanús.” | **kész** |
 
 ---
 
@@ -101,9 +101,9 @@ Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, 
 
 Az iskola helyszínnel együtt (lásd lent).
 
-## 8–10. Esti csibészségek  ◐ részben (8. kész)
+## 8–10. Esti csibészségek  ✅ kész
 
-Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **napirendre** épül: vacsora után apa meccset néz (20:00), anya a sorozatát várja (20:30); fogmosás (anya 20:45, apa 21:30); apa kiviszi a szemetet (21:40); lefekvés. Ehhez kell egy kis **esti ütemező** a játékórán (`ep2.min`), mint a reggeli kávénál és kulcsnál.
+Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **napirendre** épül: vacsora után apa meccset néz (20:00), anya a sorozatát várja (20:30); fogmosás (anya 20:45, apa 21:30); apa kiviszi a szemetet (21:00); lefekvés. Az **esti ütemező** a játékórán (`ep2.min`, `ep2.js` `updateParents`): apa egyszerre egy dolgot csinál (`dadFree`: meccs 20:00–20:42, szemét 21:00, fogmosás 21:30).
 
 ---
 
@@ -139,7 +139,9 @@ Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **na
 
 ---
 
-## 9. Meccs vagy sorozat?  ⬜ terv kész
+## 9. Meccs vagy sorozat?  ✅ kész
+
+- **Megvalósítás** (`src/ep2/tvmatch.js`, a tévé: `appliances.js` – csatorna `match` / `series`, `setPenalty`; a távirányító: `inventory.js` `remote`, F-művelet: `invHooks.action`): 20:00-kor apa a fotelbe ül (ha Petyus ül ott, mögötte áll), bekapcsolja a meccset; anya szól a 8:30-as sorozatáért. A távirányító a tévészekrényen; Petyus kezében, a szobában F – átkapcsolás. Apa kétszer elmegy vízért (20:09, 20:29) – ha közben átkapcsolsz: „MI EZ?! Hol a meccs?!”, a távirányító Petyusnál → őt hibáztatja, különben anyát (★). Ha apa ott ül és átkapcsolsz: elveszi a távirányítót (nincs csillag). 20:19 tizenegyes (felirat a tévén, apa feláll, „Na… NA… NAAA…”): ha ekkor kapcsolsz át → „NEEEE!!”, térdre rogy, a szomszédból „GÓÓÓL!”, majd körülnéz: távirányító Petyusnál → „PETYUUUS!!” (★★), különben „ANGIII!!” (★★★). 20:42-kor vége, apa vissza az asztalhoz. Állapot: `tm`. Mentés: `r2-meccs`.
 
 - **Alaphelyzet:** 20:00-kor apa a kanapén meccset néz (a tévé bekapcsol, zöld pálya a képernyőn, szurkolás). Anya a konyhában pakol, és 20:30-ra várja a sorozatát („Petya, fél kilenckor átkapcsolsz, ugye?” – „Persze, persze…”).
 - **Menet:**
@@ -153,9 +155,11 @@ Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **na
 
 ---
 
-## 10. A lepedős kísértet  ⬜ terv kész
+## 10. A lepedős kísértet  ✅ kész
 
-- **Alaphelyzet:** 21:40 körül apa kiviszi a szemetet (bejárati ajtó, lépcsőház), majd visszajön.
+- **Megvalósítás** (`src/ep2/ghost.js`): Petyus ágyánál Szóköz – lepedő magára / vissza (fehér lepel szemlyukakkal, alatta a teste nem látszik, „Húúúú…”). 21:00-kor apa a szemeteszsákkal kimegy a bejárati ajtón, kb. 18 mp múlva visszajön, és az előszobán át az asztalhoz megy. Ha a lepedős Petyus mellette Szóközt nyom: „BÚÚÚ!!” – világos előszobában apa csak megriad és felismeri (★), sötétben (lekapcsolt villany) felteszi a kezét: „MEGADOM MAGAM!” (★★). Anya odaszalad, felkapcsolja a villanyt: ha Petyus addigra az ágyánál van, a lepedő az ágyon → apát szidja, hogy felébreszti a gyereket, a kísértetet senki nem hiszi el (★★★). Állapot: `gh`. Mentés: `r2-kiserteet`. (Eltérés a tervtől: a szemét 21:00-kor megy ki, hogy ne ütközzön apa fogmosásával; az alibi: az ágyánál áll, nem fekszik be.)
+
+- **Alaphelyzet:** 21:00-kor apa kiviszi a szemetet (bejárati ajtó, lépcsőház), majd visszajön.
 - **Menet:**
   1. Petyus a saját ágyáról leveszi a lepedőt (E az ágynál – „lepedő fel”): fehér lepel lesz rajta két szemlyukkal, lassabban jár, halkan „Húúúú…”-zik.
   2. Lekapcsolja az előszoba villanyát (a meglévő kapcsolók), és elbújik az előszobában (a cipősszekrény vagy a kabátok mellett).
@@ -188,7 +192,7 @@ Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **na
 - **Az utcán és az udvaron** az 1. rész park-lámpái (kandeláberek: `LAMPS`) – este csak a lámpaházuk világít (fénykör és valódi fény nélkül); a ház bejáratánál nincs lámpa.
 - Nincs pizsama; a nővér nincs otthon; a reggeli csibészségek nem futnak; apa és anya esti mondatai („Megírtad a leckét?”, „Mindjárt kész a vacsora!”), 21:15 után anya lefekvésre küld. Petyus a bejárati ajtónál kezd (most ért haza).
 - **E – lefekvés** Petyus ágyánál → másnap reggel.
-- ◐ Az esti csibészségek: ✅ 8. A fogkrémcsere; ⬜ 9. Meccs vagy sorozat?, ⬜ 10. A lepedős kísértet. ⬜ Később: vacsora, fürdés, tévézés.
+- ✅ Az esti csibészségek: 8. A fogkrémcsere, 9. Meccs vagy sorozat?, 10. A lepedős kísértet. ⬜ Később: vacsora, fürdés.
 
 ## A reggel vége, a késés  ◐ részben
 
@@ -335,7 +339,7 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 4. ✅ **Naptár és napszakok** (naptár, óra, HUD, a napszakok köre, átvezető kártya, hétvége, a hónap vége): állapot (`nap`, `napszak`, játékóra), mentés `localStorage`-ba, HUD-elem, átvezetők a váltáshoz.
 5. ✅ **Otthon – reggel:** a lakás voxelből az alaprajz alapján (falak, ajtók, ablakok, padló, bútorok), babaház-nézet, reggeli fények, Petyus/Petya/Angi elhelyezése, mozgás, ütközés.
 6. ◐ Iskola (✅ helyszín), délutáni otthon (✅ helyszín), csibészségek (✅ a reggeliek, ⬜ az iskolaiak, ⬜ az estiek – terv kész).
-7. ◐ **Esti csibészségek:** ✅ esti ütemező a fogmosáshoz → ✅ 8. A fogkrémcsere → ⬜ 9. Meccs vagy sorozat? (meccs-ütemező) → ⬜ 10. A lepedős kísértet (szemétlevitel).
+7. ✅ **Esti csibészségek:** esti ütemező → 8. A fogkrémcsere → 9. Meccs vagy sorozat? → 10. A lepedős kísértet.
 
 ## Döntések
 
