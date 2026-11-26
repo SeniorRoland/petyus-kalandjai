@@ -73,21 +73,27 @@ export function walkable(x, z) { const g = blockedGrid(); const [i, j] = cellOf(
 // a walk given as points (the scripted ones: dressing, the creamy coffee, mum's jobs …) made safe: a leg that would cross a
 // wall or tall furniture is replaced by a found path round it (closed doors count as open: the walker opens them – ep2.js)
 const passDoorsOf = (doors) => new Set(doors.filter((d) => d.pivot && d.kind !== 'locked').map((d) => d.col));
-function lineFree(g, x0, z0, x1, z1) {
+// skipStart / skipEnd: only the walk's very first and very last point may lie in a blocked cell (he gets up from a chair, he
+// sits down at the bowl) – every other point of the walk must be free (a leg's ends too: a found path of short legs)
+function lineFree(g, x0, z0, x1, z1, skipStart, skipEnd) {
   const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 0.07)), [ei, ej] = cellOf(x1, z1), [si, sj] = cellOf(x0, z0);
-  for (let k = 1; k < n; k++) {
+  for (let k = 0; k <= n; k++) {
     const [i, j] = cellOf(x0 + (x1 - x0) * k / n, z0 + (z1 - z0) * k / n);
-    if ((i === si && j === sj) || (i === ei && j === ej)) continue;   // (the start or the goal itself may be in a chair / at the bowl)
+    if ((skipStart && i === si && j === sj) || (skipEnd && i === ei && j === ej)) continue;
     if (g[idx(i, j)]) return false;
   }
   return true;
 }
 export function navRoute(x, z, pts, doors) {
-  const g = blockedGrid(passDoorsOf(doors), PAD_PERSON), out = [];
-  for (const p of pts) {
-    if (lineFree(g, x, z, p[0], p[1])) out.push(p);
+  const g = blockedGrid(passDoorsOf(doors), PAD_PERSON);
+  // the points that need not be free: the start and the goal; any other point in a blocked cell is dropped (the found path
+  // replaces the stretch round it)
+  const last = pts[pts.length - 1], keep = pts.filter((p, k) => k === pts.length - 1 || !g[idx(...cellOf(p[0], p[1]))]);
+  const out = [];
+  keep.forEach((p, k) => {
+    if (lineFree(g, x, z, p[0], p[1], k === 0, p === last)) out.push(p);
     else { const q = pathOn(g, x, z, p[0], p[1]); if (q && q.length) out.push(...q); else out.push(p); }
     x = p[0]; z = p[1];
-  }
+  });
   return out;
 }
