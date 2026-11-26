@@ -52,19 +52,19 @@ const DOOR_H = 2.1;
 const WIN = (a, b, y0 = 0.85, y1 = 2.2) => ({ a, b, y0, y1 });
 const WALLS = [
   // outer north: bathroom, WC, kitchen ×2 windows; Petyus's room: the door to the north balcony + a window
-  { kind: 'out', n: [0, -1], x0: -TE, z0: -TE, x1: XE + TE, z1: 0, open: [WIN(1.3, 2.3, 1.5), WIN(4.2, 4.9, 1.6, 2.1), WIN(6.4, 8.0, 1.05), WIN(8.6, 10.2, 1.05), { a: 12.2, b: 13.1, glass: true, swing: 1 }, WIN(13.6, 15.0)] },
+  { kind: 'out', n: [0, -1], x0: -TE, z0: -TE, x1: XE + TE, z1: 0, open: [WIN(1.3, 2.3, 1.5), WIN(4.2, 4.9, 1.6, 2.1), WIN(6.4, 8.0, 1.05), WIN(8.6, 10.2, 1.05), { a: 12.125, b: 13.175, glass: true, swing: 1 }, WIN(13.6, 15.0)] },
   // outer west: the front door (hallway); the sibling's room has pictures above the bed there (no window)
   { kind: 'out', n: [-1, 0], x0: -TE, z0: 0, x1: 0, z1: ZS + TE, open: [{ a: 2.85, b: 3.8, leaf: 'front' }] },
   // outer south: two windows in each of the south rooms
   { kind: 'out', n: [0, 1], x0: -TE, z0: ZS, x1: XE + TE, z1: ZS + TE, open: [WIN(1.0, 3.0), WIN(3.8, 5.8), WIN(8.0, 10.2), WIN(11.6, 14.6)] },
   // outer east: Petyus's window; the parents' room: the door to the east balcony + a window
-  { kind: 'out', n: [1, 0], x0: XE, z0: -TE, x1: XE + TE, z1: ZS, open: [WIN(1.0, 3.0), { a: 5.4, b: 6.4, glass: true, swing: -1 }, WIN(6.9, 8.7)] },
+  { kind: 'out', n: [1, 0], x0: XE, z0: -TE, x1: XE + TE, z1: ZS, open: [WIN(1.0, 3.0), { a: 5.375, b: 6.425, glass: true, swing: -1 }, WIN(6.9, 8.7)] },
   // inner
-  { kind: 'in', x0: 0, z0: 2.3, x1: 5.42, z1: 2.42, open: [{ a: 2.2, b: 3.1, swing: -1, start: 'open' }, { a: 4.1, b: 4.9, swing: -1 }] },   // bathroom + WC | hallway
+  { kind: 'in', x0: 0, z0: 2.3, x1: 5.42, z1: 2.42, open: [{ a: 2.125, b: 3.175, swing: -1, start: 'open' }, { a: 3.975, b: 5.025, swing: -1 }] },   // bathroom + WC | hallway (the doors 1.05 m: dad is broad)
   { kind: 'in', x0: 3.6, z0: 0, x1: 3.72, z1: 2.3 },                                                   // bathroom | WC
   { kind: 'in', x0: 5.3, z0: 0, x1: 5.42, z1: 2.3 },                                                   // WC | kitchen
-  { kind: 'in', x0: 11.6, z0: 0, x1: 11.72, z1: 4.2, open: [{ a: 3.05, b: 3.95, swing: 1 }] },           // kitchen | Petyus's room
-  { kind: 'in', x0: 0, z0: 4.2, x1: XE, z1: 4.32, open: [{ a: 2.6, b: 3.5, leaf: 'locked' }, { a: 9.4, b: 10.3, swing: 1, start: 'open' }] },   // north row | south row
+  { kind: 'in', x0: 11.6, z0: 0, x1: 11.72, z1: 4.2, open: [{ a: 2.975, b: 4.025, swing: 1 }] },         // kitchen | Petyus's room
+  { kind: 'in', x0: 0, z0: 4.2, x1: XE, z1: 4.32, open: [{ a: 2.6, b: 3.5, leaf: 'locked' }, { a: 9.325, b: 10.375, swing: 1, start: 'open' }] },   // north row | south row
   { kind: 'in', x0: 6.8, z0: 4.32, x1: 6.92, z1: ZS },                                                 // sibling | parents
 ];
 const COL = { wall: 0xf4efe6, wallIn: 0xece6da, front: 0xeee7db, trim: 0x8a6a4a, frame: 0xffffff, door: 0xb98b58, doorDark: 0x8a6238, sill: 0xdcd4c6 };

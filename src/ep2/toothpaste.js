@@ -23,7 +23,7 @@ import { mergeStatic } from '../world.js';
 import { PAJAMAS } from './pajama.js';
 
 const T_MOM = 20 * 60 + 45, T_DAD = 21 * 60 + 30;   // when they brush their teeth (ep2.min)
-const SINK = { x: 2.85, z: 1.05, h: Math.PI / 2 };   // in front of the basin (it is on the bathroom's east wall)
+const SINK = { x: 2.78, z: 1.05, h: Math.PI / 2 };   // in front of the basin (it is on the bathroom's east wall; a step back: the hands clear the vanity's corner)
 const TAP = { x: 8.6, z: 0.95, h: Math.PI };         // in front of the kitchen sink
 const LAP = [[7.0, 3.1], [8.8, 3.25], [8.85, 1.35], [6.85, 1.45]];   // round the kitchen (between the fridge and the table)
 
