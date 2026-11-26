@@ -177,9 +177,9 @@ function buildGround(b) {
   for (let x = -50; x <= -37; x += 0.65) b.bx(x, 0.026, -8, 0.12, 0.006, 30, 0xa9a69c, 0, 0.02);
   for (let z = -23; z <= 7; z += 0.65) b.bx(-43.5, 0.026, z, 13, 0.006, 0.12, 0xa9a69c, 0, 0.02);
   b.bx(-43.5, 0, 13.5, 4, 0.03, 11, C.asphalt, 0, 0.02);      // its drive from the street
-  b.bx(-22, 0, 13.6, 10, 0.03, 4.2, C.gravel2, 0, 0.02);  // drive: parking → garages
+  b.bx(-20.8, 0, 13.6, 7.6, 0.03, 4.2, C.gravel2, 0, 0.02);  // drive: parking → the lane (meeting it edge to edge: no overlapping, flickering faces)
   b.bx(DOOR_X, 0, 10.0, 1.6, 0.05, 1.3, C.path, 0, 0.03);
-  b.bx(-16.5, 0, 17, 5, 0.035, 1.2, C.asphalt, 0, 0.02);  // the gate for cars
+  b.bx(-16.5, 0, 17.0, 5, 0.03, 0.8, C.asphalt, 0, 0.02);  // the gate for cars (between the slabs and the sidewalk, not over them)
   b.bx(DOOR_X, 0, 17, 1.6, 0.05, 1.2, C.path, 0, 0.03);   // the gate for people
   // a path round the house (gravel strip)
   b.bx((HB.x0 + HB.x1) / 2, 0, HB.z0 - 0.6, HB.x1 - HB.x0 + 2.4, 0.03, 1.2, C.path, 0, 0.04);
@@ -257,7 +257,7 @@ export function setEvening() {
   // (instanced: all the lamps' glowing houses in one draw call, all the pools of light in another)
   const gGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2), pGeo = new THREE.CircleGeometry(3.2, 24); pGeo.rotateX(-Math.PI / 2);
   const gi = new THREE.InstancedMesh(gGeo, glow, LAMPS.length), pi = new THREE.InstancedMesh(pGeo, pool, LAMPS.length), m4 = new THREE.Matrix4();
-  LAMPS.forEach(([x, z], i) => { gi.setMatrixAt(i, m4.makeTranslation(x, 3.15, z)); pi.setMatrixAt(i, m4.makeTranslation(x, 0.035, z)); });
+  LAMPS.forEach(([x, z], i) => { gi.setMatrixAt(i, m4.makeTranslation(x, 3.15, z)); pi.setMatrixAt(i, m4.makeTranslation(x, 0.06, z)); });   // (the pools: clear of the paving and its joints – no flickering)
   pi.renderOrder = 1; gi.frustumCulled = pi.frustumCulled = false; scene.add(gi, pi);
   const near = [...LAMPS].sort((a, b) => Math.hypot(a[0] - 4, a[1] - 6) - Math.hypot(b[0] - 4, b[1] - 6)).slice(0, 2);
   for (const [x, z] of near) { const l = new THREE.PointLight(0xffd9a0, 14, 12, 1.6); l.position.set(x, 3.0, z); scene.add(l); }
@@ -423,7 +423,7 @@ function buildTraffic() {
       const h = new THREE.Mesh(CAR_LAMP, HEAD_MAT); h.position.set(s * 0.62, 0.62, 1.78); lit.add(h);
       const t = new THREE.Mesh(CAR_LAMP, TAIL_MAT); t.position.set(s * 0.62, 0.66, -1.88); lit.add(t);
     }
-    const beam = new THREE.Mesh(CAR_BEAM, BEAM_MAT); beam.position.set(0, 0.03, 4.2); lit.add(beam);
+    const beam = new THREE.Mesh(CAR_BEAM, BEAM_MAT); beam.position.set(0, 0.05, 4.2); lit.add(beam);
     carLights.push(lit);
     traffic.push({ grp, x, z: lanes[l].z, dir: lanes[l].dir, v, sound: 0 });
   });
