@@ -16,7 +16,7 @@ import { FY, put } from './home.js';
 
 // our block: the flat (x −0.25 … 15.85) + the stairwell and the neighbours' flat to the west; ground floor + 1st floor below
 const HB = { x0: -6.25, x1: 15.85, z0: -0.25, z1: 9.45 }, FLOOR = 3;
-const DOOR_X = -3.2;   // the entrance (south side, ground floor)
+const DOOR_X = (HB.x0 + HB.x1) / 2;   // the entrance: in the middle of the south side (between two window columns, none cut)
 const FENCE = { x0: -24, x1: 34, z0: -22, z1: 17 };
 // the house after the photo: white render, a pinkish-brown plinth, white windows with brown roller-blind boxes,
 // a red tiled hipped roof with dormers and brick chimneys, a dark-framed glass entrance
@@ -56,7 +56,7 @@ function block(b, x0, z0, x1, z1, y0, floors, col, opt = {}) {
 }
 function buildHouse(b) {
   // ground floor + 1st floor under the flat and the stairwell part (no roof: the flat sits on it)
-  block(b, HB.x0, HB.z0, HB.x1, HB.z1, 0, 2, C.facade, { roof: false, blinds: true, skip: (x, z, f) => f === 0 && z === HB.z1 && Math.abs(x - DOOR_X) < 1.6 });
+  block(b, HB.x0, HB.z0, HB.x1, HB.z1, 0, 2, C.facade, { roof: false, blinds: true, skip: (x, z, f) => f === 0 && z === HB.z1 && Math.abs(x - DOOR_X) < 1.9 });
   // 2nd floor west of the flat: the stairwell and the neighbours' flat, cut open at the top like the rest of the floor
   block(b, HB.x0, HB.z0, -0.25, HB.z1, FY, 1, C.facade2, { roof: false, step: 2.2, blinds: true });
   b.bx((HB.x0 - 0.25) / 2, FY + 2.6, (HB.z0 + HB.z1) / 2, -0.25 - HB.x0, 0.08, HB.z1 - HB.z0, C.roofCut, 0, 0);
@@ -75,10 +75,10 @@ function buildHouse(b) {
   b.bx(DOOR_X, 0, HB.z1 + 0.04, 2.6, 2.5, 0.1, C.doorFrame, 0, 0);
   for (const [x, w] of [[-0.95, 0.55], [-0.33, 0.6], [0.33, 0.6], [0.95, 0.55]]) b.bx(DOOR_X + x, 0.08, HB.z1 + 0.1, w - 0.06, 2.3, 0.04, 0x5f7f99, 0, 0.02);
   b.bx(DOOR_X - 0.06, 0.95, HB.z1 + 0.13, 0.04, 0.3, 0.04, 0xc9a227, 0, 0); b.bx(DOOR_X + 0.06, 0.95, HB.z1 + 0.13, 0.04, 0.3, 0.04, 0xc9a227, 0, 0);
-  for (const x of [HB.x0 + 0.15, 4.6, HB.x1 - 0.15]) b.bx(x, 0, HB.z1 + 0.1, 0.1, 9.0, 0.1, 0x8c8c8c, 0, 0);
+  for (const x of [HB.x0 + 0.15, 1.25, HB.x1 - 0.15]) b.bx(x, 0, HB.z1 + 0.1, 0.1, 9.0, 0.1, 0x8c8c8c, 0, 0);   // downpipes (between the windows)
   b.bx(DOOR_X, 2.6, HB.z1 + 0.7, 2.4, 0.15, 1.4, 0x6d6a66, 0, 0);
   for (let i = 0; i < 3; i++) b.bx(DOOR_X, 0, HB.z1 + 0.5 + i * 0.32, 2.2, 0.16 - i * 0.05, 0.36, 0xbdb6aa, 0, 0);
-  b.bx(DOOR_X + 1.2, 2.0, HB.z1 + 0.06, 0.35, 0.3, 0.04, 0x2f5f9e, 0, 0); b.bx(DOOR_X + 1.2, 2.06, HB.z1 + 0.09, 0.12, 0.18, 0.02, 0xffffff, 0, 0);
+  b.bx(DOOR_X + 1.6, 2.0, HB.z1 + 0.06, 0.35, 0.3, 0.04, 0x2f5f9e, 0, 0); b.bx(DOOR_X + 1.6, 2.06, HB.z1 + 0.09, 0.12, 0.18, 0.02, 0xffffff, 0, 0);
 }
 // the roof (after the photo): red tiled, hipped (stepped tile courses), dormers on the long sides, brick chimneys, an aerial.
 // From close up it would hide the flat: it fades in only when zoomed out (updateOutside).
@@ -165,11 +165,17 @@ function buildGround(b) {
   for (let x = -90; x < 95; x += 4) b.bx(x + 1, 0.02, 21, 2, 0.01, 0.15, C.line, 0, 0);
   b.bx(0, 0, 18, 190, 0.1, 1.2, C.walk, 0, 0.02); b.bx(0, 0, 24.1, 190, 0.1, 1.2, C.walk, 0, 0.02);
   // the parking lot in front of the house (z 10.6 … 16.6): gravelled concrete in patches, concrete curbs marking the bays
-  for (let x = -17; x < 13; x += 1.5) for (let z = 10.6; z < 16.6; z += 1.5) b.bx(x + 0.75, 0, z + 0.75, 1.5, 0.03, 1.5, pick([C.gravel, C.gravel2, 0xb9b3a8]), 0, 0.03);
+  // concrete slabs (3 × 3 m) with joints
+  b.bx(-2, 0, 13.6, 30, 0.03, 6, 0xc4c1ba, 0, 0.015);
+  for (let x = -17; x <= 13; x += 3) b.bx(x, 0.031, 13.6, 0.04, 0.005, 6, 0x9d9a93, 0, 0);
+  b.bx(-2, 0.031, 13.6, 30, 0.005, 0.04, 0x9d9a93, 0, 0);
   for (let k = 0; k <= 9; k++) b.bx(-15.5 + k * 3.0, 0.03, 15.9, 0.25, 0.08, 1.0, C.curb, 0, 0.02);
   b.bx(-26.4, 0, -6.6, 3.6, 0.03, 49, C.asphalt, 0, 0.02);  // the lane west of our fence: street → garages
   b.bx(-44, 0, -31.5, 36, 0.03, 5, C.asphalt, 0, 0.02);       // in front of the garages
-  b.bx(-43.5, 0, -8, 13, 0.03, 30, C.gravel2, 0, 0.03);       // parking between the two blocks
+  // parking between the two blocks: a grass-paver lot (grass in a concrete grid)
+  b.bx(-43.5, 0, -8, 13, 0.025, 30, 0x7fab58, 0, 0.04);
+  for (let x = -50; x <= -37; x += 0.65) b.bx(x, 0.026, -8, 0.12, 0.006, 30, 0xa9a69c, 0, 0.02);
+  for (let z = -23; z <= 7; z += 0.65) b.bx(-43.5, 0.026, z, 13, 0.006, 0.12, 0xa9a69c, 0, 0.02);
   b.bx(-43.5, 0, 13.5, 4, 0.03, 11, C.asphalt, 0, 0.02);      // its drive from the street
   b.bx(-22, 0, 13.6, 10, 0.03, 4.2, C.gravel2, 0, 0.02);  // drive: parking → garages
   b.bx(DOOR_X, 0, 10.0, 1.6, 0.05, 1.3, C.path, 0, 0.03);
@@ -235,6 +241,7 @@ for (let x = -60; x <= 70; x += 13) { LAMPS.push([x, 17.55]); LAMPS.push([x + 6.
 const eve = { on: false, win: null, list: [], t: 0 };
 export function setEvening() {
   eve.on = true;
+  for (const l of carLights) l.visible = true;   // the cars drive with their lights on
   // the lit windows: one instanced quad each, in front of the glass; an unlit one is scaled to nothing
   const geo = new THREE.PlaneGeometry(1, 1), mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const im = new THREE.InstancedMesh(geo, mat, WINDOWS.length); im.frustumCulled = false; scene.add(im); eve.win = im;
@@ -247,12 +254,12 @@ export function setEvening() {
   im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
   // the lamps: the lamp house glows, a soft pool of light under it; the three nearest the house get a real light
   const glow = new THREE.MeshBasicMaterial({ color: 0xfff0b8 }), pool = new THREE.MeshBasicMaterial({ color: 0xffe2a0, transparent: true, opacity: 0.22, depthWrite: false });
-  const gGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2), pGeo = new THREE.CircleGeometry(3.2, 24);
-  for (const [x, z] of LAMPS) {
-    const m = new THREE.Mesh(gGeo, glow); m.position.set(x, 3.15, z); scene.add(m);
-    const p = new THREE.Mesh(pGeo, pool); p.rotation.x = -Math.PI / 2; p.position.set(x, 0.035, z); p.renderOrder = 1; scene.add(p);
-  }
-  const near = [...LAMPS].sort((a, b) => Math.hypot(a[0] - 4, a[1] - 6) - Math.hypot(b[0] - 4, b[1] - 6)).slice(0, 3);
+  // (instanced: all the lamps' glowing houses in one draw call, all the pools of light in another)
+  const gGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2), pGeo = new THREE.CircleGeometry(3.2, 24); pGeo.rotateX(-Math.PI / 2);
+  const gi = new THREE.InstancedMesh(gGeo, glow, LAMPS.length), pi = new THREE.InstancedMesh(pGeo, pool, LAMPS.length), m4 = new THREE.Matrix4();
+  LAMPS.forEach(([x, z], i) => { gi.setMatrixAt(i, m4.makeTranslation(x, 3.15, z)); pi.setMatrixAt(i, m4.makeTranslation(x, 0.035, z)); });
+  pi.renderOrder = 1; gi.frustumCulled = pi.frustumCulled = false; scene.add(gi, pi);
+  const near = [...LAMPS].sort((a, b) => Math.hypot(a[0] - 4, a[1] - 6) - Math.hypot(b[0] - 4, b[1] - 6)).slice(0, 2);
   for (const [x, z] of near) { const l = new THREE.PointLight(0xffd9a0, 14, 12, 1.6); l.position.set(x, 3.0, z); scene.add(l); }
 }
 const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpS = new V3(), tmpP = new V3(), UP = new V3(0, 1, 0);
@@ -278,7 +285,7 @@ export function placeOutsideProps() {
   const g = { ground: true };
   // parked cars in front of the house (some bays empty)
   [0, 1, 2, 4, 5, 7, 8].forEach((k, n) => put('car', -14 + k * 3.0, 12.4, n % 2 ? Math.PI : 0, (n * 5) % 6, g));
-  put('car', -46, -31, Math.PI / 2, 3, g);   // one in front of the garages (the street has moving traffic: buildTraffic)
+  put('car', -41, 7, Math.PI, 3, g);   // (the street has moving traffic: buildTraffic)
   [[-46, -18, 0], [-41, -14, Math.PI], [-46, -6, 0], [-41, 0, Math.PI], [-46, 4, 0]].forEach(([x, z, r], n) => put('car', x, z, r, (n * 3 + 1) % 6, g));   // between the blocks
   [[7, -76, 0.3], [11, -79, -0.4], [14, -75, 1.2]].forEach(([x, z, r], n) => put('car', x, z, r, (n + 2) % 6, g));   // at the far end of the meadow
   // (the woods to the east and the trees further away are simple low-poly trees: buildFarTrees)
@@ -289,14 +296,14 @@ export function placeOutsideProps() {
   for (const [x, z] of [[-10, -5], [-8, 14.5], [3, 14.6], [20, -10], [26, 0], [-22, 12]]) put('bush', x, z, x, Math.abs(x) % 4, g);
   // the trampoline behind the house (north), a bench and a bin by the door
   put('trampoline', 6, -9, 0, 0, g);
-  put('bench', -6.2, 10.4, Math.PI, 0, g); put('bin', -0.8, 10.3, 0, 0, g);
+  put('bench', DOOR_X - 3.2, 10.4, Math.PI, 0, g); put('bin', DOOR_X + 2.8, 10.3, 0, 0, g);
   for (const [x, z] of LAMPS) put('lamp', x, z, 0, 0, g);   // the yard's and the street's lamps (lit in the evening: setEvening)
   // blossoming trees in front of the house (as on the photo), flower beds, hedges along the fence, a garden table, bike rack
   put('birch', 12.8, 12.2, 0.4, 1, { ground: true, s: 1.15 }); put('oak', -10.2, 10.3, 1.1, 2, { ground: true, s: 0.85 }); put('birch', 17.5, 11.5, 2.0, 3, { ground: true, s: 1.05 });
   put('bed_long', 19.0, 0.6, Math.PI / 2, 0, g); put('bed_long', 19.0, 3.6, Math.PI / 2, 1, g); put('bed_square', -8.5, -3.0, 0, 2, g); put('bed_small', 8.0, 10.05, 0, 0, g);
   for (let x = -21; x <= 31; x += 3.4) put('bush', x, -21.2, x, Math.abs(Math.round(x)) % 4, { ground: true, s: 0.8 });
   for (let z = -18; z <= 12; z += 3.6) { put('bush', 33.2, z, z, Math.abs(Math.round(z)) % 4, { ground: true, s: 0.8 }); put('bush', -23.2, z + 1.8, z, Math.abs(Math.round(z + 1)) % 4, { ground: true, s: 0.8 }); }
-  put('picnic', -16, 8, 0.3, 0, g); put('bikerack', -5.6, 10.1, 0, 0, g);
+  put('picnic', -16, 8, 0.3, 0, g); put('bikerack', DOOR_X - 5.4, 10.1, 0, 0, g);
   for (const [x, z] of [[-12, -15], [24, -3], [-19, -1]]) put('rock', x, z, x, Math.abs(x) % 4, g);
   // grass tufts and wild flowers on the lawns (seeded, so the same every time)
   for (let n = 0; n < 180; n++) { const a = AREAS[n % 3], x = R(a.x0, a.x1), z = R(a.z0, a.z1); put(n % 6 ? 'grass' : 'wildflower', x, z, n, n % 6, { ground: true, s: R(0.8, 1.3) }); }
@@ -402,11 +409,22 @@ function buildFarTrees(b) {
 // south lane, westbound on the north lane), different speeds, back to the other end when they leave the map; a soft
 // whoosh when one passes the house
 const traffic = [];
+const CAR_LAMP = new THREE.BoxGeometry(0.3, 0.14, 0.06), HEAD_MAT = new THREE.MeshBasicMaterial({ color: 0xfff6d8 }), TAIL_MAT = new THREE.MeshBasicMaterial({ color: 0xff2a2a });
+const CAR_BEAM = new THREE.PlaneGeometry(2.0, 4.4).rotateX(-Math.PI / 2), BEAM_MAT = new THREE.MeshBasicMaterial({ color: 0xfff2c4, transparent: true, opacity: 0.18, depthWrite: false });
+const carLights = [];
 function buildTraffic() {
   const lanes = [{ z: 22.2, dir: 1 }, { z: 19.8, dir: -1 }];
   [[0, -70, 8.5], [0, -10, 7.0], [0, 45, 9.5], [1, 60, 8.0], [1, 5, 6.5], [1, -50, 9.0], [1, -85, 7.5]].forEach(([l, x, v], n) => {
-    const m = new THREE.Mesh(getGeometry('car', (n * 2 + 1) % 6), vcMat); m.receiveShadow = true;
+    const m = new THREE.Mesh(getGeometry('car', (n * 2 + 1) % 6, true), vcMat); m.receiveShadow = true;
     const grp = new THREE.Group(); grp.add(m); grp.rotation.y = lanes[l].dir > 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(grp);
+    // the lights (front: +z of the model, white; back: red) and, in the evening, a pool of light on the road ahead
+    const lit = new THREE.Group(); lit.visible = false; grp.add(lit);
+    for (const s of [-1, 1]) {
+      const h = new THREE.Mesh(CAR_LAMP, HEAD_MAT); h.position.set(s * 0.62, 0.62, 1.78); lit.add(h);
+      const t = new THREE.Mesh(CAR_LAMP, TAIL_MAT); t.position.set(s * 0.62, 0.66, -1.88); lit.add(t);
+    }
+    const beam = new THREE.Mesh(CAR_BEAM, BEAM_MAT); beam.position.set(0, 0.03, 4.2); lit.add(beam);
+    carLights.push(lit);
     traffic.push({ grp, x, z: lanes[l].z, dir: lanes[l].dir, v, sound: 0 });
   });
 }

@@ -173,7 +173,8 @@ export function startEp2() {
   if (SCHOOL) buildSchool();
   else {
     buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances(); buildInventory();
-    if (!EVE) { buildSister(); buildWardrobe(); }   // (in the evening she is out) · Petyus's wardrobe: getting dressed (dressing.js)
+    buildWardrobe();   // Petyus's wardrobe (getting dressed in the morning: dressing.js)
+    if (!EVE) buildSister();   // (in the evening she is out)
     if (EVE) { setEvening(); addFillLights(Q.level >= 2 ? 6 : 3); }   // (the lamps: every lit room glows)
   }
   // in the morning the three of them are in pajamas (Petyus: the football kit's model – the walking one)
@@ -208,7 +209,8 @@ export function startEp2() {
     $('topright').insertBefore(b, $('menuBtn'));   // ⟲ ⟳ 🧱 👁 🏠 📒 🔊
   }
   // the evening: every room's light on (a resumed evening keeps the saved switches)
-  if (EVE && resumed !== true) for (const sw of switches) if (!sw.on) toggleSwitch(sw);
+  if (EVE && resumed !== true) for (const sw of switches) if (!sw.on && sw.room === 'konyha') toggleSwitch(sw);   // the evening: the kitchen's light on
+  if (!SCHOOL && resumed !== true) for (const d of doors) if (d.pivot && d.open && Math.abs(d.z - 2.36) < 0.2 && d.x < 5.5) { toggleDoor(d); d.t = 0; }   // the bathroom and the WC: shut
   if (resumed === 'fresh' && EVE) { G.petike.place(0.9, 3.3, Math.PI / 2); G.petike.pos.y = FY; }   // just home: in the hallway, by the front door
   $('e2Date').textContent = dateText(); hudClock(true); hudLate(); fitHud();
   // compile every material now (also the hidden ones: ceiling, lamps, the WC's water), so nothing stalls the game later when it
