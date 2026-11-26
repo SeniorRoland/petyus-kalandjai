@@ -4,23 +4,34 @@
 // table, the armchair, the desk) can be crawled under – those are the hiding places. Breadth-first search, rebuilt per query
 // (the doors open and close); the path is thinned to every few cells.
 import { colliders } from '../world.js';
-import { XE, ZS } from './home.js';
+import { ROOMS, XE, ZS } from './home.js';
 
-const C = 0.15, NX = Math.ceil(XE / C), NZ = Math.ceil(ZS / C), PAD = 0.07;
+// the grid covers the flat and its two balconies (OX, OZ: its corner); a cell outside every room (the air round the house) is
+// blocked, so no way leads out over a balcony's railing
+const C = 0.15, OX = -0.3, OZ = -2.1, NX = Math.ceil((XE + 3.0 - OX) / C), NZ = Math.ceil((ZS + 0.3 - OZ) / C), PAD_PIG = 0.07, PAD_PERSON = 0.24;
 const idx = (i, j) => j * NX + i;
-const cellOf = (x, z) => [Math.max(0, Math.min(NX - 1, Math.floor(x / C))), Math.max(0, Math.min(NZ - 1, Math.floor(z / C)))];
+const gx = (x) => Math.floor((x - OX) / C), gz = (z) => Math.floor((z - OZ) / C), cx = (i) => OX + (i + 0.5) * C, cz = (j) => OZ + (j + 0.5) * C;
+const cellOf = (x, z) => [Math.max(0, Math.min(NX - 1, gx(x))), Math.max(0, Math.min(NZ - 1, gz(z)))];
+let outside = null;
+function outsideCells() {
+  if (outside) return outside;
+  outside = new Uint8Array(NX * NZ); const e = 0.14;   // (half a wall more: the doorways)
+  for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = cx(i), z = cz(j); if (!ROOMS.some((r) => x >= r.x0 - e && x <= r.x1 + e && z >= r.z0 - e && z <= r.z1 + e)) outside[idx(i, j)] = 1; }
+  return outside;
+}
 // pass: colliders to ignore (closed doors for somebody who opens them on the way – Angi looking for her keys)
-function blockedGrid(pass = null) {
-  const g = new Uint8Array(NX * NZ);
+// pad: the walker's half width (Karcsi: thin; the parents: a person – they would brush into the walls with less)
+function blockedGrid(pass = null, PAD = PAD_PIG) {
+  const g = outsideCells().slice();
   for (const c of colliders) {
     if (c.h < 0.85 || (pass && pass.has(c))) continue;   // low furniture (or an open door: h = −1): passable
     if (c.box) {
-      const i0 = Math.floor((c.x0 - PAD) / C), i1 = Math.floor((c.x1 + PAD) / C), j0 = Math.floor((c.z0 - PAD) / C), j1 = Math.floor((c.z1 + PAD) / C);
+      const i0 = gx(c.x0 - PAD), i1 = gx(c.x1 + PAD), j0 = gz(c.z0 - PAD), j1 = gz(c.z1 + PAD);
       for (let j = Math.max(0, j0); j <= Math.min(NZ - 1, j1); j++) for (let i = Math.max(0, i0); i <= Math.min(NX - 1, i1); i++) g[idx(i, j)] = 1;
     } else {
-      const r = c.r + PAD, i0 = Math.floor((c.x - r) / C), i1 = Math.floor((c.x + r) / C), j0 = Math.floor((c.z - r) / C), j1 = Math.floor((c.z + r) / C);
+      const r = c.r + PAD, i0 = gx(c.x - r), i1 = gx(c.x + r), j0 = gz(c.z - r), j1 = gz(c.z + r);
       for (let j = Math.max(0, j0); j <= Math.min(NZ - 1, j1); j++) for (let i = Math.max(0, i0); i <= Math.min(NX - 1, i1); i++)
-        if (Math.hypot((i + 0.5) * C - c.x, (j + 0.5) * C - c.z) < r) g[idx(i, j)] = 1;
+        if (Math.hypot(cx(i) - c.x, cz(j) - c.z) < r) g[idx(i, j)] = 1;
     }
   }
   return g;
@@ -53,7 +64,7 @@ function pathOn(g, x0, z0, x1, z1) {
   if (prev[goal] < 0) return null;
   const cells = []; for (let k = goal; k !== start; k = prev[k]) cells.push(k); cells.reverse();
   const out = [];
-  cells.forEach((k, n) => { if (n % 3 === 2 || n === cells.length - 1) { const i = k % NX; out.push([(i + 0.5) * C, ((k - i) / NX + 0.5) * C]); } });
+  cells.forEach((k, n) => { if (n % 3 === 2 || n === cells.length - 1) { const i = k % NX; out.push([cx(i), cz((k - i) / NX)]); } });
   if (out.length) out[out.length - 1] = [x1, z1];
   return out;
 }
@@ -72,7 +83,7 @@ function lineFree(g, x0, z0, x1, z1) {
   return true;
 }
 export function navRoute(x, z, pts, doors) {
-  const g = blockedGrid(passDoorsOf(doors)), out = [];
+  const g = blockedGrid(passDoorsOf(doors), PAD_PERSON), out = [];
   for (const p of pts) {
     if (lineFree(g, x, z, p[0], p[1])) out.push(p);
     else { const q = pathOn(g, x, z, p[0], p[1]); if (q && q.length) out.push(...q); else out.push(p); }
