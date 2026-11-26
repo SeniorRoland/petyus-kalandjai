@@ -1,5 +1,6 @@
 // Petyus kalandjai – main: Belépési pont: fő ciklus (step) és betöltés.
 import * as THREE from 'three';
+import './lightmask.js';   // (first: it adds the lamps' room limit to the shader chunks before anything is compiled)
 // comic lettering for the speech bubbles (bundled, latin-ext → ő/ű work offline too)
 import '@fontsource/patrick-hand/index.css';
 import '@fontsource/bangers/index.css';

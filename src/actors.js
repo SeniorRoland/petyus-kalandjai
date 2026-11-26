@@ -70,6 +70,9 @@ export class Actor {
       r.inner.position.y = lerp(r.inner.position.y, hy - r.hipH, s);
       r.inner.position.z = lerp(0, -0.05, s);
     }
+    if (this.tuck > 0.01) {   // passing a doorway: the arms in, close to the body, hardly swinging (ep2.js – dad is broad)
+      for (let i = 0; i < 2; i++) { r.sh[i].rotation.z = lerp(r.sh[i].rotation.z, i ? -0.12 : 0.12, this.tuck); r.sh[i].rotation.x *= 1 - 0.7 * this.tuck; }
+    }
     if (this.cheer > 0) {
       this.cheer -= dt; const k = Math.min(1, this.cheer * 2); const w = Math.sin(G.clockT * 16);
       r.sh[0].rotation.x = lerp(r.sh[0].rotation.x, -2.9 + w * 0.2, k); r.sh[1].rotation.x = lerp(r.sh[1].rotation.x, -2.9 - w * 0.2, k);

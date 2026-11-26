@@ -138,16 +138,17 @@ function lineFree(g, x0, z0, x1, z1, skipStart, skipEnd) {
   }
   return true;
 }
-// pad: the walker's half width – dad with his arms ≈ 0.5 m, mum ≈ 0.3 m. A doorway is narrower than dad: through the doors
-// (a corridor across each opening, up to its jambs' depth) the grid stays open – there they turn sideways (ep2.js).
-const DOOR_DEPTH = 0.27;   // (a sideways walker's half depth – chest / back – plus a little: the way runs through the middle)
+// pad: the walker's half width – dad with his arms ≈ 0.5 m, mum ≈ 0.3 m. Through each door a narrow corridor across the
+// middle of the opening stays open (dad tucks his arms in there – ep2.js).
+const DOOR_MID = 0.07;   // (the way runs through the middle of the opening: dad, his arms tucked in, just fits the 1.05 m doors)
 export function doorCorridors(doors) {
   const out = [];
   for (const d of doors) {
     if (!d.pivot || d.kind === 'locked' || !d.col || !d.col.box) continue;
     const c = d.col, alongX = c.x1 - c.x0 > c.z1 - c.z0;
-    out.push(alongX ? { x0: c.x0 + DOOR_DEPTH, x1: c.x1 - DOOR_DEPTH, z0: (c.z0 + c.z1) / 2 - 0.8, z1: (c.z0 + c.z1) / 2 + 0.8, alongX, d }
-      : { x0: (c.x0 + c.x1) / 2 - 0.8, x1: (c.x0 + c.x1) / 2 + 0.8, z0: c.z0 + DOOR_DEPTH, z1: c.z1 - DOOR_DEPTH, alongX, d });
+    const mx = (c.x0 + c.x1) / 2, mz = (c.z0 + c.z1) / 2;
+    out.push(alongX ? { x0: mx - DOOR_MID, x1: mx + DOOR_MID, z0: mz - 0.8, z1: mz + 0.8, alongX, d, lo: c.x0, hi: c.x1 }
+      : { x0: mx - 0.8, x1: mx + 0.8, z0: mz - DOOR_MID, z1: mz + DOOR_MID, alongX, d, lo: c.z0, hi: c.z1 });
   }
   return out;
 }
