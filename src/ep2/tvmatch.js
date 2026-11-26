@@ -17,15 +17,13 @@ import { lerp, pick } from '../util.js';
 import { fx, seating } from './appliances.js';
 import { FY, SPOTS, doors, roomAt, toggleDoor } from './home.js';
 import { carrying, invHooks, moveItem } from './inventory.js';
-import { findPath } from './navgrid.js';
 
 const T0 = 20 * 60, T_WATER = [20 * 60 + 9, 20 * 60 + 29], T_PEN = 20 * 60 + 19, T_END = 20 * 60 + 42;
 const TAP = { x: 8.6, z: 0.95, h: Math.PI };
 export const tm = { st: 'off', t: 0, water: 0, penDone: false, switched: false, caught: false, lineT: 8, standing: false, gagged: false, blamed: null };
 export const tvBusy = () => !['off', 'done'].includes(tm.st);
 
-const passDoors = () => new Set(doors.filter((d) => d.pivot && d.kind !== 'locked').map((d) => d.col));
-function go(a, x, z, speed) { const p = findPath(a.pos.x, a.pos.z, x, z, passDoors()); a.walkTo(p && p.length ? p : [[x, z]], speed); }
+function go(a, x, z, speed) { a.walkTo([[x, z]], speed); }   // (the way: round the walls, down the middle – ep2.js / navgrid.js navRoute)
 const tvSay = (txt, d = 1.8) => say({ headWorld: (o) => o.set(8.3, FY + 1.75, 8.95) }, txt, d);
 const wallSay = (txt, d = 1.8) => say({ headWorld: (o) => o.set(9.6, FY + 2.0, 9.4) }, txt, d);
 const petyusNear = (r) => Math.hypot(G.petike.pos.x - G.petya.pos.x, G.petike.pos.z - G.petya.pos.z) < r;
@@ -86,7 +84,6 @@ export function tvTick(dt, min, dadFree) {
     return;
   }
   if (tm.st === 'done') return;
-  if (d.path) for (const dr of doors) if (dr.pivot && !dr.open && dr.kind !== 'locked' && Math.hypot(dr.x - d.pos.x, dr.z - d.pos.z) < 0.9) { toggleDoor(dr); soundAt(dr.x, dr.z, () => noise(0.12, 1200, 1, 0.15)); }
   // the match is over
   if (min >= T_END && ['watch', 'toWater', 'drink', 'back'].includes(tm.st)) {
     leaveChair(d); fx.tv.setOn(false); fx.tv.setChannel('match'); fx.tv.setPenalty(false);

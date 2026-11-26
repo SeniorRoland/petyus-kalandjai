@@ -568,16 +568,27 @@ function momLook() {
 
 // ---------------------------------------------------------------- the parents
 let parentDoorCors = null;
+function crossesSoon(a, r) {
+  const along = r.alongX, line = along ? (r.z0 + r.z1) / 2 : (r.x0 + r.x1) / 2, lo = (along ? r.x0 : r.z0) - 0.15, hi = (along ? r.x1 : r.z1) + 0.15;
+  const u = (p) => (along ? p.x : p.z), w = (p) => (along ? p.z : p.x);
+  if (Math.abs(w(a.pos) - line) < 0.5 && u(a.pos) > lo && u(a.pos) < hi) return true;   // in the doorway
+  let p = a.pos, left = 1.2;
+  for (const q of a.path) {
+    const s0 = w(p) - line, s1 = w(q) - line;
+    if (s0 * s1 <= 0 && s0 !== s1) { const t = s0 / (s0 - s1), cu = u(p) + (u(q) - u(p)) * t, d = Math.hypot(q.x - p.x, q.z - p.z) * t; if (cu > lo && cu < hi && d < left) return true; }
+    left -= Math.hypot(q.x - p.x, q.z - p.z); if (left <= 0) break; p = q;
+  }
+  return false;
+}
 function updateParents(dt) {
-  // a closed door in a walking parent's way opens (not the locked ones: the sister's room)
-  for (const a of [G.petya, G.angi]) if (a.path) for (const d of doors) if (d.pivot && !d.open && d.kind !== 'locked' && Math.hypot(d.x - a.pos.x, d.z - a.pos.z) < 0.8) { toggleDoor(d); soundAt(d.x, d.z, () => noise(0.12, 1200, 1, 0.15)); }
   // through a doorway they turn sideways (dad is broader than the door with his arms): the shoulders along the opening
   if (ep2.phase !== 'school') {
     const cors = parentDoorCors || (parentDoorCors = doorCorridors(doors));
     for (const a of [G.petya, G.angi]) {
-      // (sideways within 0.95 m of the door's line – turned in time by the jambs; further off he walks facing ahead again)
-      const door = a.path && cors.find((r) => (r.alongX ? a.pos.x > r.x0 - 0.35 && a.pos.x < r.x1 + 0.35 && Math.abs(a.pos.z - (r.z0 + r.z1) / 2) < 0.95
-        : a.pos.z > r.z0 - 0.35 && a.pos.z < r.z1 + 0.35 && Math.abs(a.pos.x - (r.x0 + r.x1) / 2) < 0.95));
+      // the door his way goes through within the next 1.2 m (or that he is just passing through) – a door he only walks
+      // past (the WC's, along the hallway) is left alone
+      const door = a.path && cors.find((r) => crossesSoon(a, r));
+      if (door && !door.d.open) { toggleDoor(door.d); soundAt(door.d.x, door.d.z, () => noise(0.12, 1200, 1, 0.15)); }   // (only the door he goes through opens)
       if (door) {
         // the shoulders across the wall's line, i.e. facing along the wall (a door in a wall along x: facing ±x); of the two
         // the one nearer to his present heading

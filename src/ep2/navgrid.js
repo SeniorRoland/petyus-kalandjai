@@ -68,6 +68,60 @@ function pathOn(g, x0, z0, x1, z1) {
   if (out.length) out[out.length - 1] = [x1, z1];
   return out;
 }
+// ---------------------------------------------------------------- the people's way: through the middle of the rooms
+// The shortest way hugs the walls and the corners (and passes every door). People walk down the middle of a corridor: a way
+// near a wall costs more (Dijkstra on the clearance – the distance to the nearest blocked cell), then the corners are cut
+// where a straight line keeps at least as far from the walls as the found way did.
+function clearance(g) {   // in cells (8-neighbour steps) to the nearest blocked cell
+  const D = new Float32Array(NX * NZ).fill(1e9), q = [];
+  for (let k = 0; k < g.length; k++) if (g[k]) { D[k] = 0; q.push(k); }
+  for (let h = 0; h < q.length; h++) {
+    const k = q[h], i = k % NX, j = (k - i) / NX;
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+      const a = i + di, b = j + dj; if (a < 0 || b < 0 || a >= NX || b >= NZ) continue;
+      const n = idx(a, b); if (D[n] > D[k] + 1) { D[n] = D[k] + 1; q.push(n); }
+    }
+  }
+  return D;
+}
+const COMFY = 0.8;   // (m: closer to a wall than this, a step costs more – up to 5×)
+function pathMiddle(g, x0, z0, x1, z1) {
+  const [si, sj] = nearestFree(g, ...cellOf(x0, z0)), [ti, tj] = nearestFree(g, ...cellOf(x1, z1));
+  const D = clearance(g), start = idx(si, sj), goal = idx(ti, tj);
+  const cost = new Float32Array(NX * NZ).fill(Infinity), prev = new Int32Array(NX * NZ).fill(-1);
+  const heap = [[0, start]]; cost[start] = 0;
+  const push = (it) => { heap.push(it); let c = heap.length - 1; while (c > 0) { const p = (c - 1) >> 1; if (heap[p][0] <= heap[c][0]) break; [heap[p], heap[c]] = [heap[c], heap[p]]; c = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let c = 0; for (;;) { const l = c * 2 + 1, r = l + 1; let m = c; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === c) break; [heap[m], heap[c]] = [heap[c], heap[m]]; c = m; } } return top; };
+  while (heap.length) {
+    const [c0, k] = pop(); if (c0 > cost[k]) continue; if (k === goal) break;
+    const i = k % NX, j = (k - i) / NX;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const a = i + di, b = j + dj; if (a < 0 || b < 0 || a >= NX || b >= NZ) continue;
+      const n = idx(a, b); if (g[n]) continue;
+      if (di && dj && (g[idx(i + di, j)] || g[idx(i, j + dj)])) continue;
+      const step = (di && dj ? 1.414 : 1) * (1 + 4 * Math.max(0, 1 - D[n] * C / COMFY));
+      if (c0 + step < cost[n]) { cost[n] = c0 + step; prev[n] = k; push([cost[n], n]); }
+    }
+  }
+  if (prev[goal] < 0 && goal !== start) return null;
+  const cells = []; for (let k = goal; k !== start && k >= 0; k = prev[k]) cells.push(k); cells.push(start); cells.reverse();
+  // straighten: from each kept cell, jump to the farthest one the straight line reaches without coming nearer to a wall
+  const ij = (k) => [k % NX, (k - (k % NX)) / NX];
+  const lineOk = (a, b, minD) => {
+    const [ai, aj] = ij(cells[a]), [bi, bj] = ij(cells[b]), n = Math.max(Math.abs(bi - ai), Math.abs(bj - aj)) * 2;
+    for (let t = 1; t < n; t++) { const k = idx(Math.round(ai + (bi - ai) * t / n), Math.round(aj + (bj - aj) * t / n)); if (g[k] || D[k] < minD) return false; }
+    return true;
+  };
+  const keep = [0];
+  for (let a = 0; a < cells.length - 1;) {
+    let best = a + 1, minD = D[cells[a + 1]];
+    for (let b = a + 2; b < cells.length; b++) { minD = Math.min(minD, D[cells[b]]); if (lineOk(a, b, Math.min(minD, D[cells[a]]))) best = b; }
+    keep.push(best); a = best;
+  }
+  const out = keep.slice(1).map((n) => { const [i, j] = ij(cells[n]); return [cx(i), cz(j)]; });
+  if (out.length) out[out.length - 1] = [x1, z1]; else out.push([x1, z1]);
+  return out;
+}
 export function walkable(x, z) { const g = blockedGrid(); const [i, j] = cellOf(x, z); return !g[idx(i, j)]; }
 
 // a walk given as points (the scripted ones: dressing, the creamy coffee, mum's jobs …) made safe: a leg that would cross a
@@ -109,7 +163,7 @@ export function navRoute(x, z, pts, doors, pad = 0.3) {
   const out = [];
   keep.forEach((p, k) => {
     if (lineFree(g, x, z, p[0], p[1], k === 0, p === last)) out.push(p);
-    else { const q = pathOn(g, x, z, p[0], p[1]); if (q && q.length) out.push(...q); else out.push(p); }
+    else { const q = pathMiddle(g, x, z, p[0], p[1]); if (q && q.length) out.push(...q); else out.push(p); }
     x = p[0]; z = p[1];
   });
   return out;

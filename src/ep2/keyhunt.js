@@ -35,8 +35,7 @@ const NOT_HERE = ['Itt sincs…', 'Ez nem az.', 'Hm. Nem.', 'Itt se!'];
 export const kh = { phase: 'off', waitT: 0, t: 0, i: 0, at: null, rumT: 0, lineT: 6, hint: false };
 export const keyBusy = () => kh.phase === 'search' || kh.phase === 'found';
 
-const passDoors = () => new Set(doors.filter((d) => d.pivot && d.kind !== 'locked').map((d) => d.col));
-function walkTo(x, z) { const m = G.angi, p = findPath(m.pos.x, m.pos.z, x, z, passDoors()); m.walkTo(p && p.length ? p : [[x, z]], 1.05); }
+function walkTo(x, z) { G.angi.walkTo([[x, z]], 1.05); }   // (the way: navRoute – ep2.js)
 function goNext() {
   if (kh.i >= ORDER.length) {   // everywhere looked: is it in Petyus's pocket?
     if (carrying('key')) { kh.at = 'petyus'; walkTo(G.petike.pos.x, G.petike.pos.z + 0.6); return; }
@@ -100,8 +99,7 @@ export function keyTick(dt) {
   }
   if (kh.phase === 'search') {
     kh.t += dt;
-    // open the doors on her way (the path counts them passable)
-    for (const d of doors) if (d.pivot && !d.open && d.kind !== 'locked' && Math.hypot(d.x - m.pos.x, d.z - m.pos.z) < 0.9) { toggleDoor(d); soundAt(d.x, d.z, () => noise(0.12, 1200, 1, 0.15)); }
+    // (the doors on her way: opened by ep2.js updateParents – only the one she goes through)
     if ((kh.lineT -= dt) <= 0) { kh.lineT = 7 + Math.random() * 4; say(m, pick(LINES), 2.4); if (Math.random() < 0.3) setTimeout(() => say(G.petya, pick(['Nem én voltam!', 'Nézd meg a táskádban!', 'Nyugi, előkerül.']), 2), 2200); }
     if (!m.path) {
       if (kh.at === 'petyus') { found('petyus'); return; }
