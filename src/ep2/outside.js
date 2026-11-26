@@ -5,6 +5,7 @@
 import { Actor, animLegs, makeCat, makeDog } from '../actors.js';
 import { makePerson } from '../rigs.js';
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { scene } from '../scene.js';
 import { G } from '../state.js';
 import { say } from '../ui.js';
@@ -256,7 +257,9 @@ export function setEvening() {
   // the lamps: the lamp house glows
   const glow = new THREE.MeshBasicMaterial({ color: 0xfff0b8 });
   // (instanced: all the lamps' glowing houses in one draw call; no pool of light on the ground – only the lamp itself glows)
-  const gGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2);
+  // (the lamp model's glass: 0.25 m square, 2.95 … 3.35 m, a post at each corner – the glow is a cross just outside the glass,
+  // so the four panes shine and the corner posts stay dark)
+  const gGeo = mergeGeometries([new THREE.BoxGeometry(0.262, 0.39, 0.15), new THREE.BoxGeometry(0.15, 0.39, 0.262)]);
   const gi = new THREE.InstancedMesh(gGeo, glow, LAMPS.length), m4 = new THREE.Matrix4();
   LAMPS.forEach(([x, z], i) => gi.setMatrixAt(i, m4.makeTranslation(x, 3.15, z)));
   gi.frustumCulled = false; scene.add(gi);
