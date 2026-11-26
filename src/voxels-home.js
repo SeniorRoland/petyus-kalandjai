@@ -316,10 +316,42 @@ function schoolbag(seed) {   // Petyus's school bag (blue with orange flap and r
   bx(g, -0.06, 0.38, -0.02, 0.06, 0.42, 0.02, C.dark);
   return g;
 }
-const SHOES = [0xe63946, 0x2c2f33, 0xf3f1ec];
-function shoes(seed) {   // a pair of shoes, toes to +z
-  const g = grid(seed); const c = pick(SHOES, seed);
-  for (const x of [-0.12, 0.03]) { bx(g, x, 0, -0.12, x + 0.09, 0.03, 0.14, C.white); bx(g, x, 0.03, -0.12, x + 0.09, 0.1, 0.12, c); bx(g, x, 0.03, -0.12, x + 0.09, 0.14, -0.04, c); }
+// shoes on a 2 cm grid (finer than the furniture): sole, rounded toe and heel, the opening with its lining, laces, a stripe
+// v1 Petyus's red sneakers · v2 dad's black leather shoes · v3 mum's white sneakers · v4 mum's brown ankle boots
+const SHOE_KIND = [
+  { L: 11, w: 4, hh: 4, ht: 2, up: 0xe63946, sole: 0xf3f1ec, toe: 0xf3f1ec, lace: 0xf3f1ec, stripe: 0xffffff, lin: 0x2c2f33, sneaker: true },
+  { L: 15, w: 5, hh: 4, ht: 2, up: 0x1f2124, sole: 0x3a2a1e, toe: 0x2c2f33, lace: 0x111214, stripe: null, lin: 0x6b4a2e, heel: true },
+  { L: 13, w: 4, hh: 4, ht: 2, up: 0xf3f1ec, sole: 0xe4e1da, toe: 0xe4e1da, lace: 0xd8d4cc, stripe: 0x7fb3d5, lin: 0xb9c3cc, sneaker: true },
+  { L: 13, w: 4, hh: 7, ht: 2, up: 0x7a4a2a, sole: 0x2c2f33, toe: 0x6a3f22, lace: 0x5a351c, stripe: null, lin: 0xc9a27a, heel: true, boot: true },
+];
+function shoe(g, x0, dz, K, mirror) {   // one shoe: x0 = its inner side, toes to +z
+  const { L, w } = K;
+  for (let k = 0; k < L; k++) {
+    const t = k / (L - 1), cut = (k === 0 || k === L - 1) ? 1 : 0;   // rounded heel and toe
+    const top = K.boot ? (t < 0.55 ? K.hh : Math.round(K.ht + 1 - t)) : Math.round(t < 0.4 ? K.hh : K.hh - (K.hh - K.ht) * (t - 0.4) / 0.6);
+    for (let a = cut; a < w - cut; a++) {
+      const i = mirror ? x0 - a : x0 + a, kk = k + dz, edge = a === cut || a === w - 1 - cut;
+      if (!(K.heel && k > 2 && k < L * 0.45)) g.set(i, 0, kk, K.sole);   // (dress shoes / boots: a heel block and an arch)
+      g.set(i, 1, kk, K.sole);
+      for (let j = 2; j <= top; j++) {
+        let c = K.up;
+        if (k >= L - 2 && j <= 2) c = K.toe;   // the toe cap
+        if (K.stripe && edge && j === 2 && k > 1 && k < L - 2) c = K.stripe;   // the side stripe
+        const open = k >= 1 && k <= Math.round(L * (K.boot ? 0.42 : 0.36)) && !edge && j === top;   // the opening: the lining shows
+        if (open) c = K.lin;
+        g.set(i, j, kk, c);
+      }
+      // laces across the instep (on top, between the opening and the toe)
+      const lk = Math.round(L * (K.boot ? 0.44 : 0.38));
+      if (!edge && k > lk && k < L - 3 && (k - lk) % 2 === 1) g.set(i, top, kk, K.lace);
+    }
+  }
+  if (!K.boot) { const i = mirror ? x0 - Math.floor(w / 2) : x0 + Math.floor(w / 2); g.set(i, K.hh + 1, dz, K.up); }   // the heel tab
+}
+function shoes(seed) {   // a pair of shoes, toes to +z (2 cm voxels)
+  const K = SHOE_KIND[(seed - 1) % SHOE_KIND.length], g = new VoxelGrid(0.02, seed);
+  shoe(g, 1, -Math.floor(K.L / 2), K, false);   // left
+  shoe(g, -1, -Math.floor(K.L / 2) + 1, K, true);   // right (a little forward, like put down by a person)
   return g;
 }
 function radiator(seed) {   // 0.9 × 0.1 × 0.6 m, ribbed
@@ -553,7 +585,7 @@ export const HOME_CATALOG = [
   { id: 'rug', name: 'Szőnyeg', cat: 'Lakás', variants: 3, build: rug, collider: null, noShadow: true, desc: 'Kockás szőnyegek; a 3. változat Petyus autós játszószőnyege (út szaggatott vonallal).', use: 'Szobák' },
   { id: 'coat_rack', name: 'Fogas', cat: 'Lakás', variants: 1, build: coatRack, collider: { r: 0.2, h: 1.8 }, desc: 'Álló fogas apa dzsekijével, anya kabátjával és Petyus zöld anorákjával.', use: 'Előtér' },
   { id: 'schoolbag', name: 'Iskolatáska', cat: 'Lakás', variants: 1, build: schoolbag, collider: null, desc: 'Kék iskolatáska narancs fedéllel és fényvisszaverőkkel.', use: 'Petyus szobája / előtér' },
-  { id: 'shoes', name: 'Cipő', cat: 'Lakás', variants: 3, build: shoes, collider: null, noShadow: true, desc: 'Egy pár cipő: piros (Petyus), fekete (apa), fehér (anya).', use: 'Előtér' },
+  { id: 'shoes', name: 'Cipő', cat: 'Lakás', variants: 4, build: shoes, collider: null, noShadow: true, desc: 'Egy pár cipő 2 cm-es voxelekből: talp, kerek orr, fűző, kéreg, belső bélés. Piros sportcipő (Petyus), fekete bőrcipő (apa), fehér sportcipő és barna bokacsizma (anya).', use: 'Előtér' },
   { id: 'radiator', name: 'Radiátor', cat: 'Lakás', variants: 1, build: radiator, collider: { hx: 0.45, hz: 0.06, h: 0.7 }, desc: 'Bordás lapradiátor az ablak alatt.', use: 'Szobák, konyha' },
   { id: 'trampoline', name: 'Trambulin', cat: 'Lakás', variants: 1, build: trampoline, collider: { r: 1.55, h: 2.1 }, desc: '3 m átmérőjű trambulin kék párnázással és védőhálóval.', use: 'A ház mögött, az északi füves részen' },
   { id: 'house_plant', name: 'Szobanövény', cat: 'Lakás', variants: 7, build: housePlant, collider: { r: 0.25, h: 1.0 }, desc: '1 monstera, 2 fikusz (fa), 3 anyósnyelv, 4 páfrány, 5 kaktusz és pozsgás, 6 flamingóvirág, 7 csüngő futóka (polcra).', use: 'A szülők szobája, a keleti ablak alatt' },

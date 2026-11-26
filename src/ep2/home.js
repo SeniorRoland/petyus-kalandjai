@@ -219,7 +219,8 @@ function furnish() {
   wcRolls(5.29, 0.75, W);
   // hallway: coats, shoes by the front door
   put('wall_coat_hanger', 1.3, 4.19, P); put('shoe_cabinet', 1.3, 4.02, P);   // on the wall opposite the bathroom, by the front door
-  put('shoes', 0.45, 3.55, E, 0); put('shoes', 0.45, 2.75, E, 1); put('shoes', 2.15, 3.95, P, 2);
+  // the shoes in a row along the bathroom wall (heels to the wall), not in front of the door
+  [[0.32, 1], [0.72, 2], [1.12, 3], [1.5, 0]].forEach(([x, v]) => put('shoes', x, 2.6, 0, v));
   // kitchen: fridge + the counter under the north windows; the table along the wall to Petyus's room (the middle stays free)
   // the wide fridge on the west wall, the counter beside it turning the corner (L): one unit on the west wall, four on the north
   put('kitchen_unit', 5.73, 0.5, E, 3);   // (the wide fridge itself opens: appliances.js)
