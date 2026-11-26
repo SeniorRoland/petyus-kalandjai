@@ -177,11 +177,13 @@ export function startEp2() {
     if (EVE) ceiling.children[0].material.color.set(0x77726b);   // the ceiling (unlit): dimmer in the evening, lit only by the lamps
     buildWardrobe();   // Petyus's wardrobe (getting dressed in the morning: dressing.js)
     if (!EVE) buildSister();   // (in the evening she is out)
-    if (EVE) setEvening();   // (no fill lights: without shadows they shone through the walls – the two nearest lit rooms have the pool's lights)
+    if (EVE) setEvening();   // (no fill lights: without shadows they shone through the walls – the three nearest lit rooms have the pool's lights)
   }
   // in the morning the three of them are in pajamas (Petyus: the football kit's model – the walking one)
   if (ep2.phase === 'morning') { dressPajama(rigs.foci, 'petyus'); dressPajama(rigs.petya, 'petya'); dressPajama(rigs.angi, 'angi'); }
   else { ep2.top = savedTop(); if (ep2.top) dressClothes(rigs.foci, TOPS[ep2.top]); }   // what he put on in the morning
+  // the people cast shadows but take none on themselves: their own (lagging, coarse) shadow flickered on them as they moved
+  if (!SCHOOL) for (const k in rigs) rigs[k]?.root?.traverse?.((o) => { if (o.isMesh) o.receiveShadow = false; });
   G.petike.riding = false; G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7;
   if (SCHOOL) {   // the parents are not there
     ep2.bounds = SCHOOL_BOUNDS;

@@ -332,7 +332,8 @@ function updateLights(P) {
   const on = switches.filter((s) => s.on).sort((a, b) => Math.hypot(a.light.position.x - P.x, a.light.position.z - P.z) - Math.hypot(b.light.position.x - P.x, b.light.position.z - P.z));
   lightPool().forEach((l, i) => {
     const s = on[i]; l.intensity = s ? LIGHT_ON : 0;
-    if (l.castShadow && s && shadowTurn % POOL_N === i) l.shadow.needsUpdate = true;   // (in turns: one shadow map per frame)
+    // the light of Petyus's room (the nearest): every frame – the people move in it; the other two in turns
+    if (l.castShadow && s && (i === 0 || shadowTurn % (POOL_N - 1) === i - 1)) l.shadow.needsUpdate = true;
     if (s) { l.position.set(s.light.position.x, WALL_H - 0.12, s.light.position.z); l.target.position.set(s.light.position.x, 0, s.light.position.z); l.target.updateMatrixWorld(); }
   });
 }
