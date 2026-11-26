@@ -8,7 +8,7 @@ import { ROOMS, XE, ZS } from './home.js';
 
 // the grid covers the flat and its two balconies (OX, OZ: its corner); a cell outside every room (the air round the house) is
 // blocked, so no way leads out over a balcony's railing
-const C = 0.15, OX = -0.3, OZ = -2.1, NX = Math.ceil((XE + 3.0 - OX) / C), NZ = Math.ceil((ZS + 0.3 - OZ) / C), PAD_PIG = 0.07, PAD_PERSON = 0.24;
+const C = 0.075, OX = -0.3, OZ = -2.1, NX = Math.ceil((XE + 3.0 - OX) / C), NZ = Math.ceil((ZS + 0.3 - OZ) / C), PAD_PIG = 0.07;
 const idx = (i, j) => j * NX + i;
 const gx = (x) => Math.floor((x - OX) / C), gz = (z) => Math.floor((z - OZ) / C), cx = (i) => OX + (i + 0.5) * C, cz = (j) => OZ + (j + 0.5) * C;
 const cellOf = (x, z) => [Math.max(0, Math.min(NX - 1, gx(x))), Math.max(0, Math.min(NZ - 1, gz(z)))];
@@ -39,7 +39,7 @@ function blockedGrid(pass = null, PAD = PAD_PIG) {
 // the nearest free cell to a point (a target inside furniture that is too tall, or right on a wall)
 function nearestFree(g, i, j) {
   if (!g[idx(i, j)]) return [i, j];
-  for (let r = 1; r < 8; r++) for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
+  for (let r = 1; r < 16; r++) for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
     const a = i + di, b = j + dj; if (a < 0 || b < 0 || a >= NX || b >= NZ) continue;
     if (!g[idx(a, b)]) return [a, b];
   }
@@ -64,7 +64,7 @@ function pathOn(g, x0, z0, x1, z1) {
   if (prev[goal] < 0) return null;
   const cells = []; for (let k = goal; k !== start; k = prev[k]) cells.push(k); cells.reverse();
   const out = [];
-  cells.forEach((k, n) => { if (n % 3 === 2 || n === cells.length - 1) { const i = k % NX; out.push([cx(i), cz((k - i) / NX)]); } });
+  cells.forEach((k, n) => { if (n % 4 === 3 || n === cells.length - 1) { const i = k % NX; out.push([cx(i), cz((k - i) / NX)]); } });
   if (out.length) out[out.length - 1] = [x1, z1];
   return out;
 }
@@ -84,8 +84,25 @@ function lineFree(g, x0, z0, x1, z1, skipStart, skipEnd) {
   }
   return true;
 }
-export function navRoute(x, z, pts, doors) {
-  const g = blockedGrid(passDoorsOf(doors), PAD_PERSON);
+// pad: the walker's half width – dad with his arms ≈ 0.5 m, mum ≈ 0.3 m. A doorway is narrower than dad: through the doors
+// (a corridor across each opening, up to its jambs' depth) the grid stays open – there they turn sideways (ep2.js).
+const DOOR_DEPTH = 0.27;   // (a sideways walker's half depth – chest / back – plus a little: the way runs through the middle)
+export function doorCorridors(doors) {
+  const out = [];
+  for (const d of doors) {
+    if (!d.pivot || d.kind === 'locked' || !d.col || !d.col.box) continue;
+    const c = d.col, alongX = c.x1 - c.x0 > c.z1 - c.z0;
+    out.push(alongX ? { x0: c.x0 + DOOR_DEPTH, x1: c.x1 - DOOR_DEPTH, z0: (c.z0 + c.z1) / 2 - 0.8, z1: (c.z0 + c.z1) / 2 + 0.8, alongX, d }
+      : { x0: (c.x0 + c.x1) / 2 - 0.8, x1: (c.x0 + c.x1) / 2 + 0.8, z0: c.z0 + DOOR_DEPTH, z1: c.z1 - DOOR_DEPTH, alongX, d });
+  }
+  return out;
+}
+export function navRoute(x, z, pts, doors, pad = 0.3) {
+  const g = blockedGrid(passDoorsOf(doors), pad), base = blockedGrid(passDoorsOf(doors), 0.02);
+  for (const r of doorCorridors(doors)) for (let j = Math.max(0, gz(r.z0)); j <= Math.min(NZ - 1, gz(r.z1)); j++) for (let i = Math.max(0, gx(r.x0)); i <= Math.min(NX - 1, gx(r.x1)); i++) {
+    const k = idx(i, j), inX = cx(i) >= r.x0 && cx(i) <= r.x1, inZ = cz(j) >= r.z0 && cz(j) <= r.z1;
+    if (inX && inZ && !base[k]) g[k] = 0;   // (only what the padding closed: never a wall or furniture itself)
+  }
   // the points that need not be free: the start and the goal; any other point in a blocked cell is dropped (the found path
   // replaces the stretch round it)
   const last = pts[pts.length - 1], keep = pts.filter((p, k) => k === pts.length - 1 || !g[idx(...cellOf(p[0], p[1]))]);
