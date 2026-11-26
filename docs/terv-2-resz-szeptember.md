@@ -1,7 +1,7 @@
 # 2. rész (Szeptember – Otthon és iskola): terv
 
 Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ✅ A napok köre is kész: indulás (7:30 vagy mindhárom reggeli csibészség után) → iskola (helyszín, csibészségek nélkül) → otthon délután–este (sötét, lámpák) → lefekvés → másnap reggel; hétvége és hónap vége átvezetővel. ⬜ Hátravan: átöltözés, az iskola 4 és a délután 3 csibészsége, tesztelés telefonon.
+**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ✅ A napok köre is kész: indulás (7:30 vagy mindhárom reggeli csibészség után) → iskola (helyszín, csibészségek nélkül) → otthon délután–este (sötét, lámpák) → lefekvés → másnap reggel; hétvége és hónap vége átvezetővel. ⬜ Hátravan: az iskola 4 és az este 3 csibészsége (az estiek terve kész, a fogkrémcsere elkészült), tesztelés telefonon.
 
 ## Röviden
 
@@ -25,7 +25,9 @@ Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, 
 | 2 | Karcsi nagy szökése | otthon, reggel | Karcsi szabadon | anya a széken | és ≥ 60 mp szabadon | „Karcsi is szeretne körülnézni a lakásban.” | **kész** |
 | 3 | Hol a kulcs, Angi? | otthon, reggel | anya keresni kezd | 2 percnél tovább keres | fura helyen volt, és Petyus nem árulta el | „Anya kulcsa mindig a cipősszekrényen van.” | **kész** |
 | 4–7 | (iskolai csibészségek) | iskola | | | | | ⬜ még nincs kitalálva |
-| 8–10 | (délutáni csibészségek) | otthon, délután | | | | | ⬜ még nincs kitalálva |
+| 8 | A fogkrémcsere | otthon, este (fürdő) | anya a sarokkrémmel **vagy** apa a chilikrémmel mos fogat | ugyanazon az estén mindketten | és Petyust senki nem kapta rajta | „A fürdőben minden tubus egyforma… majdnem.” | **kész** |
+| 9 | Meccs vagy sorozat? | otthon, este (nappali) | átkapcsolsz a meccs alatt | a tizenegyesnél | és apa anyát hibáztatja | „Este apa meccset néz, anya a sorozatát várja.” | ⬜ terv kész |
+| 10 | A lepedős kísértet | otthon, este (előtér) | apa megijed | sötétben: „MEGADOM MAGAM!” | és mire felkapcsolják a villanyt, Petyus az ágyában fekszik | „Este, sötétben minden lepedő gyanús.” | ⬜ terv kész |
 
 ---
 
@@ -99,9 +101,69 @@ Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, 
 
 Az iskola helyszínnel együtt (lásd lent).
 
-## 8–10. Délutáni csibészségek  ⬜ még nincs kitalálva
+## 8–10. Esti csibészségek  ◐ részben (8. kész)
 
-Az otthoni délutánnal együtt (16:00–22:00).
+Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **napirendre** épül: vacsora után apa meccset néz (20:00), anya a sorozatát várja (20:30); fogmosás (anya 20:45, apa 21:30); apa kiviszi a szemetet (21:40); lefekvés. Ehhez kell egy kis **esti ütemező** a játékórán (`ep2.min`), mint a reggeli kávénál és kulcsnál.
+
+---
+
+## 8. A fogkrémcsere  ✅ kész
+
+- **Megvalósítás** (`src/ep2/toothpaste.js`, a tárgyak modelljei: `food.js`, a leltár: `inventory.js`): `buildBath()` a mosdó két oldalára teszi Angi nyitható faliszekrényét (E – nyit / csuk; bent üvegek, tégelyek, parfüm, a felvehető sarokkrém és arcmaszk) és a polcot (négy pohár fogkefével, mellettük a fogkrém – a `paste` lerakóhely). A chilikrém a hűtő felső polcán van. Esti ütemező (`toothTick`): 20:45-kor anya, 21:30-kor apa megy fogat mosni (útkeresés, ajtót nyit, villanyt kapcsol), és azt használja, ami a fogkrém helyén van: anya + sarokkrém → öklendezve kirohan, kör a konyhában, kétszer iszik a csapból, „SAROKKRÉMEM!”, apát gyanúsítja; apa + chilikrém → vörösödő fej (az arc vertex-színei), gőz a füléből, rohan a csaphoz, káromkodik, anya rászól; arcmaszk → Petyust megkeresi és leszidja; anya + chili → visszaviszi a hűtőbe; apa + sarokkrém → „lábszagú…”; nincs semmi a helyén → „Hol a fogkrém?!”. Rajtakapás: ha a szülő látja Petyust a polcnál / a szekrénynél. Mentés: `r2-fogkrem` (`MISCHIEFS2`), érték: a becsapottak száma. Állapot: `tp`.
+
+- **Új tárgyak a fürdőben** (a mosdó fölött, a falon):
+  - **A mosdó egyik oldalán Angi kozmetikai szekrénye:** kis, nyitható faliszekrény (E – ajtó nyit / csuk), bent polcokon Angi dolgai: krémes tégelyek, tubusok, flakonok, parfüm, vattakorong. Ezek közül **két krém felvehető:**
+    - **Sarokkrém** – fehér tubus kék kupakkal, **pont olyan, mint a fogkrém**, csak más a felirata (a leltárban: „Sarokkrém – olyan, mint a fogkrém”).
+    - **Éjszakai arcmaszk** – rózsaszín tégely arany tetővel, **teljesen más**, mint a fogkrém.
+  - **A mosdó másik oldalán polc:** négy fogmosópohár, mindegyikben egy fogkefe (apa kék, anya rózsaszín, Petyus zöld, a nővér lila), mellettük **a fogkrém** (fehér tubus kék kupakkal).
+  - **A hűtőben:** **csípős chilikrém** tubusban (piros tubus, zöld kupak, chilipaprika a címkén) – felvehető, mint a tej vagy a répa.
+- **Menet:**
+  1. Petyus a polcról felveszi a fogkrémet (E), és a helyére tesz egy másik tubust (F – új lerakóhely: „a fogkrém helyére”). A fogkrémet magánál tarthatja, vagy elrejtheti bárhol.
+  2. **20:45 – anya fogat mos.** Bemegy a fürdőbe, felkapcsolja a villanyt, és azt használja, ami a fogkrém helyén van:
+     - **Sarokkrém** → nem veszi észre: dúdolva mos fogat… megáll… „Hmm… ez valahogy… ŐŐKH!” – **öklendezve kirohan**, körbe-körbe szaladgál a konyhában, majd **a mosogatónál a csapból iszik** (a csap kinyílik, folyik a víz), köpköd, újra iszik, megint rohangál („Ez nem fogkrém!! Ez a SAROKKRÉMEM!!”). Végül: „PETYA!! Te tetted ide?!” – apa értetlenkedik.
+     - **Arcmaszk** → rögtön észreveszi: „Mit keres az arcmaszkom a fogkrém helyén?!” → megkeresi Petyust, és **jól leszidja** („Petyus! A kozmetikumaimhoz nem nyúlunk! Hányszor mondjam?!”), a tégelyt visszateszi a szekrénybe, a fogkrémet visszaveszi. **Nincs csillag.**
+     - **Chilikrém** → a piros tubust is észreveszi („Ez meg mi? Chili?! Petya, ez a tiéd?”), visszaviszi a hűtőbe – nincs csillag, de szidás sincs (apát gyanúsítja).
+  3. **21:30 – apa fogat mos.** Ugyanígy azt használja, ami a fogkrém helyén van:
+     - **Chilikrém** → nagy, habos fogmosás („Brrr, de friss…”), aztán megáll, a feje **egyre vörösebb** (a fej színe pirosra vált, a füléből gőz száll), **berohan a konyhába**, a csapból iszik, és közben **káromkodva szidja Petyust** (`#@&%!`, mint a macskánál az 1. részben): „PETYUUUS!! #@&%! Hol vagy?! ÉG A SZÁM!!”
+     - **Sarokkrém** → csak furcsállja („Ez valahogy… lábszagú.”) – nincs csillag.
+     - **Arcmaszk** → mint anyánál: észreveszi, és leszidja Petyust.
+  4. Ha a fogkrém a helyén van, egyszerűen fogat mosnak (dúdolás, csobogás).
+  5. A trükk **egy estén kétszer is** sikerülhet: a sarokkrémet anya előtt (20:45-ig), a chilikrémet anya után, apa előtt (20:45 és 21:30 között) kell a fogkrém helyére tenni.
+- **Rajtakapás:** ha apa vagy anya a fürdőben látja Petyust a polcnál vagy a szekrénynél (≤ 2 m, felé néz), rászól („Mit keresel ott, Petyus?”) – a ★★★ elvész.
+- **Poén:** anya öklendezve rohangál a konyhában; apa vörös fejjel, gőzölgő fülekkel iszik a csapból, és cifrán káromkodik; anya a sarokkrémnél apát gyanúsítja.
+- **Mire épül:** a leltár (`inventory.js`: felvehető tárgyak, lerakóhelyek, `invHooks`) – új tárgyak: fogkrém, sarokkrém, arcmaszk, chilikrém; új lerakóhelyek: a fogkrém helye a polcon és Angi szekrénye; nyitható szekrényajtó (`appliances.js` `devices`); a konyhai csap (víz); útkeresés (`navgrid.js`); a kávés csibészség rohanása és szövegei; `say` kiabálás. Este nincs késés (`addLate` nem kell).
+- **Csillagok:**
+  - ★ anya a sarokkrémmel **vagy** apa a chilikrémmel mos fogat;
+  - ★★ ugyanazon az estén **mindketten**;
+  - ★★★ és Petyust senki nem kapta rajta (nem látták a polcnál, és nem szidták le az arcmaszk miatt).
+
+---
+
+## 9. Meccs vagy sorozat?  ⬜ terv kész
+
+- **Alaphelyzet:** 20:00-kor apa a kanapén meccset néz (a tévé bekapcsol, zöld pálya a képernyőn, szurkolás). Anya a konyhában pakol, és 20:30-ra várja a sorozatát („Petya, fél kilenckor átkapcsolsz, ugye?” – „Persze, persze…”).
+- **Menet:**
+  1. A távirányító 📺 a dohányzóasztalon van (felvehető, mint a kulcs). Petyus felveszi.
+  2. Amikor apa nem figyel (kimegy a konyhába egy pohár vízért, vagy a WC-re – az esti ütemező indítja), Petyus **Szóközzel átkapcsol** (a képernyőn rózsaszín sorozat, hegedűzene).
+  3. Apa visszajön: „MI EZ?! Hol a meccs?!” – keresi a távirányítót (mint anya a kulcsot); ha Petyusnál van vagy el van rejtve, **anyát gyanúsítja** („Angi! Te kapcsoltál át?!”), anya pedig örül („Végre, kezdődik a sorozatom!”) – vita a kanapén.
+  4. **A tizenegyes:** a meccs alatt egyszer jön egy tizenegyes (felirat a képernyőn, apa feláll: „Na… NA… NAAA…”) – ha Petyus pont ekkor kapcsol át, apa térdre rogy („NEEEEE!!”), a szomszédból pedig áthallatszik a „GÓÓÓL!”.
+- **Poén:** apa a tizenegyes helyett a sorozat csókjelenetét látja; a szomszéd gólörömét a falon át hallja.
+- **Mire épül:** a tévé (`devices`), a leltár (új tárgy: a távirányító), a kulcskeresés útvonala (`keyhunt.js` – apa ugyanígy keresi a távirányítót), szövegbuborékok.
+- **Csillagok:** ★ átkapcsolsz a meccs alatt · ★★ a tizenegyesnél · ★★★ és apa anyát hibáztatja (a távirányítót nem találta Petyusnál).
+
+---
+
+## 10. A lepedős kísértet  ⬜ terv kész
+
+- **Alaphelyzet:** 21:40 körül apa kiviszi a szemetet (bejárati ajtó, lépcsőház), majd visszajön.
+- **Menet:**
+  1. Petyus a saját ágyáról leveszi a lepedőt (E az ágynál – „lepedő fel”): fehér lepel lesz rajta két szemlyukkal, lassabban jár, halkan „Húúúú…”-zik.
+  2. Lekapcsolja az előszoba villanyát (a meglévő kapcsolók), és elbújik az előszobában (a cipősszekrény vagy a kabátok mellett).
+  3. Amikor apa belép a sötét előszobába, Petyus **Szóközzel előugrik**: „BÚÚÚ!!” → apa hátratántorodik, felemeli a kezét: **„MEGADOM MAGAM! MEGADOM MAGAM!!”** (mint a filmes nyitányban), a szemeteszsák kiesik a kezéből.
+  4. Anya kiszalad: „Mi történt?!” – felkapcsolja a villanyt. Ha Petyus addigra **visszafutott az ágyába** (lepedő vissza, lefekszik – `sleep.js`), anya apát szidja, hogy felébresztette a gyereket, apa pedig a „kísértetről” magyaráz – senki nem hiszi el.
+- **Poén:** a nyitány „Megadom magam!”-ja visszatér; a végén apa gyanakodva nézi a lepedőt Petyus ágyán.
+- **Mire épül:** villanykapcsolók (`switches`, `toggleSwitch`), ajtók (`toggleDoor`), az ágy és a takaró (`sleep.js`), apa ijedt póza a nyitányból (`wakeup.js`), új kellék: szemeteszsák, `say`.
+- **Csillagok:** ★ apa megijed · ★★ sötétben ijed meg, és felkiált: „MEGADOM MAGAM!” · ★★★ és mire anya felkapcsolja a villanyt, Petyus az ágyában fekszik (alibi).
 
 ---
 
@@ -123,10 +185,10 @@ Az otthoni délutánnal együtt (16:00–22:00).
 
 - **Megvalósítás** (`ep2.js` `EVE` ág, `outside.js` `setEvening`, `home.js` `addFillLights`): ugyanaz a lakás és környéke, mint reggel, de **kint sötét van** (éjszakai égbolt, halvány kék fény), **bent égnek a lámpák** (minden szoba villanya fel van kapcsolva – a két legközelebbi árnyékot vető spotfény mellett a többi szoba is lágy fényt kap).
 - **A ház többi lakása és a szomszéd házak** ablakaiban lámpák égnek, időnként (6–30 mp-enként) fel- és lekapcsolódnak (`WINDOWS`, egy instanced négyzetrács).
-- **Az utcán és az udvaron** az 1. rész park-lámpái (kandeláberek: `LAMPS`) – este világít a lámpaházuk, alattuk fényfolt a földön, a házhoz legközelebbi háromnak valódi fénye is van.
+- **Az utcán és az udvaron** az 1. rész park-lámpái (kandeláberek: `LAMPS`) – este csak a lámpaházuk világít (fénykör és valódi fény nélkül); a ház bejáratánál nincs lámpa.
 - Nincs pizsama; a nővér nincs otthon; a reggeli csibészségek nem futnak; apa és anya esti mondatai („Megírtad a leckét?”, „Mindjárt kész a vacsora!”), 21:15 után anya lefekvésre küld. Petyus a bejárati ajtónál kezd (most ért haza).
 - **E – lefekvés** Petyus ágyánál → másnap reggel.
-- ⬜ Később: a délutáni 3 csibészség, vacsora, fürdés, tévézés.
+- ◐ Az esti csibészségek: ✅ 8. A fogkrémcsere; ⬜ 9. Meccs vagy sorozat?, ⬜ 10. A lepedős kísértet. ⬜ Később: vacsora, fürdés, tévézés.
 
 ## A reggel vége, a késés  ◐ részben
 
@@ -240,11 +302,30 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 
 ## Helyszín: Iskola  ✅ kész (csibészségek nélkül)
 
-- **Megvalósítás** (`src/ep2/school.js`): földszintes iskola (x 0…22, z −11…0; „Tököli Általános Iskola” felirat) – folyosó fogasokkal, kabátokkal, táskákkal, vitrinnel, faliújságokkal, padokkal; **Petyus osztályterme (3. b)**: tábla krétaírással, tanári asztal, 3 × 3 pad két-két székkel, könyvespolc, szekrény, rajzok, óra, növények; a szomszéd terem (4. a). A kamera felőli falak lesüllyednek, ha Petyus bent van (a nézet forgatásával is).
-- **Udvar:** aszfalt pályavonalakkal, ugróiskola, kosárpalánk, két kis kapu, padok, fák, kandeláberek, kerékpártároló, kerítés; a déli kapu az utcára.
-- **Szereplők:** a tanító néni a táblánál sétál („Gyerekek, figyeljetek a táblára!”, „Petyus, ülj a helyedre!”), 12 osztálytárs ül a padokban (ha Petyus elmegy mellettük, felé fordulnak), hárman az udvaron szaladgálnak és megszólítják.
+- **Megvalósítás** (`src/ep2/school.js`) – a tököli **Weöres Sándor Általános Iskola** fényképe és légifotója alapján:
+  - **Főépület:** hosszú, kelet–nyugati, háromszintes, lapostetős; a tetőn napelemsorok. Fehér vakolat narancs sávokkal (földszinti lábazat, az 1. emelet ablakai alatt), a tető alatt krémszínű sáv; fehér keretes, osztott ablakok, bent világos függönyök.
+  - A nyugati végén a **narancs tömb** fehér szalagablakokkal; mellette a **bejárat**: sötétbarna fa előtető két vékony oszlopon, rajta a felirat („WEÖRES SÁNDOR ÁLTALÁNOS ISKOLA”), betonlépcső oldalfalakkal, üvegajtó.
+  - Délre hozzá kapcsolódik a **kétszintes, négyzetes épület** (tornaterem / ebédlő, tetőablakkal), attól délre a **füves pálya** két kapuval az Iskola utcáig.
+  - Északon a **városi sportcsarnok** (piros nyeregtető, napelemek), keletre mellette a **kék sportpálya** kerítéssel; mögötte murvás parkoló.
+  - A bejárat előtt **térkő**, kerékpártámaszok, betonpadok fa ülőlappal, fa szemetesek, nagy fák (platánok), lámpák; keletre vöröses térkő.
+  - Körben az iskola kerítése, a **kapu nyugaton a Kossuth Lajos utcára** nyílik; délen az Iskola utca, keleten az Aradi utca, az utcák mentén piros tetős családi házak.
+- **Bent** a főépület földszintje járható: a folyosó (fogasok kabátokkal és táskákkal, vitrin, faliújságok, padok, a falon írók és költők arcképei) két terem (**Petyus osztálya, a 6. b**, és a 6. a), valamint a **fiú és a lány WC**.
+  - **A terem berendezése:** a tábla a nyugati falon (ott nincs ablak; az alap kamera felől jól látszik), fölötte falióra (a játékidőt mutatja), mellette a tanári asztal; a tanulók nyugat felé néznek, az ablakok (észak) a jobb kezük felől; az ablakok alatt csak radiátor és alacsony növény (az ablak aljánál nem magasabb); a hátsó falon könyvespolcok és alacsony szekrények.
+  - **A tábla:** 6. osztályos anyag (6. b: törtek, házi feladat; 6. a: Arany János: Toldi; 5. b: a térkép, méretarány).
+  - **Képek** (`src/ep2/posters.js`, vászonra rajzolva): írók, költők stilizált arcképe névvel és évszámmal (Petőfi Sándor, Arany János, József Attila, Ady Endre, Móra Ferenc, Weöres Sándor, Kosztolányi Dezső, Jókai Mór), szorzótábla, Magyarország térképe (Budapest, Tököl), a 6. b órarendje.
+  - **Petyus helye:** az első pad (a táblához legközelebbi sor) középső padjának ablak felőli széke – **E – leülés (a helyed)** / **E – felállás** (bármely mozgásgomb is felállítja); a tanító néni szól, ha nem ül a helyén.
+  - **Ütközés:** a padokon, székeken, polcokon, radiátorokon, növényeken, padokon, fákon nem lehet átsétálni (a `put` `col: true` kapcsolója).
+  - **Nézet, mint otthon:** **V** belső nézet (FPS, mennyezet neonlámpákkal), **Q / R** forgatás, **T** falak átlátszók / lesüllyednek (a falra akasztott tábla, kép, kabát a fallal együtt fakul / tűnik el), a zoom ugyanaz (kizoomolva a falak tömörek, az emeletek és a napelemes tető látszanak). Bent az emeletek eltűnnek, a déli kisebb épületből csak a lábazata marad.
+  - **Ajtók** (E – nyit / csuk): a bejárat kétszárnyú üvegajtó, a termek fa ajtaján tábla az osztállyal (6. b, 6. a), a WC-k fehér ajtaján fiú / lány jelzés (kék fiú, piros lány alak, FIÚ / LÁNY). Befelé nyílnak, csukva ütköző; a fallal együtt fakulnak / tűnnek el.
+  - **WC-k:** csempézett padló, a falakon csempe, fülkék (2 a fiúknál, 3 a lányoknál) vécével, mosdók tükörrel, a fiúknál piszoárok. A vécénél **E – ülőke fel / le**, **Szóköz – pisilés** (mint otthon: célzás A / D-vel, mellé is mehet – `pee.js` most már bármelyik vécével működik: `useToilet`), utána **Szóköz – lehúzás**. Ha mellé ment, a takarító néni kiabál a folyosóról. A lány WC-ben Réka a mosdónál: „KIFELÉ!! Ez a LÁNYVÉCÉ!!”
+  - **Ablakok:** a földszinti ablakok üvege átlátszó (függöny nélkül, belül is kerettel) – az osztályokból és a folyosóról ki lehet látni az udvarra.
+  - **Világítás:** minden teremben (6. b, 6. a, fiú és lány WC) mennyezeti lámpák, az ajtó melletti kapcsolóval (**E – villany fel / le**); az osztálytermekben alapból ég, a folyosón mindig. Bent a kinti fénynek (szinte) nincs hatása: amíg Petyus az épületben van, a napfény elhalványul, a termeket a saját lámpájuk és egy egyenletes, lágy fény világítja.
+  - **Óra és szünet jelzése:** a HUD-on egy címke: „📚 2. óra · Magyar · még 23 perc” / „🔔 Szünet · még 6 perc · utána: Matek” / „🏠 Vége a tanításnak” (az órarend a 6. b-é, napok szerint – `TIMETABLE` a `posters.js`-ben, a falon lógó órarend is ebből készül); csengetéskor nagy felirat: „BECSENGETTEK! 3. ÓRA” / „SZÜNET!” / „VÉGE A TANÍTÁSNAK!”. 6 óra 8:00-tól (45 perc óra, 10 perc szünet); a szünet lassabban telik (kb. 50 mp), hogy legyen idő kimenni és játszani; az utolsó óra után (napközi) a gyerekek kint játszanak.
+  - **Szünet:** a csengőre Petyus osztálytársai felállnak a padból, a tanító néni kiküldi őket („Szünet! Irány az udvar!”), a terem ajtaján, a folyosón, a bejáraton át kimennek (az ajtók kinyílnak); a 6. a is kimegy a saját ajtaján – kint csak a két osztály gyerekei vannak: a fiúk (14, két csapat) a füves pályán fociznak (labda, passzok, kapura lövés, „GÓÓÓL!!”), a lányok (12) a téren ugróiskoláznak (a krétával rajzolt pályán sorban ugrálnak – egy lábon / két lábon –, a többiek nézik, biztatják); óra kezdetén mind visszamennek, és visszaülnek a helyükre.
+  - **Hangok:** csengő minden óra elején és végén (45 perc óra, 10 perc szünet), gyerekzsivaj (órán halk, szünetben hangos; szünetben kiabálás az udvaron), a kréta csikorgása, ha a tanító néni ír.
+- **Szereplők:** a 6. b-ben a tanító néni és 12 osztálytárs, a 6. a-ban a tanár bácsi és 14 gyerek – mindkét teremben folyik az óra (a 6. a-ban a tanár bácsi rászól Petyusra, hogy nem oda jár); a gyerekek a padban Petyus felé fordulnak, ha elmegy mellettük, és megszólítják.
 - **Óra:** 8:00 → 15:30; **E – hazaindulás** a kapunál (egyelőre bármikor).
-- ⬜ Később: a 4 iskolai csibészség, Petyus saját helye (leülés), tornaterem / ebédlő.
+- ⬜ Később: a 4 iskolai csibészség, Petyus saját helye (leülés), a tornaterem / ebédlő belseje, az emeletek.
 
 ## Fejlesztési lépések
 
@@ -253,7 +334,8 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 3. ✅ **Megnyitás + fejlesztői elérés** (fent).
 4. ✅ **Naptár és napszakok** (naptár, óra, HUD, a napszakok köre, átvezető kártya, hétvége, a hónap vége): állapot (`nap`, `napszak`, játékóra), mentés `localStorage`-ba, HUD-elem, átvezetők a váltáshoz.
 5. ✅ **Otthon – reggel:** a lakás voxelből az alaprajz alapján (falak, ajtók, ablakok, padló, bútorok), babaház-nézet, reggeli fények, Petyus/Petya/Angi elhelyezése, mozgás, ütközés.
-6. ◐ Iskola (✅ helyszín), délutáni otthon (✅ helyszín), csibészségek (✅ a reggeliek, ⬜ az iskolaiak és a délutániak).
+6. ◐ Iskola (✅ helyszín), délutáni otthon (✅ helyszín), csibészségek (✅ a reggeliek, ⬜ az iskolaiak, ⬜ az estiek – terv kész).
+7. ◐ **Esti csibészségek:** ✅ esti ütemező a fogmosáshoz → ✅ 8. A fogkrémcsere → ⬜ 9. Meccs vagy sorozat? (meccs-ütemező) → ⬜ 10. A lepedős kísértet (szemétlevitel).
 
 ## Döntések
 
@@ -288,3 +370,28 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 - [x] **Otthon délután–este** csibészségek nélkül: kint sötét, bent égnek a lámpák, a többi lakás ablakaiban fel-le kapcsolódó lámpák, utcai és udvari lámpák (az 1. rész kandeláberei); továbblépés a reggelbe feltétel nélkül. ✅ `setEvening`, `addFillLights`, lefekvés Petyus ágyánál.
 - [x] **Öltözködés az induláshoz:** a szekrénynél E, három szín (fehér / fekete / kék felső), a szülők berohannak, átöltöznek, az ajtóhoz mennek és sürgetnek; az indulás feltétele a felöltözés is. ✅ `dressing.js`, `dressClothes` a `pajama.js`-ben.
 - [x] **A szekrény működése:** a ruhák nem belül voltak, a fogantyúk furán viselkedtek (a voxel szekrény tömör volt, a fogantyúja a helyén maradt). ✅ Üreges szekrény a `dressing.js`-ben, a ruhák a rúdon és a polcon belül, a fogantyú az ajtószárnyon.
+- [x] **Az iskola áttervezése** a fénykép és a légifotó alapján (az épület és a környezete). ✅ `school.js`: háromszintes főépület narancs–fehér homlokzattal, előtetős bejárat, déli kisebb épület, füves pálya, sportcsarnok, kék pálya, tér, utcák, házak.
+- [x] **Iskola belül:** FPS, forgatás, falak (T), zoom mint otthon; 6. osztály; Petyus helye (leülés); bútorokon nem lehet átmenni; a tábla nem az ablakok előtt, az ablakok előtt csak alacsony bútor; képek (szorzótábla, írók, költők); iskolai hangok; óra a tábla felett. ✅ `school.js`, `posters.js`.
+- [x] **Iskolai ajtók és WC-k:** nyitható bejárati ajtó, a termeken ajtó az osztály számával, fiú és lány WC jelzéssel, használható vécék, pisilés. ✅ `school.js` (`makeDoor`, `buildToilets`), `pee.js` (`useToilet`).
+- [x] **A WC ajtajába belelógott egy geometria** (a vécék falcsempe-sávja végigfutott az ajtónyílásokon). ✅ A csempesáv az ajtóknál megszakad.
+- [x] **Szünet, ablakok, lámpák:** szünetben sok gyerek az udvaron (fiúk fociznak, lányok ugróiskoláznak), az udvarra néző ablakokon ki lehet látni, a termekben kapcsolható lámpa, bent nem hat a külső fény. ✅ `school.js`: `buildCrowd`/`crowdTick`, átlátszó üveg (`GLASS`), `buildLights`/`toggleLight`, `indoorLight`.
+- [x] **Ablakok fordítva, nem lehetett kilátni:** a keret tömör lapként az üveg mögött volt, belül pedig egy második, átlátszatlan üveg. ✅ A keret négy léc, belül csak keret van (üveg nélkül).
+- [x] **Villanykapcsolók az ajtó másik oldalán:** ✅ a kilincs felőli oldalon (a nyitott ajtó nem takarja).
+- [x] **FPS nézetben ne tűnjön el a külső épület:** ✅ az emeletek és a déli épület belső nézetben is megmaradnak (az ablakon át látszanak).
+- [x] **Az épület belsejébe néző ablakok:** a főépület déli falán, ahol a déli épület átjárója csatlakozik (földszint, 1. emelet). ✅ Ott nincs ablak.
+- [x] **Az átlátszó ablakok külső pereme villogott** (az üveg széle a keretlécek oldalával, az alsó léc teteje a narancs lábazat tetejével egy síkban). ✅ Az üveg 1–1 cm-rel kisebb, a lábazat a keret alja alatt ér véget.
+- [x] **Villany alapból, óra / szünet jelzése, a gyerekek szünetben kint:** ✅ az osztálytermekben ég a villany; HUD-címke az órával / szünettel és felirat csengetéskor; szünetben az osztálytársak is kimennek (fiúk foci, lányok ugróiskola), órára visszaülnek a helyükre.
+- [x] **A tanórát mutató HUD belelógott a gombokba.** ✅ Az óra / szünet címke külön sorban; a HUD szélessége mindig a jobb felső gombok bal széléig tart (`fitHud`), a chipek új sorba törnek.
+- [x] **Mennyezeti lámpák, 6. a, szünetben a termekből ki:** ✅ a mennyezeten csak a kapcsolható lámpák (rendezett rácsban; a folyosón az állandók); a 6. a-ban tanár bácsi és 14 gyerek; szünetben mindkét teremből kimennek, és csak ők játszanak kint. Közben javítva: a szüneti csapatok üresek maradtak (a diákok előtt készültek), és egy változó-ütközés miatt szünetben minden képkockán hiba lépett fel.
+- [x] **A fény a lámpatestekből; a gyerekek ülnek; 14:00 után mindenki kint:** ✅ minden fényforrás egy mennyezeti lámpatest helyén (terem 2 × 2, WC 1, folyosó 3); órán a diákok mindig a saját székükön ülnek; a 6. óra után (13:20) ebédszünet, 14:00-tól délután: a gyerekek és a tanárok is kint vannak, csengetés nincs (HUD: „🍽️ Ebédszünet”, „🏠 Délután – mindenki kint az udvaron”).
+- [x] **Otthon:** a társasház bejárata középen (nem vág bele ablakba); este is megvan Petyus szekrénye; az utcán járó autók első és hátsó lámpája este világít; a fürdő- és WC-ajtó induláskor csukva, este csak a konyhában ég a villany; beton parkoló csak a ház előtt, a blokkok között gyeprácsos parkoló. ✅ (képen még nincs ellenőrizve)
+- [x] **Optimalizálás:** a megterített asztal, a roller és a hűtő fix részei egy-egy rajzolásba összevonva (`mergeStatic`), a kinti tárgyak nagyobb cellákban, az esti lámpák példányosítva, csak egy árnyékot vető spotfény; a kinti voxeltárgyak (autók, lámpák, fák, bokrok, a bougainvillea) összevont lapokkal (`toGeometryGreedy` a `voxels.js`-ben, `getGeometry(id, v, true)`: az autó 3152 helyett 299 lap, a lámpa 1342 helyett 176). Az esti otthon: 1112 → 677 rajzolás, ≈ 1,27 M → 1,06 M háromszög képkockánként. ✅
+- [x] **Vibrálás a ház előtti parkolónál:** a garázsokhoz vezető murvás behajtó belelógott a nyugati útba (azonos magasságban), a kocsibejáró a betonlapokra, az esti fénytócsák pedig a lapok fugáival egy magasságban voltak. ✅ A behajtó az út széléig ér, a kocsibejáró a lapok és a járda közé esik, a fénytócsák (és az autók fénycsóvája) a burkolat fölött.
+- [x] **Cipők az előszobában:** kidolgozottabbak, és ne az ajtó előtt legyenek. ✅ 2 cm-es voxelekből (talp, kerek orr, orrmerevítő, fűző, kéreg, bélés; a ruhacipőnek és a csizmának sarka van): Petyus piros sportcipője, apa fekete bőrcipője, anya fehér sportcipője és barna bokacsizmája – egy sorban a fürdőszoba fala mellett.
+- [x] **Túl fehér plafon, szaggatás a világítás miatt.** ✅ A plafon (otthon és az iskolában) tompább szürke, este otthon sötétebb. A szaggatást az okozta, hogy a lámpák fényei ki-be rejtődtek: minden kapcsoláskor (és amikor a legközelebbi égő szoba változott) a fények száma megváltozott, és újrafordult minden shader. Most a fények mindig a jelenetben vannak, kikapcsolva 0 fényerővel; az árnyékot vető spotfény árnyéka csak használat közben frissül; este 4 (mobilon 2) kitöltő fény. Az iskolában 13 helyett 8 pontfény (egy tanterem négy paneljét két fény világítja, a folyosót kettő).
+- [x] **Újra szaggat (este otthon).** ✅ A mindig jelen lévő (0 fényerős) fények is minden pixelnél számolnak: a kitöltő fények és a kinti valódi lámpafények megszűntek (lásd a következő pontot); a két szobalámpa árnyéka felváltva frissül (képkockánként egy); a fürdőszobai szekrény és polc fix részei összevonva, árnyék nélkül. Rajzolások este: 734 → 447. (A gyorsulást valódi FPS-sel nem tudtam mérni: a böngészőpanel rejtve volt.)
+- [x] **Lámpa a ház bejáratánál; az utcai fények bevilágítanak a lakásba; a szobák fénye átvilágít a falakon.** ✅ A bejárat melletti két kandeláber megszűnt; kint nincs valódi fény – árnyék nélkül a falon át a lakásba világított –, és a lámpák alatti fénykör is megszűnt: csak maga a lámpafej világít. Bent nincsenek árnyék nélküli kitöltő fények; a két legközelebbi égő szoba spotfénye mindkettő árnyékot vet (felváltva frissítve), így a fény nem megy át a falon a szomszéd helyiségbe.
+- [x] **A kinti lámpák feje nem fényes.** ✅ A világító test a lámpa üvegén belül volt (az átlátszatlan üveg-voxelek eltakarták); most egy kereszt alakú test kívülről fedi a négy üveglapot – a lapok világítanak, a sarokoszlopok sötétek.
+- [x] **Az autók lámpái is csak világosak legyenek, fénycsóva nélkül.** ✅ A fényszórók és a hátsó lámpák világítanak, az út előttük nem (a fénycsóva megszűnt).
+- [x] **A szobák fénye: az eredeti lámpák, hangolva.** ✅ (Egy próba – egyenletes „szobafény” dobozokkal – nem tetszett, nem került be.) A mennyezeti lámpák spotfények maradtak, árnyékkal (nem világítanak át a falon), de olyanok, mint egy mennyezeti lámpa: meleg szín, nagyon széles fénykúp (≈ 160°), puha szél, lassú lecsengés; egyszerre három égő helyiség kap fényt (Petyusé és a két legközelebbi), az árnyéktérképek felváltva frissülnek (képkockánként egy).
+- [x] **A karakterek mozgás közben vibrálnak a fényben.** ✅ A saját árnyékuk (a széles fénykúp miatt durva, és csak minden harmadik képkockán frissülő árnyéktérképből) késve ugrált rajtuk. Most a szereplők nem kapnak árnyékot magukra (a padlóra továbbra is vetnek), és Petyus helyiségének lámpája minden képkockán frissíti az árnyékát (a másik kettő felváltva).

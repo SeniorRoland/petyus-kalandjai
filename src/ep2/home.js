@@ -11,7 +11,7 @@ import { CATALOG, getGeometry } from '../voxels.js';
 import { TOILET, toiletLidGeometry, toiletSeatGeometry } from '../voxels-home.js';
 import { Q } from '../quality.js';
 import * as F from './food.js';
-import { INSTANCES, addBoxCol, addCircleCol, colliders, partMesh, vcMat } from '../world.js';
+import { INSTANCES, addBoxCol, addCircleCol, colliders, mergeStatic, partMesh, vcMat } from '../world.js';
 
 export const WALL_H = 2.6;
 // the flat is on the 2nd floor of a block of flats (outside.js builds the rest): its floor is at FY; the home meshes live in
@@ -191,7 +191,7 @@ const lists = new Map();
 // a voxel prop: in the flat (y from its floor, with a collider) or outside ({ ground: true }: on the ground, no collider)
 export const SOLO = {};   // single furniture meshes that move (dad's chair): { mesh, pivot, col }
 export function put(id, x, z, rot = 0, v = 0, o = {}) {
-  if (o.ground) o.noCol = true;
+  if (o.ground && !o.col) o.noCol = true;   // (outside props have no colliders; col: true keeps it – the school's furniture)
   if (o.solo) {   // its own mesh in a pivot at the floor (it can tip over)
     const pivot = new THREE.Group(); pivot.position.set(x, FY + (o.y || 0), z); scene.add(pivot);
     const mesh = new THREE.Mesh(getGeometry(id, v), vcMat); mesh.rotation.y = rot; mesh.castShadow = mesh.receiveShadow = true; pivot.add(mesh);
@@ -200,7 +200,8 @@ export function put(id, x, z, rot = 0, v = 0, o = {}) {
     return;
   }
   // one instanced mesh per kind, variant AND 16 m cell: a mesh is culled as a whole, so cells off screen are not drawn at all
-  const K = id + ':' + v + ':' + Math.floor(x / 16) + ':' + Math.floor(z / 16); if (!lists.has(K)) lists.set(K, []);
+  const cell = o.ground ? 64 : 16;   // (outside: bigger cells – far fewer meshes, i.e. draw calls)
+  const K = id + ':' + v + ':' + Math.floor(x / cell) + ':' + Math.floor(z / cell); if (!lists.has(K)) lists.set(K, []);
   lists.get(K).push({ x, y: (o.y || 0) + (o.ground ? 0 : FY), z, rot, sx: o.sx || 1, s: o.s || 1 });
   const c = DEF[id].collider;
   if (c && !o.noCol) {
@@ -218,7 +219,8 @@ function furnish() {
   wcRolls(5.29, 0.75, W);
   // hallway: coats, shoes by the front door
   put('wall_coat_hanger', 1.3, 4.19, P); put('shoe_cabinet', 1.3, 4.02, P);   // on the wall opposite the bathroom, by the front door
-  put('shoes', 0.45, 3.55, E, 0); put('shoes', 0.45, 2.75, E, 1); put('shoes', 2.15, 3.95, P, 2);
+  // the shoes in a row along the bathroom wall (heels to the wall), not in front of the door
+  [[0.32, 1], [0.72, 2], [1.12, 3], [1.5, 0]].forEach(([x, v]) => put('shoes', x, 2.6, 0, v));
   // kitchen: fridge + the counter under the north windows; the table along the wall to Petyus's room (the middle stays free)
   // the wide fridge on the west wall, the counter beside it turning the corner (L): one unit on the west wall, four on the north
   put('kitchen_unit', 5.73, 0.5, E, 3);   // (the wide fridge itself opens: appliances.js)
@@ -260,7 +262,8 @@ export function buildFurniture() {   // (also the school: school.js)
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), ps = new THREE.Vector3();
   for (const [K, list] of lists) {
     const [id, v] = K.split(':'); const def = DEF[id];
-    const geo = getGeometry(id, +v); if (!geo.boundingBox) geo.computeBoundingBox();
+    // merged faces (voxels.js greedy) for everything but the flat's furniture seen up close: a fraction of the triangles
+    const geo = getGeometry(id, +v, def.cat !== 'Lakás' || id === 'bougainvillea' || list[0].y < FY - 0.5); if (!geo.boundingBox) geo.computeBoundingBox();
     const bb = geo.boundingBox, gr = Math.max(-bb.min.x, bb.max.x, -bb.min.z, bb.max.z), gh = bb.max.y;
     const mesh = new THREE.InstancedMesh(geo, vcMat, list.length);
     list.forEach((it, n) => { e.set(0, it.rot, 0); q.setFromEuler(e); sc.set(it.sx * it.s, it.s, it.s); ps.set(it.x, it.y, it.z); m4.compose(ps, q, sc); mesh.setMatrixAt(n, m4);
@@ -306,33 +309,36 @@ const SWITCHES = [
 ];
 export const switches = [];
 // Every point light costs on every pixel of every lit surface, switched on or not (and adding / removing one recompiles all
-// shaders): a fixed pool of two lights goes to the switched-on rooms nearest Petyus; with all lights off they are dark.
+// shaders): a fixed pool of three lights goes to the switched-on rooms nearest Petyus; with all lights off they are dark.
 const LIGHT_POOL = [];
 // The pool's lights are spot lights under the ceiling lamps pointing down: they cast the flat's shadows (the sun casts none
-// in part 2). A light that is not needed is hidden (no shadow pass for it); both states are compiled in advance (ep2.js).
+// in part 2). A light that is not needed stays in the scene with no intensity (hiding it would change the number of lights
+// and recompile every shader – a visible hitch); the shadow map is redrawn only while its light is used.
 export function lightPool() {
-  if (!LIGHT_POOL.length) for (let i = 0; i < 2; i++) {
-    const l = new THREE.SpotLight(0xffd9a0, LIGHT_ON, 9, 1.25, 0.55, 1.6);
-    l.castShadow = Q.shadowSize > 0; l.shadow.mapSize.set(Q.level >= 2 ? 1024 : 512, Q.level >= 2 ? 1024 : 512);
-    l.shadow.bias = -0.0008; l.shadow.normalBias = 0.02; l.shadow.camera.near = 0.2; l.shadow.camera.far = 9;
-    l.visible = false; homeRoot.add(l, l.target); LIGHT_POOL.push(l);
+  if (!LIGHT_POOL.length) for (let i = 0; i < POOL_N; i++) {
+    // like a ceiling lamp: a warm light spreading almost all round (wide cone, a very soft edge), fading gently with distance
+    const l = new THREE.SpotLight(0xffe1b0, LIGHT_ON, 10, 1.38, 0.9, 1.15);
+    // all cast shadows: a light without them shines through the walls into the next room (the shadow maps are redrawn in
+    // turns, one per frame – see updateLights)
+    l.castShadow = Q.shadowSize > 0;
+    l.shadow.mapSize.set(Q.level >= 2 ? 1024 : 512, Q.level >= 2 ? 1024 : 512);
+    l.shadow.bias = -0.0005; l.shadow.normalBias = 0.012; l.shadow.camera.near = 0.15; l.shadow.camera.far = 10;
+    l.intensity = 0; l.shadow.autoUpdate = false; homeRoot.add(l, l.target); LIGHT_POOL.push(l);
   }
   return LIGHT_POOL;
 }
-// the evening (ep2.js): a few soft room lights more, without shadows – every lit room glows, not only the two nearest
-const FILL = [];
-export function addFillLights(n) {   // (short reach: they should not light up the facade outside)
-  for (let i = 0; i < n; i++) { const l = new THREE.PointLight(0xffdcae, 3.0, 4.8, 1.2); l.visible = false; homeRoot.add(l); FILL.push(l); }
-}
 function updateLights(P) {
+  shadowTurn++;
   const on = switches.filter((s) => s.on).sort((a, b) => Math.hypot(a.light.position.x - P.x, a.light.position.z - P.z) - Math.hypot(b.light.position.x - P.x, b.light.position.z - P.z));
-  FILL.forEach((l, i) => { const s = on[i]; l.visible = !!s; if (s) l.position.set(s.light.position.x, WALL_H - 0.4, s.light.position.z); });
   lightPool().forEach((l, i) => {
-    const s = on[i]; l.visible = !!s;
+    const s = on[i]; l.intensity = s ? LIGHT_ON : 0;
+    // the light of Petyus's room (the nearest): every frame – the people move in it; the other two in turns
+    if (l.castShadow && s && (i === 0 || shadowTurn % (POOL_N - 1) === i - 1)) l.shadow.needsUpdate = true;
     if (s) { l.position.set(s.light.position.x, WALL_H - 0.12, s.light.position.z); l.target.position.set(s.light.position.x, 0, s.light.position.z); l.target.updateMatrixWorld(); }
   });
 }
-const LIGHT_ON = 9;
+const LIGHT_ON = 7.5, POOL_N = 3;   // (three lit rooms at once: the one Petyus is in and the two nearest)
+let shadowTurn = 0;
 function buildSwitches() {
   for (const sd of SWITCHES) {
     const r = ROOMS.find((q) => q.id === sd.room), cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;
@@ -397,6 +403,7 @@ function buildPictures() {
 // band (z 1.87 … 2.07) and along the south-east edge. Everything stays at least 4 cm inside the edge.
 function buildBreakfast() {
   const t = new THREE.Group(); t.position.y = 0.77; homeRoot.add(t);
+  queueMicrotask(() => mergeStatic(t));   // (performance: the set table – 130 little things – in one draw call; after it is laid)
   const H = Math.PI / 2;
   // dad: a plate with salami, knife and fork beside it (his mug: inventory.js – the 'dad' place, 10.18 / 2.22)
   F.at(t, F.plate(0x2a9d8f), 10.02, 0, 1.95); F.at(t, F.cutlery(1), 10.02, 0, 1.95, H);
@@ -462,7 +469,7 @@ export let ceiling = null;
 export function buildHome(outside) {
   scene.add(homeRoot);
   ceiling = new THREE.Group(); ceiling.visible = false; homeRoot.add(ceiling);
-  const plane = new THREE.Mesh(new THREE.PlaneGeometry(XE + 2 * TE, ZS + 2 * TE), new THREE.MeshBasicMaterial({ color: 0xe9e5dd, side: THREE.DoubleSide }));
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(XE + 2 * TE, ZS + 2 * TE), new THREE.MeshBasicMaterial({ color: 0xb4afa6, side: THREE.DoubleSide }));
   plane.rotation.x = Math.PI / 2; plane.position.set(XE / 2, WALL_H, ZS / 2); ceiling.add(plane);
   buildSwitches();
   homeRoot.add(partMesh((b) => { for (const r of ROOMS) FLOORS[r.floor](b, r); }));

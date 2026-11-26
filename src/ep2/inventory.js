@@ -14,6 +14,8 @@ import { $ } from '../util.js';
 import { fx, seating } from './appliances.js';
 import { FY, homeRoot } from './home.js';
 import { carrot as carrotModel, keyRing, toiletRoll } from './food.js';
+import { bath } from './toothpaste.js';
+import { faceMaskJar, heelCreamTube, chiliTube, toothpasteTube } from './food.js';
 import { CAGE, cageDoorOpen, cageFront, karcsiState, lureKarcsi, pigObj, putKarcsiBack, releaseKarcsi, setFloorCarrot } from './karcsi.js';
 import { walkable } from './navgrid.js';
 
@@ -27,6 +29,11 @@ const ITEMS = [
   { id: 'carrot', name: 'répa', icon: '🥕' }, { id: 'carrot2', name: 'répa', icon: '🥕' }, { id: 'carrot3', name: 'répa', icon: '🥕' },
   { id: 'karcsi', name: 'Karcsi', icon: '🐹' },
   { id: 'key', name: 'Angi kulcsa', icon: '🔑' },
+  // the toothpaste swap (toothpaste.js): the toothpaste, Angi's two creams, the chili cream from the fridge
+  { id: 'toothpaste', name: 'fogkrém', icon: '🦷' },
+  { id: 'heelcream', name: 'sarokkrém (olyan, mint a fogkrém)', icon: '🧴' },
+  { id: 'facemask', name: 'arcmaszk', icon: '🫙' },
+  { id: 'chili', name: 'chilikrém', icon: '🌶️' },
 ];
 const ACCEPT = {
   controller: ['tv', 'desk', 'fridge', 'micro', 'tub'],
@@ -36,8 +43,13 @@ const ACCEPT = {
   carrot: ['fridge', 'table', 'counter', 'desk'], carrot2: ['fridge', 'table', 'counter', 'desk'], carrot3: ['fridge', 'table', 'counter', 'desk'], karcsi: [],
   // the key: anywhere – the usual places first, the odd ones (where nobody would look) last (keyhunt.js searches in that order)
   key: ['shoe', 'coat', 'counter', 'table', 'sofa', 'armchair', 'tv', 'desk', 'wc', 'tub', 'micro', 'fridge', 'washer', 'cage'],
+  // the tubes: the toothpaste's place on the bathroom shelf, Angi's cabinet, or anywhere to hide them
+  toothpaste: ['paste', 'cabinet', 'tub', 'fridge', 'counter', 'table', 'tv', 'desk'],
+  heelcream: ['paste', 'cabinet', 'tub', 'fridge', 'counter', 'table', 'tv', 'desk'],
+  facemask: ['paste', 'cabinet', 'tub', 'fridge', 'counter', 'table', 'tv', 'desk'],
+  chili: ['paste', 'fridge', 'cabinet', 'tub', 'counter', 'table', 'tv', 'desk'],
 };
-const PLACE_NAME = { tv: 'a TV-állványra', desk: 'az íróasztalra', fridge: 'a hűtőbe', micro: 'a mikróba', tub: 'a kád szélére', table: 'az asztalra', dad: 'apa elé', shoe: 'a cipősszekrényre', coat: 'a kabátzsebbe', sofa: 'a kanapépárna alá', armchair: 'a fotelba', washer: 'a mosógépbe', cage: 'Karcsi kalitkájába', counter: 'a konyhapultra', wc: 'a WC-tartályra' };
+const PLACE_NAME = { tv: 'a TV-állványra', desk: 'az íróasztalra', fridge: 'a hűtőbe', micro: 'a mikróba', tub: 'a kád szélére', table: 'az asztalra', dad: 'apa elé', shoe: 'a cipősszekrényre', coat: 'a kabátzsebbe', sofa: 'a kanapépárna alá', armchair: 'a fotelba', washer: 'a mosógépbe', cage: 'Karcsi kalitkájába', counter: 'a konyhapultra', wc: 'a WC-tartályra', paste: 'a fogkrém helyére', cabinet: 'anya szekrényébe' };
 const DRINK = { tea: 'tea', kave: 'kávé', tej: 'tej', tejszin: 'tejszín', hab: 'tejszínhab' };
 
 const places = {};   // id → { hot: (p) => distance, slots: [{ parent, pos, item, only }], open?: () => bool }
@@ -95,13 +107,19 @@ export function buildInventory() {
   places.cage = { hot: (p) => Math.hypot(p.x - cageFront().x, p.z - cageFront().z) - 0.75, open: () => cageDoorOpen(), slots: [slot(H, CAGE.x + 0.3, CAGE.y + 0.125, CAGE.z - 0.05, 'key')] };
   // dad's place at the table (only the mug): in reach it wins over the rest of the table
   places.dad = { hot: (p) => { const d = Math.hypot(p.x - 10.1, p.z - 2.0); return d < 1.0 ? d - 5 : 1; }, slots: [slot(H, 10.18, 0.77, 2.22, 'mug')] };
+  // the bathroom (toothpaste.js): the toothpaste's spot on the shelf by the basin, Angi's cabinet on the other side (opens)
+  places.paste = { hot: near(3.25, 1.68, 0.55), slots: [slot(bath.shelf, 0.15, 0.02, 0.06, null, 0)] };
+  places.cabinet = { hot: near(3.25, 0.42, 0.55), open: () => bath.cabinetOpen(),
+    slots: [slot(bath.cabinet, 0.1, 0.025, 0.07, null, 0), slot(bath.cabinet, -0.1, 0.27, 0.07, null, 0), slot(bath.cabinet, 0.12, 0.27, 0.07, null, 0)] };
   // things put on the floor (the carrot for Karcsi): a new place each time
   places.floor = { hot: () => 1, slots: [] };
   // the things and where they start (Karcsi is in his cage – karcsi.js moves him; he is no place's)
-  const objs = { controller: fx.tv.controller, paper: toiletRoll(), mug: fx.mug.obj, milk: fx.dairy.milk, cream: fx.dairy.cream, whip: fx.dairy.whip, carrot: carrotModel(), carrot2: carrotModel(), carrot3: carrotModel(), karcsi: pigObj(), key: keyRing() };
+  const objs = { controller: fx.tv.controller, paper: toiletRoll(), mug: fx.mug.obj, milk: fx.dairy.milk, cream: fx.dairy.cream, whip: fx.dairy.whip, carrot: carrotModel(), carrot2: carrotModel(), carrot3: carrotModel(), karcsi: pigObj(), key: keyRing(),
+    toothpaste: toothpasteTube(), heelcream: heelCreamTube(), facemask: faceMaskJar(), chili: chiliTube() };
   for (const it of ITEMS) items[it.id] = { ...it, obj: objs[it.id], place: null, slot: null };
   put('controller', 'tv', 0, true); put('paper', 'wc', 0); put('mug', 'counter', 0, true);
   put('milk', 'fridge', 0, true); put('cream', 'fridge', 1, true); put('whip', 'fridge', 2, true); put('carrot', 'fridge', 6); put('carrot2', 'fridge', 7); put('carrot3', 'fridge', 8); put('key', 'shoe', 0);
+  put('toothpaste', 'paste', 0, true); put('heelcream', 'cabinet', 0, true); put('facemask', 'cabinet', 1, true); put('chili', 'fridge', 4);
   buildHud(); drawMug();
 }
 // put an item into a place's slot (keep: it is already there – keep its exact position / turn)

@@ -121,6 +121,55 @@ export class VoxelGrid {
     geo.userData = { voxels: this.m.size, faces, voxelSize: s };
     return geo;
   }
+  // the same with merged faces (greedy meshing): neighbouring faces of one colour become one quad –
+  // far fewer triangles (the colour jitter is per merged quad, not per voxel)
+  toGeometryGreedy(jit = 0.07) {
+    const s = this.s, slices = FACES.map(() => new Map()), B = 4096;
+    for (const [K, c] of this.m) {
+      const k = K % DIM - OFF, t = Math.floor(K / DIM), j = t % DIM - YOFF, i = Math.floor(t / DIM) - OFF, v = [i, j, k];
+      for (let f = 0; f < 6; f++) {
+        const d = FACES[f].d; if (this.m.has(key(i + d[0], j + d[1], k + d[2]))) continue;
+        const a = f >> 1, u = (a + 1) % 3, w = (a + 2) % 3;
+        let sl = slices[f].get(v[a]); if (!sl) slices[f].set(v[a], (sl = new Map()));
+        sl.set((v[u] + 2000) * B + v[w] + 2000, c);
+      }
+    }
+    const quads = [];
+    for (let f = 0; f < 6; f++) {
+      const a = f >> 1, u = (a + 1) % 3, w = (a + 2) % 3;
+      for (const [sv, sl] of slices[f]) {
+        const done = new Set();
+        for (const q0 of [...sl.keys()].sort((A, Bq) => A - Bq)) {
+          if (done.has(q0)) continue; const c = sl.get(q0);
+          let nw = 1; while (sl.get(q0 + nw) === c && !done.has(q0 + nw)) nw++;
+          let nu = 1; grow: for (;;) { for (let x = 0; x < nw; x++) { const q = q0 + nu * B + x; if (sl.get(q) !== c || done.has(q)) break grow; } nu++; }
+          for (let y = 0; y < nu; y++) for (let x = 0; x < nw; x++) done.add(q0 + y * B + x);
+          const o = [0, 0, 0], ext = [1, 1, 1]; o[a] = sv; o[u] = Math.floor(q0 / B) - 2000; o[w] = q0 % B - 2000; ext[u] = nu; ext[w] = nw;
+          quads.push(f, o[0], o[1], o[2], ext[0], ext[1], ext[2], c);
+        }
+      }
+    }
+    const faces = quads.length / 8, pos = new Float32Array(faces * 18), nor = new Float32Array(faces * 18), col = new Float32Array(faces * 18);
+    let p = 0;
+    for (let q = 0; q < quads.length; q += 8) {
+      const F = FACES[quads[q]], i = quads[q + 1], j = quads[q + 2], k = quads[q + 3], ex = quads[q + 4], ey = quads[q + 5], ez = quads[q + 6];
+      tmpC.set(quads[q + 7]); const sh = F.sh * (1 + (hash3(i, j, k, 77) - 0.5) * 2 * jit);
+      const r = tmpC.r * sh, g = tmpC.g * sh, b = tmpC.b * sh;
+      for (const vi of [0, 1, 2, 0, 2, 3]) {
+        const cc = F.c[vi];
+        pos[p] = (i - 0.5 + cc[0] * ex) * s; pos[p + 1] = (j + cc[1] * ey) * s; pos[p + 2] = (k - 0.5 + cc[2] * ez) * s;
+        nor[p] = F.n[0]; nor[p + 1] = F.n[1]; nor[p + 2] = F.n[2];
+        col[p] = r; col[p + 1] = g; col[p + 2] = b; p += 3;
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    geo.computeBoundingBox(); geo.computeBoundingSphere();
+    geo.userData = { voxels: this.m.size, faces, voxelSize: s };
+    return geo;
+  }
   palette(n = 8) {
     const cnt = new Map(); for (const c of this.m.values()) cnt.set(c, (cnt.get(c) || 0) + 1);
     return [...cnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map((e) => e[0]);
@@ -354,10 +403,11 @@ export const CATALOG = [
 ];
 CATALOG.push(...HOME_CATALOG);   // the flat's furniture (2. rész) – voxels-home.js
 const geoCache = new Map();
-export function getGeometry(id, variant = 0) {
-  const K = id + ':' + variant; if (geoCache.has(K)) return geoCache.get(K);
+// greedy: merged faces (far fewer triangles – for the many props of the 2. rész's outdoors)
+export function getGeometry(id, variant = 0, greedy = false) {
+  const K = id + ':' + variant + (greedy ? ':g' : ''); if (geoCache.has(K)) return geoCache.get(K);
   const def = CATALOG.find((d) => d.id === id); if (!def) throw new Error('Ismeretlen objektum: ' + id);
-  const grid = def.build(variant + 1); const geo = grid.toGeometry();
+  const grid = def.build(variant + 1); const geo = greedy ? grid.toGeometryGreedy() : grid.toGeometry();
   geo.userData.palette = grid.palette(10);
   geoCache.set(K, geo); return geo;
 }
