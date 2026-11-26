@@ -11,6 +11,7 @@ import { say } from '../ui.js';
 import { R, V3, clamp, dampAngle, pick } from '../util.js';
 import { partMesh, vcMat } from '../world.js';
 import { getGeometry } from '../voxels.js';
+import { Q } from '../quality.js';
 import { noise, sBark, soundAt, soundOut, tone } from '../audio.js';
 import { FY, put } from './home.js';
 
