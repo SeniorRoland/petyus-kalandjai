@@ -15,7 +15,7 @@ import { fx, seating } from './appliances.js';
 import { FY, homeRoot } from './home.js';
 import { carrot as carrotModel, keyRing, toiletRoll } from './food.js';
 import { bath } from './toothpaste.js';
-import { faceMaskJar, heelCreamTube, chiliTube, toothpasteTube } from './food.js';
+import { faceMaskJar, heelCreamTube, chiliTube, toothpasteTube, tvRemote } from './food.js';
 import { CAGE, cageDoorOpen, cageFront, karcsiState, lureKarcsi, pigObj, putKarcsiBack, releaseKarcsi, setFloorCarrot } from './karcsi.js';
 import { walkable } from './navgrid.js';
 
@@ -34,6 +34,7 @@ const ITEMS = [
   { id: 'heelcream', name: 'sarokkrém (olyan, mint a fogkrém)', icon: '🧴' },
   { id: 'facemask', name: 'arcmaszk', icon: '🫙' },
   { id: 'chili', name: 'chilikrém', icon: '🌶️' },
+  { id: 'remote', name: 'távirányító', icon: '📺' },   // „Meccs vagy sorozat?” (tvmatch.js)
 ];
 const ACCEPT = {
   controller: ['tv', 'desk', 'fridge', 'micro', 'tub'],
@@ -48,6 +49,7 @@ const ACCEPT = {
   heelcream: ['paste', 'cabinet', 'tub', 'fridge', 'counter', 'table', 'tv', 'desk'],
   facemask: ['paste', 'cabinet', 'tub', 'fridge', 'counter', 'table', 'tv', 'desk'],
   chili: ['paste', 'fridge', 'cabinet', 'tub', 'counter', 'table', 'tv', 'desk'],
+  remote: ['tv', 'desk', 'table', 'counter', 'fridge', 'micro', 'tub'],
 };
 const PLACE_NAME = { tv: 'a TV-állványra', desk: 'az íróasztalra', fridge: 'a hűtőbe', micro: 'a mikróba', tub: 'a kád szélére', table: 'az asztalra', dad: 'apa elé', shoe: 'a cipősszekrényre', coat: 'a kabátzsebbe', sofa: 'a kanapépárna alá', armchair: 'a fotelba', washer: 'a mosógépbe', cage: 'Karcsi kalitkájába', counter: 'a konyhapultra', wc: 'a WC-tartályra', paste: 'a fogkrém helyére', cabinet: 'anya szekrényébe' };
 const DRINK = { tea: 'tea', kave: 'kávé', tej: 'tej', tejszin: 'tejszín', hab: 'tejszínhab' };
@@ -56,6 +58,7 @@ const places = {};   // id → { hot: (p) => distance, slots: [{ parent, pos, it
 const items = {};    // id → { ...ITEMS[i], obj, place, slot }
 export const inv = { list: [], sel: -1, mug: {}, foamy: false };   // what Petyus carries (item ids), the selected one, what is in the mug; foamy: whipped cream was in it (until it is washed)
 // what the creamy-coffee mischief (coffee.js) listens to: poured(what) – something into the mug; placed(id, place); emptied(); washed()
+// action(id, p, look): a mischief's own F action for the selected thing ({ label, short, run } or null – tvmatch.js)
 export const invHooks = {};
 export const itemObj = (id) => items[id] && items[id].obj;
 export const itemPlace = (id) => items[id] && items[id].place;
@@ -115,11 +118,11 @@ export function buildInventory() {
   places.floor = { hot: () => 1, slots: [] };
   // the things and where they start (Karcsi is in his cage – karcsi.js moves him; he is no place's)
   const objs = { controller: fx.tv.controller, paper: toiletRoll(), mug: fx.mug.obj, milk: fx.dairy.milk, cream: fx.dairy.cream, whip: fx.dairy.whip, carrot: carrotModel(), carrot2: carrotModel(), carrot3: carrotModel(), karcsi: pigObj(), key: keyRing(),
-    toothpaste: toothpasteTube(), heelcream: heelCreamTube(), facemask: faceMaskJar(), chili: chiliTube() };
+    toothpaste: toothpasteTube(), heelcream: heelCreamTube(), facemask: faceMaskJar(), chili: chiliTube(), remote: tvRemote() };
   for (const it of ITEMS) items[it.id] = { ...it, obj: objs[it.id], place: null, slot: null };
   put('controller', 'tv', 0, true); put('paper', 'wc', 0); put('mug', 'counter', 0, true);
   put('milk', 'fridge', 0, true); put('cream', 'fridge', 1, true); put('whip', 'fridge', 2, true); put('carrot', 'fridge', 6); put('carrot2', 'fridge', 7); put('carrot3', 'fridge', 8); put('key', 'shoe', 0);
-  put('toothpaste', 'paste', 0, true); put('heelcream', 'cabinet', 0, true); put('facemask', 'cabinet', 1, true); put('chili', 'fridge', 4);
+  put('toothpaste', 'paste', 0, true); put('heelcream', 'cabinet', 0, true); put('facemask', 'cabinet', 1, true); put('chili', 'fridge', 4); put('remote', 'tv', 3, true);
   buildHud(); drawMug();
 }
 // put an item into a place's slot (keep: it is already there – keep its exact position / turn)
@@ -202,6 +205,7 @@ export const pickLabel = (it) => `E – ${it.name} felvétele`;
 const reachOf = (id, p) => { const it = items[id]; if (inv.list.includes(id)) return 0; if (!it.place) return 99; const pl = places[it.place]; if (pl.open && !pl.open()) return 99; const w = worldXZ(it.obj); return Math.hypot(p.x - w.x, p.z - w.z); };
 export function invAction(p, look = null) {
   const id = inv.list[inv.sel]; if (!id) return null;
+  { const own = invHooks.action?.(id, p, look); if (own) return own; }   // a mischief's own use of a thing (the remote: tvmatch.js)
   // a source / spot counts when it is near (top view) – or, in the first-person view, when it is looked at
   const at = (x, y, z, r) => (look ? look(new THREE.Vector3(x, y + FY, z)) : Math.hypot(p.x - x, p.z - z) < r);
   const it = items[id];

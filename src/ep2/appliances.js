@@ -370,7 +370,7 @@ function buildController(grp, x, y, z, ry) {
 
 // ---------------------------------------------------------------- the armchair in front of the TV: E to sit down / stand up
 // ep2.js reads seating: while Petyus sits, he does not walk (any movement key stands him up)
-export const seating = { on: false, x: 0, z: 0, h: 0, seatH: 0.44 };
+export const seating = { on: false, taken: false, x: 0, z: 0, h: 0, seatH: 0.44 };   // taken: dad sits there (tvmatch.js)
 function buildArmchair(x, z, rot) {
   const s = 0.025, grp = group(x, z, rot), F1 = 0x6d8b74, F2 = 0x5a7660, WOOD = 0x7a4a24;
   grp.add(vox(s, (g) => {
@@ -387,8 +387,8 @@ function buildArmchair(x, z, rot) {
   addBoxCol(x - hx, z - hz, x + hx, z + hz, 0.95);
   seating.x = x; seating.z = z; seating.h = rot;
   // the hotspot is beside the armchair (in front of it is the TV's)
-  devices.push({ aim: new V3(x, 0.5, z), size: 0.35, x: x + Math.cos(rot) * 0.65, z: z - Math.sin(rot) * 0.65, r: 0.75, label: () => (seating.on ? 'E – felállás' : 'E – leülés a fotelbe'),
-    use: () => { seating.on = !seating.on; tone('sine', seating.on ? 180 : 240, seating.on ? 120 : 300, 0.15, 0.05); } });
+  devices.push({ aim: new V3(x, 0.5, z), size: 0.35, x: x + Math.cos(rot) * 0.65, z: z - Math.sin(rot) * 0.65, r: 0.75, label: () => (seating.taken ? 'Apa ül a fotelben (meccs)' : seating.on ? 'E – felállás' : 'E – leülés a fotelbe'),
+    use: () => { if (seating.taken) return; seating.on = !seating.on; tone('sine', seating.on ? 180 : 240, seating.on ? 120 : 300, 0.15, 0.05); } });
 }
 
 // ---------------------------------------------------------------- TV (the parents' room): a cartoon on the screen
@@ -398,7 +398,8 @@ function buildTV(x, z, rot) {
   scr.m.position.set(-0.025, 0.95, -0.02); grp.add(scr.m);
   // on the stand: the console (right) and the controller (left, in front of the TV)
   const xlogo = buildXbox(grp, 0.6, 0.5, -0.05), ctl = buildController(grp, -0.52, 0.5, 0.06, 0.35), cbtn = ctl.btn;
-  const st = { on: false, t: 0, frame: 0, sndT: 0 }, xb = { on: false, t: 0 };
+  // ch: 'match' (the football) or 'series' (mum's soap); penalty: the match shows a penalty kick (tvmatch.js)
+  const st = { on: false, t: 0, frame: 0, sndT: 0, ch: 'match', penalty: false, sT: 0 }, xb = { on: false, t: 0 };
   // the TV programme: a football match, Real Madrid – Barcelona, as on TV (the broadcast camera follows the ball; the stands,
   // the striped pitch, white Madrid shirts, garnet-and-blue Barcelona stripes, the score and the clock in the corner; now and
   // then a goal: GÓÓÓL! and the crowd roars – the sounds: update below)
@@ -433,7 +434,27 @@ function buildTV(x, z, rot) {
     c.fillStyle = '#fff'; c.font = 'bold 10px sans-serif'; c.textAlign = 'left'; c.fillText(`RMA ${a} – ${b} BAR`, 14, 16);
     c.fillStyle = '#ffd166'; c.fillText(`${mins}:${String(secs).padStart(2, '0')}`, 104, 16);
     c.fillStyle = '#ffffffaa'; c.font = 'bold 9px sans-serif'; c.textAlign = 'right'; c.fillText('SPORT ÉLŐ', W - 6, 14);
-    if (goalNow(t)) { c.fillStyle = '#000000aa'; c.fillRect(0, 60, W, 34); c.fillStyle = '#ffd166'; c.font = 'bold 26px sans-serif'; c.textAlign = 'center'; c.fillText('GÓÓÓL!', W / 2, 86); }
+    if (st.penalty) { c.fillStyle = '#000000aa'; c.fillRect(0, 106, W, 26); c.fillStyle = '#ffd166'; c.font = 'bold 18px sans-serif'; c.textAlign = 'center'; c.fillText('TIZENEGYES!', W / 2, 125); }
+    else if (goalNow(t)) { c.fillStyle = '#000000aa'; c.fillRect(0, 60, W, 34); c.fillStyle = '#ffd166'; c.font = 'bold 26px sans-serif'; c.textAlign = 'center'; c.fillText('GÓÓÓL!', W / 2, 86); }
+  };
+  // mum's soap opera: a pink room, a man and a woman, closer and closer, hearts; the title below
+  const series = (c, t) => {
+    const W = 256, H = 144, g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#f7c6d9'); g.addColorStop(1, '#d98fb0');
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    c.fillStyle = '#fbe3ec'; c.fillRect(170, 18, 60, 46); c.fillStyle = '#9ad1f5'; c.fillRect(174, 22, 52, 38);   // a window
+    c.fillStyle = '#c98a5a'; c.fillRect(0, 112, W, 32);                                                           // the floor
+    const k = (Math.sin(t * 0.35) + 1) / 2, gap = 70 - k * 46, mx = W / 2 - gap / 2, wx = W / 2 + gap / 2;
+    const body = (x, shirt, hair, long) => {
+      c.fillStyle = shirt; c.fillRect(x - 12, 62, 24, 40); c.fillStyle = '#2b2d42'; c.fillRect(x - 11, 102, 9, 14); c.fillRect(x + 2, 102, 9, 14);
+      c.fillStyle = '#f1c27d'; c.fillRect(x - 9, 38, 18, 22); c.fillStyle = hair; c.fillRect(x - 10, 34, 20, 8); if (long) c.fillRect(x - 11, 38, 5, 26), c.fillRect(x + 6, 38, 5, 26);
+    };
+    body(mx, '#1d3557', '#3b2b20', false); body(wx, '#e63946', '#e9c46a', true);
+    for (let i = 0; i < 4; i++) {   // hearts drifting up
+      const hy = (H - ((t * 18 + i * 37) % H)), hx = W / 2 + Math.sin(t + i * 2) * 30;
+      c.fillStyle = '#ff4d8d'; c.beginPath(); c.arc(hx - 3, hy, 3.5, 0, 7); c.arc(hx + 3, hy, 3.5, 0, 7); c.fill(); c.beginPath(); c.moveTo(hx - 6.5, hy + 1); c.lineTo(hx, hy + 8); c.lineTo(hx + 6.5, hy + 1); c.fill();
+    }
+    c.fillStyle = '#00000088'; c.fillRect(0, 124, W, 20); c.fillStyle = '#fff'; c.font = 'italic bold 11px serif'; c.textAlign = 'center'; c.fillText('Szerelem a szőlőskertben – 214. rész', W / 2, 138);
+    c.fillStyle = '#ffffffcc'; c.font = 'bold 9px sans-serif'; c.textAlign = 'right'; c.fillText('ROMANTIK', W - 6, 14);
   };
   const console_ = (c, t) => {
     if (t < 2.5) {   // the start: black, a green orb growing, the name
@@ -469,7 +490,7 @@ function buildTV(x, z, rot) {
   const draw = () => {
     const c = scr.ctx;
     if (!st.on) { c.fillStyle = '#0c0f14'; c.fillRect(0, 0, 256, 144); }
-    else if (xb.on) console_(c, xb.t); else match(c, st.t);
+    else if (xb.on) console_(c, xb.t); else if (st.ch === 'series') series(c, st.sT); else match(c, st.t);
     scr.tex.needsUpdate = true;
   };
   draw();
@@ -479,8 +500,9 @@ function buildTV(x, z, rot) {
     update: (dt) => {
       xlogo.material.opacity = xb.on ? 1 : 0.12; cbtn.material.opacity = xb.on ? 0.95 : 0.12;
       if (xb.on) xb.t += dt;
-      if (!st.on) return; st.t += dt; if ((st.frame -= dt) <= 0) { st.frame = 1 / 12; draw(); }
-      { const g = !xb.on && goalNow(st.t); if (g && st.goal !== g[0] + Math.floor(st.t / 160) * 1000) {   // a goal: the crowd roars
+      if (!st.on) return; st.t += dt; st.sT += dt; if ((st.frame -= dt) <= 0) { st.frame = 1 / 12; draw(); }
+      if (st.ch === 'series' && !xb.on) { if ((st.sndT -= dt) <= 0) { st.sndT = 1.1; const f = [523, 587, 659, 698, 784][Math.floor(R() * 5)]; tone('sine', f, f * 0.99, 0.9, 0.025); } return; }   // violins
+      { const g = !xb.on && !st.penalty && goalNow(st.t); if (g && st.goal !== g[0] + Math.floor(st.t / 160) * 1000) {   // a goal: the crowd roars
         st.goal = g[0] + Math.floor(st.t / 160) * 1000; noise(2.4, 800, 0.3, 0.12); noise(1.6, 1600, 0.5, 0.05, 0.3);
         say({ headWorld: (o) => o.copy(toWorld(grp, 0, 1.4, 0)) }, 'GÓÓÓL!', 1.8); } }
       if ((st.sndT -= dt) <= 0) {
@@ -490,7 +512,11 @@ function buildTV(x, z, rot) {
       }
     } });
   // the console: its own button (E next to it); the start chime; the TV shows it when both are on
-  fx.tv = { grp, controller: ctl.c, xboxOn: () => xb.on };
+  fx.tv = { grp, controller: ctl.c, xboxOn: () => xb.on,
+    // tvmatch.js: on / off, the channel, the penalty
+    isOn: () => st.on, setOn: (v) => { if (st.on !== v) { st.on = v; st.t = v ? 40 : 0; click(); draw(); } },
+    channel: () => st.ch, setChannel: (c) => { if (st.ch !== c) { st.ch = c; st.sT = 0; click(); draw(); } },
+    setPenalty: (v) => { st.penalty = v; draw(); } };
   const xf = toWorld(grp, 0.6, 0, 0.6); xf.y -= FY;
   devices.push({ aim: loc(grp, 0.6, 0.65, -0.05), x: xf.x, z: xf.z, r: 0.6, label: () => (xb.on ? 'E – Xbox kikapcsolása' : 'E – Xbox bekapcsolása'),
     use: () => {
