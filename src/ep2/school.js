@@ -24,6 +24,7 @@ import { TOILET, toiletSeatGeometry } from '../voxels-home.js';
 import { canPee, pee, peeFlushed, startPee } from './pee.js';
 import { noise, soundAt, tone } from '../audio.js';
 import { buildFurniture, put, wallView } from './home.js';
+import { getGeometry } from '../voxels.js';
 import { TIMETABLE, WRITERS, boardText, hungaryMap, makeClock, portrait, timesTable, timetable } from './posters.js';
 
 const FLOOR = 3.3, TW = 0.25;
@@ -376,7 +377,11 @@ function buildClassroom(r) {
     pic(portrait(WRITERS[(i0 + 2) % WRITERS.length]), 0.5, 0.66, x0 + 6.4, 1.7, sw, Math.PI), pic(portrait(WRITERS[(i0 + 3) % WRITERS.length]), 0.5, 0.66, x0 + 10.4, 1.7, sw, Math.PI),
     pic(portrait(WRITERS[(i0 + 4) % WRITERS.length]), 0.5, 0.66, x0 + 11.1, 1.7, sw, Math.PI)], 'z', CORR - 0.06);
   // the teacher's desk by the board (she sits west of it, facing the class), the pupils' desks: 3 rows × 3, two chairs each
-  put('desk', x0 + 1.9, -9.6, W, 0, { ground: true, col: true });   // (variant 0: the one with the monitor – the teacher's) put('chair', x0 + 1.32, -9.6, E, 1, { ground: true, col: true });
+  put('desk', x0 + 1.9, -9.6, W, 0, { ground: true, col: true });   // (variant 0: the one with the monitor – the teacher's)
+  if (ours) {   // the 6. b's teacher's chair: its own mesh – it can be dragged under the clock („Előre a mutatót!”)
+    const m = new THREE.Mesh(getGeometry('chair', 1), vcMat); m.castShadow = m.receiveShadow = true; m.rotation.y = E;
+    m.position.set(x0 + 1.32, 0, -9.6); scene.add(m); tchair.mesh = m; tchair.home.set(x0 + 1.32, 0, -9.6);
+  } else put('chair', x0 + 1.32, -9.6, E, 1, { ground: true, col: true });
   for (const [k, x] of [[0, 4.3], [1, 6.3], [2, 8.3]]) for (const z of [-9.9, -7.3, -4.7]) {
     put('desk', x0 + x, z, E, 1, { ground: true, col: true });   // (variant 1: a plain desk)
     for (const s of [-0.3, 0.3]) {
@@ -431,6 +436,10 @@ export const school = { teacher: null, talkT: 6, seated: false, seatedSaid: fals
 // now and then (writing: her back to the class); when the clock says the lesson is over, she lets the 6. b out early (early)
 export const ck = { off: 0, writing: false, wT: 10, wDur: 0, early: false, earlyMin: 0, caught: false, climbT: 0, lookT: 3, said: 0 };
 const CLOCK = { x: 0.45, z: -7.3 };   // under the 6. b's clock (above the board, on the west wall)
+// the teacher's chair: at her desk, or under the clock (at), Petyus standing on it (on)
+export const tchair = { mesh: null, home: new V3(), at: false, on: false, back: false };
+const CHAIR_TOP = 0.46;
+function chairTo(clock) { tchair.at = clock; tchair.mesh.position.set(clock ? CLOCK.x + 0.15 : tchair.home.x, 0, clock ? CLOCK.z : tchair.home.z); soundAt(tchair.mesh.position.x, tchair.mesh.position.z, () => noise(0.35, 500, 0.8, 0.12), 1); }
 const lessonEnd = (min) => { const t = min - 8 * 60, n = Math.floor(t / 55); return 8 * 60 + n * 55 + 45; };
 function buildPeople() {
   const T = new Actor(makePerson({ scale: 0.92, shirt: 0x6a4c93, pants: 0x3d405b, hair: 0x8a5a2b, dress: true, glasses: true, hat: false }), 'Tanító néni');
@@ -879,18 +888,26 @@ export function schoolAction() {
   for (const d of doors) { const r = Math.hypot(P.x - d.x, P.z - d.z); if (r < bdist) { bdist = r; bd = d; } }
   if (bd) return { door: bd, txt: (bd.open ? 'E – ajtó becsukása' : 'E – ajtó kinyitása') + ` (${bd.name})` };
   if (nearGate()) return { txt: 'E – hazaindulás', gate: true };
-  if (lesson(school.min) && !ck.early && ck.climbT <= 0 && Math.hypot(P.x - CLOCK.x, P.z - CLOCK.z) < 0.9) return { clock: true, txt: 'E – székre állás: a falióra mutatója előre (+5 perc)' };
+  // „Előre a mutatót!”: the teacher's chair under the clock, up on it, the hand forward (+5 minutes) – and the chair back
+  if (tchair.on) return { clock: 'push', txt: ck.early ? 'Mozgás – leszállás a székről' : 'E – a mutató előre (+5 perc) · mozgás – leszállás', kick: '' };
+  if (Math.hypot(P.x - CLOCK.x, P.z - CLOCK.z) < 1.0) {
+    if (tchair.at) return { clock: 'climb', txt: 'E – felállás a székre' + (isTouch ? '' : ' · Szóköz – a szék vissza a helyére'), kick: 'SZÉK VISSZA' };
+    if (lesson(school.min) && !ck.early) return { clock: 'drag', txt: 'E – a tanári szék odahúzása a falióra alá' };
+  }
   if (Math.hypot(P.x - (seat.x + 0.45), P.z - seat.z) < 0.8 || (school.seated && Math.hypot(P.x - seat.x, P.z - seat.z) < 0.6)) return { txt: school.seated ? 'E – felállás' : 'E – leülés (a helyed)', seat: true };
   return null;
 }
 // E and Space on what schoolAction found (the gate and the seat: ep2.js)
 export function schoolUse(act) {
-  if (act.clock) clockPush();
+  if (act.clock === 'push') { if (!ck.early && ck.climbT <= 0) clockPush(); }
+  else if (act.clock === 'drag') chairDrag();
+  else if (act.clock === 'climb') chairClimb(true);
   else if (act.light) toggleLight(act.light);
   else if (act.door) toggleDoor(act.door);
   else if (act.toilet) { act.toilet.st = act.toilet.st === 2 ? 1 : 2; tone('sine', 700, 500, 0.05, 0.05); }
 }
 export function schoolKick(act) {
+  if (act && act.clock === 'climb') { chairTo(false); return; }   // the chair back to her desk
   if (!act || !act.toilet) return;
   if (canPee(act.toilet.wc)) startPee(act.toilet.wc); else flush(act.toilet);
 }
@@ -902,13 +919,33 @@ export function toggleSeat(seating) {
 }
 
 // ---------------------------------------------------------------- „Előre a mutatót!”: the clock forward, the early break, the reveal
+const teacherSees = () => !ck.writing && !school.teacher.path;   // (facing the class – writing she has her back to it)
+function chairDrag() {
+  if (teacherSees()) { ck.caught = true; say(school.teacher, 'Petyus! Hová viszed a székemet?! Tedd vissza!', 2.6); return; }
+  chairTo(true); say(G.petike, 'Hopp…', 1);
+}
+function chairClimb(up) {
+  const P = G.petike;
+  tchair.on = up;
+  if (up) { P.place(CLOCK.x + 0.15, CLOCK.z, -Math.PI / 2); P.pos.y = CHAIR_TOP; soundAt(CLOCK.x, CLOCK.z, () => tone('triangle', 200, 140, 0.1, 0.08), 1); }
+  else { P.place(CLOCK.x + 0.75, CLOCK.z, Math.PI / 2); P.pos.y = 0; soundAt(CLOCK.x, CLOCK.z, () => noise(0.12, 600, 1, 0.12), 1); }
+}
+// every frame from ep2.js movePetyus: while he stands on the chair he does not walk; a movement key gets him down
+export function schoolStand(dt, moveKey) {
+  if (!tchair.on) return false;
+  const P = G.petike;
+  if (moveKey && ck.climbT <= 0) { chairClimb(false); return false; }
+  P.pos.y = CHAIR_TOP; P.animate(dt, false, 0); P.sync();
+  return true;
+}
 function clockPush() {
-  ck.climbT = 1.4; G.petike.cheer = 1.2;   // up on a chair, the arms up to the clock
-  soundAt(CLOCK.x, CLOCK.z, () => { tone('triangle', 180, 120, 0.12, 0.08); for (let k = 0; k < 6; k++) tone('square', 2400, 2400, 0.02, 0.03, 0.3 + k * 0.09); }, 1);   // the chair, the clock's clicks
-  const T = school.teacher, sees = !ck.writing && !T.path;
+  ck.climbT = 1.2; G.petike.cheer = 1.0;   // on the chair, the arms up to the clock
+  soundAt(CLOCK.x, CLOCK.z, () => { for (let k = 0; k < 6; k++) tone('square', 2400, 2400, 0.02, 0.03, 0.1 + k * 0.09); }, 1);   // the clock's clicks
+  const T = school.teacher, sees = teacherSees();
   if (sees) {   // she is facing the class: caught
     ck.caught = true; ck.off = 0; clocks[0].draw(school.min);
     setTimeout(() => say(T, pick(['Petyus! Szállj le onnan! Mit csinálsz a faliórával?!', 'Petyus! A faliórához nem nyúlunk! Vissza a helyedre!']), 2.8), 300);
+    setTimeout(() => { if (tchair.on) chairClimb(false); chairTo(false); }, 1200);
     return;
   }
   ck.off += 5; clocks[0].draw(school.min + ck.off);
@@ -926,10 +963,16 @@ function clockTick(dt, min) {
       ck.early = false;
     }
     if (ck.off) { ck.off = 0; clocks[0].draw(min); }   // (she puts it right in the break)
+    if (tchair.at && !tchair.on) chairTo(false);
     ck.writing = false; ck.caught = false;
     return;
   }
   if (ck.early || ck.writing || T.path) return;
+  if (tchair.at && !tchair.on && !tchair.back) {   // her chair under the clock: she takes it back (and wonders)
+    tchair.back = true; say(T, pick(['Hát a székem hogy került oda?', 'Ki tette a székemet a falióra alá?']), 2.4);
+    setTimeout(() => { chairTo(false); tchair.back = false; }, 1600);
+    return;
+  }
   // facing the class: now and then she glances at the clock
   if ((ck.lookT -= dt) > 0) return;
   ck.lookT = R(2.5, 4);

@@ -26,7 +26,7 @@ import { buildWardrobe, dress, dressLoad, dressSave, dressTick, hurryParents, le
 import { buildSister, updateSister } from './sister.js';
 import { canPee, pee, peeFlushed, peeLabel, peeTick, startPee } from './pee.js';
 import { startWakeup, wakeTick, wakeupFocus } from './wakeup.js';
-import { BOUNDS as SCHOOL_BOUNDS, SCHOOL_START, buildSchool, schoolAction, schoolFloor, schoolKick, schoolStatus, schoolUse, schoolRoom, setSchoolFps, toggleSeat, updateSchool } from './school.js';
+import { BOUNDS as SCHOOL_BOUNDS, SCHOOL_START, buildSchool, schoolAction, schoolFloor, schoolKick, schoolStatus, schoolUse, schoolRoom, schoolStand, setSchoolFps, toggleSeat, updateSchool } from './school.js';
 import { starsFor } from '../mischief.js';
 import { cf, coffeeTick, dadBusy } from './coffee.js';
 import { dadChasing, momBusy, runawayTick, rw } from './runaway.js';
@@ -357,6 +357,10 @@ function movePetyus(dt) {
   const a = G.petike;
   if (peeTick(dt)) return;   // at the WC (pee.js): standing, aiming
   if (dress.choosing || dress.changeT >= 0) { a.animate(dt, false, 0); a.sync(); return; }   // at the wardrobe (dressing.js)
+  if (ep2.phase === 'school') {   // on the teacher's chair under the clock (school.js): no walking – a movement key gets him down
+    const mk = keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || (!fp.on && (keys.ArrowLeft || keys.ArrowRight)) || touch.active;
+    if (schoolStand(dt, mk)) return;
+  }
   // sitting in the armchair: no walking; a movement key (or the stick) stands him up again
   if (seating.on) {
     const moveKey = keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || (!fp.on && (keys.ArrowLeft || keys.ArrowRight)) || touch.active;
