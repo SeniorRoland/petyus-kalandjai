@@ -10,6 +10,7 @@ import { damp } from '../util.js';
 import { CATALOG, getGeometry } from '../voxels.js';
 import { TOILET, toiletLidGeometry, toiletSeatGeometry } from '../voxels-home.js';
 import { Q } from '../quality.js';
+import { setSpotRoom } from '../lightmask.js';
 import * as F from './food.js';
 import { INSTANCES, addBoxCol, addCircleCol, colliders, mergeStatic, partMesh, vcMat } from '../world.js';
 
@@ -52,19 +53,19 @@ const DOOR_H = 2.1;
 const WIN = (a, b, y0 = 0.85, y1 = 2.2) => ({ a, b, y0, y1 });
 const WALLS = [
   // outer north: bathroom, WC, kitchen ×2 windows; Petyus's room: the door to the north balcony + a window
-  { kind: 'out', n: [0, -1], x0: -TE, z0: -TE, x1: XE + TE, z1: 0, open: [WIN(1.3, 2.3, 1.5), WIN(4.2, 4.9, 1.6, 2.1), WIN(6.4, 8.0, 1.05), WIN(8.6, 10.2, 1.05), { a: 12.2, b: 13.1, glass: true, swing: 1 }, WIN(13.6, 15.0)] },
+  { kind: 'out', n: [0, -1], x0: -TE, z0: -TE, x1: XE + TE, z1: 0, open: [WIN(1.3, 2.3, 1.5), WIN(4.2, 4.9, 1.6, 2.1), WIN(6.4, 8.0, 1.05), WIN(8.6, 10.2, 1.05), { a: 12.125, b: 13.175, glass: true, swing: 1 }, WIN(13.6, 15.0)] },
   // outer west: the front door (hallway); the sibling's room has pictures above the bed there (no window)
   { kind: 'out', n: [-1, 0], x0: -TE, z0: 0, x1: 0, z1: ZS + TE, open: [{ a: 2.85, b: 3.8, leaf: 'front' }] },
   // outer south: two windows in each of the south rooms
   { kind: 'out', n: [0, 1], x0: -TE, z0: ZS, x1: XE + TE, z1: ZS + TE, open: [WIN(1.0, 3.0), WIN(3.8, 5.8), WIN(8.0, 10.2), WIN(11.6, 14.6)] },
   // outer east: Petyus's window; the parents' room: the door to the east balcony + a window
-  { kind: 'out', n: [1, 0], x0: XE, z0: -TE, x1: XE + TE, z1: ZS, open: [WIN(1.0, 3.0), { a: 5.4, b: 6.4, glass: true, swing: -1 }, WIN(6.9, 8.7)] },
+  { kind: 'out', n: [1, 0], x0: XE, z0: -TE, x1: XE + TE, z1: ZS, open: [WIN(1.0, 3.0), { a: 5.375, b: 6.425, glass: true, swing: -1 }, WIN(6.9, 8.7)] },
   // inner
-  { kind: 'in', x0: 0, z0: 2.3, x1: 5.42, z1: 2.42, open: [{ a: 2.2, b: 3.1, swing: -1, start: 'open' }, { a: 4.1, b: 4.9, swing: -1 }] },   // bathroom + WC | hallway
+  { kind: 'in', x0: 0, z0: 2.3, x1: 5.42, z1: 2.42, open: [{ a: 2.125, b: 3.175, swing: -1, start: 'open' }, { a: 3.975, b: 5.025, swing: -1 }] },   // bathroom + WC | hallway (the doors 1.05 m: dad is broad)
   { kind: 'in', x0: 3.6, z0: 0, x1: 3.72, z1: 2.3 },                                                   // bathroom | WC
   { kind: 'in', x0: 5.3, z0: 0, x1: 5.42, z1: 2.3 },                                                   // WC | kitchen
-  { kind: 'in', x0: 11.6, z0: 0, x1: 11.72, z1: 4.2, open: [{ a: 3.05, b: 3.95, swing: 1 }] },           // kitchen | Petyus's room
-  { kind: 'in', x0: 0, z0: 4.2, x1: XE, z1: 4.32, open: [{ a: 2.6, b: 3.5, leaf: 'locked' }, { a: 9.4, b: 10.3, swing: 1, start: 'open' }] },   // north row | south row
+  { kind: 'in', x0: 11.6, z0: 0, x1: 11.72, z1: 4.2, open: [{ a: 2.975, b: 4.025, swing: 1 }] },         // kitchen | Petyus's room
+  { kind: 'in', x0: 0, z0: 4.2, x1: XE, z1: 4.32, open: [{ a: 2.6, b: 3.5, leaf: 'locked' }, { a: 9.325, b: 10.375, swing: 1, start: 'open' }] },   // north row | south row
   { kind: 'in', x0: 6.8, z0: 4.32, x1: 6.92, z1: ZS },                                                 // sibling | parents
 ];
 const COL = { wall: 0xf4efe6, wallIn: 0xece6da, front: 0xeee7db, trim: 0x8a6a4a, frame: 0xffffff, door: 0xb98b58, doorDark: 0x8a6238, sill: 0xdcd4c6 };
@@ -160,7 +161,7 @@ function buildWall(w) {
     doors.push(d);
   }
   // the lintel covers exactly the opening: overlapping the wall would flicker
-  const lin = lintels.map((o) => { const m = partMesh((b) => piece(b, o.a, o.b, 0, WALL_H - DOOR_H, color, 0, 9)); m.material = mat; m.position.y = DOOR_H; group.add(m); return m; });
+  const lin = lintels.map((o) => { const m = partMesh((b) => piece(b, o.a, o.b, 0, WALL_H - DOOR_H, color, 0, 9)); m.material = mat; m.position.y = DOOR_H; m.castShadow = m.receiveShadow = true; group.add(m); return m; });   // (casting shadows: else the lamps shine over the doors into the next room)
   for (const [x0, z0, x1, z1] of cols) addBoxCol(x0, z0, x1, z1, WALL_H);
   cutWalls.push({ body, mat, glass, lintels: lin, box: [w.x0, w.z0, w.x1, w.z1], n: w.n, s: 1, o: 1 });
 }
@@ -322,7 +323,7 @@ export function lightPool() {
     // turns, one per frame – see updateLights)
     l.castShadow = Q.shadowSize > 0;
     l.shadow.mapSize.set(Q.level >= 2 ? 1024 : 512, Q.level >= 2 ? 1024 : 512);
-    l.shadow.bias = -0.0005; l.shadow.normalBias = 0.012; l.shadow.camera.near = 0.15; l.shadow.camera.far = 10;
+    l.shadow.bias = -0.0004; l.shadow.normalBias = 0.006; l.shadow.camera.near = 0.15; l.shadow.camera.far = 10;   // (small offsets: no light creeping round the walls' edges)
     l.intensity = 0; l.shadow.autoUpdate = false; homeRoot.add(l, l.target); LIGHT_POOL.push(l);
   }
   return LIGHT_POOL;
@@ -334,6 +335,9 @@ function updateLights(P) {
     const s = on[i]; l.intensity = s ? LIGHT_ON : 0;
     // the light of Petyus's room (the nearest): every frame – the people move in it; the other two in turns
     if (l.castShadow && s && (i === 0 || shadowTurn % (POOL_N - 1) === i - 1)) l.shadow.needsUpdate = true;
+    // the light stays in its room (lightmask.js): a little over the walls' inner faces – the room's own walls and the near
+    // face of a door are lit, the next room's faces are not
+    { const r = s && ROOMS.find((q) => q.id === s.room), e = 0.04; setSpotRoom(i, r ? { x0: r.x0 - e, z0: r.z0 - e, x1: r.x1 + e, z1: r.z1 + e } : null); }
     if (s) { l.position.set(s.light.position.x, WALL_H - 0.12, s.light.position.z); l.target.position.set(s.light.position.x, 0, s.light.position.z); l.target.updateMatrixWorld(); }
   });
 }

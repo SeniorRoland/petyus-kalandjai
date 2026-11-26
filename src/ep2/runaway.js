@@ -43,7 +43,7 @@ function finish(who) {
   const stars = 1 + (rw.scream ? 1 : 0) + (rw.scream && rw.freeT >= 60 ? 1 : 0);
   setTimeout(() => award('r2-karcsi', Math.round(rw.freeT), { scream: rw.scream, stars }), 3200);
 }
-function dadWalk(x, z, sp) { const p = findPath(G.petya.pos.x, G.petya.pos.z, x, z); G.petya.walkTo(p && p.length ? p : [[x, z]], sp); }
+function dadWalk(x, z, sp) { G.petya.walkTo([[x, z]], sp); }   // (the way: navRoute – ep2.js)
 
 // dad on all fours: the body tipped forward, the hands on the floor, the knees bent (after Actor.update, before sync). The body
 // is then lifted (or lowered) so that the lowest of his knees, hands and feet just touches the floor.

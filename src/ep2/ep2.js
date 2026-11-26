@@ -16,7 +16,7 @@ import { INSTANCES, collide, colliders, setGround } from '../world.js';
 import { setPrompt } from '../activities/drinking.js';
 import { Q } from '../quality.js';
 import { FY, SPOTS, roomAt, buildHome, lightPool, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, flushToilet, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
-import { noise, sStep, setMasterVol, setOutdoor, tone } from '../audio.js';
+import { noise, sStep, setMasterVol, setOutdoor, soundAt, tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, setEvening, updateOutside } from './outside.js';
 import { buildAppliances, devices, fx, seating, updateAppliances } from './appliances.js';
 import { buildInventory, cycleItem, holdingController, inv, invAction, invTake, itemObj, pickLabel, pickUp, pickables, selectItem, updateInventory } from './inventory.js';
@@ -26,12 +26,15 @@ import { buildWardrobe, dress, dressLoad, dressSave, dressTick, hurryParents, le
 import { buildSister, updateSister } from './sister.js';
 import { canPee, pee, peeFlushed, peeLabel, peeTick, startPee } from './pee.js';
 import { startWakeup, wakeTick, wakeupFocus } from './wakeup.js';
-import { BOUNDS as SCHOOL_BOUNDS, SCHOOL_START, buildSchool, schoolAction, schoolFloor, schoolKick, schoolStatus, schoolUse, schoolRoom, setSchoolFps, toggleSeat, updateSchool } from './school.js';
+import { BOUNDS as SCHOOL_BOUNDS, SCHOOL_START, buildSchool, schoolAction, schoolFloor, schoolKick, schoolStatus, schoolUse, schoolRoom, schoolStand, setSchoolFps, toggleSeat, updateSchool } from './school.js';
 import { starsFor } from '../mischief.js';
 import { cf, coffeeTick, dadBusy } from './coffee.js';
 import { dadChasing, momBusy, runawayTick, rw } from './runaway.js';
 import { giveKeyHint, kh, keyBusy, keyHintLabel, keyTick } from './keyhunt.js';
 import { brushBusy, buildBath, toothTick, tp } from './toothpaste.js';
+import { doorCorridors, navRoute } from './navgrid.js';
+import { tm, tvBusy, tvTick } from './tvmatch.js';
+import { gh, ghostBusy, ghostTick, momGhostBusy, sheetLabel, sheetOffer, toggleSheet } from './ghost.js';
 import { karcsiState, karcsiTakeable, pigObj, takeKarcsi } from './karcsi.js';
 
 // ---------------------------------------------------------------- unlocking
@@ -176,7 +179,7 @@ export function startEp2() {
     buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances(); buildBath(); buildInventory();
     if (EVE) ceiling.children[0].material.color.set(0x77726b);   // the ceiling (unlit): dimmer in the evening, lit only by the lamps
     buildWardrobe();   // Petyus's wardrobe (getting dressed in the morning: dressing.js)
-    if (!EVE) buildSister();   // (in the evening she is out)
+    buildSister();   // Petyus's sister: asleep in her bed (in the evening too – she goes to bed early)
     if (EVE) setEvening();   // (no fill lights: without shadows they shone through the walls – the three nearest lit rooms have the pool's lights)
   }
   // in the morning the three of them are in pajamas (Petyus: the football kit's model – the walking one)
@@ -184,6 +187,13 @@ export function startEp2() {
   else { ep2.top = savedTop(); if (ep2.top) dressClothes(rigs.foci, TOPS[ep2.top]); }   // what he put on in the morning
   // the people cast shadows but take none on themselves: their own (lagging, coarse) shadow flickered on them as they moved
   if (!SCHOOL) for (const k in rigs) rigs[k]?.root?.traverse?.((o) => { if (o.isMesh) o.receiveShadow = false; });
+  // the parents never walk through walls: every walk of theirs at home is checked leg by leg and routed round (navgrid.js),
+  // and the doors in their way open (updateParents)
+  for (const a of [G.petya, G.angi]) if (!a.navWrap) {
+    a.navWrap = true; const walk = a.walkTo.bind(a);
+    const pad = a === G.petya ? 0.5 : 0.31;   // (half their width with the arms: dad's model is broad-shouldered)
+    a.walkTo = (pts, speed, keep) => { walk(G.episode === 2 && ep2.phase !== 'school' && pts.length ? navRoute(a.pos.x, a.pos.z, pts, doors, pad) : pts, speed, keep); };
+  }
   G.petike.riding = false; G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7;
   if (SCHOOL) {   // the parents are not there
     ep2.bounds = SCHOOL_BOUNDS;
@@ -214,7 +224,7 @@ export function startEp2() {
   }
   // the evening: every room's light on (a resumed evening keeps the saved switches)
   if (EVE && resumed !== true) for (const sw of switches) if (!sw.on && sw.room === 'konyha') toggleSwitch(sw);   // the evening: the kitchen's light on
-  if (!SCHOOL && resumed !== true) for (const d of doors) if (d.pivot && d.open && Math.abs(d.z - 2.36) < 0.2 && d.x < 5.5) { toggleDoor(d); d.t = 0; }   // the bathroom and the WC: shut
+  if (!SCHOOL) for (const d of doors) if (d.pivot && d.open && Math.abs(d.z - 2.36) < 0.2 && d.x < 5.5) { toggleDoor(d); d.t = 0; }   // the bathroom and the WC: shut at every start (a resumed game too)
   if (resumed === 'fresh' && EVE) { G.petike.place(0.9, 3.3, Math.PI / 2); G.petike.pos.y = FY; }   // just home: in the hallway, by the front door
   $('e2Date').textContent = dateText(); hudClock(true); hudLate(); fitHud();
   // compile every material now (also the hidden ones: ceiling, lamps, the WC's water), so nothing stalls the game later when it
@@ -255,7 +265,7 @@ function hudClock(force) { const m = Math.floor(ep2.min); if (m !== shownMin || 
 // ---------------------------------------------------------------- turning the view (Q / R, or the ⟲ ⟳ buttons): 90° steps
 // CAM_OFF (scene.js) and the screen-relative walking directions CAM_FWD / CAM_RIGHT (player.js) turn together; the walls
 // (home.js), the fading props (occlude.js) and dragging the view (input.js) read them every frame.
-if (import.meta.env.DEV) window.__ep2 = { coffee: cf, rw, kh, karcsi: karcsiState, inv, itemObj, take(id) { const c = pickables(G.petike.pos).find((q) => q.item.id === id); if (c) pickUp(c.item); return !!c; }, view: viewTurn, cutWalls, wallView, CAM_OFF, toggleFps, get fp() { return fp; }, ep2, tooth: tp };   // debugging (dev server only)
+if (import.meta.env.DEV) window.__ep2 = { coffee: cf, rw, kh, karcsi: karcsiState, inv, itemObj, take(id) { const c = pickables(G.petike.pos).find((q) => q.item.id === id); if (c) pickUp(c.item); return !!c; }, view: viewTurn, cutWalls, wallView, CAM_OFF, toggleFps, get fp() { return fp; }, ep2, tooth: tp, tv: tm, ghost: gh };   // debugging (dev server only)
 export function toggleWalls() {
   wallView.mode = wallView.mode === 'fade' ? 'sink' : 'fade';
   toast(wallView.mode === 'fade' ? 'Falak: <b>átlátszók</b> (T)' : 'Falak: <b>lesüllyednek</b> (T)', 2);
@@ -347,6 +357,10 @@ function movePetyus(dt) {
   const a = G.petike;
   if (peeTick(dt)) return;   // at the WC (pee.js): standing, aiming
   if (dress.choosing || dress.changeT >= 0) { a.animate(dt, false, 0); a.sync(); return; }   // at the wardrobe (dressing.js)
+  if (ep2.phase === 'school') {   // on the teacher's chair under the clock (school.js): no walking – a movement key gets him down
+    const mk = keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || (!fp.on && (keys.ArrowLeft || keys.ArrowRight)) || touch.active;
+    if (schoolStand(dt, mk)) return;
+  }
   // sitting in the armchair: no walking; a movement key (or the stick) stands him up again
   if (seating.on) {
     const moveKey = keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || (!fp.on && (keys.ArrowLeft || keys.ArrowRight)) || touch.active;
@@ -441,8 +455,10 @@ function interactHome() {
     txt = wardrobeLabel();
     if (G.usePressed) wardrobeUse();
   } else if (best && best.bed) {
-    txt = 'E – lefekvés (jó éjt!)';
-    if (G.usePressed) { say(G.petike, 'Jó éjt, anya! Jó éjt, apa!', 1.8); setTimeout(goToBed, 1200); }
+    txt = 'E – lefekvés (jó éjt!)' + (sheetOffer() ? ' · ' + sheetLabel() : '');   // the sheet: „A lepedős kísértet” (ghost.js)
+    if (kb && isTouch && sheetOffer()) { kb.style.display = 'block'; kb.textContent = 'LEPEDŐ'; }
+    if (G.usePressed) { if (gh.sheet) toggleSheet(); say(G.petike, 'Jó éjt, anya! Jó éjt, apa!', 1.8); setTimeout(goToBed, 1200); }
+    else if (G.kickPressed && sheetOffer()) toggleSheet();
   } else if (best && best.hint) {
     txt = best.hint;
     if (G.usePressed) giveKeyHint();
@@ -523,7 +539,7 @@ const FRIDGE_FRONT = { x: 6.55, z: 1.5 };
 const petyusAtFridge = () => Math.hypot(G.petike.pos.x - FRIDGE_FRONT.x, G.petike.pos.z - FRIDGE_FRONT.z) < 1.3;
 function momRoutine(dt) {
   const m = G.angi;
-  if (momBusy() || keyBusy() || brushBusy('angi')) { if (fx.fridge && ep2.momAt === 'fridge' && fx.fridge.open() && !petyusAtFridge()) fx.fridge.setOpen(false); return; }
+  if (momBusy() || keyBusy() || brushBusy('angi') || momGhostBusy()) { if (fx.fridge && ep2.momAt === 'fridge' && fx.fridge.open() && !petyusAtFridge()) fx.fridge.setOpen(false); return; }
   ep2.momT -= dt;
   // on the way to the fridge, Petyus steps in front of it: she turns to something else
   if (ep2.momAt === 'toFridge' && m.path && petyusAtFridge()) { momJob(); return; }
@@ -555,7 +571,29 @@ function momLook() {
 }
 
 // ---------------------------------------------------------------- the parents
+let parentDoorCors = null;
+function crossesSoon(a, r) {
+  const along = r.alongX, line = along ? (r.z0 + r.z1) / 2 : (r.x0 + r.x1) / 2, lo = r.lo - 0.15, hi = r.hi + 0.15;
+  const u = (p) => (along ? p.x : p.z), w = (p) => (along ? p.z : p.x);
+  if (Math.abs(w(a.pos) - line) < 0.5 && u(a.pos) > lo && u(a.pos) < hi) return true;   // in the doorway
+  let p = a.pos, left = 1.2;
+  for (const q of a.path) {
+    const s0 = w(p) - line, s1 = w(q) - line;
+    if (s0 * s1 <= 0 && s0 !== s1) { const t = s0 / (s0 - s1), cu = u(p) + (u(q) - u(p)) * t, d = Math.hypot(q.x - p.x, q.z - p.z) * t; if (cu > lo && cu < hi && d < left) return true; }
+    left -= Math.hypot(q.x - p.x, q.z - p.z); if (left <= 0) break; p = q;
+  }
+  return false;
+}
 function updateParents(dt) {
+  // through a doorway: the door opens (only the one their way goes through), dad tucks his arms in (he is broad) – facing ahead
+  if (ep2.phase !== 'school') {
+    const cors = parentDoorCors || (parentDoorCors = doorCorridors(doors));
+    for (const a of [G.petya, G.angi]) {
+      const door = a.path && cors.find((r) => crossesSoon(a, r));
+      if (door && !door.d.open) { toggleDoor(door.d); soundAt(door.d.x, door.d.z, () => noise(0.12, 1200, 1, 0.15)); }
+      a.tuck = damp(a.tuck || 0, door ? 1 : 0, 6, dt);
+    }
+  }
   const MORNING = ep2.phase === 'morning';
   if (MORNING) {   // getting dressed (dressing.js): once Petyus is dressed and it is time, the parents get ready and wait at the door
     const ready = ep2.min >= MORNING_END || morningDone() === MORNING_IDS.length;
@@ -571,8 +609,13 @@ function updateParents(dt) {
     keyTick(dt);       // „Hol a kulcs, Angi?”: mum looking for her keys (keyhunt.js)
   }
   if (!MORNING) {   // the evening: their own lines; late in the evening mum sends him to bed
-    toothTick(dt, ep2.min);   // „A fogkrémcsere”: mum brushes her teeth at 20:45, dad at 21:30 (toothpaste.js)
-    if (brushBusy('angi') || brushBusy('petya')) return;
+    // the evening's timetable (the mischiefs): the match 20:00–20:42 (tvmatch.js), mum's teeth 20:45, the rubbish 21:00
+    // (ghost.js), dad's teeth 21:30 (toothpaste.js) – dad does one thing at a time
+    const dadFree = () => !brushBusy('petya') && !tvBusy() && !ghostBusy() && G.petya.sit > 0.9;
+    tvTick(dt, ep2.min, dadFree);
+    ghostTick(dt, ep2.min, dadFree);
+    toothTick(dt, ep2.min, (who) => (who === 'petya' ? tvBusy() || ghostBusy() : momGhostBusy()));
+    if (brushBusy('angi') || brushBusy('petya') || tvBusy() || ghostBusy()) return;
     ep2.talkT -= dt;
     if (ep2.talkT <= 0) {
       ep2.talkT = 14 + Math.random() * 8;

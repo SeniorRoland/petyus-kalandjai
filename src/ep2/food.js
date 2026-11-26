@@ -185,8 +185,8 @@ export function keyRing() {
 // a carrot (with its leafy green top): Karcsi's favourite – lying on its side, along x; a big one, so it shows on the floor
 export function carrot() {
   const g = grp();
-  const c = mesh(new THREE.ConeGeometry(0.031, 0.21, 12), mat(0xff7f11), 0, 0.031, 0); c.rotation.z = Math.PI / 2; g.add(c);
-  for (const t of [-0.06, -0.01, 0.04]) g.add(mesh(new THREE.TorusGeometry(0.03 - (t + 0.06) * 0.09, 0.0025, 4, 12), mat(0xd96a08), t, 0.031, 0)).children.at(-1).rotation.y = Math.PI / 2;   // rings
+  const c = mesh(new THREE.ConeGeometry(0.031, 0.21, 12), mat(0xff7f11), 0, 0.031, 0); c.rotation.z = -Math.PI / 2; g.add(c);   // (the tip to +x: the thick end and the leaves at −x)
+  for (const t of [-0.06, -0.01, 0.04]) g.add(mesh(new THREE.TorusGeometry(0.031 * (0.105 - t) / 0.21, 0.0025, 4, 12), mat(0xd96a08), t, 0.031, 0)).children.at(-1).rotation.y = Math.PI / 2;   // rings (on the surface: the cone's radius there)
   for (const a of [-0.55, -0.2, 0.2, 0.55]) { const l = mesh(new THREE.BoxGeometry(0.075, 0.008, 0.016), mat(0x4caf50), -0.14, 0.036, a * 0.03); l.rotation.y = a; g.add(l); }
   return g;
 }
@@ -242,4 +242,18 @@ export function perfume() {
 export function smallJar(color, lid) {
   const g = grp(mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.03, 16), mat(color), 0, 0.015, 0));
   g.add(mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.012, 16), mat(lid), 0, 0.036, 0)); return g;
+}
+// the TV remote: a black bar with coloured buttons, lying flat (tvmatch.js)
+export function tvRemote() {
+  const g = grp(mesh(new THREE.BoxGeometry(0.05, 0.018, 0.16), mat(0x1f2124), 0, 0.009, 0));
+  g.add(mesh(new THREE.BoxGeometry(0.014, 0.006, 0.014), mat(0xd62828), 0, 0.02, -0.055));   // the red power button
+  for (let i = 0; i < 9; i++) g.add(mesh(new THREE.BoxGeometry(0.009, 0.005, 0.009), mat(i % 4 === 0 ? 0x3a86ff : 0x8d99ae), ((i % 3) - 1) * 0.013, 0.02, -0.02 + Math.floor(i / 3) * 0.018));
+  return g;
+}
+// the rubbish bag: black, tied at the top (ghost.js – dad takes it out)
+export function rubbishBag() {
+  const g = grp(mesh(new THREE.SphereGeometry(0.17, 12, 9), mat(0x1b1d20), 0, 0.17, 0));
+  g.children[0].scale.set(1, 1.15, 0.9);
+  g.add(mesh(new THREE.ConeGeometry(0.05, 0.1, 8), mat(0x1b1d20), 0, 0.39, 0));
+  return g;
 }

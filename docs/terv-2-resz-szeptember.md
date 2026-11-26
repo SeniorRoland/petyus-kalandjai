@@ -1,7 +1,7 @@
 # 2. rész (Szeptember – Otthon és iskola): terv
 
 Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ✅ A napok köre is kész: indulás (7:30 vagy mindhárom reggeli csibészség után) → iskola (helyszín, csibészségek nélkül) → otthon délután–este (sötét, lámpák) → lefekvés → másnap reggel; hétvége és hónap vége átvezetővel. ⬜ Hátravan: az iskola 4 és az este 3 csibészsége (az estiek terve kész, a fogkrémcsere elkészült), tesztelés telefonon.
+**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ✅ A napok köre is kész: indulás (7:30 vagy mindhárom reggeli csibészség után) → iskola (helyszín, csibészségek nélkül) → otthon délután–este (sötét, lámpák) → lefekvés → másnap reggel; hétvége és hónap vége átvezetővel. ✅ Az este 3 csibészsége is kész. ◐ Az iskola csibészségei: ✅ 4. Előre a mutatót!, ✅ 5. Vizes szivacs a széken, ⬜ a többi 2 (terv kész). ⬜ Hátravan még: tesztelés telefonon.
 
 ## Röviden
 
@@ -24,10 +24,13 @@ Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, 
 | 1 | A tejszínes kávé | otthon, reggel | apa a WC-re rohan | első próbára (nincs tejszínhabos visszaküldés) | és senki nem látta a tejszínt | „Apa kávét kér, de a gyomra nem bír mindent.” | **kész** |
 | 2 | Karcsi nagy szökése | otthon, reggel | Karcsi szabadon | anya a széken | és ≥ 60 mp szabadon | „Karcsi is szeretne körülnézni a lakásban.” | **kész** |
 | 3 | Hol a kulcs, Angi? | otthon, reggel | anya keresni kezd | 2 percnél tovább keres | fura helyen volt, és Petyus nem árulta el | „Anya kulcsa mindig a cipősszekrényen van.” | **kész** |
-| 4–7 | (iskolai csibészségek) | iskola | | | | | ⬜ még nincs kitalálva |
+| 4 | Előre a mutatót! | iskola, 6. b (óra) | a tanító néni korábban kienged | ≥ 10 perccel korábban | és nem látta, ki volt | „A tanító néni mindig a falióráról olvassa le, mikor van vége az órának.” | **kész** |
+| 5 | Vizes szivacs a széken | iskola, 6. b (szünet → óra) | a tanító néni beleül | a táblatörlő szivacs csuromvizes volt (a WC-ben áztatva) | és az osztály nevet, de senki nem árulja el | „A táblatörlő szivacs a tábla alatt van. A WC-ben van csap…” | **kész** |
+| 6 | Béka a fiókban | iskola, udvar → 6. a | a tanár bácsi kinyitja a fiókot | felugrik az asztalra | és a béka kiugrik a folyosóra (a 6. b-sek is látják) | „Az udvari bokrok alatt béka lakik. A tanár bácsi fiókjában meg a napló…” | ⬜ terv kész |
+| 7 | Hol a szemüvegem? | iskola, 6. b | a tanító néni keresni kezdi | vakon ír a táblára (krix-krax), rossz nevet szólít | és végül a tanár bácsit gyanúsítja | „A tanító néni szemüvege szünetben a tanári asztalon pihen.” | ⬜ terv kész |
 | 8 | A fogkrémcsere | otthon, este (fürdő) | anya a sarokkrémmel **vagy** apa a chilikrémmel mos fogat | ugyanazon az estén mindketten | és Petyust senki nem kapta rajta | „A fürdőben minden tubus egyforma… majdnem.” | **kész** |
-| 9 | Meccs vagy sorozat? | otthon, este (nappali) | átkapcsolsz a meccs alatt | a tizenegyesnél | és apa anyát hibáztatja | „Este apa meccset néz, anya a sorozatát várja.” | ⬜ terv kész |
-| 10 | A lepedős kísértet | otthon, este (előtér) | apa megijed | sötétben: „MEGADOM MAGAM!” | és mire felkapcsolják a villanyt, Petyus az ágyában fekszik | „Este, sötétben minden lepedő gyanús.” | ⬜ terv kész |
+| 9 | Meccs vagy sorozat? | otthon, este (nappali) | átkapcsolsz a meccs alatt | a tizenegyesnél | és apa anyát hibáztatja | „Este apa meccset néz, anya a sorozatát várja.” | **kész** |
+| 10 | A lepedős kísértet | otthon, este (előtér) | apa megijed | sötétben: „MEGADOM MAGAM!” | és mire felkapcsolják a villanyt, Petyus már az ágyánál van, a lepedő az ágyon | „Este, sötétben minden lepedő gyanús.” | **kész** |
 
 ---
 
@@ -97,13 +100,76 @@ Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, 
 
 - **Technika:** a kulcs új leltártárgy (minden lerakóhely elfogadja, plusz új rejtekhelyek: kanapé, fotel, fiók, mosógép); Angi keresési útvonala és „kotorászás” mozdulatai (lehajolás, fiók- és szekrényajtó nyitása – az ajtók már nyithatók); a keresés ideje rejtekhelyenként.
 
-## 4–7. Iskolai csibészségek  ⬜ még nincs kitalálva
+## 4–7. Iskolai csibészségek  ◐ részben (4–5. kész)
 
-Az iskola helyszínnel együtt (lásd lent).
+Mindegyik az iskola meglévő rendszereire épül: órarend és csengő (`schoolStatus`, `lesson()`), a 6. b és a 6. a terme a tanárral és a gyerekekkel, a szünet (a gyerekek kimennek, az udvaron fociznak / ugróiskoláznak – `crowdTick`), a tábla (`boardText`), a falióra (`makeClock`), a WC-k (csap, mosdó), a leltár (felvehető tárgyak, lerakóhelyek). A tanító néni szemüveges (`glasses: true`). Az iskolában nincs késés-pont; a csillagok a naplóba kerülnek, mint otthon.
 
-## 8–10. Esti csibészségek  ◐ részben (8. kész)
+---
 
-Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **napirendre** épül: vacsora után apa meccset néz (20:00), anya a sorozatát várja (20:30); fogmosás (anya 20:45, apa 21:30); apa kiviszi a szemetet (21:40); lefekvés. Ehhez kell egy kis **esti ütemező** a játékórán (`ep2.min`), mint a reggeli kávénál és kulcsnál.
+## 4. Előre a mutatót!  ✅ kész
+
+- **Megvalósítás** (`src/ep2/school.js`: `ck`, `clockPush`, `clockTick`; a szünet: `crowdTick(dt, brk, early)`): a tanító néni óra közben időnként (9–15 mp-enként, 6–9 mp-re) a táblához fordul írni – háttal áll, a krétás kéz fent, csikorgás. A falióra a terem **hátsó falán** van (a könyvespolcok és a szekrények között – a tanító néni szemben látja, a gyerekek háta mögött; a 6. a-ban is). Alá a hátsó fal melletti **pótszéket kell odahúzni** (E), **E – felállás a székre** (Petyus 46 cm-rel magasabban áll, nem jár), a széken **E – a mutató előre (+5 perc)**, bármelyik mozgásgomb – leszállás, a szék mellett **Szóköz – a szék vissza a helyére**. Ha a tanító néni az osztály felé néz, amikor húzod / tekered, rászól (rajtakapás: az óra visszaáll, a szék vissza); ha a szék a falióra alatt marad, észreveszi („Ki húzta oda azt a széket?”), és a helyére teteti; szünetben is visszakerül. (A tanári asztal széke is megvan – egy elírás miatt eddig hiányzott.) A tanító néni 3–4 mp-enként az órára néz; ha az óra szerint vége, kiengedi a 6. b-t (csak őket – a 6. a órán marad), 10 percen belül időnként mondja is: „Még 8 perc, gyerekek!”. A valódi csengőnél kiderül: a tanár bácsi: „Már szünet van? A 6. b már kint focizik?!”, a tanító néni: „Valaki elállította a faliórát!” – a szünetben visszaállítja. Mentés: `r2-ora` (érték: hány perccel korábban). A falióra eddig is a játékidőt mutatta, most a 6. b-é eltolható.
+
+- **Alaphelyzet:** a 6. b falióráját (a hátsó falon – szemben vele) a tanító néni nézi, mikor van vége az órának („Még tíz perc, gyerekek!”). Ő nem a csengőre, hanem az órára hallgat.
+- **Menet:**
+  1. Petyus óra közben feláll a helyéről (a tanító néni szól: „Petyus, ülj vissza!” – ha épp nem a táblánál ír).
+  2. Amikor a tanító néni **háttal áll** (a táblára ír – krétacsikorgás), Petyus a falióra alá áll, **E – széket alá, mutató előre** (felugrik egy székre, és 5 percet előre teker; többször is lehet).
+  3. A tanító néni a következő pillantásnál az órára néz: ha az óra szerint vége, **kienged**: „Na, gyerekek, ennyi volt mára… Szünet!” – a 6. b kitódul az udvarra, a folyosón csend (a 6. a még órán van).
+  4. Pár perc múlva a valódi csengő: a tanár bácsi a 6. a-ból értetlenül kinéz („Már szünet van? A 6. b már kint focizik?!”), a tanító néni az órájára (karóra) néz: „…Valaki elállította a faliórát!”
+- **Rajtakapás:** ha a tanító néni nem háttal áll, amikor Petyus a falióránál van (vagy a széken áll) → „Petyus! Szállj le onnan!” – az óra visszaáll, a ★★★ elvész.
+- **Poén:** a 6. b már a pályán focizik, amikor a 6. a még írja a dolgozatot; a tanár bácsi az ablakból néz ki.
+- **Mire épül:** a falióra (`makeClock` – eddig a játékidőt mutatja; kap egy eltolást), a tanító néni táblaírása (`school.chalkT`), a szünet indítása (`crowdTick` – most csak a 6. b-re), a csengő (`sBellRing`), `say`.
+- **Csillagok:** ★ a tanító néni korábban kienged · ★★ legalább 10 perccel korábban · ★★★ és nem látta, ki volt.
+
+---
+
+## 5. Vizes szivacs a széken  ✅ kész
+
+- **Megvalósítás** (`src/ep2/school.js`: `sponge`, `spongeUse`, `spongeTick`, `teacherBreak`, `spongeHit`): a 6. b táblatörlő szivacsa külön tárgy a krétatartón. **E – a táblatörlő szivacs elvétele** (Petyus kezében), egy WC-mosdónál **E – a szivacs beáztatása a csap alatt** (sötétebb, megdagad, csöpög), a tanári széknél **E – a szivacs a tanári székre** (vagy vissza a táblához). A tanító néni szünetben kimegy a folyosóra (a terem ajtaja mellé); ha ott meglátja Petyust a szivaccsal: „Petyus, mit csinálsz azzal a szivaccsal?” (★★★ elvész). Becsengetéskor visszamegy, és leül a székére („Na, nézzük a naplót…”): vizes szivacs → „HŰŰŰŰ!!”, felpattan, fröccsenő víz, az osztály nevet („HAHAHA!”), „Ki volt ez?!” – ha látta Petyust: „Láttalak a folyosón azzal a szivaccsal!”, különben „Nem tudjuk, tanító néni!”; száraz szivacs → „Hát ez meg hogy került ide?”. A szivacs utána visszakerül, megszárad. Mentés: `r2-szivacs`.
+
+- **Alaphelyzet:** a tábla alatt a krétatartón a táblatörlő szivacs (a modellen már ott van). A tanító néni óra elején leül a tanári asztal mögé (a székére).
+- **Menet:**
+  1. Szünetben (az osztály kint van) Petyus felveszi a szivacsot (E), a fiú WC mosdójánál **F – szivacs beáztatása** (a csap folyik, a szivacs sötétebb lesz, csöpög – vízcseppek, tócsa a nyomában).
+  2. Visszaviszi, és a tanári székre teszi (F – „a tanári székre”).
+  3. Becsengetnek: a gyerekek leülnek, a tanító néni bejön, és **leül a székére** → „HŰŰŰ!!” – felpattan, a szoknyája hátul sötét foltos, az osztály hangosan nevet.
+  4. A tanító néni: „Ki volt ez?!” – körbenéz; ha senki nem látta Petyust (szünetben a teremben csak ő volt), az osztály hallgat („Nem tudjuk, tanító néni!”); ha valaki látta (egy osztálytárs a folyosón / a teremben), rámutat: „Petyus volt!”
+- **Csavar:** ha a szivacs száraz (nem áztatta be), a tanító néni csak felveszi: „Hát ez meg hogy került ide?” – nincs csillag.
+- **Poén:** a tanító néni egész órán állva tanít, és időnként a szoknyáját szárítgatja a radiátornál.
+- **Mire épül:** a leltár (új tárgy: a szivacs, „vizes” állapottal – mint a bögre töltése), a WC mosdója (új „csap” a WC-ben), a tanári szék (új lerakóhely), a tanító néni leülése óra elején (új rövid mozgás), `say`, nevetés-hang.
+- **Csillagok:** ★ a tanító néni beleül · ★★ a szivacs csuromvizes volt · ★★★ és senki nem árulta el.
+
+---
+
+## 6. Béka a fiókban  ⬜ terv kész
+
+- **Alaphelyzet:** az udvaron, a pálya melletti bokrok alatt egy béka ugrál (néha brekeg). A 6. a tanár bácsijának asztalán / fiókjában van a napló.
+- **Menet:**
+  1. Szünetben Petyus az udvaron a béka mellett **E – béka elkapása** (ugrál, ha közel megy, el is ugorhat; kétszer-háromszor kell próbálni) – a leltárba kerül 🐸.
+  2. Visszamegy, és a **6. a** termében a tanári asztal fiókjába teszi (F – „a fiókba”; a fiók kinyílik, becsukódik).
+  3. Becsengetnek: a tanár bácsi leül, és kinyitja a fiókot a naplóért → a béka kiugrik: „BREKK!” – a tanár bácsi felkiált, **felugrik az asztalára** (mint Angi a székre a Karcsi-szökésnél), a 6. a-sok sikítoznak / nevetnek.
+  4. A béka kiugrál a terem ajtaján a folyosóra, végig a folyosón (ha a 6. b ajtaja nyitva van, ott is bekukkant – a tanító néni: „Egy BÉKA?!”), végül ki az udvarra.
+- **Rajtakapás:** ha a tanár bácsi a teremben van, amikor Petyus a fiókhoz nyúl → „Hát te mit keresel az asztalomnál?” – a béka elugrik, ★★★ elvész.
+- **Poén:** a tanár bácsi az asztal tetején áll, és a naplóval hadonászik; a béka nyugodtan ül a küszöbön.
+- **Mire épül:** egy új kis állat (béka: ugrálás, menekülés – a Karcsi szabad mozgásához hasonló, `navgrid`), a leltár (🐸), a tanári asztal fiókja (új lerakóhely), a 6. a tanár bácsija (`ROOMS3[1].teacher`), Angi „székre ugrás” mozdulata a `runaway.js`-ből.
+- **Csillagok:** ★ a tanár bácsi kinyitja a fiókot · ★★ felugrik az asztalra · ★★★ és a béka kiugrál a folyosóra (a 6. b-sek is látják).
+
+---
+
+## 7. Hol a szemüvegem?  ⬜ terv kész
+
+- **Alaphelyzet:** a tanító néni szünetben leveszi a szemüvegét, és a tanári asztalra teszi (dörzsöli a szemét: „Fáradt vagyok…”), óra elején visszaveszi.
+- **Menet:**
+  1. Szünetben Petyus felveszi a szemüveget (E) 👓, és elrejti valahol (F): a padok közt, a könyvespolcon, a 6. a-ban, a WC-ben, a kabátok közt a folyosón.
+  2. Becsengetnek: a tanító néni keresi („Hol a szemüvegem?”) – az asztalán, a fiókban, a polcon; **vakon tanít**: a táblára krix-kraxot ír (a tábla szövege elcsúszik, betűk összevissza), rossz nevet szólít („Botond, gyere a táblához!” – Botond a 6. a-ba jár), Petyust „Kislány”-nak szólítja.
+  3. Ha nem találja meg (a szemüveg messze van: a 6. a-ban / a WC-ben), átmegy a tanár bácsihoz: „Kolléga, nem látta a szemüvegemet? Biztos maga tette el!” – a tanár bácsi értetlen.
+  4. Petyus **E-vel visszaadhatja** („Tanító néni, itt van!”) – „Köszönöm, Petyus, ezért jár egy piros pont!” (★★★ elvész, de jár egy kis meglepetés).
+- **Poén:** a tábla szövege: „Törtek: ½ + ¼ = ¾” helyett „Trök: ½ + ¼ = 8 ?”; a tanító néni a radiátornak magyaráz.
+- **Mire épül:** a tanító néni szemüvege (a modell `glasses` része külön tárgyként: felvehető 👓, a modellről eltűnik), a tábla szövege (`boardText` – egy „vak” változat), a 6. a tanár bácsija, a kulcskeresés menete (`keyhunt.js` – logikus helyek → furcsák), a leltár.
+- **Csillagok:** ★ a tanító néni keresni kezdi · ★★ vakon ír a táblára és rossz nevet szólít · ★★★ és végül a tanár bácsit gyanúsítja (Petyus nem adta vissza).
+
+## 8–10. Esti csibészségek  ✅ kész
+
+Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **napirendre** épül: vacsora után apa meccset néz (20:00), anya a sorozatát várja (20:30); fogmosás (anya 20:45, apa 21:30); apa kiviszi a szemetet (21:00); lefekvés. Az **esti ütemező** a játékórán (`ep2.min`, `ep2.js` `updateParents`): apa egyszerre egy dolgot csinál (`dadFree`: meccs 20:00–20:42, szemét 21:00, fogmosás 21:30).
 
 ---
 
@@ -139,7 +205,9 @@ Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **na
 
 ---
 
-## 9. Meccs vagy sorozat?  ⬜ terv kész
+## 9. Meccs vagy sorozat?  ✅ kész
+
+- **Megvalósítás** (`src/ep2/tvmatch.js`, a tévé: `appliances.js` – csatorna `match` / `series`, `setPenalty`; a távirányító: `inventory.js` `remote`, F-művelet: `invHooks.action`): 20:00-kor apa a fotelbe ül (ha Petyus ül ott, mögötte áll), bekapcsolja a meccset; anya szól a 8:30-as sorozatáért. A távirányító a tévészekrényen; Petyus kezében, a szobában F – átkapcsolás. Apa kétszer elmegy vízért (20:09, 20:29) – ha közben átkapcsolsz: „MI EZ?! Hol a meccs?!”, a távirányító Petyusnál → őt hibáztatja, különben anyát (★). Ha apa ott ül és átkapcsolsz: elveszi a távirányítót (nincs csillag). 20:19 tizenegyes (felirat a tévén, apa feláll, „Na… NA… NAAA…”): ha ekkor kapcsolsz át → „NEEEE!!”, térdre rogy, a szomszédból „GÓÓÓL!”, majd körülnéz: távirányító Petyusnál → „PETYUUUS!!” (★★), különben „ANGIII!!” (★★★). 20:42-kor vége, apa vissza az asztalhoz. Állapot: `tm`. Mentés: `r2-meccs`.
 
 - **Alaphelyzet:** 20:00-kor apa a kanapén meccset néz (a tévé bekapcsol, zöld pálya a képernyőn, szurkolás). Anya a konyhában pakol, és 20:30-ra várja a sorozatát („Petya, fél kilenckor átkapcsolsz, ugye?” – „Persze, persze…”).
 - **Menet:**
@@ -153,9 +221,11 @@ Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **na
 
 ---
 
-## 10. A lepedős kísértet  ⬜ terv kész
+## 10. A lepedős kísértet  ✅ kész
 
-- **Alaphelyzet:** 21:40 körül apa kiviszi a szemetet (bejárati ajtó, lépcsőház), majd visszajön.
+- **Megvalósítás** (`src/ep2/ghost.js`): Petyus ágyánál Szóköz – lepedő magára / vissza (fehér lepel szemlyukakkal, alatta a teste nem látszik, „Húúúú…”). 21:00-kor apa a szemeteszsákkal kimegy a bejárati ajtón, kb. 18 mp múlva visszajön, és az előszobán át az asztalhoz megy. Ha a lepedős Petyus mellette Szóközt nyom: „BÚÚÚ!!” – világos előszobában apa csak megriad és felismeri (★), sötétben (lekapcsolt villany) felteszi a kezét: „MEGADOM MAGAM!” (★★). Anya odaszalad, felkapcsolja a villanyt: ha Petyus addigra az ágyánál van, a lepedő az ágyon → apát szidja, hogy felébreszti a gyereket, a kísértetet senki nem hiszi el (★★★). Állapot: `gh`. Mentés: `r2-kiserteet`. (Eltérés a tervtől: a szemét 21:00-kor megy ki, hogy ne ütközzön apa fogmosásával; az alibi: az ágyánál áll, nem fekszik be.)
+
+- **Alaphelyzet:** 21:00-kor apa kiviszi a szemetet (bejárati ajtó, lépcsőház), majd visszajön.
 - **Menet:**
   1. Petyus a saját ágyáról leveszi a lepedőt (E az ágynál – „lepedő fel”): fehér lepel lesz rajta két szemlyukkal, lassabban jár, halkan „Húúúú…”-zik.
   2. Lekapcsolja az előszoba villanyát (a meglévő kapcsolók), és elbújik az előszobában (a cipősszekrény vagy a kabátok mellett).
@@ -186,9 +256,9 @@ Az otthoni délután–este helyszínen (16:00–22:00). Mindhárom az esti **na
 - **Megvalósítás** (`ep2.js` `EVE` ág, `outside.js` `setEvening`, `home.js` `addFillLights`): ugyanaz a lakás és környéke, mint reggel, de **kint sötét van** (éjszakai égbolt, halvány kék fény), **bent égnek a lámpák** (minden szoba villanya fel van kapcsolva – a két legközelebbi árnyékot vető spotfény mellett a többi szoba is lágy fényt kap).
 - **A ház többi lakása és a szomszéd házak** ablakaiban lámpák égnek, időnként (6–30 mp-enként) fel- és lekapcsolódnak (`WINDOWS`, egy instanced négyzetrács).
 - **Az utcán és az udvaron** az 1. rész park-lámpái (kandeláberek: `LAMPS`) – este csak a lámpaházuk világít (fénykör és valódi fény nélkül); a ház bejáratánál nincs lámpa.
-- Nincs pizsama; a nővér nincs otthon; a reggeli csibészségek nem futnak; apa és anya esti mondatai („Megírtad a leckét?”, „Mindjárt kész a vacsora!”), 21:15 után anya lefekvésre küld. Petyus a bejárati ajtónál kezd (most ért haza).
+- Nincs pizsama; a nővér (mint reggel) az ágyában alszik és forgolódik; a reggeli csibészségek nem futnak; apa és anya esti mondatai („Megírtad a leckét?”, „Mindjárt kész a vacsora!”), 21:15 után anya lefekvésre küld. Petyus a bejárati ajtónál kezd (most ért haza).
 - **E – lefekvés** Petyus ágyánál → másnap reggel.
-- ◐ Az esti csibészségek: ✅ 8. A fogkrémcsere; ⬜ 9. Meccs vagy sorozat?, ⬜ 10. A lepedős kísértet. ⬜ Később: vacsora, fürdés, tévézés.
+- ✅ Az esti csibészségek: 8. A fogkrémcsere, 9. Meccs vagy sorozat?, 10. A lepedős kísértet. ⬜ Később: vacsora, fürdés.
 
 ## A reggel vége, a késés  ◐ részben
 
@@ -325,7 +395,7 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
   - **Hangok:** csengő minden óra elején és végén (45 perc óra, 10 perc szünet), gyerekzsivaj (órán halk, szünetben hangos; szünetben kiabálás az udvaron), a kréta csikorgása, ha a tanító néni ír.
 - **Szereplők:** a 6. b-ben a tanító néni és 12 osztálytárs, a 6. a-ban a tanár bácsi és 14 gyerek – mindkét teremben folyik az óra (a 6. a-ban a tanár bácsi rászól Petyusra, hogy nem oda jár); a gyerekek a padban Petyus felé fordulnak, ha elmegy mellettük, és megszólítják.
 - **Óra:** 8:00 → 15:30; **E – hazaindulás** a kapunál (egyelőre bármikor).
-- ⬜ Később: a 4 iskolai csibészség, Petyus saját helye (leülés), a tornaterem / ebédlő belseje, az emeletek.
+- ⬜ Később: a 4 iskolai csibészség (terv kész: Előre a mutatót!, Vizes szivacs a széken, Béka a fiókban, Hol a szemüvegem?), a tornaterem / ebédlő belseje, az emeletek.
 
 ## Fejlesztési lépések
 
@@ -334,8 +404,9 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 3. ✅ **Megnyitás + fejlesztői elérés** (fent).
 4. ✅ **Naptár és napszakok** (naptár, óra, HUD, a napszakok köre, átvezető kártya, hétvége, a hónap vége): állapot (`nap`, `napszak`, játékóra), mentés `localStorage`-ba, HUD-elem, átvezetők a váltáshoz.
 5. ✅ **Otthon – reggel:** a lakás voxelből az alaprajz alapján (falak, ajtók, ablakok, padló, bútorok), babaház-nézet, reggeli fények, Petyus/Petya/Angi elhelyezése, mozgás, ütközés.
-6. ◐ Iskola (✅ helyszín), délutáni otthon (✅ helyszín), csibészségek (✅ a reggeliek, ⬜ az iskolaiak, ⬜ az estiek – terv kész).
-7. ◐ **Esti csibészségek:** ✅ esti ütemező a fogmosáshoz → ✅ 8. A fogkrémcsere → ⬜ 9. Meccs vagy sorozat? (meccs-ütemező) → ⬜ 10. A lepedős kísértet (szemétlevitel).
+6. ◐ Iskola (✅ helyszín), délutáni otthon (✅ helyszín), csibészségek (✅ a reggeliek, ✅ az estiek, ⬜ az iskolaiak – terv kész).
+7. ✅ **Esti csibészségek:** esti ütemező → 8. A fogkrémcsere → 9. Meccs vagy sorozat? → 10. A lepedős kísértet.
+8. ◐ **Iskolai csibészségek:** ✅ 4. Előre a mutatót! → ✅ 5. Vizes szivacs a széken → ⬜ 6. Béka a fiókban → ⬜ 7. Hol a szemüvegem?
 
 ## Döntések
 
@@ -395,3 +466,15 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 - [x] **Az autók lámpái is csak világosak legyenek, fénycsóva nélkül.** ✅ A fényszórók és a hátsó lámpák világítanak, az út előttük nem (a fénycsóva megszűnt).
 - [x] **A szobák fénye: az eredeti lámpák, hangolva.** ✅ (Egy próba – egyenletes „szobafény” dobozokkal – nem tetszett, nem került be.) A mennyezeti lámpák spotfények maradtak, árnyékkal (nem világítanak át a falon), de olyanok, mint egy mennyezeti lámpa: meleg szín, nagyon széles fénykúp (≈ 160°), puha szél, lassú lecsengés; egyszerre három égő helyiség kap fényt (Petyusé és a két legközelebbi), az árnyéktérképek felváltva frissülnek (képkockánként egy).
 - [x] **A karakterek mozgás közben vibrálnak a fényben.** ✅ A saját árnyékuk (a széles fénykúp miatt durva, és csak minden harmadik képkockán frissülő árnyéktérképből) késve ugrált rajtuk. Most a szereplők nem kapnak árnyékot magukra (a padlóra továbbra is vetnek), és Petyus helyiségének lámpája minden képkockán frissíti az árnyékát (a másik kettő felváltva).
+- [x] **A répa szára a vékony végén volt.** ✅ A répa kúpja meg volt fordítva: most a vastag végén van a zöld szár, a hegye a másik irányba mutat, a gyűrűk a felületén ülnek (nem lógnak ki a vékony részen).
+- [x] **Minden indításkor legyen csukva a fürdő és a WC ajtaja.** ✅ Folytatáskor is (a mentett ajtóállás után csukódnak).
+- [x] **Petyus is tudjon fogat mosni.** ✅ A mosdónál E – fogmosás (~6 mp, dúdolás, köpés); azzal mos, ami a fogkrém helyén van: sarokkrém → „Fúúúj!”, chilikrém → „Ez CSÍP!!”, arcmaszkkal nem mos, üres polcnál „Hol a fogkrém?”; amíg a szülők mosnak fogat, foglalt; ha elmegy, abbamarad.
+- [x] **A nővér este is az ágyában legyen, mint reggel.** ✅ Este is alszik a franciaágyban, betakarózva, forgolódik.
+- [x] **Petya és Angi se tudjon átmenni a falakon.** ✅ Minden sétájuk (a kézzel megadott útvonalak is: átöltözés, tejszínes kávé, anya teendői) szakaszonként ellenőrizve: ha egy szakasz falon vagy magas bútoron menne át, útkereséssel kerülnek (`navRoute` a `navgrid.js`-ben, a `walkTo` köré az `ep2.js`-ben); az útjukba eső csukott ajtót kinyitják (a zárt testvérszobáét nem).
+- [x] **Apa továbbra is bele tud menni a falba.** ✅ Az útkeresés csak 7 cm-t hagyott a falak mellett (Karcsinak méretezve), így apa teste a fal mellett félig belelógott; a szülők útja most a test szélességével számol (24 cm). A rács az erkélyekre is kiterjed (eddig oda a falsarkon át vágott), a lakáson kívüli cellák (a ház körüli levegő) zártak. Ellenőrizve: a fő útvonalakon a test közepe legalább 23 cm-re marad a faltól.
+- [x] **Fogmosáskor apa válla átmegy a WC és a fürdő falán.** ✅ Az ellenőrzés minden szakasz elejét és végét kihagyta (ott ülhet le / állhat fel), így a sok rövid szakaszból álló, már kiszámolt útvonalak (fogmosás, kulcskeresés, meccs, szemét) a falak mellett maradtak. Most csak a séta legeleje és legvége lehet foglalt helyen, a többi pont mind szabad kell legyen. A fürdőajtónál is legalább 27 cm marad.
+- [x] **A karok még mindig belelógnak a falba.** ✅ Apa modellje karokkal kb. 1 m széles (anya ~0,6 m) – ez szélesebb a 80–90 cm-es ajtóknál. Az útkeresés most a karokkal együtt számol (apa 0,5 m, anya 0,31 m fél szélesség, 7,5 cm-es rácson); az ajtókon át egy-egy folyosó marad nyitva, a nyílás közepén, és ott oldalazva mennek át (a vállvonal az ajtó tengelyében, kb. 1 m-rel előtte elfordulnak). Ellenőrizve 18 útvonalon (fürdő, WC, szobák, erkélyek, bejárat – oda-vissza): a test téglalapja (karokkal) sehol nem ér falhoz.
+- [x] **Petya fura útvonalon megy, a fal mellett, minden ajtót kinyit.** ✅ A legrövidebb út a falak és sarkok mentén vezetett, és a jelenetek (fogmosás, meccs, szemét, kulcskeresés) maguk is ilyen utat adtak át; az ajtónyitók minden közeli ajtót kinyitottak. Most a jelenetek csak a célt adják meg; az útkeresés a helyiségek és a folyosó közepét részesíti előnyben (a falközelség drágább, `pathMiddle`), majd egyenesekre húzza ki az utat (asztal → folyosó közepe → fürdőajtó közepe → mosdó). Ajtót csak az nyit ki, és csak ott oldalaz, akinek az útja a következő ~1,2 m-en át is megy rajta (a folyosón a WC ajtaja mellett elmenve nem).
+- [x] **Petya az ajtón mindig oldalazva megy be – ez fura.** ✅ Nincs oldalazás: a lakás belső ajtói (fürdő, WC, Petyus szobája, a szülők szobája) és az erkélyajtók 1,05 m szélesek lettek (apa karokkal kb. 1 m széles), az út a nyílás közepén vezet, és az ajtóban apa (anya is) kicsit behúzza a karját, kevésbé lendíti (`tuck` az `actors.js`-ben) – szemből megy át, a falat nem éri. A mosdó előtti állóhely 7 cm-rel hátrébb került (a kéz nem éri a mosdószekrény sarkát).
+- [x] **A lámpák fénye kilátszik egy szobából az ajtók és a falak éleinél.** ✅ Az ajtók fölötti szemöldökfa (külön darab, hogy a lesüllyedő falnál el lehessen tüntetni) nem vetett árnyékot – a lámpák fénye az ajtók fölött átjutott; most vet. A spotfények árnyékának eltolása (bias / normalBias) kisebb lett, így a fény nem kúszik át a falak élein.
+- [x] **Még mindig átvilágít: a fürdőben a csukott ajtó mellett a fal alján és az ajtó berakásainak élein.** ✅ Az árnyéktérkép a nagyon széles fénykúp miatt durva, és a szűrés a vékony tárgyakon (fal alja, ajtólap) átengedte a fényt – árnyékhangolással ez nem szűnik meg teljesen. Most minden mennyezeti lámpa csak a saját helyiségében világít (`src/lightmask.js`: a shaderben a fény a szoba határán – a fal belső síkja után 4 cm-rel – megáll), az árnyékok maradnak. Ellenőrizve: a sötét fürdőből nézve a csukott ajtó és a fal alja sötét, az előszoba felől az ajtó világos.

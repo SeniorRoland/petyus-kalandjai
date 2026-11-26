@@ -11,18 +11,20 @@
 // Bent csak a főépület földszintje járható: a folyosó és három terem. Amíg Petyus bent van, az emeletek eltűnnek, a kamera felőli
 // falak lesüllyednek. A kapunál: E – hazaindulás (→ otthon délután).
 import * as THREE from 'three';
-import { Actor } from '../actors.js';
+import { Actor, spawnFx } from '../actors.js';
 import { makePerson } from '../rigs.js';
 import { CAM_OFF, scene, sun } from '../scene.js';
 import { G } from '../state.js';
 import { isTouch } from '../input.js';
 import { bigText, say } from '../ui.js';
+import { award } from '../mischief.js';
 import { R, V3, damp, pick } from '../util.js';
 import { addBoxCol, colliders, partMesh, vcMat } from '../world.js';
 import { TOILET, toiletSeatGeometry } from '../voxels-home.js';
 import { canPee, pee, peeFlushed, startPee } from './pee.js';
 import { noise, soundAt, tone } from '../audio.js';
 import { buildFurniture, put, wallView } from './home.js';
+import { getGeometry } from '../voxels.js';
 import { TIMETABLE, WRITERS, boardText, hungaryMap, makeClock, portrait, timesTable, timetable } from './posters.js';
 
 const FLOOR = 3.3, TW = 0.25;
@@ -358,12 +360,18 @@ function buildClassroom(r) {
     b.bx(wx + 0.03, 0.95, bz, 0.06, 1.3, 4.6, C.boardFrame, 0, 0); b.bx(wx + 0.06, 1.0, bz, 0.04, 1.2, 4.4, C.board, 0, 0.02);
     b.bx(wx + 0.1, 0.92, bz, 0.12, 0.04, 4.4, C.boardFrame, 0, 0);
     for (let k = 0; k < 4; k++) b.bx(wx + 0.12, 0.96, bz - 1.6 + k * 0.3, 0.03, 0.02, 0.08, 0xf4f4f0, 0, 0);   // chalk sticks
-    b.bx(wx + 0.12, 0.96, bz + 1.4, 0.05, 0.04, 0.12, 0x8a6a4a, 0, 0);                                       // the sponge
+    if (!ours) b.bx(wx + 0.12, 0.96, bz + 1.4, 0.05, 0.04, 0.12, 0x8a6a4a, 0, 0);                            // the sponge (the 6. b's: its own mesh – „Vizes szivacs”)
   });
+  if (ours) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.05, 0.08), new THREE.MeshLambertMaterial({ color: 0x8a6a4a }));
+    sponge.home.set(wx + 0.12, 0.985, bz + 1.4); m.position.copy(sponge.home); m.castShadow = true; scene.add(m); sponge.mesh = m;
+  }
   const txt = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 1.16), new THREE.MeshBasicMaterial({ map: boardText(r.board), transparent: true })); txt.position.set(wx + 0.085, 1.6, bz); txt.rotation.y = E;
+  // the clock on the back (east) wall, between the bookcases and the cupboards: the teacher sees it facing the class, the
+  // pupils have it behind them
   const ck = makeClock(); clocks.push(ck);
-  const clock = new THREE.Mesh(new THREE.CircleGeometry(0.22, 24), new THREE.MeshBasicMaterial({ map: ck.tex, transparent: true })); clock.position.set(wx + 0.05, 2.62, bz); clock.rotation.y = E;
-  onWall([board, txt, clock], 'x', wx);
+  const ew = x0 + 11.94, clock = new THREE.Mesh(new THREE.CircleGeometry(0.22, 24), new THREE.MeshBasicMaterial({ map: ck.tex, transparent: true })); clock.position.set(ew - 0.02, 2.25, bz); clock.rotation.y = W;
+  onWall([board, txt], 'x', wx); onWall([clock], 'x', ew);
   // pictures: beside the board writers' portraits and the times table; on the back and corridor walls more portraits,
   // the map, the timetable
   const pic = (texture, w, h, x, y, z, face) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshLambertMaterial({ map: texture, transparent: true })); m.position.set(x, y, z); m.rotation.y = face; return m; };
@@ -375,7 +383,12 @@ function buildClassroom(r) {
     pic(portrait(WRITERS[(i0 + 2) % WRITERS.length]), 0.5, 0.66, x0 + 6.4, 1.7, sw, Math.PI), pic(portrait(WRITERS[(i0 + 3) % WRITERS.length]), 0.5, 0.66, x0 + 10.4, 1.7, sw, Math.PI),
     pic(portrait(WRITERS[(i0 + 4) % WRITERS.length]), 0.5, 0.66, x0 + 11.1, 1.7, sw, Math.PI)], 'z', CORR - 0.06);
   // the teacher's desk by the board (she sits west of it, facing the class), the pupils' desks: 3 rows × 3, two chairs each
-  put('desk', x0 + 1.9, -9.6, W, 0, { ground: true, col: true });   // (variant 0: the one with the monitor – the teacher's) put('chair', x0 + 1.32, -9.6, E, 1, { ground: true, col: true });
+  put('desk', x0 + 1.9, -9.6, W, 0, { ground: true, col: true });   // (variant 0: the one with the monitor – the teacher's)
+  put('chair', x0 + 1.32, -9.6, E, 1, { ground: true, col: true });   // the teacher's chair
+  if (ours) {   // a spare chair by the back wall (its own mesh: it can be dragged under the clock – „Előre a mutatót!”)
+    const m = new THREE.Mesh(getGeometry('chair', 0), vcMat); m.castShadow = m.receiveShadow = true; m.rotation.y = W;
+    m.position.set(x0 + 11.45, 0, -8.85); scene.add(m); tchair.mesh = m; tchair.home.set(x0 + 11.45, 0, -8.85);
+  }
   for (const [k, x] of [[0, 4.3], [1, 6.3], [2, 8.3]]) for (const z of [-9.9, -7.3, -4.7]) {
     put('desk', x0 + x, z, E, 1, { ground: true, col: true });   // (variant 1: a plain desk)
     for (const s of [-0.3, 0.3]) {
@@ -425,7 +438,20 @@ const people = [];
 const TEACHER_LINES = ['Gyerekek, figyeljetek a táblára!', 'Ki tudja a választ?', 'Csendet kérek!', 'Nyissátok ki a füzeteteket!', 'Szép munka!', 'Ki jön ki a táblához?', 'Holnap témazáró!'];
 const KID_LINES = ['Szia, Petyus!', 'Láttad a tegnapi meccset?', 'Kölcsönadod a radírod?', 'Mi lesz az uzsonna?', 'Fogócska a szünetben?', 'Megcsináltad a házit?', 'Petyus, gyere ide!'];
 const pupils = [];   // the 6. b's children (in their seats in a lesson, in the yard in a break)
-export const school = { teacher: null, talkT: 6, seated: false, seatedSaid: false, chalkT: 4, chatT: 0, bellMin: -1, lastMin: -1 };
+export const school = { teacher: null, talkT: 6, seated: false, seatedSaid: false, chalkT: 4, chatT: 0, bellMin: -1, lastMin: -1, min: 0 };
+// „Előre a mutatót!” (r2-ora): the 6. b's wall clock can be put forward (off: minutes); the teacher turns to the board to write
+// now and then (writing: her back to the class); when the clock says the lesson is over, she lets the 6. b out early (early)
+export const ck = { off: 0, writing: false, wT: 10, wDur: 0, early: false, earlyMin: 0, caught: false, climbT: 0, lookT: 3, said: 0 };
+const CLOCK = { x: 11.35, z: -7.3 };   // in front of the 6. b's clock (on the back – east – wall)
+// „Vizes szivacs a széken” (r2-szivacs): the board's sponge – where: 'board' | 'hand' | 'chair'; wet (soaked at a WC sink); seen:
+// the teacher saw Petyus with it; the teacher's chair at her desk (she sits down there at the start of a lesson)
+export const sponge = { mesh: null, home: new V3(), where: 'board', wet: false, seen: false, dripT: 0, sitT: -1, done: false };
+const TCHAIR = { x: 1.32, z: -9.6 }, SINKS = [28.3, 29.3, 34.5, 35.4], BREAK_SPOT = { x: 6.6, z: -1.3 };
+// the spare chair by the back wall: at its place, or under the clock (at), Petyus standing on it (on)
+export const tchair = { mesh: null, home: new V3(), at: false, on: false, back: false };
+const CHAIR_TOP = 0.46;
+function chairTo(clock) { tchair.at = clock; tchair.mesh.position.set(clock ? CLOCK.x + 0.2 : tchair.home.x, 0, clock ? CLOCK.z : tchair.home.z); soundAt(tchair.mesh.position.x, tchair.mesh.position.z, () => noise(0.35, 500, 0.8, 0.12), 1); }
+const lessonEnd = (min) => { const t = min - 8 * 60, n = Math.floor(t / 55); return 8 * 60 + n * 55 + 45; };
 function buildPeople() {
   const T = new Actor(makePerson({ scale: 0.92, shirt: 0x6a4c93, pants: 0x3d405b, hair: 0x8a5a2b, dress: true, glasses: true, hat: false }), 'Tanító néni');
   const home = new V3(0.9, 0, -7.3);
@@ -474,6 +500,19 @@ function updatePeople(dt) {
     } else if (p.kind === 'teacher' && p.out) {   // after 14:00 out on the square, watching the children
       if (!a.path) a.targetHeading = Math.atan2(-2 - a.pos.x, 9 - a.pos.z) + Math.sin(G.clockT * 0.3 + p.home.x) * 0.8;
       a.update(dt);
+    } else if (p.kind === 'teacher' && a === school.teacher && !p.out && teacherBreak(p, dt, school.min)) {   // the 6. b's teacher: the break, sitting down
+    } else if (p.kind === 'teacher' && a === school.teacher && lesson(school.min)) {   // the 6. b: now and then she writes on the board
+      if (ck.writing) {
+        a.targetHeading = -Math.PI / 2; a.update(dt);
+        const r = a.rig, w = Math.sin(G.clockT * 7) * 0.15; r.sh[0].rotation.x = -2.1 + w; r.sh[0].rotation.z = 0.2; if (r.elbow) r.elbow[0] = 0.5; a.sync();   // the chalk hand up
+        if ((ck.wDur -= dt) <= 0) { ck.writing = false; ck.wT = R(9, 15); }
+      } else {
+        ck.wT -= dt;
+        if (ck.wT <= 0 && !a.path) { ck.writing = true; ck.wDur = R(6, 9); school.chalkT = 0.2; a.walkTo([[0.6, -7.3 + R(-1.2, 1.2)]], 0.9); }
+        p.t -= dt; if (p.t <= 0 && !a.path && !ck.writing) { p.t = R(3, 7); a.walkTo([[p.home.x + R(0, 0.5), p.home.z + R(-1.8, 1.8)]], 0.8); }
+        if (!a.path) a.targetHeading = Math.PI / 2;
+        a.update(dt);
+      }
     } else if (p.kind === 'teacher') {   // walking a little in front of the board, facing the class
       p.t -= dt; if (p.t <= 0 && !a.path) { p.t = R(3, 7); a.walkTo([[p.home.x + R(0, 0.5), p.home.z + R(-1.8, 1.8)]], 0.8); }
       if (!a.path) a.targetHeading = Math.PI / 2;
@@ -667,16 +706,23 @@ function buildCrowd() {
 // the way from a seat in the 6. b out to the yard (and back): along the aisle, through the classroom door, the corridor, the entrance
 const outRoute = (k) => { const s = k.seat, dx = k.room.door; return [[s.x + 0.45, s.z], [s.x + 0.45, -3.4], [dx, -3.3], [dx, -1.4], [2.6, -1.1], [2.6, 1.2], [2.6, 4.4]]; };
 const AROUND = [11.5, 19.2];   // the field is beyond the low building: round its west side
-function crowdTick(dt, brk) {
-  const all = [...crowd.boys, ...crowd.girls];
-  if (brk && !crowd.on) {   // the break: the class stands up and goes out (the door is opened), the others come out of the entrance
-    crowd.on = true;
-    for (const d of doors) if (!d.open && (d.name === '6. b' || d.name === '6. a' || d.name === 'bejárat')) toggleDoor(d);
-    for (const r of ROOMS3) if (inside()) setTimeout(() => say(r.teacher, pick(['Szünet! Irány az udvar!', 'Mindenki ki a friss levegőre!', 'Szünet van, gyerekek, ki az udvarra!']), 2.2), 900 + r.x0 * 60);
-    all.forEach((k, i) => { k.wait = (k.pupil ? 0.4 : 3.0) + i * 0.3; k.play = false; k.state = 'leaving'; });
+// early: the 6. b's teacher let her class out before the bell (ck – „Előre a mutatót!”): only they go; the 6. a follows at the bell
+function crowdTick(dt, brk, early = false) {
+  const all = [...crowd.boys, ...crowd.girls], want = brk || early;
+  const goOut = (list, rooms) => {
+    for (const d of doors) if (!d.open && (rooms.includes(d.name) || d.name === 'bejárat')) toggleDoor(d);
+    for (const r of ROOMS3) if (rooms.includes(r.cls) && inside()) setTimeout(() => say(r.teacher, pick(['Szünet! Irány az udvar!', 'Mindenki ki a friss levegőre!', 'Szünet van, gyerekek, ki az udvarra!']), 2.2), 900 + r.x0 * 60);
+    list.forEach((k, i) => { k.wait = (k.pupil ? 0.4 : 3.0) + i * 0.3; k.play = false; k.state = 'leaving'; });
+  };
+  if (want && !crowd.on) {   // the break: the class stands up and goes out (the door is opened), the others come out of the entrance
+    crowd.on = true; crowd.part = !brk;
+    goOut(brk ? all : all.filter((k) => !k.pupil || k.room === ROOMS3[0]), brk ? ['6. b', '6. a'] : ['6. b']);
     crowd.ball.visible = true; crowd.ball.position.set((FIELD.x0 + FIELD.x1) / 2, 0.11, (FIELD.z0 + FIELD.z1) / 2); crowd.bv.set(0, 0, 0);
-  } else if (!brk && crowd.on) {   // the bell: everybody in – the class back to their seats
-    crowd.on = false; crowd.hopper = -1;
+  } else if (brk && crowd.on && crowd.part) {   // the real bell after an early release: now the 6. a comes out too
+    crowd.part = false;
+    goOut(all.filter((k) => k.pupil && k.room === ROOMS3[1] && !k.out), ['6. a']);
+  } else if (!want && crowd.on) {   // the bell: everybody in – the class back to their seats
+    crowd.on = false; crowd.hopper = -1; crowd.part = false;
     for (const k of all) {
       k.play = false;
       if (!k.out) { k.state = k.pupil ? 'seat' : 'in'; continue; }
@@ -838,8 +884,8 @@ function updateSounds(dt, min) {
     if (brk && !inn && Math.random() < 0.02) { const kids = [...crowd.boys, ...crowd.girls].filter((k) => k.out && k.a.rig.root.visible); if (kids.length) say(pick(kids).a, pick(['Hahó!', 'Passzold ide!', 'Nem ér!', 'Én jövök!', 'Lőj már!']), 1.4); }
   }
   // the chalk squeaks while the teacher writes (in a lesson)
-  if (!brk && (school.chalkT -= dt) <= 0) {
-    school.chalkT = R(4, 9);
+  if (!brk && ck.writing && (school.chalkT -= dt) <= 0) {
+    school.chalkT = R(0.8, 2.2);
     if (Math.hypot(P.x - 1, P.z + 7.3) < 12) soundAt(0.4, -7.3, () => { for (let k = 0; k < 4; k++) tone('sine', R(2600, 3400), R(2800, 3600), 0.07, 0.025, k * 0.12); noise(0.4, 3000, 3, 0.02); }, 1);
   }
 }
@@ -854,16 +900,35 @@ export function schoolAction() {
   for (const d of doors) { const r = Math.hypot(P.x - d.x, P.z - d.z); if (r < bdist) { bdist = r; bd = d; } }
   if (bd) return { door: bd, txt: (bd.open ? 'E – ajtó becsukása' : 'E – ajtó kinyitása') + ` (${bd.name})` };
   if (nearGate()) return { txt: 'E – hazaindulás', gate: true };
+  // „Vizes szivacs”: the sponge – from the board, soaked at a sink, onto the teacher's chair (or back)
+  if (sponge.where === 'board' && Math.hypot(P.x - sponge.home.x - 0.45, P.z - sponge.home.z) < 0.8) return { sponge: 'take', txt: 'E – a táblatörlő szivacs elvétele' };
+  if (sponge.where === 'chair' && Math.hypot(P.x - TCHAIR.x, P.z - (TCHAIR.z + 0.6)) < 0.75) return { sponge: 'take', txt: 'E – a szivacs elvétele a székről' };
+  if (sponge.where === 'hand') {
+    if (SINKS.some((x) => Math.hypot(P.x - x, P.z - (CORR - 0.75)) < 0.55)) return { sponge: 'soak', txt: sponge.wet ? 'E – még jobban beáztatni (már csuromvizes)' : 'E – a szivacs beáztatása a csap alatt' };
+    if (Math.hypot(P.x - TCHAIR.x, P.z - (TCHAIR.z + 0.6)) < 0.75) return { sponge: 'chair', txt: 'E – a szivacs a tanári székre' };
+    if (Math.hypot(P.x - sponge.home.x - 0.45, P.z - sponge.home.z) < 0.8) return { sponge: 'board', txt: 'E – a szivacs vissza a táblához' };
+  }
+  // „Előre a mutatót!”: the teacher's chair under the clock, up on it, the hand forward (+5 minutes) – and the chair back
+  if (tchair.on) return { clock: 'push', txt: ck.early ? 'Mozgás – leszállás a székről' : 'E – a mutató előre (+5 perc) · mozgás – leszállás', kick: '' };
+  if (Math.hypot(P.x - CLOCK.x, P.z - CLOCK.z) < 1.0) {
+    if (tchair.at) return { clock: 'climb', txt: 'E – felállás a székre' + (isTouch ? '' : ' · Szóköz – a szék vissza a helyére'), kick: 'SZÉK VISSZA' };
+    if (lesson(school.min) && !ck.early) return { clock: 'drag', txt: 'E – a pótszék odahúzása a falióra alá' };
+  }
   if (Math.hypot(P.x - (seat.x + 0.45), P.z - seat.z) < 0.8 || (school.seated && Math.hypot(P.x - seat.x, P.z - seat.z) < 0.6)) return { txt: school.seated ? 'E – felállás' : 'E – leülés (a helyed)', seat: true };
   return null;
 }
 // E and Space on what schoolAction found (the gate and the seat: ep2.js)
 export function schoolUse(act) {
-  if (act.light) toggleLight(act.light);
+  if (act.sponge) spongeUse(act.sponge);
+  else if (act.clock === 'push') { if (!ck.early && ck.climbT <= 0) clockPush(); }
+  else if (act.clock === 'drag') chairDrag();
+  else if (act.clock === 'climb') chairClimb(true);
+  else if (act.light) toggleLight(act.light);
   else if (act.door) toggleDoor(act.door);
   else if (act.toilet) { act.toilet.st = act.toilet.st === 2 ? 1 : 2; tone('sine', 700, 500, 0.05, 0.05); }
 }
 export function schoolKick(act) {
+  if (act && act.clock === 'climb') { chairTo(false); return; }   // the chair back to her desk
   if (!act || !act.toilet) return;
   if (canPee(act.toilet.wc)) startPee(act.toilet.wc); else flush(act.toilet);
 }
@@ -872,6 +937,136 @@ export function toggleSeat(seating) {
   Object.assign(seating, { on: school.seated, x: seat.x, z: seat.z, h: -Math.PI / 2, seatH: 0.45, chair: true, base: 0 });
   tone('sine', school.seated ? 180 : 240, school.seated ? 120 : 300, 0.15, 0.05);
   if (school.seated && !school.seatedSaid) { school.seatedSaid = true; setTimeout(() => say(school.teacher, 'Na végre, Petyus! Örülök, hogy megtisztelsz minket.', 2.8), 600); }
+}
+
+// ---------------------------------------------------------------- „Előre a mutatót!”: the clock forward, the early break, the reveal
+const teacherSees = () => !ck.writing && !school.teacher.path;   // (facing the class – writing she has her back to it)
+function chairDrag() {
+  if (teacherSees()) { ck.caught = true; say(school.teacher, 'Petyus! Mit csinálsz ott hátul azzal a székkel?! Ülj vissza a helyedre!', 2.8); return; }
+  chairTo(true); say(G.petike, 'Hopp…', 1);
+}
+function chairClimb(up) {
+  const P = G.petike;
+  tchair.on = up;
+  if (up) { P.place(CLOCK.x + 0.2, CLOCK.z, Math.PI / 2); P.pos.y = CHAIR_TOP; soundAt(CLOCK.x, CLOCK.z, () => tone('triangle', 200, 140, 0.1, 0.08), 1); }
+  else { P.place(CLOCK.x - 0.45, CLOCK.z, -Math.PI / 2); P.pos.y = 0; soundAt(CLOCK.x, CLOCK.z, () => noise(0.12, 600, 1, 0.12), 1); }
+}
+// every frame from ep2.js movePetyus: while he stands on the chair he does not walk; a movement key gets him down
+export function schoolStand(dt, moveKey) {
+  if (!tchair.on) return false;
+  const P = G.petike;
+  if (moveKey && ck.climbT <= 0) { chairClimb(false); return false; }
+  P.pos.y = CHAIR_TOP; P.animate(dt, false, 0); P.sync();
+  return true;
+}
+function clockPush() {
+  ck.climbT = 1.2; G.petike.cheer = 1.0;   // on the chair, the arms up to the clock
+  soundAt(CLOCK.x, CLOCK.z, () => { for (let k = 0; k < 6; k++) tone('square', 2400, 2400, 0.02, 0.03, 0.1 + k * 0.09); }, 1);   // the clock's clicks
+  const T = school.teacher, sees = teacherSees();
+  if (sees) {   // she is facing the class: caught
+    ck.caught = true; ck.off = 0; clocks[0].draw(school.min);
+    setTimeout(() => say(T, pick(['Petyus! Szállj le onnan! Mit csinálsz a faliórával?!', 'Petyus! A faliórához nem nyúlunk! Vissza a helyedre!']), 2.8), 300);
+    setTimeout(() => { if (tchair.on) chairClimb(false); chairTo(false); }, 1200);
+    return;
+  }
+  ck.off += 5; clocks[0].draw(school.min + ck.off);
+  if (Math.random() < 0.5) setTimeout(() => say(pick(pupils.filter((k) => k.room === ROOMS3[0] && k.a.rig.root.visible))?.a || G.petike, pick(['Hihi…', 'Petyus, mit csinálsz?', 'Psszt!']), 1.4), 600);
+}
+function clockTick(dt, min) {
+  ck.climbT -= dt;
+  const T = school.teacher, real = lesson(min);
+  if (!real) {   // a break (or the lesson is over): if she let them out early, the bell gives it away
+    if (ck.early) {
+      const m = ck.earlyMin, caught = ck.caught;
+      setTimeout(() => say(ROOMS3[1].teacher, 'Már szünet van? A 6. b már kint focizik?!', 2.6), 1500);
+      setTimeout(() => say(T, 'Hm… a karórám szerint most csengettek. Valaki elállította a faliórát!', 3), 4300);
+      setTimeout(() => award('r2-ora', m, { caught }), 6500);
+      ck.early = false;
+    }
+    if (ck.off) { ck.off = 0; clocks[0].draw(min); }   // (she puts it right in the break)
+    if (tchair.at && !tchair.on) chairTo(false);
+    ck.writing = false; ck.caught = false;
+    return;
+  }
+  if (ck.early || ck.writing || T.path) return;
+  if (tchair.at && !tchair.on && !tchair.back) {   // her chair under the clock: she takes it back (and wonders)
+    tchair.back = true; say(T, pick(['Mit keres az a szék a falióra alatt?', 'Ki húzta oda azt a széket? Tegyétek a helyére!']), 2.4);
+    setTimeout(() => { chairTo(false); tchair.back = false; }, 1600);
+    return;
+  }
+  // facing the class: now and then she glances at the clock
+  if ((ck.lookT -= dt) > 0) return;
+  ck.lookT = R(2.5, 4);
+  const shown = min + ck.off, left = lessonEnd(min) - shown;
+  if (ck.off > 0 && shown >= lessonEnd(min)) {   // by the clock the lesson is over (or long over): out you go – only the 6. b
+    ck.early = true; ck.earlyMin = Math.round(lessonEnd(min) - min);
+    say(T, 'Ó, már ennyi az idő? Na, gyerekek, mára ennyi – szünet! Kifelé!', 3);
+  } else if (left > 0 && left <= 12 && Math.floor(left / 5) !== ck.said && Math.random() < 0.3) { ck.said = Math.floor(left / 5); say(T, `Még ${Math.ceil(left)} perc, gyerekek!`, 2); }
+}
+
+// ---------------------------------------------------------------- „Vizes szivacs a széken”
+function spongeUse(what) {
+  const m = sponge.mesh;
+  if (what === 'take') { sponge.where = 'hand'; tone('sine', 520, 780, 0.1, 0.05); }
+  else if (what === 'soak') {
+    sponge.wet = true; m.material.color.set(0x4e3a26); m.scale.set(1.15, 1.25, 1.15);   // darker, swollen
+    soundAt(G.petike.pos.x, G.petike.pos.z, () => { noise(1.2, 1800, 0.6, 0.08); noise(0.6, 900, 0.8, 0.05, 0.4); }, 1);
+    say(G.petike, pick(['Hehe… csuromvizes.', 'Na, ez jól megszívta magát…']), 1.6);
+  } else if (what === 'chair') { sponge.where = 'chair'; m.position.set(TCHAIR.x, 0.48, TCHAIR.z); m.rotation.set(0, 0.3, 0); tone('sine', 600, 420, 0.1, 0.05); if (sponge.wet) soundAt(TCHAIR.x, TCHAIR.z, () => noise(0.25, 700, 1, 0.08), 1); }
+  else if (what === 'board') { sponge.where = 'board'; m.position.copy(sponge.home); m.rotation.set(0, 0, 0); tone('sine', 600, 420, 0.1, 0.05); }
+}
+const _hp = new V3();
+function spongeTick(dt, min) {
+  const m = sponge.mesh, P = G.petike;
+  if (!m) return;
+  if (sponge.where === 'hand') {   // in his right hand (it drips when wet)
+    P.rig.handBones?.[0] ? P.rig.handBones[0].getWorldPosition(_hp) : _hp.set(P.pos.x, 0.8, P.pos.z);
+    m.position.set(_hp.x, _hp.y - 0.04, _hp.z); m.rotation.y = P.heading;
+    if (sponge.wet && (sponge.dripT -= dt) <= 0) { sponge.dripT = 0.25; spawnFx(new V3(_hp.x, _hp.y - 0.07, _hp.z), new V3(0, -0.5, 0), 0x6fb7e0, 0.025, 0.6, -6); }
+    // the teacher in the corridor sees him with it
+    const T = school.teacher;
+    if (!sponge.seen && !lesson(min) && Math.hypot(T.pos.x - P.pos.x, T.pos.z - P.pos.z) < 2.4) { sponge.seen = true; say(T, 'Petyus, mit csinálsz azzal a szivaccsal?', 2.4); setTimeout(() => say(P, 'Semmit… letörlöm a táblát!', 2), 2200); }
+  }
+}
+// the teacher of the 6. b: in a break out in the corridor (by the door); at the start of a lesson back to her desk, she sits down
+// for a moment („Na, nézzük a naplót…”) – onto whatever is on her chair
+function teacherBreak(p, dt, min) {
+  const a = p.a, brk = !lesson(min);
+  if (brk && !p.brk && !p.out && min >= 8 * 60) { p.brk = true; p.back = false; a.walkTo([[p.home.x + 0.8, -3.6], [5.1, -3.4], [5.1, -1.6], [BREAK_SPOT.x, BREAK_SPOT.z]], 1.1); }
+  if (!brk && p.brk && !p.back) { p.back = true; ck.writing = false; a.walkTo([[5.1, -1.6], [5.1, -3.4], [1.9, -3.8], [1.9, -9.0], [TCHAIR.x + 0.1, TCHAIR.z + 0.5]], 1.4); }
+  if (p.back && !a.path && sponge.sitT < 0) {   // at her chair: sit down
+    a.place(TCHAIR.x, TCHAIR.z, Math.PI / 2); a.seatH = 0.45; a.sitTarget = 1; sponge.sitT = 0;
+    say(a, pick(['Na, nézzük a naplót…', 'Üljetek le, gyerekek!', 'Csendet kérek!']), 2);
+  }
+  if (sponge.sitT >= 0) {
+    sponge.sitT += dt;
+    if (sponge.where === 'chair' && a.sit > 0.7 && !sponge.hit) spongeHit(a);
+    if (sponge.sitT > (sponge.hit ? 1.0 : 4.5)) { a.sitTarget = 0; }
+    if (sponge.sitT > (sponge.hit ? 2.0 : 5.5)) { sponge.sitT = -1; p.brk = false; p.back = false; sponge.hit = false; a.walkTo([[p.home.x, p.home.z]], 0.9); }
+    a.update(dt); return true;
+  }
+  if (p.brk) { if (!a.path && !p.back) a.targetHeading = Math.PI; a.update(dt); return true; }
+  return false;
+}
+function spongeHit(T) {
+  sponge.hit = true;
+  if (!sponge.wet) {   // a dry sponge: just odd
+    say(T, 'Hát ez meg hogy került ide?', 2.2);
+    setTimeout(() => spongeUse('board'), 1500);
+    return;
+  }
+  T.sitTarget = 0; T.cheer = 1.2;
+  say(T, 'HŰŰŰŰ!!', 1.6); soundAt(TCHAIR.x, TCHAIR.z, () => { noise(0.4, 600, 0.7, 0.2); tone('sine', 900, 1400, 0.3, 0.1); }, 1);
+  for (let k = 0; k < 6; k++) spawnFx(new V3(TCHAIR.x + R(-0.15, 0.15), 0.5, TCHAIR.z + R(-0.15, 0.15)), new V3(R(-0.6, 0.6), R(0.6, 1.4), R(-0.6, 0.6)), 0x6fb7e0, 0.03, 0.8, -6);
+  const kids = pupils.filter((k) => k.room === ROOMS3[0] && k.a.rig.root.visible);
+  kids.slice(0, 4).forEach((k, i) => setTimeout(() => say(k.a, pick(['HAHAHA!', 'Hihihi!', 'Hahaha, vizes!', 'HAHA!']), 1.4), 500 + i * 300));
+  soundAt(6, -7, () => { for (let k = 0; k < 10; k++) tone('triangle', R(400, 700), R(300, 650), 0.12, 0.03, k * 0.11); }, 1);
+  const seen = sponge.seen;
+  setTimeout(() => say(T, 'Ki volt ez?! Ki tette a vizes szivacsot a székemre?!', 2.8), 2000);
+  if (seen) setTimeout(() => say(T, 'Petyus! Láttalak a folyosón azzal a szivaccsal!', 2.8), 5000);
+  else setTimeout(() => { const k = pick(kids); if (k) say(k.a, 'Nem tudjuk, tanító néni!', 2); }, 5000);
+  setTimeout(() => { spongeUse('board'); sponge.wet = false; sponge.mesh.material.color.set(0x8a6a4a); sponge.mesh.scale.set(1, 1, 1); award('r2-szivacs', seen ? 2 : 3, { seen }); }, 6500);
+  sponge.seen = false;
 }
 
 // ---------------------------------------------------------------- build / tick
@@ -908,9 +1103,10 @@ function teachersOut(min) {
   });
 }
 export function updateSchool(dt, min, solid) {
+  school.min = min;
   teachersOut(min);
-  updateWalls(dt, solid); updatePeople(dt); updateSounds(dt, min); updateDoors(dt); updateToilets(dt); indoorLight(dt); crowdTick(dt, !lesson(min));
-  if (Math.floor(min) !== school.lastMin) { school.lastMin = Math.floor(min); for (const c of clocks) c.draw(min); }
+  updateWalls(dt, solid); updatePeople(dt); updateSounds(dt, min); updateDoors(dt); updateToilets(dt); indoorLight(dt); clockTick(dt, min); spongeTick(dt, min); crowdTick(dt, !lesson(min), ck.early);
+  if (Math.floor(min) !== school.lastMin) { school.lastMin = Math.floor(min); clocks.forEach((c, i) => c.draw(min + (i === 0 ? ck.off : 0))); }   // (the 6. b's: maybe put forward)
   if (school.seated && !G.petike.sitTarget && G.petike.sit < 0.05) school.seated = false;   // stood up with a movement key
   const P = G.petike.pos, inRoom = P.z < CORR && P.z > SCHOOL.z0 && P.x < 24 ? (P.x < 12 ? 0 : 1) : -1;
   school.talkT -= dt;

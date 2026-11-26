@@ -19,12 +19,11 @@ import { devices, fx } from './appliances.js';
 import { FY, SPOTS, doors, homeRoot, switches, toggleDoor, toggleSwitch } from './home.js';
 import { brushCup, cosmeticBottle, perfume, smallJar } from './food.js';
 import { carrying, itemPlace, lockItem, moveItem } from './inventory.js';
-import { findPath } from './navgrid.js';
 import { mergeStatic } from '../world.js';
 import { PAJAMAS } from './pajama.js';
 
 const T_MOM = 20 * 60 + 45, T_DAD = 21 * 60 + 30;   // when they brush their teeth (ep2.min)
-const SINK = { x: 2.85, z: 1.05, h: Math.PI / 2 };   // in front of the basin (it is on the bathroom's east wall)
+const SINK = { x: 2.78, z: 1.05, h: Math.PI / 2 };   // in front of the basin (it is on the bathroom's east wall; a step back: the hands clear the vanity's corner)
 const TAP = { x: 8.6, z: 0.95, h: Math.PI };         // in front of the kitchen sink
 const LAP = [[7.0, 3.1], [8.8, 3.25], [8.85, 1.35], [6.85, 1.45]];   // round the kitchen (between the fridge and the table)
 
@@ -60,14 +59,39 @@ export function buildBath() {
   sh.add(box(0.42, 0.02, 0.13, WOOD, 0, 0.01, 0.065), box(0.015, 0.08, 0.1, EDGE, -0.17, -0.04, 0.05), box(0.015, 0.08, 0.1, EDGE, 0.17, -0.04, 0.05));
   [[0x3a86ff, 0x1d5fbf], [0xf4a6c6, 0xd6336c], [0x8ac926, 0x2d6a4f], [0xc77dff, 0x7b2cbf]].forEach(([c, b], i) => { const o = brushCup(c, b); o.position.set(-0.165 + i * 0.075, 0.02, 0.06); sh.add(o); });
   bath.shelf = sh;
+  // Petyus brushes his teeth too (E at the basin): with whatever lies in the toothpaste's place
+  const kid = { on: false, t: 0, what: null, x: 0, z: 0 };
+  devices.push({ aim: new V3(3.3, 1.0, 1.05), size: 0.3, x: SINK.x, z: SINK.z, r: 0.55,
+    label: () => (kid.on ? 'E – fogmosás abbahagyása' : tp.cur ? 'Foglalt a mosdó' : 'E – fogmosás'),
+    use: () => {
+      if (tp.cur) return;
+      if (kid.on) { kid.on = false; return; }
+      kid.what = ['toothpaste', 'heelcream', 'facemask', 'chili'].find((id) => itemPlace(id) === 'paste') || null;
+      if (!kid.what) { say(G.petike, 'Hol a fogkrém?', 1.6); return; }
+      if (kid.what === 'facemask') { say(G.petike, 'Ez anya arcmaszkja… ezzel nem mosok fogat.', 2.2); return; }
+      kid.on = true; kid.t = 0; kid.x = G.petike.pos.x; kid.z = G.petike.pos.z;
+      G.petike.targetHeading = SINK.h; G.petike.heading = SINK.h;
+      say(G.petike, kid.what === 'toothpaste' ? pick(['Fogmosás… három percig, ahogy anya mondja.', 'Mentás!']) : 'Na, lássuk…', 1.8);
+    },
+    update: (dt) => {
+      if (!kid.on) return;
+      const P = G.petike;
+      if (Math.hypot(P.pos.x - kid.x, P.pos.z - kid.z) > 0.15) { kid.on = false; return; }   // he walked away: stops
+      kid.t += dt; brushPose(P, Math.min(1, kid.t * 3));
+      if (Math.random() < dt * 4) soundAt(P.pos.x, P.pos.z, () => noise(0.12, 3500, 1.5, 0.04));
+      if (kid.what === 'chili' && kid.t > 2.5 && kid.t - dt <= 2.5) say(P, 'ÁÁÁ! Ez CSÍP!! Vizet!!', 2);
+      if (kid.what === 'heelcream' && kid.t > 2.5 && kid.t - dt <= 2.5) say(P, 'Fúúúj! Ez sarokkrém!', 2);
+      if (kid.what !== 'toothpaste' && kid.t > 3) { kid.on = false; soundAt(P.pos.x, P.pos.z, () => noise(0.25, 900, 0.8, 0.12)); return; }
+      if (kid.t > 1.2 && kid.t - dt <= 1.2) say(head(P), '♪ hmm-hmm ♪', 1.4);
+      if (kid.t > 6) { kid.on = false; soundAt(P.pos.x, P.pos.z, () => noise(0.25, 900, 0.8, 0.12)); say(P, pick(['Kész! Ragyog!', 'Tiszta fogak!']), 1.6); }
+    } });
   // (performance: the fixed parts – the cabinet's body and its things, the shelf with the cups – one draw call each, no shadows)
   for (const g of [cab, sh]) g.traverse((o) => { if (o.isMesh) o.castShadow = false; });
   mergeStatic(cab, new Set([pv])); mergeStatic(sh);
 }
 
 // ---------------------------------------------------------------- helpers
-const passDoors = () => new Set(doors.filter((d) => d.pivot && d.kind !== 'locked').map((d) => d.col));
-function go(a, x, z, speed) { const p = findPath(a.pos.x, a.pos.z, x, z, passDoors()); a.walkTo(p && p.length ? p : [[x, z]], speed); }
+function go(a, x, z, speed) { a.walkTo([[x, z]], speed); }   // (the way: round the walls, down the middle – ep2.js / navgrid.js navRoute)
 const head = (a) => ({ headWorld: (o) => a.headWorld(o) });
 const bathSwitch = () => switches.find((s) => s.room === 'furdo');
 function sees(a, p, far, cone) {
@@ -147,7 +171,7 @@ function nextLeg() {
 }
 
 // ---------------------------------------------------------------- every frame (the evening – ep2.js, after the parents' update)
-export function toothTick(dt, min) {
+export function toothTick(dt, min, busy = () => false) {
   // somebody saw Petyus fiddling at the shelf / in the cabinet
   const P = G.petike.pos;
   tp.seenT -= dt;
@@ -157,14 +181,13 @@ export function toothTick(dt, min) {
     }
   }
   if (!tp.cur) {
-    if (!tp.momDone && min >= T_MOM && min < T_MOM + 40) { tp.momDone = true; begin('angi'); }
-    else if (!tp.dadDone && min >= T_DAD && min < T_DAD + 40) { tp.dadDone = true; begin('petya'); }
+    if (!tp.momDone && min >= T_MOM && min < T_MOM + 40 && !busy('angi')) { tp.momDone = true; begin('angi'); }
+    else if (!tp.dadDone && min >= T_DAD && min < T_DAD + 40 && !busy('petya')) { tp.dadDone = true; begin('petya'); }
     return;
   }
   const who = tp.cur, a = who === 'angi' ? G.angi : G.petya, mom = who === 'angi';
   tp.t += dt;
   // doors open before them on the way (the path counts them passable)
-  if (a.path) for (const d of doors) if (d.pivot && !d.open && d.kind !== 'locked' && Math.hypot(d.x - a.pos.x, d.z - a.pos.z) < 0.9) { toggleDoor(d); soundAt(d.x, d.z, () => noise(0.12, 1200, 1, 0.15)); }
   if (tp.red > 0) { tp.red = clamp(tp.red, 0, 1); redFace(a, 'petya', tp.red); if (tp.red > 0.5 && Math.random() < dt * 9) { const h = a.headWorld(new V3()); for (const s of [-1, 1]) spawnFx(new V3(h.x + s * 0.16, h.y - 0.35, h.z), new V3(s * 0.3, 0.6, 0), 0xf1f1f1, 0.05, 0.9, -0.2); } }
   switch (tp.st) {
     case 'stand':
