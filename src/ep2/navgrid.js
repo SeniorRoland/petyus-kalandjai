@@ -35,8 +35,8 @@ function nearestFree(g, i, j) {
   return [i, j];
 }
 // a path from (x0, z0) to (x1, z1): [[x, z], …] (the last point exact), or null when it cannot be reached
-export function findPath(x0, z0, x1, z1, pass = null) {
-  const g = blockedGrid(pass);
+export function findPath(x0, z0, x1, z1, pass = null) { return pathOn(blockedGrid(pass), x0, z0, x1, z1); }
+function pathOn(g, x0, z0, x1, z1) {
   const [si, sj] = nearestFree(g, ...cellOf(x0, z0)), [ti, tj] = nearestFree(g, ...cellOf(x1, z1));
   const prev = new Int32Array(NX * NZ).fill(-1), start = idx(si, sj), goal = idx(ti, tj);
   const q = [start]; prev[start] = start;
@@ -58,3 +58,25 @@ export function findPath(x0, z0, x1, z1, pass = null) {
   return out;
 }
 export function walkable(x, z) { const g = blockedGrid(); const [i, j] = cellOf(x, z); return !g[idx(i, j)]; }
+
+// a walk given as points (the scripted ones: dressing, the creamy coffee, mum's jobs …) made safe: a leg that would cross a
+// wall or tall furniture is replaced by a found path round it (closed doors count as open: the walker opens them – ep2.js)
+const passDoorsOf = (doors) => new Set(doors.filter((d) => d.pivot && d.kind !== 'locked').map((d) => d.col));
+function lineFree(g, x0, z0, x1, z1) {
+  const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 0.07)), [ei, ej] = cellOf(x1, z1), [si, sj] = cellOf(x0, z0);
+  for (let k = 1; k < n; k++) {
+    const [i, j] = cellOf(x0 + (x1 - x0) * k / n, z0 + (z1 - z0) * k / n);
+    if ((i === si && j === sj) || (i === ei && j === ej)) continue;   // (the start or the goal itself may be in a chair / at the bowl)
+    if (g[idx(i, j)]) return false;
+  }
+  return true;
+}
+export function navRoute(x, z, pts, doors) {
+  const g = blockedGrid(passDoorsOf(doors)), out = [];
+  for (const p of pts) {
+    if (lineFree(g, x, z, p[0], p[1])) out.push(p);
+    else { const q = pathOn(g, x, z, p[0], p[1]); if (q && q.length) out.push(...q); else out.push(p); }
+    x = p[0]; z = p[1];
+  }
+  return out;
+}
