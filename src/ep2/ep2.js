@@ -173,9 +173,10 @@ export function startEp2() {
   if (SCHOOL) buildSchool();
   else {
     buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances(); buildInventory();
+    if (EVE) ceiling.children[0].material.color.set(0x77726b);   // the ceiling (unlit): dimmer in the evening, lit only by the lamps
     buildWardrobe();   // Petyus's wardrobe (getting dressed in the morning: dressing.js)
     if (!EVE) buildSister();   // (in the evening she is out)
-    if (EVE) { setEvening(); addFillLights(Q.level >= 2 ? 6 : 3); }   // (the lamps: every lit room glows)
+    if (EVE) { setEvening(); addFillLights(Q.level >= 2 ? 4 : 2); }   // (the lamps: every lit room glows)
   }
   // in the morning the three of them are in pajamas (Petyus: the football kit's model – the walking one)
   if (ep2.phase === 'morning') { dressPajama(rigs.foci, 'petyus'); dressPajama(rigs.petya, 'petya'); dressPajama(rigs.angi, 'angi'); }
@@ -216,9 +217,8 @@ export function startEp2() {
   // compile every material now (also the hidden ones: ceiling, lamps, the WC's water), so nothing stalls the game later when it
   // first shows up (a shader compiled on first use is a visible hitch)
   { const hidden = []; scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
-    const pool = SCHOOL ? [] : lightPool();
-    try { for (const on of [true, false]) { pool.forEach((l) => { l.visible = on; }); renderer.compile(scene, camera); if (!SCHOOL) renderer.compile(scene, fpsCam); } } catch (e) { /* best effort */ }
-    pool.forEach((l) => { l.visible = false; });
+    if (!SCHOOL) lightPool();   // (created before compiling: a light added later would recompile everything)
+    try { renderer.compile(scene, camera); if (!SCHOOL) renderer.compile(scene, fpsCam); } catch (e) { /* best effort */ }   // (the lights never hide: one set of shaders)
     for (const o of hidden) o.visible = false; }
   if (resumed === true) toast(`Folytatás: <b>${dateText()}</b>, ${clockText(ep2.min)}`, 3);
   else if (resumed === 'fresh') {   // just arrived

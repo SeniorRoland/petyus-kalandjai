@@ -312,27 +312,28 @@ export const switches = [];
 // shaders): a fixed pool of two lights goes to the switched-on rooms nearest Petyus; with all lights off they are dark.
 const LIGHT_POOL = [];
 // The pool's lights are spot lights under the ceiling lamps pointing down: they cast the flat's shadows (the sun casts none
-// in part 2). A light that is not needed is hidden (no shadow pass for it); both states are compiled in advance (ep2.js).
+// in part 2). A light that is not needed stays in the scene with no intensity (hiding it would change the number of lights
+// and recompile every shader – a visible hitch); the shadow map is redrawn only while its light is used.
 export function lightPool() {
   if (!LIGHT_POOL.length) for (let i = 0; i < 2; i++) {
     const l = new THREE.SpotLight(0xffd9a0, LIGHT_ON, 9, 1.25, 0.55, 1.6);
     l.castShadow = Q.shadowSize > 0 && i === 0;   // only the nearest room's light casts shadows (each shadow redraws the scene)
     l.shadow.mapSize.set(Q.level >= 2 ? 1024 : 512, Q.level >= 2 ? 1024 : 512);
     l.shadow.bias = -0.0008; l.shadow.normalBias = 0.02; l.shadow.camera.near = 0.2; l.shadow.camera.far = 9;
-    l.visible = false; homeRoot.add(l, l.target); LIGHT_POOL.push(l);
+    l.intensity = 0; l.shadow.autoUpdate = false; homeRoot.add(l, l.target); LIGHT_POOL.push(l);
   }
   return LIGHT_POOL;
 }
 // the evening (ep2.js): a few soft room lights more, without shadows – every lit room glows, not only the two nearest
 const FILL = [];
 export function addFillLights(n) {   // (short reach: they should not light up the facade outside)
-  for (let i = 0; i < n; i++) { const l = new THREE.PointLight(0xffdcae, 3.0, 4.8, 1.2); l.visible = false; homeRoot.add(l); FILL.push(l); }
+  for (let i = 0; i < n; i++) { const l = new THREE.PointLight(0xffdcae, 0, 4.8, 1.2); homeRoot.add(l); FILL.push(l); }   // (off: no intensity – see the pool)
 }
 function updateLights(P) {
   const on = switches.filter((s) => s.on).sort((a, b) => Math.hypot(a.light.position.x - P.x, a.light.position.z - P.z) - Math.hypot(b.light.position.x - P.x, b.light.position.z - P.z));
-  FILL.forEach((l, i) => { const s = on[i]; l.visible = !!s; if (s) l.position.set(s.light.position.x, WALL_H - 0.4, s.light.position.z); });
+  FILL.forEach((l, i) => { const s = on[i]; l.intensity = s ? 3.0 : 0; if (s) l.position.set(s.light.position.x, WALL_H - 0.4, s.light.position.z); });
   lightPool().forEach((l, i) => {
-    const s = on[i]; l.visible = !!s;
+    const s = on[i]; l.intensity = s ? LIGHT_ON : 0; if (l.castShadow) l.shadow.autoUpdate = !!s;
     if (s) { l.position.set(s.light.position.x, WALL_H - 0.12, s.light.position.z); l.target.position.set(s.light.position.x, 0, s.light.position.z); l.target.updateMatrixWorld(); }
   });
 }
@@ -467,7 +468,7 @@ export let ceiling = null;
 export function buildHome(outside) {
   scene.add(homeRoot);
   ceiling = new THREE.Group(); ceiling.visible = false; homeRoot.add(ceiling);
-  const plane = new THREE.Mesh(new THREE.PlaneGeometry(XE + 2 * TE, ZS + 2 * TE), new THREE.MeshBasicMaterial({ color: 0xe9e5dd, side: THREE.DoubleSide }));
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(XE + 2 * TE, ZS + 2 * TE), new THREE.MeshBasicMaterial({ color: 0xb4afa6, side: THREE.DoubleSide }));
   plane.rotation.x = Math.PI / 2; plane.position.set(XE / 2, WALL_H, ZS / 2); ceiling.add(plane);
   buildSwitches();
   homeRoot.add(partMesh((b) => { for (const r of ROOMS) FLOORS[r.floor](b, r); }));

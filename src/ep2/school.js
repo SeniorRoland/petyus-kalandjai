@@ -414,7 +414,7 @@ function buildCorridor() {
 let ceil = null;
 function buildCeiling() {
   ceil = new THREE.Group(); ceil.visible = false; scene.add(ceil);
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(36, 12), new THREE.MeshBasicMaterial({ color: 0xeeebe4, side: THREE.DoubleSide })); m.rotation.x = Math.PI / 2; m.position.set(18, FLOOR - 0.02, -6); ceil.add(m);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(36, 12), new THREE.MeshBasicMaterial({ color: 0xbcb8b0, side: THREE.DoubleSide })); m.rotation.x = Math.PI / 2; m.position.set(18, FLOOR - 0.02, -6); ceil.add(m);
   // (the lamps on it: buildLights)
 }
 export function setSchoolFps(on) { if (ceil) ceil.visible = on; }
@@ -608,15 +608,17 @@ const lamps = [];
 // every lamp is a rectangular panel on the ceiling with its light right under it (the light comes from the panels, nothing else):
 // a classroom 2 × 2, a toilet 1, the corridor 3 (always on)
 const FIX_ON = 0xffffff, FIX_OFF = 0xc9c9c3;
+// (fewer lights than panels: every light costs on every pixel of the whole scene – a classroom's four panels share two)
+function lightAt(x, z, list, d = 7.5) { const l = new THREE.PointLight(0xfff6e4, 0, d, 1.2); l.position.set(x, FLOOR - 0.25, z); scene.add(l); list.push(l); }
 function lampAt(x, z, list, fixes, on = true) {
-  const l = new THREE.PointLight(0xfff6e4, 0, 7.5, 1.2); l.position.set(x, FLOOR - 0.25, z); scene.add(l); list.push(l);
+  if (list) lightAt(x, z, list);
   const f = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.06, 0.38), new THREE.MeshBasicMaterial({ color: on ? FIX_ON : FIX_OFF })); f.position.set(x, FLOOR - 0.06, z); ceil.add(f); fixes.push(f);
 }
 function buildLights() {
   for (const L of LIGHTS) {
     L.lights = []; L.fix = [];
     const wide = L.x1 - L.x0 > 8;
-    if (wide) { for (const dx of [3.5, 8.5]) for (const z of [-9.4, -5.3]) lampAt(L.x0 + dx, z, L.lights, L.fix); L.I = 5; }
+    if (wide) { for (const dx of [3.5, 8.5]) { for (const z of [-9.4, -5.3]) lampAt(L.x0 + dx, z, null, L.fix); lightAt(L.x0 + dx, -7.35, L.lights, 9); } L.I = 8; }
     else { lampAt((L.x0 + L.x1) / 2, (SCHOOL.z0 + CORR) / 2, L.lights, L.fix); L.I = 7; }
     // the switch: a plate with a rocker on the room side of the corridor wall, by the door
     const plate = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.14, 0.02), new THREE.MeshLambertMaterial({ color: 0xf7f7f4 })); plate.position.set(L.sw, 1.05, CORR - 0.15);   // (in front of the toilets' wall tiles too)
@@ -626,8 +628,9 @@ function buildLights() {
   }
   // the corridor: three panels, always on
   const cl = [], cf = [];
-  for (const x of [6, 18, 30]) lampAt(x, -1.3, cl, cf);
-  for (const l of cl) l.intensity = 4.5;
+  for (const x of [6, 18, 30]) lampAt(x, -1.3, null, cf);
+  for (const x of [9, 27]) lightAt(x, -1.3, cl, 11);
+  for (const l of cl) l.intensity = 6;
 }
 function toggleLight(L) { L.on = !L.on; showLight(L); tone('square', 1200, 900, 0.03, 0.05); }
 function showLight(L) {
