@@ -317,27 +317,26 @@ const LIGHT_POOL = [];
 export function lightPool() {
   if (!LIGHT_POOL.length) for (let i = 0; i < 2; i++) {
     const l = new THREE.SpotLight(0xffd9a0, LIGHT_ON, 9, 1.25, 0.55, 1.6);
-    l.castShadow = Q.shadowSize > 0 && i === 0;   // only the nearest room's light casts shadows (each shadow redraws the scene)
+    // both cast shadows: a light without them shines through the walls into the next room (the two shadow maps are redrawn in
+    // turns, one per frame – see updateLights)
+    l.castShadow = Q.shadowSize > 0;
     l.shadow.mapSize.set(Q.level >= 2 ? 1024 : 512, Q.level >= 2 ? 1024 : 512);
     l.shadow.bias = -0.0008; l.shadow.normalBias = 0.02; l.shadow.camera.near = 0.2; l.shadow.camera.far = 9;
     l.intensity = 0; l.shadow.autoUpdate = false; homeRoot.add(l, l.target); LIGHT_POOL.push(l);
   }
   return LIGHT_POOL;
 }
-// the evening (ep2.js): a few soft room lights more, without shadows – every lit room glows, not only the two nearest
-const FILL = [];
-export function addFillLights(n) {   // (short reach: they should not light up the facade outside)
-  for (let i = 0; i < n; i++) { const l = new THREE.PointLight(0xffdcae, 0, 4.8, 1.2); homeRoot.add(l); FILL.push(l); }   // (off: no intensity – see the pool)
-}
 function updateLights(P) {
+  shadowTurn++;
   const on = switches.filter((s) => s.on).sort((a, b) => Math.hypot(a.light.position.x - P.x, a.light.position.z - P.z) - Math.hypot(b.light.position.x - P.x, b.light.position.z - P.z));
-  FILL.forEach((l, i) => { const s = on[i]; l.intensity = s ? 3.0 : 0; if (s) l.position.set(s.light.position.x, WALL_H - 0.4, s.light.position.z); });
   lightPool().forEach((l, i) => {
-    const s = on[i]; l.intensity = s ? LIGHT_ON : 0; if (l.castShadow) l.shadow.autoUpdate = !!s;
+    const s = on[i]; l.intensity = s ? LIGHT_ON : 0;
+    if (l.castShadow && s && (shadowTurn & 1) === i) l.shadow.needsUpdate = true;   // (in turns: one shadow map per frame)
     if (s) { l.position.set(s.light.position.x, WALL_H - 0.12, s.light.position.z); l.target.position.set(s.light.position.x, 0, s.light.position.z); l.target.updateMatrixWorld(); }
   });
 }
 const LIGHT_ON = 9;
+let shadowTurn = 0;
 function buildSwitches() {
   for (const sd of SWITCHES) {
     const r = ROOMS.find((q) => q.id === sd.room), cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;
