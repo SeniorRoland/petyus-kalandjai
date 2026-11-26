@@ -16,7 +16,7 @@ import { INSTANCES, collide, colliders, setGround } from '../world.js';
 import { setPrompt } from '../activities/drinking.js';
 import { Q } from '../quality.js';
 import { FY, SPOTS, roomAt, buildHome, lightPool, ceiling, cutWalls, doors, switches, toggleDoor, toggleSwitch, flushToilet, toggleToiletSeat, toiletSeat, toiletSeatLabel, updateHome, wallView } from './home.js';
-import { noise, sStep, setMasterVol, setOutdoor, tone } from '../audio.js';
+import { noise, sStep, setMasterVol, setOutdoor, soundAt, tone } from '../audio.js';
 import { buildOutside, placeOutsideProps, setEvening, updateOutside } from './outside.js';
 import { buildAppliances, devices, fx, seating, updateAppliances } from './appliances.js';
 import { buildInventory, cycleItem, holdingController, inv, invAction, invTake, itemObj, pickLabel, pickUp, pickables, selectItem, updateInventory } from './inventory.js';
@@ -32,6 +32,7 @@ import { cf, coffeeTick, dadBusy } from './coffee.js';
 import { dadChasing, momBusy, runawayTick, rw } from './runaway.js';
 import { giveKeyHint, kh, keyBusy, keyHintLabel, keyTick } from './keyhunt.js';
 import { brushBusy, buildBath, toothTick, tp } from './toothpaste.js';
+import { navRoute } from './navgrid.js';
 import { tm, tvBusy, tvTick } from './tvmatch.js';
 import { gh, ghostBusy, ghostTick, momGhostBusy, sheetLabel, sheetOffer, toggleSheet } from './ghost.js';
 import { karcsiState, karcsiTakeable, pigObj, takeKarcsi } from './karcsi.js';
@@ -186,6 +187,12 @@ export function startEp2() {
   else { ep2.top = savedTop(); if (ep2.top) dressClothes(rigs.foci, TOPS[ep2.top]); }   // what he put on in the morning
   // the people cast shadows but take none on themselves: their own (lagging, coarse) shadow flickered on them as they moved
   if (!SCHOOL) for (const k in rigs) rigs[k]?.root?.traverse?.((o) => { if (o.isMesh) o.receiveShadow = false; });
+  // the parents never walk through walls: every walk of theirs at home is checked leg by leg and routed round (navgrid.js),
+  // and the doors in their way open (updateParents)
+  for (const a of [G.petya, G.angi]) if (!a.navWrap) {
+    a.navWrap = true; const walk = a.walkTo.bind(a);
+    a.walkTo = (pts, speed, keep) => walk(G.episode === 2 && ep2.phase !== 'school' && pts.length ? navRoute(a.pos.x, a.pos.z, pts, doors) : pts, speed, keep);
+  }
   G.petike.riding = false; G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7;
   if (SCHOOL) {   // the parents are not there
     ep2.bounds = SCHOOL_BOUNDS;
@@ -560,6 +567,8 @@ function momLook() {
 
 // ---------------------------------------------------------------- the parents
 function updateParents(dt) {
+  // a closed door in a walking parent's way opens (not the locked ones: the sister's room)
+  for (const a of [G.petya, G.angi]) if (a.path) for (const d of doors) if (d.pivot && !d.open && d.kind !== 'locked' && Math.hypot(d.x - a.pos.x, d.z - a.pos.z) < 0.8) { toggleDoor(d); soundAt(d.x, d.z, () => noise(0.12, 1200, 1, 0.15)); }
   const MORNING = ep2.phase === 'morning';
   if (MORNING) {   // getting dressed (dressing.js): once Petyus is dressed and it is time, the parents get ready and wait at the door
     const ready = ep2.min >= MORNING_END || morningDone() === MORNING_IDS.length;
