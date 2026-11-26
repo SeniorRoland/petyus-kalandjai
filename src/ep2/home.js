@@ -261,7 +261,8 @@ export function buildFurniture() {   // (also the school: school.js)
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), ps = new THREE.Vector3();
   for (const [K, list] of lists) {
     const [id, v] = K.split(':'); const def = DEF[id];
-    const geo = getGeometry(id, +v); if (!geo.boundingBox) geo.computeBoundingBox();
+    // merged faces (voxels.js greedy) for everything but the flat's furniture seen up close: a fraction of the triangles
+    const geo = getGeometry(id, +v, def.cat !== 'Lakás' || id === 'bougainvillea' || list[0].y < FY - 0.5); if (!geo.boundingBox) geo.computeBoundingBox();
     const bb = geo.boundingBox, gr = Math.max(-bb.min.x, bb.max.x, -bb.min.z, bb.max.z), gh = bb.max.y;
     const mesh = new THREE.InstancedMesh(geo, vcMat, list.length);
     list.forEach((it, n) => { e.set(0, it.rot, 0); q.setFromEuler(e); sc.set(it.sx * it.s, it.s, it.s); ps.set(it.x, it.y, it.z); m4.compose(ps, q, sc); mesh.setMatrixAt(n, m4);

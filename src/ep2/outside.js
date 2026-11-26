@@ -415,7 +415,7 @@ const carLights = [];
 function buildTraffic() {
   const lanes = [{ z: 22.2, dir: 1 }, { z: 19.8, dir: -1 }];
   [[0, -70, 8.5], [0, -10, 7.0], [0, 45, 9.5], [1, 60, 8.0], [1, 5, 6.5], [1, -50, 9.0], [1, -85, 7.5]].forEach(([l, x, v], n) => {
-    const m = new THREE.Mesh(getGeometry('car', (n * 2 + 1) % 6), vcMat); m.receiveShadow = true;
+    const m = new THREE.Mesh(getGeometry('car', (n * 2 + 1) % 6, true), vcMat); m.receiveShadow = true;
     const grp = new THREE.Group(); grp.add(m); grp.rotation.y = lanes[l].dir > 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(grp);
     // the lights (front: +z of the model, white; back: red) and, in the evening, a pool of light on the road ahead
     const lit = new THREE.Group(); lit.visible = false; grp.add(lit);
