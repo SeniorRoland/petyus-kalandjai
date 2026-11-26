@@ -160,7 +160,7 @@ function buildWall(w) {
     doors.push(d);
   }
   // the lintel covers exactly the opening: overlapping the wall would flicker
-  const lin = lintels.map((o) => { const m = partMesh((b) => piece(b, o.a, o.b, 0, WALL_H - DOOR_H, color, 0, 9)); m.material = mat; m.position.y = DOOR_H; group.add(m); return m; });
+  const lin = lintels.map((o) => { const m = partMesh((b) => piece(b, o.a, o.b, 0, WALL_H - DOOR_H, color, 0, 9)); m.material = mat; m.position.y = DOOR_H; m.castShadow = m.receiveShadow = true; group.add(m); return m; });   // (casting shadows: else the lamps shine over the doors into the next room)
   for (const [x0, z0, x1, z1] of cols) addBoxCol(x0, z0, x1, z1, WALL_H);
   cutWalls.push({ body, mat, glass, lintels: lin, box: [w.x0, w.z0, w.x1, w.z1], n: w.n, s: 1, o: 1 });
 }
@@ -322,7 +322,7 @@ export function lightPool() {
     // turns, one per frame – see updateLights)
     l.castShadow = Q.shadowSize > 0;
     l.shadow.mapSize.set(Q.level >= 2 ? 1024 : 512, Q.level >= 2 ? 1024 : 512);
-    l.shadow.bias = -0.0005; l.shadow.normalBias = 0.012; l.shadow.camera.near = 0.15; l.shadow.camera.far = 10;
+    l.shadow.bias = -0.0004; l.shadow.normalBias = 0.006; l.shadow.camera.near = 0.15; l.shadow.camera.far = 10;   // (small offsets: no light creeping round the walls' edges)
     l.intensity = 0; l.shadow.autoUpdate = false; homeRoot.add(l, l.target); LIGHT_POOL.push(l);
   }
   return LIGHT_POOL;
