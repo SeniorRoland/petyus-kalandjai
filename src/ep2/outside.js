@@ -413,20 +413,18 @@ function buildFarTrees(b) {
 // whoosh when one passes the house
 const traffic = [];
 const CAR_LAMP = new THREE.BoxGeometry(0.3, 0.14, 0.06), HEAD_MAT = new THREE.MeshBasicMaterial({ color: 0xfff6d8 }), TAIL_MAT = new THREE.MeshBasicMaterial({ color: 0xff2a2a });
-const CAR_BEAM = new THREE.PlaneGeometry(2.0, 4.4).rotateX(-Math.PI / 2), BEAM_MAT = new THREE.MeshBasicMaterial({ color: 0xfff2c4, transparent: true, opacity: 0.18, depthWrite: false });
 const carLights = [];
 function buildTraffic() {
   const lanes = [{ z: 22.2, dir: 1 }, { z: 19.8, dir: -1 }];
   [[0, -70, 8.5], [0, -10, 7.0], [0, 45, 9.5], [1, 60, 8.0], [1, 5, 6.5], [1, -50, 9.0], [1, -85, 7.5]].forEach(([l, x, v], n) => {
     const m = new THREE.Mesh(getGeometry('car', (n * 2 + 1) % 6, true), vcMat); m.receiveShadow = true;
     const grp = new THREE.Group(); grp.add(m); grp.rotation.y = lanes[l].dir > 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(grp);
-    // the lights (front: +z of the model, white; back: red) and, in the evening, a pool of light on the road ahead
+    // the lights (front: +z of the model, white; back: red) – only the lamps glow, no beam on the road
     const lit = new THREE.Group(); lit.visible = false; grp.add(lit);
     for (const s of [-1, 1]) {
       const h = new THREE.Mesh(CAR_LAMP, HEAD_MAT); h.position.set(s * 0.62, 0.62, 1.78); lit.add(h);
       const t = new THREE.Mesh(CAR_LAMP, TAIL_MAT); t.position.set(s * 0.62, 0.66, -1.88); lit.add(t);
     }
-    const beam = new THREE.Mesh(CAR_BEAM, BEAM_MAT); beam.position.set(0, 0.05, 4.2); lit.add(beam);
     carLights.push(lit);
     traffic.push({ grp, x, z: lanes[l].z, dir: lanes[l].dir, v, sound: 0 });
   });
