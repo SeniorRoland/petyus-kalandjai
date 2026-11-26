@@ -94,6 +94,8 @@ const PHASES = {
   evening: { start: 16 * 60, end: 22 * 60, place: 'Otthon – délután, este' },
 };
 const minPerSec = () => { const ph = PHASES[ep2.phase]; return (ph.end - ph.start) / 600; };
+// the school runs slower (game minutes per real second): a lesson (45 min) ≈ 2 minutes, a break (10 min) ≈ 70 seconds
+const SCHOOL_RATE = 0.375, SCHOOL_BREAK_RATE = 0.14;
 const weekend = (d) => { const t = new Date(DAY0); t.setDate(t.getDate() + d); return t.getDay() === 0 || t.getDay() === 6; };
 const MORNING_IDS = ['r2-tejszin', 'r2-karcsi', 'r2-kulcs'];
 const morningDone = () => MORNING_IDS.filter((id) => starsFor(id) > 0).length;
@@ -653,7 +655,7 @@ export function stepEp2(dt) {
     } else setPrompt('');
     // the breaks pass slower (10 minutes ≈ 50 s): time to get out to the yard and play
     { const inBreak = ep2.min >= 8 * 60 && ep2.min < 8 * 60 + 6 * 55 && (ep2.min - 8 * 60) % 55 >= 45;
-      ep2.min = Math.min(PHASES.school.end, ep2.min + dt * (inBreak ? 0.2 : minPerSec())); hudClock(); }
+      ep2.min = Math.min(PHASES.school.end, ep2.min + dt * (inBreak ? SCHOOL_BREAK_RATE : SCHOOL_RATE)); hudClock(); }
     { const st = schoolStatus(ep2.min, (new Date(DAY0.getFullYear(), DAY0.getMonth(), DAY0.getDate() + ep2.day).getDay() + 6) % 7), el = $('e2Lesson');
       if (el && el.textContent !== st.text) { el.textContent = st.text; el.style.background = st.brk ? 'rgba(42,157,143,.85)' : 'rgba(29,53,87,.85)'; } }
     G.usePressed = false; G.qPressed = false; G.kickPressed = G.kickReleased = false; G.invPressed = false;
