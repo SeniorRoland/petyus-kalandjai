@@ -1,7 +1,7 @@
 # 2. rész (Szeptember – Otthon és iskola): terv
 
 Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ✅ A napok köre is kész: indulás (7:30 vagy mindhárom reggeli csibészség után) → iskola (helyszín, csibészségek nélkül) → otthon délután–este (sötét, lámpák) → lefekvés → másnap reggel; hétvége és hónap vége átvezetővel. ✅ Az este 3 csibészsége is kész. ⬜ Hátravan: az iskola 4 csibészsége (terv kész), tesztelés telefonon.
+**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ✅ A napok köre is kész: indulás (7:30 vagy mindhárom reggeli csibészség után) → iskola (helyszín, csibészségek nélkül) → otthon délután–este (sötét, lámpák) → lefekvés → másnap reggel; hétvége és hónap vége átvezetővel. ✅ Az este 3 csibészsége is kész. ◐ Az iskola csibészségei: ✅ 4. Előre a mutatót!, ⬜ a többi 3 (terv kész). ⬜ Hátravan még: tesztelés telefonon.
 
 ## Röviden
 
@@ -24,7 +24,7 @@ Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, 
 | 1 | A tejszínes kávé | otthon, reggel | apa a WC-re rohan | első próbára (nincs tejszínhabos visszaküldés) | és senki nem látta a tejszínt | „Apa kávét kér, de a gyomra nem bír mindent.” | **kész** |
 | 2 | Karcsi nagy szökése | otthon, reggel | Karcsi szabadon | anya a széken | és ≥ 60 mp szabadon | „Karcsi is szeretne körülnézni a lakásban.” | **kész** |
 | 3 | Hol a kulcs, Angi? | otthon, reggel | anya keresni kezd | 2 percnél tovább keres | fura helyen volt, és Petyus nem árulta el | „Anya kulcsa mindig a cipősszekrényen van.” | **kész** |
-| 4 | Előre a mutatót! | iskola, 6. b (óra) | a tanító néni korábban kienged | ≥ 10 perccel korábban | és nem látta, ki volt | „A tanító néni mindig a falióráról olvassa le, mikor van vége az órának.” | ⬜ terv kész |
+| 4 | Előre a mutatót! | iskola, 6. b (óra) | a tanító néni korábban kienged | ≥ 10 perccel korábban | és nem látta, ki volt | „A tanító néni mindig a falióráról olvassa le, mikor van vége az órának.” | **kész** |
 | 5 | Vizes szivacs a széken | iskola, 6. b (szünet → óra) | a tanító néni beleül | a táblatörlő szivacs csuromvizes volt (a WC-ben áztatva) | és az osztály nevet, de senki nem árulja el | „A táblatörlő szivacs a tábla alatt van. A WC-ben van csap…” | ⬜ terv kész |
 | 6 | Béka a fiókban | iskola, udvar → 6. a | a tanár bácsi kinyitja a fiókot | felugrik az asztalra | és a béka kiugrik a folyosóra (a 6. b-sek is látják) | „Az udvari bokrok alatt béka lakik. A tanár bácsi fiókjában meg a napló…” | ⬜ terv kész |
 | 7 | Hol a szemüvegem? | iskola, 6. b | a tanító néni keresni kezdi | vakon ír a táblára (krix-krax), rossz nevet szólít | és végül a tanár bácsit gyanúsítja | „A tanító néni szemüvege szünetben a tanári asztalon pihen.” | ⬜ terv kész |
@@ -100,13 +100,15 @@ Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, 
 
 - **Technika:** a kulcs új leltártárgy (minden lerakóhely elfogadja, plusz új rejtekhelyek: kanapé, fotel, fiók, mosógép); Angi keresési útvonala és „kotorászás” mozdulatai (lehajolás, fiók- és szekrényajtó nyitása – az ajtók már nyithatók); a keresés ideje rejtekhelyenként.
 
-## 4–7. Iskolai csibészségek  ⬜ terv kész
+## 4–7. Iskolai csibészségek  ◐ részben (4. kész)
 
 Mindegyik az iskola meglévő rendszereire épül: órarend és csengő (`schoolStatus`, `lesson()`), a 6. b és a 6. a terme a tanárral és a gyerekekkel, a szünet (a gyerekek kimennek, az udvaron fociznak / ugróiskoláznak – `crowdTick`), a tábla (`boardText`), a falióra (`makeClock`), a WC-k (csap, mosdó), a leltár (felvehető tárgyak, lerakóhelyek). A tanító néni szemüveges (`glasses: true`). Az iskolában nincs késés-pont; a csillagok a naplóba kerülnek, mint otthon.
 
 ---
 
-## 4. Előre a mutatót!  ⬜ terv kész
+## 4. Előre a mutatót!  ✅ kész
+
+- **Megvalósítás** (`src/ep2/school.js`: `ck`, `clockPush`, `clockTick`; a szünet: `crowdTick(dt, brk, early)`): a tanító néni óra közben időnként (9–15 mp-enként, 6–9 mp-re) a táblához fordul írni – háttal áll, a krétás kéz fent, csikorgás. A 6. b faliórája alatt **E – székre állás: a mutató előre (+5 perc)**; ha közben a tanító néni az osztály felé néz, rászól, és az óra visszaáll (rajtakapás). A tanító néni 3–4 mp-enként az órára néz; ha az óra szerint vége, kiengedi a 6. b-t (csak őket – a 6. a órán marad), 10 percen belül időnként mondja is: „Még 8 perc, gyerekek!”. A valódi csengőnél kiderül: a tanár bácsi: „Már szünet van? A 6. b már kint focizik?!”, a tanító néni: „Valaki elállította a faliórát!” – a szünetben visszaállítja. Mentés: `r2-ora` (érték: hány perccel korábban). A falióra eddig is a játékidőt mutatta, most a 6. b-é eltolható.
 
 - **Alaphelyzet:** a 6. b falióráját (a tábla fölött) a tanító néni nézi, mikor van vége az órának („Még tíz perc, gyerekek!”). Ő nem a csengőre, hanem az órára hallgat.
 - **Menet:**
@@ -402,7 +404,7 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 5. ✅ **Otthon – reggel:** a lakás voxelből az alaprajz alapján (falak, ajtók, ablakok, padló, bútorok), babaház-nézet, reggeli fények, Petyus/Petya/Angi elhelyezése, mozgás, ütközés.
 6. ◐ Iskola (✅ helyszín), délutáni otthon (✅ helyszín), csibészségek (✅ a reggeliek, ✅ az estiek, ⬜ az iskolaiak – terv kész).
 7. ✅ **Esti csibészségek:** esti ütemező → 8. A fogkrémcsere → 9. Meccs vagy sorozat? → 10. A lepedős kísértet.
-8. ⬜ **Iskolai csibészségek** (terv kész): 4. Előre a mutatót! → 5. Vizes szivacs a széken → 6. Béka a fiókban → 7. Hol a szemüvegem?
+8. ◐ **Iskolai csibészségek:** ✅ 4. Előre a mutatót! → ⬜ 5. Vizes szivacs a széken → ⬜ 6. Béka a fiókban → ⬜ 7. Hol a szemüvegem?
 
 ## Döntések
 
