@@ -11,6 +11,7 @@ import { say } from '../ui.js';
 import { R, V3, clamp, dampAngle, pick } from '../util.js';
 import { partMesh, vcMat } from '../world.js';
 import { getGeometry } from '../voxels.js';
+import { Q } from '../quality.js';
 import { noise, sBark, soundAt, soundOut, tone } from '../audio.js';
 import { FY, put } from './home.js';
 
@@ -231,12 +232,12 @@ function buildFence(b) {
   side(FENCE.x0, FENCE.z0, FENCE.x0, FENCE.z1); side(FENCE.x1, FENCE.z0, FENCE.x1, FENCE.z1);
 }
 
-// the lamps (the park's candelabra from part 1): by the door, round the house in the yard, along both sidewalks of the street
-export const LAMPS = [[-9, 10.2], [6, 10.2], [-17, -6], [-4, -14], [14, -13], [24, -6], [24, 8], [-16, 6]];
+// the lamps (the park's candelabra from part 1): round the house in the yard, along both sidewalks of the street (none by the entrance)
+export const LAMPS = [[-17, -6], [-4, -14], [14, -13], [24, -6], [24, 8], [-16, 6]];
 for (let x = -60; x <= 70; x += 13) { LAMPS.push([x, 17.55]); LAMPS.push([x + 6.5, 24.55]); }
 
 // ---------------------------------------------------------------- the evening (part 2, home in the afternoon–evening): dark
-// outside, the lamps on (a glowing lamp house and a pool of light on the ground; real lights only for the few nearest the house),
+// outside, the lamps on (only the lamp house glows – no pool of light, no real lights),
 // in the other flats' and houses' windows lights going on and off
 const eve = { on: false, win: null, list: [], t: 0 };
 export function setEvening() {
@@ -252,15 +253,14 @@ export function setEvening() {
     setWin(i);
   });
   im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
-  // the lamps: the lamp house glows, a soft pool of light under it; the three nearest the house get a real light
-  const glow = new THREE.MeshBasicMaterial({ color: 0xfff0b8 }), pool = new THREE.MeshBasicMaterial({ color: 0xffe2a0, transparent: true, opacity: 0.22, depthWrite: false });
-  // (instanced: all the lamps' glowing houses in one draw call, all the pools of light in another)
-  const gGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2), pGeo = new THREE.CircleGeometry(3.2, 24); pGeo.rotateX(-Math.PI / 2);
-  const gi = new THREE.InstancedMesh(gGeo, glow, LAMPS.length), pi = new THREE.InstancedMesh(pGeo, pool, LAMPS.length), m4 = new THREE.Matrix4();
-  LAMPS.forEach(([x, z], i) => { gi.setMatrixAt(i, m4.makeTranslation(x, 3.15, z)); pi.setMatrixAt(i, m4.makeTranslation(x, 0.06, z)); });   // (the pools: clear of the paving and its joints – no flickering)
-  pi.renderOrder = 1; gi.frustumCulled = pi.frustumCulled = false; scene.add(gi, pi);
-  const near = [...LAMPS].sort((a, b) => Math.hypot(a[0] - 4, a[1] - 6) - Math.hypot(b[0] - 4, b[1] - 6)).slice(0, 2);
-  for (const [x, z] of near) { const l = new THREE.PointLight(0xffd9a0, 14, 12, 1.6); l.position.set(x, 3.0, z); scene.add(l); }
+  // the lamps: the lamp house glows
+  const glow = new THREE.MeshBasicMaterial({ color: 0xfff0b8 });
+  // (instanced: all the lamps' glowing houses in one draw call; no pool of light on the ground – only the lamp itself glows)
+  const gGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2);
+  const gi = new THREE.InstancedMesh(gGeo, glow, LAMPS.length), m4 = new THREE.Matrix4();
+  LAMPS.forEach(([x, z], i) => gi.setMatrixAt(i, m4.makeTranslation(x, 3.15, z)));
+  gi.frustumCulled = false; scene.add(gi);
+  // (no real lights outside: a light without shadows shines through the walls into the flat – and every light costs on every pixel)
 }
 const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpS = new V3(), tmpP = new V3(), UP = new V3(0, 1, 0);
 function setWin(i) {
