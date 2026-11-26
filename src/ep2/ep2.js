@@ -31,6 +31,7 @@ import { starsFor } from '../mischief.js';
 import { cf, coffeeTick, dadBusy } from './coffee.js';
 import { dadChasing, momBusy, runawayTick, rw } from './runaway.js';
 import { giveKeyHint, kh, keyBusy, keyHintLabel, keyTick } from './keyhunt.js';
+import { brushBusy, buildBath, toothTick, tp } from './toothpaste.js';
 import { karcsiState, karcsiTakeable, pigObj, takeKarcsi } from './karcsi.js';
 
 // ---------------------------------------------------------------- unlocking
@@ -172,7 +173,7 @@ export function startEp2() {
   }
   if (SCHOOL) buildSchool();
   else {
-    buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances(); buildInventory();
+    buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances(); buildBath(); buildInventory();
     if (EVE) ceiling.children[0].material.color.set(0x77726b);   // the ceiling (unlit): dimmer in the evening, lit only by the lamps
     buildWardrobe();   // Petyus's wardrobe (getting dressed in the morning: dressing.js)
     if (!EVE) buildSister();   // (in the evening she is out)
@@ -252,7 +253,7 @@ function hudClock(force) { const m = Math.floor(ep2.min); if (m !== shownMin || 
 // ---------------------------------------------------------------- turning the view (Q / R, or the ⟲ ⟳ buttons): 90° steps
 // CAM_OFF (scene.js) and the screen-relative walking directions CAM_FWD / CAM_RIGHT (player.js) turn together; the walls
 // (home.js), the fading props (occlude.js) and dragging the view (input.js) read them every frame.
-if (import.meta.env.DEV) window.__ep2 = { coffee: cf, rw, kh, karcsi: karcsiState, inv, itemObj, take(id) { const c = pickables(G.petike.pos).find((q) => q.item.id === id); if (c) pickUp(c.item); return !!c; }, view: viewTurn, cutWalls, wallView, CAM_OFF, toggleFps, get fp() { return fp; } };   // debugging (dev server only)
+if (import.meta.env.DEV) window.__ep2 = { coffee: cf, rw, kh, karcsi: karcsiState, inv, itemObj, take(id) { const c = pickables(G.petike.pos).find((q) => q.item.id === id); if (c) pickUp(c.item); return !!c; }, view: viewTurn, cutWalls, wallView, CAM_OFF, toggleFps, get fp() { return fp; }, ep2, tooth: tp };   // debugging (dev server only)
 export function toggleWalls() {
   wallView.mode = wallView.mode === 'fade' ? 'sink' : 'fade';
   toast(wallView.mode === 'fade' ? 'Falak: <b>átlátszók</b> (T)' : 'Falak: <b>lesüllyednek</b> (T)', 2);
@@ -520,7 +521,7 @@ const FRIDGE_FRONT = { x: 6.55, z: 1.5 };
 const petyusAtFridge = () => Math.hypot(G.petike.pos.x - FRIDGE_FRONT.x, G.petike.pos.z - FRIDGE_FRONT.z) < 1.3;
 function momRoutine(dt) {
   const m = G.angi;
-  if (momBusy() || keyBusy()) { if (fx.fridge && ep2.momAt === 'fridge' && fx.fridge.open() && !petyusAtFridge()) fx.fridge.setOpen(false); return; }
+  if (momBusy() || keyBusy() || brushBusy('angi')) { if (fx.fridge && ep2.momAt === 'fridge' && fx.fridge.open() && !petyusAtFridge()) fx.fridge.setOpen(false); return; }
   ep2.momT -= dt;
   // on the way to the fridge, Petyus steps in front of it: she turns to something else
   if (ep2.momAt === 'toFridge' && m.path && petyusAtFridge()) { momJob(); return; }
@@ -562,12 +563,14 @@ function updateParents(dt) {
   const m = G.angi;
   momRoutine(dt);
   m.update(dt);
-  if (ep2.momAt === 'fridge' && !m.path && !momBusy() && !keyBusy()) momLook();
+  if (ep2.momAt === 'fridge' && !m.path && !momBusy() && !keyBusy() && !brushBusy('angi')) momLook();
   if (MORNING) {
     runawayTick(dt);   // „Karcsi nagy szökése”: mum on the chair, dad on all fours (runaway.js)
     keyTick(dt);       // „Hol a kulcs, Angi?”: mum looking for her keys (keyhunt.js)
   }
   if (!MORNING) {   // the evening: their own lines; late in the evening mum sends him to bed
+    toothTick(dt, ep2.min);   // „A fogkrémcsere”: mum brushes her teeth at 20:45, dad at 21:30 (toothpaste.js)
+    if (brushBusy('angi') || brushBusy('petya')) return;
     ep2.talkT -= dt;
     if (ep2.talkT <= 0) {
       ep2.talkT = 14 + Math.random() * 8;

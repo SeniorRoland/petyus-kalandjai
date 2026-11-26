@@ -22,6 +22,7 @@ export const MISCHIEFS2 = [
   { id: 'r2-tejszin', title: 'A tejszínes kávé', hint: 'Apa kávét kér, de a gyomra nem bír mindent. (a hűtőben van tej, tejszín és tejszínhab)', fmt: (v, x) => (v >= 3 ? 'apa a WC-n – első próbára, tanúk nélkül' : v === 2 ? 'apa a WC-n – első próbára' : 'apa a WC-n') + (x && x.paper ? ', papírért kiabált' : ''), stars: (v) => v },
   { id: 'r2-karcsi', title: 'Karcsi nagy szökése', hint: 'Karcsi is szeretne körülnézni a lakásban. (a hűtőben van répa – azt nagyon szereti)', fmt: (v, x) => `${v} mp szabadon` + (x && x.scream ? ', anya a széken' : ''), stars: (v, x) => 1 + (x && x.scream ? 1 : 0) + (x && x.scream && v >= 60 ? 1 : 0) },
   { id: 'r2-kulcs', title: 'Hol a kulcs, Angi?', hint: 'Anya kulcsa mindig a cipősszekrényen van. (és ha nem ott lenne?)', fmt: (v, x) => `${v} mp keresés` + (x && x.odd ? ', fura helyen' : '') + (x && x.hint ? ', lebukott' : ''), stars: (v, x) => 1 + (v >= 120 ? 1 : 0) + (x && x.odd && !x.hint ? 1 : 0) },
+  { id: 'r2-fogkrem', title: 'A fogkrémcsere', hint: 'A fürdőben minden tubus egyforma… majdnem. (anya szekrényében krémek, a hűtőben chilikrém; anya 20:45-kor, apa 21:30-kor mos fogat)', fmt: (v, x) => (x && x.mom && x.dad ? 'anya öklendezett, apa lángolt' : x && x.mom ? 'anya öklendezett' : 'apa lángolt') + (x && x.caught ? ', rajtakaptak' : ''), stars: (v, x) => (v >= 2 ? (x && x.caught ? 2 : 3) : 1) },
 ];
 const BOOKS = {
   1: { list: MISCHIEFS, key: 'petyus.r1.csibeszsegek', sub: '1. rész: Augusztus – Egy nap a parkban', tab: '1. Augusztus' },

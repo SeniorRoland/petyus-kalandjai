@@ -201,3 +201,45 @@ export function toiletRoll() {
   g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return g;
 }
+
+// ---------------------------------------------------------------- the bathroom: tubes, jars, cups (the toothpaste swap – toothpaste.js)
+// a tube standing on its cap: the cap below, the body flattened, the crimped end on top, a label round it
+function tube(text, small, bg, fg, stripe, body, cap) {
+  const g = grp();
+  g.add(mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.022, 14), mat(cap), 0, 0.011, 0));
+  const b = mesh(new THREE.CylinderGeometry(0.021, 0.017, 0.12, 18, 1, true), new THREE.MeshLambertMaterial({ map: label(text, bg, fg, stripe, small), side: THREE.DoubleSide }), 0, 0.082, 0);
+  b.scale.set(1.25, 1, 0.62); g.add(b);
+  g.add(mesh(new THREE.BoxGeometry(0.054, 0.012, 0.008), mat(body), 0, 0.147, 0));   // the crimped end
+  return g;
+}
+export const toothpasteTube = () => tube('FOGKRÉM', 'mentás', '#ffffff', '#1d5fbf', '#3a86ff', 0xf4f6f8, 0x3a86ff);
+// the heel cream: the same tube (white, blue cap) – only the writing differs
+export const heelCreamTube = () => tube('SAROKKRÉM', 'lábra', '#ffffff', '#1d5fbf', '#3a86ff', 0xf4f6f8, 0x3a86ff);
+export const chiliTube = () => tube('CHILIKRÉM', 'csípős!', '#d62828', '#ffffff', '#2d6a4f', 0xd62828, 0x2d6a4f);
+export function faceMaskJar() {   // a pink jar with a golden lid – nothing like toothpaste
+  const g = grp(mesh(new THREE.CylinderGeometry(0.034, 0.03, 0.045, 20), mat(0xf4a6c6), 0, 0.0225, 0));
+  g.add(mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.02, 20), mat(0xd4af37), 0, 0.055, 0));
+  g.add(mesh(new THREE.CylinderGeometry(0.0345, 0.0345, 0.02, 20, 1, true), new THREE.MeshLambertMaterial({ map: label('ARCMASZK', '#f4a6c6', '#7a1f4a', '#ffffff', 'éjszakai') }), 0, 0.022, 0));
+  return g;
+}
+// a toothbrush cup with its brush (the brush's colour: whose it is)
+export function brushCup(cup, brush) {
+  const g = grp(mesh(new THREE.CylinderGeometry(0.03, 0.026, 0.09, 16), mat(cup), 0, 0.045, 0));
+  const h = mesh(new THREE.BoxGeometry(0.008, 0.16, 0.012), mat(brush), 0.008, 0.11, 0); h.rotation.z = -0.15; g.add(h);
+  g.add(mesh(new THREE.BoxGeometry(0.012, 0.025, 0.016), mat(0xffffff), 0.019, 0.18, 0.004));   // the bristles
+  return g;
+}
+// Angi's things in her cabinet (not to be picked up): small jars, tubes, bottles, a perfume
+export function cosmeticBottle(color, h = 0.11, r = 0.016) {
+  const g = grp(mesh(new THREE.CylinderGeometry(r, r, h, 12), mat(color), 0, h / 2, 0));
+  g.add(mesh(new THREE.CylinderGeometry(r * 0.55, r * 0.55, 0.022, 10), mat(0xf4f4f4), 0, h + 0.011, 0));
+  return g;
+}
+export function perfume() {
+  const g = grp(mesh(new THREE.BoxGeometry(0.045, 0.06, 0.03), mat(0xf7d6e0, { transparent: true, opacity: 0.75 }), 0, 0.03, 0));
+  g.add(mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.018, 10), mat(0xd4af37), 0, 0.069, 0)); return g;
+}
+export function smallJar(color, lid) {
+  const g = grp(mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.03, 16), mat(color), 0, 0.015, 0));
+  g.add(mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.012, 16), mat(lid), 0, 0.036, 0)); return g;
+}
