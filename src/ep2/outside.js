@@ -237,7 +237,7 @@ export const LAMPS = [[-17, -6], [-4, -14], [14, -13], [24, -6], [24, 8], [-16, 
 for (let x = -60; x <= 70; x += 13) { LAMPS.push([x, 17.55]); LAMPS.push([x + 6.5, 24.55]); }
 
 // ---------------------------------------------------------------- the evening (part 2, home in the afternoon–evening): dark
-// outside, the lamps on (a glowing lamp house and a pool of light on the ground – no real lights),
+// outside, the lamps on (only the lamp house glows – no pool of light, no real lights),
 // in the other flats' and houses' windows lights going on and off
 const eve = { on: false, win: null, list: [], t: 0 };
 export function setEvening() {
@@ -253,13 +253,13 @@ export function setEvening() {
     setWin(i);
   });
   im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
-  // the lamps: the lamp house glows, a soft pool of light under it
-  const glow = new THREE.MeshBasicMaterial({ color: 0xfff0b8 }), pool = new THREE.MeshBasicMaterial({ color: 0xffe2a0, transparent: true, opacity: 0.22, depthWrite: false });
-  // (instanced: all the lamps' glowing houses in one draw call, all the pools of light in another)
-  const gGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2), pGeo = new THREE.CircleGeometry(3.2, 24); pGeo.rotateX(-Math.PI / 2);
-  const gi = new THREE.InstancedMesh(gGeo, glow, LAMPS.length), pi = new THREE.InstancedMesh(pGeo, pool, LAMPS.length), m4 = new THREE.Matrix4();
-  LAMPS.forEach(([x, z], i) => { gi.setMatrixAt(i, m4.makeTranslation(x, 3.15, z)); pi.setMatrixAt(i, m4.makeTranslation(x, 0.06, z)); });   // (the pools: clear of the paving and its joints – no flickering)
-  pi.renderOrder = 1; gi.frustumCulled = pi.frustumCulled = false; scene.add(gi, pi);
+  // the lamps: the lamp house glows
+  const glow = new THREE.MeshBasicMaterial({ color: 0xfff0b8 });
+  // (instanced: all the lamps' glowing houses in one draw call; no pool of light on the ground – only the lamp itself glows)
+  const gGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2);
+  const gi = new THREE.InstancedMesh(gGeo, glow, LAMPS.length), m4 = new THREE.Matrix4();
+  LAMPS.forEach(([x, z], i) => gi.setMatrixAt(i, m4.makeTranslation(x, 3.15, z)));
+  gi.frustumCulled = false; scene.add(gi);
   // (no real lights outside: a light without shadows shines through the walls into the flat – and every light costs on every pixel)
 }
 const tmpM = new THREE.Matrix4(), tmpQ = new THREE.Quaternion(), tmpS = new V3(), tmpP = new V3(), UP = new V3(0, 1, 0);
