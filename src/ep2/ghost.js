@@ -37,6 +37,8 @@ function sheetMesh() {
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return g;
 }
+// the moment for „BÚÚÚ!!” (dad walking back through the hallway, the sheet on, close to him) – touch: the RÚGÁS button's label
+export const booReady = () => gh.st === 'in' && gh.sheet && !gh.scared && G.petya.pos.x < 5.6 && near(G.petike, G.petya, 1.9);
 export function sheetOffer() { return G.petike && Math.hypot(G.petike.pos.x - BED.x, G.petike.pos.z - BED.z) < 1.0; }
 export function sheetLabel() { return gh.sheet ? 'Szóköz – lepedő vissza az ágyra' : 'Szóköz – lepedő magadra'; }
 export function toggleSheet() {
@@ -84,8 +86,7 @@ export function ghostTick(dt, min, dadFree) {
       }
       break;
     case 'in': {   // walking back through the hallway: the moment for the ghost
-      const inHall = d.pos.x < 5.6;
-      if (gh.sheet && !gh.scared && inHall && near(P, d, 1.9)) {   // (once: on the walk back after it, nothing more)
+      if (booReady()) {   // (once: on the walk back after it, nothing more)
         setPrompt('Szóköz – BÚÚÚ!!');
         if (G.kickPressed) {
           const sw = hallSwitch(); gh.dark = !(sw && sw.on); gh.scared = true; gh.st = 'scared'; gh.t = 0; d.path = null;

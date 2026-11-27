@@ -35,13 +35,18 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 |---|---|
 | `index.html` | UI (start képernyő: nagy cím fent, alatta a 12 rész kisebb csempéi, jobb alsó sarokban a verzió `#version` – a `package.json`-ból, `__APP_VERSION__` a `vite.config.js`-ben; a katalógusra nem mutat link; HUD; súgó `#help` a jobb alsó sarokban, gombonként egy sor – `<dl>`: gomb · leírás, **H** rejti; buborékok, érintéses vezérlők, `#prompt` interakciós felirat) |
 | `src/main.js` + `src/*.js`, `src/activities/*.js` | a játék ES-modulokra bontva (belépési pont: `main.js`, lásd lent) |
-| `src/voxels.js` | voxel objektumkönyvtár: `VoxelGrid`, `CATALOG`, `getGeometry(id, variant)`; a lakás bútorai (2. rész) a `src/voxels-home.js`-ben (`HOME_CATALOG`, „Lakás” kategória) |
+| `src/voxels.js` | voxel objektumkönyvtár: `VoxelGrid`, `CATALOG`, `getGeometry(id, variant)`; a lakás bútorai (2. rész) a `src/voxels-home.js`-ben (`HOME_CATALOG`, „Lakás” kategória) – betöltéskor **maga teszi be magát** a `CATALOG`-ba (a 2. rész és a `designterv.js` importálja; a park nem tölti le) |
 | `src/designterv.js` | a 3D katalógus oldal logikája |
-| `public/*.glb` | a játék által betöltött modellek: `petya`, `angi`, `petike_roller`, `petike_foci` (riggelt, T-pose), `nover` (Petyus nővére, 2. rész – Angi teste, hosszú fekete haj, sötét szem), `roller_kicsi` (a roller) |
+| `public/*.glb` | a játék által betöltött modellek: `petya`, `angi`, `petike_roller`, `petike_foci` (riggelt, T-pose), `nover` (Petyus nővére, 2. rész – Angi teste, hosszú fekete haj, sötét szem; csak otthon töltődik le, a `startEp2`-ben), `roller_kicsi` (a roller) |
 | `models/source/*.glb` | az **eredeti**, nem riggelt karaktermodellek (lelógó karral) – a modell-pipeline bemenete |
 | `tools/model-pipeline/` | Python: T-pose + csontváz generálása (lásd lent) |
 | `tools/ikon/make_icon.py` | a böngészőfül ikonja (pixel-art focilabda narancs csempén, 32×32-es rács) → `public/favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`, a webalkalmazás ikonjai `icon-192.png`, `icon-512.png` (Pillow kell hozzá) |
 | `public/manifest.webmanifest` · `public/sw.js` | telepíthető webalkalmazás (PWA): név, ikonok (`any` és `maskable` külön), `display: standalone`, **nincs** kötelező tájolás (`orientation` – Androidon a telepített app nem indult el vele; a fekvő helyzetet az Indítás gomb kéri: `screen.orientation.lock`) · service worker (`petyus-v2`): az oldal hálózatról (6 mp időkorlát), különben a gyorsítótárból; minden más gyorsítótár + háttérfrissítés (`ignoreVary`); a gyorsítótárba írás hibája nem rontja el a választ; az első betöltés után az oldal átküldi a már letöltött fájlokat (`postMessage({ keep })`) → már az első látogatás után offline is indul; csak buildben regisztrál (`updateViaCache: 'none'`). Ha a service worker logikája változik, a `CACHE` nevét is emelni kell |
+
+## Betöltés (mi töltődik le)
+
+- **Pályánként csak a szükséges kód:** a kezdőképernyő és a park (1. rész) a `main.js` csomagja; a **2. rész** külön fájl, csak indításkor töltődik le (`main.js`: `loadEp2()` → `import('./ep2/ep2.js')`, a fő ciklus `EP2.stepEp2`-t hív); a kezdőképernyőnek kellő apróságok (megnyitás, mentés, továbblépés: `ep2Unlocked`, `ep2HasSave`, `ep2DevStart`, `takeEp2Next`, `savedPhase`) a könnyű `ep2/meta.js`-ben vannak. Az **iskola** (`school.js`) csak az iskolai napszakhoz töltődik le (`ep2.js`: `SC = await import('./school.js')`, a hívások `SC.…`); a nővér modellje (`nover.glb`) csak otthon (`startEp2`). A **three.js** külön fájl (`vite.config.js` `manualChunks`) – kiadások között nem változik, a böngésző megtartja.
+- Ezért a `startEp2` **async**; amit a 2. részben a park moduljai közül használsz, az statikus import maradhat, de a parkból a 2. részre **ne** importálj statikusan (csak a `meta.js`-t).
 
 ## A játék moduljai (`src/`)
 
@@ -135,6 +140,10 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 - `?speed=4` URL-paraméter: gyorsított idő (1–8) a nyitójelenet teszteléséhez.
 - Headless teszthez (Playwright) WebGL: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`.
 - Módosítás után érdemes: nyitójelenet végigfut-e hibátlanul (`mode === 'play'`), és képernyőkép a releváns helyről.
+
+## Pályaleírások (`docs/palyak/`)
+
+Játékosoknak szóló leírás pályánként (park · otthon reggel · iskola · otthon este) és a telefonos irányítás (`mobil.md`): mi történik, a csibészségek menete, feltételei, az 1–3 ★ pontosan (a `MISCHIEFS` / `MISCHIEFS2` `stars` függvényei szerint). Ha egy csibészség menete vagy csillagfeltétele változik, ezt is frissíteni kell.
 
 ## Tervdokumentumok (`docs/terv-*.md`)
 
