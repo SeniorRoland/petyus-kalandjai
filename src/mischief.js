@@ -24,6 +24,8 @@ export const MISCHIEFS2 = [
   { id: 'r2-kulcs', title: 'Hol a kulcs, Angi?', hint: 'Anya kulcsa mindig a cipősszekrényen van. (és ha nem ott lenne?)', fmt: (v, x) => `${v} mp keresés` + (x && x.odd ? ', fura helyen' : '') + (x && x.hint ? ', lebukott' : ''), stars: (v, x) => 1 + (v >= 120 ? 1 : 0) + (x && x.odd && !x.hint ? 1 : 0) },
   { id: 'r2-ora', title: 'Előre a mutatót!', hint: 'A tanító néni mindig a falióráról olvassa le, mikor van vége az órának. (a hátsó falon; amikor a táblára ír, háttal áll – a pótszék a hátsó fal mellett)', fmt: (v, x) => `${v} perccel korábban szünet` + (x && x.caught ? ', de rajtakapott' : ''), stars: (v, x) => 1 + (v >= 10 ? 1 : 0) + (v >= 10 && !(x && x.caught) ? 1 : 0) },
   { id: 'r2-szivacs', title: 'Vizes szivacs a széken', hint: 'A táblatörlő szivacs a tábla alatt van. A WC-ben van csap… (a tanító néni óra elején leül a székére; szünetben a folyosón van)', fmt: (v, x) => (x && x.seen ? 'beleült, de látott a folyosón' : 'beleült a csuromvizes szivacsba, senki nem árulta el'), stars: (v) => v },
+  { id: 'r2-beka', title: 'Béka a fiókban', hint: 'Az udvari bokrok alatt béka lakik. A tanár bácsi fiókjában meg a napló… (szünetben a tanárok kint vannak a folyosón)', fmt: (v, x) => 'a tanár bácsi az asztalon' + (x && x.sixB ? ', a béka a 6. b-be is bekukkantott' : '') + (x && x.caught ? ' (rajtakapott)' : ''), stars: (v) => v },
+  { id: 'r2-szemuveg', title: 'Hol a szemüvegem?', hint: 'A tanító néni szemüvege szünetben a tanári asztalon pihen.', fmt: (v, x) => (v >= 3 ? 'a tanár bácsit gyanúsította' : v === 2 ? 'vakon tanított' : 'keresni kezdte') + (x && x.returned ? ', Petyus visszaadta' : ''), stars: (v) => v },
   { id: 'r2-fogkrem', title: 'A fogkrémcsere', hint: 'A fürdőben minden tubus egyforma… majdnem. (anya szekrényében krémek, a hűtőben chilikrém; anya 20:45-kor, apa 21:30-kor mos fogat)', fmt: (v, x) => (x && x.mom && x.dad ? 'anya öklendezett, apa lángolt' : x && x.mom ? 'anya öklendezett' : 'apa lángolt') + (x && x.caught ? ', rajtakaptak' : ''), stars: (v, x) => (v >= 2 ? (x && x.caught ? 2 : 3) : 1) },
   { id: 'r2-meccs', title: 'Meccs vagy sorozat?', hint: 'Este apa meccset néz, anya a sorozatát várja. (20:00-tól; a távirányító a tévé mellett – F-fel kapcsolsz; egyszer tizenegyes is lesz)', fmt: (v, x) => (x && x.penalty ? 'átkapcsolás a tizenegyesnél' : 'átkapcsolás a meccs alatt') + (x && x.angi ? ', apa anyát hibáztatta' : ', apa rájött'), stars: (v) => v },
   { id: 'r2-kiserteet', title: 'A lepedős kísértet', hint: 'Este, sötétben minden lepedő gyanús. (21:00-kor apa kiviszi a szemetet; Petyus ágyánál Szóköz – lepedő)', fmt: (v, x) => (x && x.dark ? 'apa megadta magát a sötétben' : 'apa megijedt') + (x && x.alibi ? ', Petyus már „aludt”' : ''), stars: (v) => v },
@@ -77,9 +79,15 @@ function showAward(m, stars, value, first, better, extra, saved) {
 export function refreshTotals() {
   const t = totalStars();
   if ($('mStars')) $('mStars').textContent = t;
-  for (const el of document.querySelectorAll('.ep.ready .stars')) el.textContent = `⭐ ${t}/${MAX_STARS}`;
+  // the start screen: every playable episode's tile shows its own stars (⭐ got / can be got)
+  for (const el of document.querySelectorAll('.ep .stars[data-ep]')) { const bk = BOOKS[el.dataset.ep]; if (bk) el.textContent = `⭐ ${starsOf(bk)}/${bk.list.length * 3}`; }
 }
 
+// the guide (guide.js): a mischief's stars by its title (null: not a mischief)
+export function bestStarsByTitle(title) {
+  for (const b of Object.values(BOOKS)) { const m = b.list.find((x) => x.title === title); if (m) return (b.saved[m.id] && b.saved[m.id].stars) || 0; }
+  return null;
+}
 // ---------- the journal
 export function journalOpen() { return $('journal').classList.contains('open'); }
 export function toggleJournal(open = !journalOpen()) {

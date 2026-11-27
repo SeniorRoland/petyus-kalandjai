@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { CATALOG, getGeometry } from './voxels.js';
+import './voxels-home.js';   // the flat's furniture (it adds itself to CATALOG)
 
 const CHARS = [
   { id: 'petya', name: 'Petya (apa)', file: 'petya.glb', scale: 0.93, desc: 'Az apa. T-pose-ban riggelt modell, 27 Mixamo-nevű csonttal; a játék a csontokat mozgatja (séta, ülés, ujjongás).', use: 'Nyitójelenet, a családi padon ül' },

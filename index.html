@@ -238,6 +238,32 @@
   .jr .info { font-size:15px; color:#444; }
   .jr .stars { font-size:24px; letter-spacing:2px; color:#ffc21a; -webkit-text-stroke:1.5px #151515; paint-order:stroke fill; white-space:nowrap; }
   .jr.todo .nm { color:#999; } .jr.todo .info { color:#777; font-style:italic; } .jr.todo .stars { color:#e4e4e4; }
+  /* the levels' descriptions (guide.js – docs/palyak/*.md) */
+  #guide { position:fixed; inset:0; z-index:60; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); padding:16px; }
+  #guide.open { display:flex; }
+  #guide .book { position:relative; width:min(760px, 100%); max-height:88vh; display:flex; flex-direction:column; background:#fffdf3; color:#151515; border:4px solid #151515;
+    border-radius:16px / 12px; box-shadow:8px 8px 0 #151515; padding:14px 18px 10px; font-family:'Patrick Hand', cursive; }
+  #guide h2 { margin:0; font-family:'Bangers', Impact, sans-serif; font-weight:400; font-size:32px; letter-spacing:1px; }
+  #gdTabs { display:flex; gap:6px; flex-wrap:wrap; margin:6px 44px 8px 0; }
+  #gdTabs button { font-family:'Bangers', Impact, sans-serif; font-size:16px; letter-spacing:.6px; border:3px solid #151515; border-radius:10px; padding:3px 10px; background:#f1ead3; color:#151515; cursor:pointer; }
+  #gdTabs button.on { background:#ffd166; }
+  #gdClose { position:absolute; top:8px; right:10px; border:3px solid #151515; background:#fff; border-radius:10px; font:inherit; font-size:20px; width:38px; height:38px; cursor:pointer; box-shadow:2px 2px 0 #151515; }
+  #gdBody { overflow-y:auto; font-size:17px; line-height:1.3; padding-right:4px; }
+  #gdBody h2, #gdBody h3 { font-family:'Bangers', Impact, sans-serif; font-weight:400; letter-spacing:1px; margin:12px 0 4px; }
+  #gdBody h2 { font-size:26px; color:#c2410c; } #gdBody h3 { font-size:22px; } #gdBody h4 { font-size:18px; margin:10px 0 2px; }
+  #gdBody p { margin:4px 0; } #gdBody ul, #gdBody ol { margin:4px 0; padding-left:22px; } #gdBody li { margin:2px 0; }
+  #gdBody code { font-family:ui-monospace, monospace; font-size:.85em; background:#f1ead3; padding:0 3px; border-radius:4px; }
+  #gdBody a { color:#c2410c; }
+  .gtab { overflow-x:auto; margin:6px 0; } .gtab table { border-collapse:collapse; font-size:15px; } .gtab th, .gtab td { border:1.5px solid #cfc6a8; padding:2px 6px; text-align:left; vertical-align:top; } .gtab th { background:#f1ead3; }
+  details.gm { border-top:2px dashed #cfc6a8; padding:4px 0; } details.gm > summary { cursor:pointer; font-family:'Bangers', Impact, sans-serif; font-size:20px; letter-spacing:.8px; }
+  details.gm > div { padding:2px 0 4px 14px; } .gst { color:#ffc21a; -webkit-text-stroke:1px #151515; paint-order:stroke fill; letter-spacing:2px; margin-left:6px; } .gst0 { color:#e4e0d2; -webkit-text-stroke:1px #b9b29a; paint-order:stroke fill; letter-spacing:2px; }
+  @media (max-height: 520px) {   /* phones held sideways: a smaller head, more room for the text */
+    #guide { padding:6px; } #guide .book { max-height:97vh; padding:6px 12px 6px; } #guide h2 { font-size:20px; } #gdClose { width:32px; height:32px; font-size:16px; top:5px; }
+    #gdTabs { margin:3px 40px 4px 0; gap:4px; } #gdTabs button { font-size:13px; padding:1px 7px; border-width:2px; } #gdBody { font-size:15px; }
+  }
+  #links { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  #guideLink { font-family:'Bangers', Impact, sans-serif; font-size:20px; letter-spacing:1px; background:#fffdf3; color:#151515; border:3px solid #151515;
+    border-radius:10px; padding:3px 14px 1px; box-shadow:3px 3px 0 #151515; cursor:pointer; }
   #journalLink { font-family:'Bangers', Impact, sans-serif; font-size:20px; letter-spacing:1px; background:#fffdf3; color:#151515; border:3px solid #151515;
     border-radius:10px; padding:3px 14px 1px; box-shadow:3px 3px 0 #151515; cursor:pointer; }
 
@@ -330,7 +356,7 @@
   <p class="tag">12 rész, 12 hónap – Angi, Petyus és Petya kalandjai egész évben</p>
   <div id="loadbar"><div></div></div>
   <div id="episodes" role="list" aria-label="Részek"></div>
-  <button id="journalLink" type="button">📒 Csibészség-napló</button>
+  <div id="links"><button id="journalLink" type="button">📒 Csibészség-napló</button><button id="guideLink" type="button">📖 Pályaleírások</button></div>
   <div id="err"></div>
   <div id="version"></div>
   <div id="install" role="dialog" aria-label="Telepítés"><span class="txt"></span><button class="go" type="button">Telepítés</button><button class="no" type="button">Most nem</button></div>
@@ -346,6 +372,11 @@
   <button id="jrClose" type="button" aria-label="Bezárás">✕</button>
   <h2>📒 Csibészség-napló</h2><div id="jrTabs"></div><div id="jrSub">1. rész: Augusztus – Egy nap a parkban</div>
   <div id="jrSum"></div><div id="jrList"></div>
+</div></div>
+<div id="guide" role="dialog" aria-label="A pálya leírása"><div class="book">
+  <button id="gdClose" type="button" aria-label="Bezárás">✕</button>
+  <h2>📖 A pálya leírása</h2><div id="gdTabs"></div>
+  <div id="gdBody"></div>
 </div></div>
 <div id="tower">
   <div id="twCount">0 / 10</div><div id="twLabel">torony apa fején</div><div id="twNext"></div>
@@ -366,6 +397,7 @@
 <div id="topright">
   <button class="btn" id="skipBtn">Kihagyás ⏭</button>
   <button class="btn" id="menuBtn" title="Vissza a főmenübe">🏠</button>
+  <button class="btn" id="guideBtn" title="A pálya leírása (L)">📖</button>
   <button class="btn" id="journalBtn" title="Csibészség-napló (N)">📒</button>
   <button class="btn" id="muteBtn">🔊</button>
 </div>
@@ -378,6 +410,7 @@
   <dt>← → ↑</dt><dd>dekázáskor, amikor a kör ráér a gombra</dd>
   <dt>R</dt><dd>labda ide</dd>
   <dt>N</dt><dd>csibészség-napló</dd>
+  <dt>L</dt><dd>a pálya leírása</dd>
   <dt>, .</dt><dd>nézet forgatása (⟲ ⟳)</dd>
   <dt>Görgő / + −</dt><dd>zoom (0: alap)</dd>
   <dt>Egérrel húzva</dt><dd>körülnézés</dd>

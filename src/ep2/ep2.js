@@ -4,7 +4,11 @@ import * as THREE from 'three';
 import { updateFx } from '../actors.js';
 import { updateCamera } from '../camera.js';
 import { isTouch, keys, touch } from '../input.js';
-import { totalStars } from '../mischief.js';
+import { NEXT_KEY, SAVE_KEY, savedPhase } from './meta.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { CFG, rigFromGLTF } from '../rigs.js';
+import '../voxels-home.js';   // the flat's furniture in the object catalogue (getGeometry)
+import { clearClouds } from '../clouds.js';
 import { updateOcclusion } from '../occlude.js';
 import { CAM_FWD, CAM_RIGHT } from '../player.js';
 import { turnView, updateViewTurn, viewTurn } from '../viewturn.js';
@@ -26,7 +30,8 @@ import { buildWardrobe, dress, dressLoad, dressSave, dressTick, hurryParents, le
 import { buildSister, updateSister } from './sister.js';
 import { canPee, pee, peeFlushed, peeLabel, peeTick, startPee } from './pee.js';
 import { startWakeup, wakeTick, wakeupFocus } from './wakeup.js';
-import { BOUNDS as SCHOOL_BOUNDS, SCHOOL_START, buildSchool, schoolAction, schoolFloor, schoolKick, schoolStatus, schoolUse, schoolRoom, schoolStand, setSchoolFps, toggleSeat, updateSchool } from './school.js';
+// the school (school.js) is loaded only for the school part of the day: startEp2 → SC
+let SC = null;
 import { starsFor } from '../mischief.js';
 import { cf, coffeeTick, dadBusy } from './coffee.js';
 import { dadChasing, momBusy, runawayTick, rw } from './runaway.js';
@@ -34,15 +39,11 @@ import { giveKeyHint, kh, keyBusy, keyHintLabel, keyTick } from './keyhunt.js';
 import { brushBusy, buildBath, toothTick, tp } from './toothpaste.js';
 import { doorCorridors, navRoute } from './navgrid.js';
 import { tm, tvBusy, tvTick } from './tvmatch.js';
-import { gh, ghostBusy, ghostTick, momGhostBusy, sheetLabel, sheetOffer, toggleSheet } from './ghost.js';
+import { booReady, gh, ghostBusy, ghostTick, momGhostBusy, sheetLabel, sheetOffer, toggleSheet } from './ghost.js';
 import { karcsiState, karcsiTakeable, pigObj, takeKarcsi } from './karcsi.js';
 
 // ---------------------------------------------------------------- unlocking
-export const EP2_STARS = 15;   // part 1's mischief stars needed
-// developer access (npm run dev): always open, and ?resz=2 starts it at once. import.meta.env.DEV is false in the build,
-// so Vite drops these branches – the released page has no way round the 15 stars.
-export const ep2Unlocked = () => (import.meta.env.DEV ? true : totalStars() >= EP2_STARS);
-export const ep2DevStart = () => import.meta.env.DEV && new URLSearchParams(location.search).get('resz') === '2';
+export { EP2_STARS, ep2DevStart, ep2HasSave, ep2Unlocked, takeEp2Next } from './meta.js';   // (the start screen's few things: meta.js)
 
 // ---------------------------------------------------------------- calendar and clock
 const DAY0 = new Date(2026, 8, 2), DAYS = 29;   // 2026. szeptember 2. (szerda) … 30. (szerda)
@@ -55,8 +56,6 @@ function hudLate() { const el = $('e2Late'); if (!el) return; el.style.display =
 // ---------------------------------------------------------------- saving the day's state (before going back to the menu, on leaving)
 // part 1's mischief results are saved on their own (mischief.js); part 2 keeps where the player is: the day, the clock,
 // Petyus's place, the doors, the lights, the wall view, Karcsi's cage door. The September tile then says „Folytatás”.
-const SAVE_KEY = 'petyus.r2.allapot';
-export function ep2HasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
 function saveEp2() {
   const p = G.petike, st = { v: 1, phase: ep2.phase, day: ep2.day, min: ep2.min, x: p.pos.x, z: p.pos.z, h: p.heading,
     doors: doors.filter((d) => d.pivot).map((d) => d.open), seat: toiletSeat.state, lights: switches.map((s) => s.on), walls: wallView.mode, cage: cageDoorOpen(), late: ep2.lateMin, dress: ep2.phase === 'morning' ? dressSave() : null, top: ep2.phase === 'morning' ? dress.top : ep2.top };
@@ -83,7 +82,6 @@ function loadEp2() {
 window.addEventListener('pagehide', () => { if (G.episode === 2 && G.mode === 'play' && !ep2.leaving) saveEp2(); });
 // which part of the day the saved game is in (read before building anything)
 function savedTop() { try { const st = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return st && TOPS[st.top] !== undefined ? st.top : null; } catch (e) { return null; } }
-function savedPhase() { try { const st = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return st && st.v === 1 && PHASES[st.phase] ? st.phase : 'morning'; } catch (e) { return 'morning'; } }
 
 // ---------------------------------------------------------------- the parts of a day: home in the morning → school → home in
 // the afternoon–evening → (sleep) → the next morning. Each has its own clock range; the clock runs ~10 real minutes per part.
@@ -94,13 +92,14 @@ const PHASES = {
   evening: { start: 16 * 60, end: 22 * 60, place: 'Otthon – délután, este' },
 };
 const minPerSec = () => { const ph = PHASES[ep2.phase]; return (ph.end - ph.start) / 600; };
+// the school runs slower (game minutes per real second): a lesson (45 min) ≈ 2 minutes, a break (10 min) ≈ 70 seconds
+const SCHOOL_RATE = 0.375, SCHOOL_BREAK_RATE = 0.14;
 const weekend = (d) => { const t = new Date(DAY0); t.setDate(t.getDate() + d); return t.getDay() === 0 || t.getDay() === 6; };
 const MORNING_IDS = ['r2-tejszin', 'r2-karcsi', 'r2-kulcs'];
 const morningDone = () => MORNING_IDS.filter((id) => starsFor(id) > 0).length;
 
 // moving on: save the new part's start („fresh”), then the page starts again with a card (date · time · place, Tovább ▶) –
 // a fresh start gives every part its own clean state, and the card's click lets the sound play
-const NEXT_KEY = 'petyus.r2.tovabb';
 function goPhase(phase, day, note = '') {
   ep2.leaving = true;
   const st = { v: 1, phase, day, min: PHASES[phase].start, fresh: true, late: phase === 'morning' ? 0 : ep2.lateMin, top: phase === 'morning' ? null : dress.top || ep2.top };
@@ -110,10 +109,6 @@ function goPhase(phase, day, note = '') {
   setTimeout(() => { location.href = location.pathname; }, 450);
 }
 // boot (main.js): the card of the part that comes next, if the last page moved on
-export function takeEp2Next() {
-  let n = null; try { n = JSON.parse(sessionStorage.getItem(NEXT_KEY) || 'null'); sessionStorage.removeItem(NEXT_KEY); } catch (e) { n = null; }
-  return n && PHASES[n.phase] ? n : null;
-}
 export function showPhaseCard(n, onGo) {
   const el = document.createElement('div');
   el.style.cssText = 'position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:radial-gradient(circle at 50% 40%,#223156,#0b1020);color:#fff;text-align:center;padding:16px;';
@@ -150,11 +145,21 @@ export function dateText(d = ep2.day) { const t = new Date(DAY0); t.setDate(t.ge
 const clockText = (m) => `${Math.floor(m / 60)}:${String(Math.floor(m % 60)).padStart(2, '0')}`;
 
 // ---------------------------------------------------------------- start: the park goes, the flat comes
-export function startEp2() {
+// which part of the day: the saved one (dev: ?nyitany=1 – a new game's morning with the opening film)
+const newGame = () => import.meta.env.DEV && new URLSearchParams(location.search).has('nyitany');
+const startPhase = () => (newGame() ? 'morning' : savedPhase());
+// only what this part of the day needs is downloaded: the school's code at school, the sister's model at home
+export async function startEp2() {
+  const phase = startPhase();
+  if (phase === 'school' && !SC) SC = await import('./school.js');
+  if (phase !== 'school' && !rigs.nover) rigs.nover = rigFromGLTF(await new GLTFLoader().loadAsync(import.meta.env.BASE_URL + 'nover.glb'), CFG.nover);   // Petyus's big sister
+  startEp2Now(phase);
+}
+function startEp2Now(phase) {
   G.episode = 2;
-  // which part of the day: the saved one (dev: ?nyitany=1 – a new game's morning with the opening film)
-  const forceNew = import.meta.env.DEV && new URLSearchParams(location.search).has('nyitany');
-  ep2.phase = forceNew ? 'morning' : savedPhase(); ep2.min = PHASES[ep2.phase].start;
+  clearClouds();   // the park's clouds: not over the flat (the school makes its own)
+  ep2.phase = phase; ep2.min = PHASES[ep2.phase].start;
+  G.guidePage = { morning: '2-otthon-reggel', school: '2-iskola', evening: '2-otthon-este' }[phase];   // the 📖 description of this place (guide.js)
   const SCHOOL = ep2.phase === 'school', EVE = ep2.phase === 'evening';
   setMasterVol(0.9);   // indoors: louder than the park
   for (const o of [...scene.children]) if (!o.isLight && o !== sun.target) scene.remove(o);   // part 1's world (built at boot)
@@ -174,7 +179,7 @@ export function startEp2() {
     scene.background.set(0xcde8f5); SUN_OFF.set(30, 26, -4); sun.color.set(0xfff3dc); sun.intensity = 2.3;
     sun.castShadow = false;   // the shadows in the flat come from its ceiling lamps (home.js lightPool), not the sun
   }
-  if (SCHOOL) buildSchool();
+  if (SCHOOL) SC.buildSchool();
   else {
     buildHome(placeOutsideProps); buildOutside(); buildKarcsi(); buildAppliances(); buildBath(); buildInventory();
     if (EVE) ceiling.children[0].material.color.set(0x77726b);   // the ceiling (unlit): dimmer in the evening, lit only by the lamps
@@ -196,13 +201,13 @@ export function startEp2() {
   }
   G.petike.riding = false; G.petike.setRig(rigs.foci); G.petike.stride = 6.5; G.petike.swing = 0.7;
   if (SCHOOL) {   // the parents are not there
-    ep2.bounds = SCHOOL_BOUNDS;
+    ep2.bounds = SC.BOUNDS;
     for (const a of [G.petya, G.angi]) { a.path = null; a.pos.set(-999, 0, -999); }
-    G.petike.place(SCHOOL_START.x, SCHOOL_START.z, SCHOOL_START.h); G.petike.pos.y = 0;
+    G.petike.place(SC.SCHOOL_START.x, SC.SCHOOL_START.z, SC.SCHOOL_START.h); G.petike.pos.y = 0;
   } else { scene.add(G.petya.rig.root, G.angi.rig.root); placeFamily(); }
   G.saveHook = saveEp2;
   // where the player left off (back to the menu / closed the page)
-  const resumed = !forceNew && loadEp2();
+  const resumed = !newGame() && loadEp2();
   G.mode = 'play'; G.pstate = 'home'; G.petyaMode = 'home';
   // the base framing (zoom 1) shows most of the flat; zooming out stops at 2× (the house and the yard), zooming in is free
   G.viewSizeTarget = G.viewSize = 8; G.zoom = 1; G.zoomMax = 2;   // (the school too: zoomed out its walls are solid, the roof on)
@@ -213,8 +218,8 @@ export function startEp2() {
   $('hud').innerHTML = '<span class="chip">📅 <span id="e2Date"></span></span> <span class="chip">🕕 <span id="e2Clock"></span></span> <span class="chip" id="e2RoomChip">📍 <span id="e2Room"></span></span> <span class="chip" id="e2Late" style="display:none">⏰ +<span id="e2LateN"></span> perc</span>'
     + (SCHOOL ? '<span class="chip row" id="e2Lesson"></span>' : '');   // at school: the lesson or the break (a line of its own)
   $('help').innerHTML = SCHOOL
-    ? '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>leülés a helyedre (6. b, első pad) · a kapunál: hazaindulás</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>'
-    : '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat: ajtó nyitása / csukása, villany, kopogás' + (EVE ? ', lefekvés (Petyus ágyánál)' : ', indulás (a bejárati ajtónál)') + '</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>E · F</dt><dd>tárgy felvétele · a kiválasztott lerakása / bögre töltése</dd><dt>1–9 · Tab</dt><dd>tárgy kiválasztása</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
+    ? '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>leülés a helyedre (6. b, első pad) · a kapunál: hazaindulás</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>N · L</dt><dd>csibészség-napló · a pálya leírása</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>'
+    : '<dl><dt>WASD / nyilak</dt><dd>mozgás</dd><dt>Shift</dt><dd>futás</dd><dt>E</dt><dd>használat: ajtó nyitása / csukása, villany, kopogás' + (EVE ? ', lefekvés (Petyus ágyánál)' : ', indulás (a bejárati ajtónál)') + '</dd><dt>Q / R  ·  , .</dt><dd>nézet forgatása (⟲ ⟳)</dd><dt>T</dt><dd>falak: átlátszó / lesüllyedő</dd><dt>V</dt><dd>belső nézet (FPS); kattintás után egérrel nézel, Esc: egér vissza</dd><dt>E · F</dt><dd>tárgy felvétele · a kiválasztott lerakása / bögre töltése</dd><dt>1–9 · Tab</dt><dd>tárgy kiválasztása</dd><dt>N · L</dt><dd>csibészség-napló · a pálya leírása</dd><dt>Görgő / + −</dt><dd>zoom (0: alap)</dd><dt>Egérrel húzva</dt><dd>körülnézés</dd><dt>M</dt><dd>hang</dd><dt>H</dt><dd>súgó elrejtése</dd></dl>';
   for (const id of ['kickBtn', 'runBtn']) { const el = $(id); if (el) el.style.display = id === 'kickBtn' ? 'none' : ''; }
   $('skipBtn').style.display = 'none'; $('hud').style.display = 'block'; $('help').style.display = isTouch ? 'none' : 'block';
   if (isTouch) $('touch').style.display = 'block';
@@ -279,7 +284,7 @@ export function toggleFps(on = !fp.on) {
   fp.on = on; G.fps = on;
   let xh = $('xhair'); if (!xh) { xh = document.createElement('div'); xh.id = 'xhair'; xh.style.cssText = 'position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.65);z-index:14;pointer-events:none;'; document.body.appendChild(xh); }
   xh.style.display = on ? 'block' : 'none';
-  if (ceiling) ceiling.visible = on; setSchoolFps(on && ep2.phase === 'school'); G.petike.rig.root.visible = !on;
+  if (ceiling) ceiling.visible = on; if (SC) SC.setSchoolFps(on && ep2.phase === 'school'); G.petike.rig.root.visible = !on;
   if (on) {
     fp.yaw = G.petike.heading; fp.pitch = -0.1;
     fpsCam.aspect = window.innerWidth / window.innerHeight; fpsCam.updateProjectionMatrix(); screen.cam = fpsCam;
@@ -325,7 +330,7 @@ function updateFpsCam() {
 }
 
 window.addEventListener('keydown', (e) => {
-  if (G.episode !== 2 || G.mode !== 'play' || e.repeat) return;
+  if (G.episode !== 2 || G.mode !== 'play' || e.repeat || G.paused) return;   // (not while the journal / the description is open)
   if (e.code === 'KeyV') toggleFps();
   if (e.code === 'KeyF') G.invPressed = true;
   if (/^Digit[1-9]$/.test(e.code)) selectItem(+e.code.slice(5) - 1);
@@ -359,7 +364,7 @@ function movePetyus(dt) {
   if (dress.choosing || dress.changeT >= 0) { a.animate(dt, false, 0); a.sync(); return; }   // at the wardrobe (dressing.js)
   if (ep2.phase === 'school') {   // on the teacher's chair under the clock (school.js): no walking – a movement key gets him down
     const mk = keys.KeyW || keys.KeyA || keys.KeyS || keys.KeyD || keys.ArrowUp || keys.ArrowDown || (!fp.on && (keys.ArrowLeft || keys.ArrowRight)) || touch.active;
-    if (schoolStand(dt, mk)) return;
+    if (SC.schoolStand(dt, mk)) return;
   }
   // sitting in the armchair: no walking; a movement key (or the stick) stands him up again
   if (seating.on) {
@@ -407,7 +412,7 @@ function movePetyus(dt) {
   const spd = Math.hypot(pvel.x, pvel.z);
   // footsteps: one at every half stride (the walk cycle's phase), the floor decides the sound
   const stepN = Math.floor(a.phase / Math.PI);
-  if (stepN !== step.n) { step.n = stepN; if (spd > 0.4) { const r = ep2.phase === 'school' ? null : roomAt(a.pos.x, a.pos.z); sStep(ep2.phase === 'school' ? schoolFloor(a.pos.x, a.pos.z) : r ? r.floor : 'wood', sprint ? 1 : 0); } }
+  if (stepN !== step.n) { step.n = stepN; if (spd > 0.4) { const r = ep2.phase === 'school' ? null : roomAt(a.pos.x, a.pos.z); sStep(ep2.phase === 'school' ? SC.schoolFloor(a.pos.x, a.pos.z) : r ? r.floor : 'wood', sprint ? 1 : 0); } }
   if (fp.on) a.heading = a.targetHeading = fp.yaw;
   else { if (il > 0.1) a.targetHeading = Math.atan2(wx, wz); a.heading = dampAngle(a.heading, a.targetHeading, 14, dt); }
   a.animate(dt, spd > 0.2, spd); a.sync();
@@ -449,7 +454,7 @@ function interactHome() {
   // next to the toilet: Space (on touch: the LEHÚZÁS button) flushes
   // (a device with a second action – the microwave – uses Space too; on touch the RÚGÁS button shows that action's name)
   const kb = $('kickBtn'), altBusy = !!(best && (best.seat || (best.dev && best.dev.alt)));
-  if (kb) { const lbl = isTouch ? (best && best.seat ? (canPee() ? 'PISILÉS' : 'LEHÚZÁS') : best && best.dev && best.dev.alt ? best.dev.alt.short() : act ? act.short : '') : ''; kb.style.display = lbl ? 'block' : 'none'; if (lbl && kb.textContent !== lbl) kb.textContent = lbl; }
+  if (kb) { const lbl = isTouch ? (booReady() ? 'BÚÚÚ!' : best && best.seat ? (canPee() ? 'PISILÉS' : 'LEHÚZÁS') : best && best.dev && best.dev.alt ? best.dev.alt.short() : act ? act.short : '') : ''; kb.style.display = lbl ? 'block' : 'none'; if (lbl && kb.textContent !== lbl) kb.textContent = lbl; }
   if (act && (G.invPressed || (isTouch && G.kickPressed && !altBusy))) act.run();
   if (best && best.wardrobe) {
     txt = wardrobeLabel();
@@ -639,22 +644,22 @@ export function stepEp2(dt) {
   if ((ep2.fitT = (ep2.fitT || 0) - dt) <= 0) { ep2.fitT = 0.5; fitHud(); }   // (buttons come and go: the HUD keeps clear of them)
   door.knockT -= dt;
   if (G.mode === 'play' && ep2.phase === 'school') {   // the school (school.js): walking about, the gate home
-    movePetyus(dt); updateSchool(dt, ep2.min, fp.on || G.zoom > 1.55);   // (walls solid, the roof on: first person or zoomed out)
-    const P = G.petike.pos, room = schoolRoom(P.x, P.z);
+    movePetyus(dt); SC.updateSchool(dt, ep2.min, fp.on || G.zoom > 1.55);   // (walls solid, the roof on: first person or zoomed out)
+    const P = G.petike.pos, room = SC.schoolRoom(P.x, P.z);
     setOutdoor(room === 'Iskola – udvar' || room === 'Az utca' ? 1 : fp.on ? 0.15 : 0.4);
     if (room !== ep2.room) { ep2.room = room; $('e2Room').textContent = room; }
-    const act = schoolAction();   // doors, the toilets, Petyus's own place (sit down / stand up), the gate (home)
+    const act = SC.schoolAction();   // doors, the toilets, Petyus's own place (sit down / stand up), the gate (home)
     const kb = $('kickBtn'); if (kb && isTouch) { const l = pee.on ? 'KÉSZ' : act && act.kick ? act.kick : ''; kb.style.display = l ? 'block' : 'none'; if (l && kb.textContent !== l) kb.textContent = l; }
     if (pee.on) setPrompt(isTouch ? 'Célozz a botkormánnyal!' : 'A / D – célzás · Szóköz – kész');
     else if (act) {
       setPrompt(isTouch ? act.txt.replace(/^E – /, 'HASZNÁL – ') : act.txt);
-      if (G.usePressed) { if (act.gate) leaveSchool(); else if (act.seat) toggleSeat(seating); else schoolUse(act); }
-      if (G.kickPressed) schoolKick(act);
+      if (G.usePressed) { if (act.gate) leaveSchool(); else if (act.seat) SC.toggleSeat(seating); else SC.schoolUse(act); }
+      if (G.kickPressed) SC.schoolKick(act);
     } else setPrompt('');
     // the breaks pass slower (10 minutes ≈ 50 s): time to get out to the yard and play
     { const inBreak = ep2.min >= 8 * 60 && ep2.min < 8 * 60 + 6 * 55 && (ep2.min - 8 * 60) % 55 >= 45;
-      ep2.min = Math.min(PHASES.school.end, ep2.min + dt * (inBreak ? 0.2 : minPerSec())); hudClock(); }
-    { const st = schoolStatus(ep2.min, (new Date(DAY0.getFullYear(), DAY0.getMonth(), DAY0.getDate() + ep2.day).getDay() + 6) % 7), el = $('e2Lesson');
+      ep2.min = Math.min(PHASES.school.end, ep2.min + dt * (inBreak ? SCHOOL_BREAK_RATE : SCHOOL_RATE)); hudClock(); }
+    { const st = SC.schoolStatus(ep2.min, (new Date(DAY0.getFullYear(), DAY0.getMonth(), DAY0.getDate() + ep2.day).getDay() + 6) % 7), el = $('e2Lesson');
       if (el && el.textContent !== st.text) { el.textContent = st.text; el.style.background = st.brk ? 'rgba(42,157,143,.85)' : 'rgba(29,53,87,.85)'; } }
     G.usePressed = false; G.qPressed = false; G.kickPressed = G.kickReleased = false; G.invPressed = false;
   } else if (G.mode === 'play') {

@@ -15,6 +15,8 @@ import { Actor, spawnFx } from '../actors.js';
 import { makePerson } from '../rigs.js';
 import { CAM_OFF, scene, sun } from '../scene.js';
 import { G } from '../state.js';
+import { initYard, wrapYard } from './yardnav.js';
+import { buildClouds } from '../clouds.js';
 import { isTouch } from '../input.js';
 import { bigText, say } from '../ui.js';
 import { award } from '../mischief.js';
@@ -31,9 +33,9 @@ const FLOOR = 3.3, TW = 0.25;
 // the main building (only its ground floor is inside the game): x 0 … 36, z −12 … 0; the corridor along its south side
 export const SCHOOL = { x0: 0, x1: 36, z0: -12, z1: 0 };
 const CORR = -2.6;                                     // the corridor's north wall (the classrooms behind it)
-const WING = { x0: -9, x1: 0, z0: -15, z1: 4 };        // the orange block at the west end
-const LOW = { x0: 14, x1: 32, z0: 1.5, z1: 16 };       // the two-storey square building (gym / dining hall) south of it
-const HALL = { x0: 6, x1: 34, z0: -46, z1: -24 };      // the town's sports hall
+export const WING = { x0: -9, x1: 0, z0: -15, z1: 4 };        // the orange block at the west end
+export const LOW = { x0: 14, x1: 32, z0: 1.5, z1: 16 };       // the two-storey square building (gym / dining hall) south of it
+export const HALL = { x0: 6, x1: 34, z0: -46, z1: -24 };      // the town's sports hall
 const COURT = { x0: 38, x1: 60, z0: -42, z1: -27 };    // the blue court
 const FIELD = { x0: 2, x1: 44, z0: 21, z1: 40 };       // the grass field
 const CAMPUS = { x0: -18, x1: 64, z0: -58, z1: 42 };   // the school's fence
@@ -288,9 +290,14 @@ function buildGround() {
     for (let x = 32; x < 40; x += 1) for (let z = 0.4; z < 18; z += 1) b.bx(x + 0.5, 0, z + 0.5, 1, 0.03, 1, pick(C.red), 0, 0.03);
     for (let z = -22; z < 0; z += 1) for (let x = 36.4; x < 40; x += 1) b.bx(x + 0.5, 0, z + 0.5, 1, 0.03, 1, pick(C.paver), 0, 0.03);   // a walk to the hall
     for (let x = -17; x < 6; x += 1) for (let z = -23; z < -14; z += 1) b.bx(x + 0.5, 0, z + 0.5, 1, 0.03, 1, pick(C.paver), 0, 0.03);
-    // the grass field (worn patches, two goals) and the gravel car park behind the hall
-    const { x0, x1, z0, z1 } = FIELD;
-    for (let n = 0; n < 40; n++) b.bx(R(x0 + 2, x1 - 2), 0, R(z0 + 2, z1 - 2), R(1, 3), 0.01, R(1, 2.5), 0xb8a57c, 0, 0.05);
+    // the football field: artificial turf (bright green stripes, white lines), two goals; the gravel car park behind the hall
+    const { x0, x1, z0, z1 } = FIELD, cz0 = (z0 + z1) / 2;
+    for (let k = 0, x = x0; x < x1 - 0.01; x += 3, k++) b.bx(x + 1.5, 0, cz0, 3, 0.025, z1 - z0, k % 2 ? 0x3fa34d : 0x369443, 0, 0);
+    const line = (cx, cz, w, d) => b.bx(cx, 0.026, cz, w, 0.004, d, 0xf4f4f0, 0, 0);
+    line((x0 + x1) / 2, z0 + 1, x1 - x0 - 2, 0.1); line((x0 + x1) / 2, z1 - 1, x1 - x0 - 2, 0.1); line(x0 + 1, cz0, 0.1, z1 - z0 - 2); line(x1 - 1, cz0, 0.1, z1 - z0 - 2);
+    line((x0 + x1) / 2, cz0, 0.1, z1 - z0 - 2);
+    for (let a = 0; a < 32; a++) { const an = a / 32 * Math.PI * 2; line((x0 + x1) / 2 + Math.cos(an) * 3, cz0 + Math.sin(an) * 3, 0.25, 0.25); }   // the centre circle
+    for (const [px, sgn] of [[x0 + 1, 1], [x1 - 1, -1]]) { line(px + sgn * 3, cz0, 0.1, 8); line(px + sgn * 1.5, cz0 - 4, 3, 0.1); line(px + sgn * 1.5, cz0 + 4, 3, 0.1); }   // the penalty areas
     for (const x of [x0 + 2, x1 - 2]) { for (const dz of [-1.6, 1.6]) b.bx(x, 0, (z0 + z1) / 2 + dz, 0.1, 2, 0.1, 0xffffff, 0, 0); b.bx(x, 2, (z0 + z1) / 2, 0.1, 0.1, 3.3, 0xffffff, 0, 0); }
     b.bx(20, 0, -52, 34, 0.02, 10, 0xc8bfae, 0, 0.04);
     // the streets: Kossuth Lajos utca (west), Iskola utca (south), Aradi utca (east), with sidewalks
@@ -313,9 +320,11 @@ function buildGround() {
     b.bx(F.x0 + 0.6, 0, GATE.z - 1.6 + 0.02, 1.2, 1.5, 0.05, C.fence, 0, 0);   // one wing open
     // the houses round the block: along Kossuth Lajos utca (west), Iskola utca (south), Aradi utca (east)
     const roofs = [0xd9662f, 0xc9552a, 0xe0743a, 0xb84f2c], walls2 = [0xf1ece2, 0xe9e1cf, 0xf4efe6];
-    for (let z = -70, n = 0; z < 70; z += 13, n++) familyHouse(b, -38, z, 9, 10, roofs[n % 4], walls2[n % 3], false);
+    // (not on Iskola utca: the west and east rows stop at its crossing – z 43 … 50, with its sidewalks)
+    const offRoad = (z) => Math.abs(z - 46.5) > 4.5 + 5 + 0.5;
+    for (let z = -70, n = 0; z < 70; z += 13, n++) if (offRoad(z)) familyHouse(b, -38, z, 9, 10, roofs[n % 4], walls2[n % 3], false);
     for (let x = -10, n = 0; x < 90; x += 14, n++) familyHouse(b, x, 58, 10, 9, roofs[(n + 1) % 4], walls2[(n + 2) % 3], true);
-    for (let z = -70, n = 0; z < 70; z += 13, n++) familyHouse(b, 80, z, 9, 10, roofs[(n + 2) % 4], walls2[n % 3], false);
+    for (let z = -70, n = 0; z < 70; z += 13, n++) if (offRoad(z)) familyHouse(b, 80, z, 9, 10, roofs[(n + 2) % 4], walls2[n % 3], false);
   }));
   const F = CAMPUS;
   addBoxCol(F.x0 - 0.05, F.z0, F.x0 + 0.05, GATE.z - 1.6, 1.6); addBoxCol(F.x0 - 0.05, GATE.z + 1.6, F.x0 + 0.05, F.z1, 1.6);
@@ -366,7 +375,7 @@ function buildClassroom(r) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.05, 0.08), new THREE.MeshLambertMaterial({ color: 0x8a6a4a }));
     sponge.home.set(wx + 0.12, 0.985, bz + 1.4); m.position.copy(sponge.home); m.castShadow = true; scene.add(m); sponge.mesh = m;
   }
-  const txt = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 1.16), new THREE.MeshBasicMaterial({ map: boardText(r.board), transparent: true })); txt.position.set(wx + 0.085, 1.6, bz); txt.rotation.y = E;
+  const txt = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 1.16), new THREE.MeshBasicMaterial({ map: boardText(r.board), transparent: true })); txt.position.set(wx + 0.085, 1.6, bz); txt.rotation.y = E; r.txt = txt;
   // the clock on the back (east) wall, between the bookcases and the cupboards: the teacher sees it facing the class, the
   // pupils have it behind them
   const ck = makeClock(); clocks.push(ck);
@@ -453,9 +462,15 @@ const CHAIR_TOP = 0.46;
 function chairTo(clock) { tchair.at = clock; tchair.mesh.position.set(clock ? CLOCK.x + 0.2 : tchair.home.x, 0, clock ? CLOCK.z : tchair.home.z); soundAt(tchair.mesh.position.x, tchair.mesh.position.z, () => noise(0.35, 500, 0.8, 0.12), 1); }
 const lessonEnd = (min) => { const t = min - 8 * 60, n = Math.floor(t / 55); return 8 * 60 + n * 55 + 45; };
 function buildPeople() {
-  const T = new Actor(makePerson({ scale: 0.92, shirt: 0x6a4c93, pants: 0x3d405b, hair: 0x8a5a2b, dress: true, glasses: true, hat: false }), 'Tanító néni');
+  const T = new Actor(makePerson({ scale: 0.92, shirt: 0x6a4c93, pants: 0x3d405b, hair: 0x8a5a2b, dress: true, glasses: false, hat: false }), 'Tanító néni');
+  // her glasses: their own little mesh on her face („Hol a szemüvegem?” – in a break she leaves them on her desk)
+  { const g = new THREE.Group(), blk = new THREE.MeshLambertMaterial({ color: 0x222222 }), lens = new THREE.MeshLambertMaterial({ color: 0xbfe3f5, transparent: true, opacity: 0.55 });
+    for (const sx of [-0.07, 0.07]) { const f = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.07, 0.015), blk); f.position.x = sx; g.add(f); const l = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.048, 0.02), lens); l.position.x = sx; g.add(l); }
+    const br = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.015, 0.015), blk); g.add(br);
+    for (const sx of [-0.125, 0.125]) { const arm = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, 0.16), blk); arm.position.set(sx, 0.01, -0.08); g.add(arm); }
+    gl.mesh = g; gl.face = T.rig.S; g.position.set(0, 1.55, 0.165); T.rig.S.add(g); }
   const home = new V3(0.9, 0, -7.3);
-  T.place(home.x, home.z, Math.PI / 2); T.stride = 4.4; school.teacher = T; people.push({ a: T, kind: 'teacher', home, t: R(2, 5) });
+  T.place(home.x, home.z, Math.PI / 2); T.stride = 4.4; school.teacher = T; people.push({ a: T, kind: 'teacher', home, t: R(2, 5), room: ROOMS3[0], sitT: -1 });
   const looks = [[0xe63946, 0x1d3557, 0x5a3825], [0xffca3a, 0x3d405b, 0xd8b45c], [0x8ac926, 0x264653, 0x2b1d14], [0xff70a6, 0x6b705c, 0x8a5a2b], [0x3a86ff, 0x22223b, 0x1b1b1b], [0xf4a261, 0x3d405b, 0x6f4e37],
     [0x2a9d8f, 0x1d3557, 0xc9a66b], [0xb5179e, 0x3d405b, 0x2b1d14], [0x90be6d, 0x264653, 0x5a3825], [0xffd166, 0x1d3557, 0x3b2b20], [0x118ab2, 0x2b2d42, 0x8a5a2b], [0xef476f, 0x264653, 0x1b1b1b]];
   const names = ['Bence', 'Lili', 'Marci', 'Zsófi', 'Ádám', 'Dóri', 'Gergő', 'Panni', 'Levi', 'Bori', 'Máté', 'Kata'], GIRLS = new Set(['Lili', 'Zsófi', 'Dóri', 'Panni', 'Bori', 'Kata']);
@@ -475,7 +490,7 @@ function buildPeople() {
   const r2 = ROOMS3[1];
   const T2 = new Actor(makePerson({ scale: 0.95, shirt: 0x2a6f97, pants: 0x2b2d42, hair: 0x3b2b20, dress: false, glasses: false, hat: false }), 'Tanár bácsi');
   const home2 = new V3(r2.x0 + 0.9, 0, -7.3);
-  T2.place(home2.x, home2.z, Math.PI / 2); T2.stride = 4.4; r2.teacher = T2; ROOMS3[0].teacher = T; people.push({ a: T2, kind: 'teacher', home: home2, t: R(2, 5) });
+  T2.place(home2.x, home2.z, Math.PI / 2); T2.stride = 4.4; r2.teacher = T2; ROOMS3[0].teacher = T; people.push({ a: T2, kind: 'teacher', home: home2, t: R(2, 5), room: r2, sitT: -1 });
   const names2 = ['Kristóf', 'Emma', 'Botond', 'Hanna', 'Zalán', 'Luca', 'Áron', 'Zoé', 'Milán', 'Anna', 'Noel', 'Nóra', 'Dani', 'Olivér'];
   const GIRLS2 = new Set(['Emma', 'Hanna', 'Luca', 'Zoé', 'Anna', 'Nóra']), free2 = new Set([1, 6, 11, 16]);
   let k2 = 0;
@@ -500,15 +515,15 @@ function updatePeople(dt) {
     } else if (p.kind === 'teacher' && p.out) {   // after 14:00 out on the square, watching the children
       if (!a.path) a.targetHeading = Math.atan2(-2 - a.pos.x, 9 - a.pos.z) + Math.sin(G.clockT * 0.3 + p.home.x) * 0.8;
       a.update(dt);
-    } else if (p.kind === 'teacher' && a === school.teacher && !p.out && teacherBreak(p, dt, school.min)) {   // the 6. b's teacher: the break, sitting down
+    } else if (p.kind === 'teacher' && !p.out && teacherBreak(p, dt, school.min)) {   // the teachers: the break in the corridor, sitting down (the mischiefs)
     } else if (p.kind === 'teacher' && a === school.teacher && lesson(school.min)) {   // the 6. b: now and then she writes on the board
       if (ck.writing) {
         a.targetHeading = -Math.PI / 2; a.update(dt);
         const r = a.rig, w = Math.sin(G.clockT * 7) * 0.15; r.sh[0].rotation.x = -2.1 + w; r.sh[0].rotation.z = 0.2; if (r.elbow) r.elbow[0] = 0.5; a.sync();   // the chalk hand up
-        if ((ck.wDur -= dt) <= 0) { ck.writing = false; ck.wT = R(9, 15); }
+        if ((ck.wDur -= dt) <= 0) { ck.writing = false; ck.wT = R(8, 13); }
       } else {
         ck.wT -= dt;
-        if (ck.wT <= 0 && !a.path) { ck.writing = true; ck.wDur = R(6, 9); school.chalkT = 0.2; a.walkTo([[0.6, -7.3 + R(-1.2, 1.2)]], 0.9); }
+        if (ck.wT <= 0 && !a.path) { ck.writing = true; ck.wDur = R(13, 19); school.chalkT = 0.2; a.walkTo([[0.6, -7.3 + R(-1.2, 1.2)]], 0.9); }
         p.t -= dt; if (p.t <= 0 && !a.path && !ck.writing) { p.t = R(3, 7); a.walkTo([[p.home.x + R(0, 0.5), p.home.z + R(-1.8, 1.8)]], 0.8); }
         if (!a.path) a.targetHeading = Math.PI / 2;
         a.update(dt);
@@ -899,15 +914,22 @@ export function schoolAction() {
   let bd = null, bdist = 1.1;
   for (const d of doors) { const r = Math.hypot(P.x - d.x, P.z - d.z); if (r < bdist) { bdist = r; bd = d; } }
   if (bd) return { door: bd, txt: (bd.open ? 'E – ajtó becsukása' : 'E – ajtó kinyitása') + ` (${bd.name})` };
-  if (nearGate()) return { txt: 'E – hazaindulás', gate: true };
+  if (nearGate()) return school.min >= AFTERNOON ? { txt: 'E – hazaindulás', gate: true } : { txt: 'Hazamenni csak 14:00-tól lehet – még tanítás van!' };
   // „Vizes szivacs”: the sponge – from the board, soaked at a sink, onto the teacher's chair (or back)
-  if (sponge.where === 'board' && Math.hypot(P.x - sponge.home.x - 0.45, P.z - sponge.home.z) < 0.8) return { sponge: 'take', txt: 'E – a táblatörlő szivacs elvétele' };
-  if (sponge.where === 'chair' && Math.hypot(P.x - TCHAIR.x, P.z - (TCHAIR.z + 0.6)) < 0.75) return { sponge: 'take', txt: 'E – a szivacs elvétele a székről' };
+  if (!carry.what && sponge.where === 'board' && Math.hypot(P.x - sponge.home.x - 0.45, P.z - sponge.home.z) < 0.8) return { sponge: 'take', txt: 'E – a táblatörlő szivacs elvétele' };
+  if (!carry.what && sponge.where === 'chair' && Math.hypot(P.x - TCHAIR.x, P.z - (TCHAIR.z + 0.6)) < 0.75) return { sponge: 'take', txt: 'E – a szivacs elvétele a székről' };
   if (sponge.where === 'hand') {
     if (SINKS.some((x) => Math.hypot(P.x - x, P.z - (CORR - 0.75)) < 0.55)) return { sponge: 'soak', txt: sponge.wet ? 'E – még jobban beáztatni (már csuromvizes)' : 'E – a szivacs beáztatása a csap alatt' };
     if (Math.hypot(P.x - TCHAIR.x, P.z - (TCHAIR.z + 0.6)) < 0.75) return { sponge: 'chair', txt: 'E – a szivacs a tanári székre' };
     if (Math.hypot(P.x - sponge.home.x - 0.45, P.z - sponge.home.z) < 0.8) return { sponge: 'board', txt: 'E – a szivacs vissza a táblához' };
   }
+  // „Béka a fiókban”: catch the frog by its bush, into the 6. a's teacher's drawer (or let it go)
+  if (!carry.what && sponge.where !== 'hand' && frog.where === 'yard' && !frog.path && Math.hypot(P.x - frog.mesh.position.x, P.z - frog.mesh.position.z) < 0.75) return { frog: 'catch', txt: 'E – a béka elkapása' };
+  if (carry.what === 'frog') return Math.hypot(P.x - FDESK.x, P.z - FDESK.z) < 0.8 ? { frog: 'drawer', txt: 'E – a béka a tanári asztal fiókjába' } : { frog: 'free', txt: 'E – a béka elengedése' };
+  // „Hol a szemüvegem?”: her glasses from her desk (in a break), put down anywhere – or given back to her
+  if (!carry.what && sponge.where !== 'hand' && gl.where === 'desk' && Math.hypot(P.x - (GDESK.x + 0.6), P.z - GDESK.z) < 0.8) return { glasses: 'take', txt: 'E – a tanító néni szemüvegének elvétele' };
+  if (!carry.what && gl.where === 'floor' && Math.hypot(P.x - gl.at.x, P.z - gl.at.z) < 0.7) return { glasses: 'take', txt: 'E – a szemüveg felvétele' };
+  if (carry.what === 'glasses') return gl.search && Math.hypot(P.x - school.teacher.pos.x, P.z - school.teacher.pos.z) < 1.4 ? { glasses: 'give', txt: 'E – „Tanító néni, itt a szemüvege!”' } : { glasses: 'drop', txt: 'E – a szemüveg letétele ide (elrejtés)' };
   // „Előre a mutatót!”: the teacher's chair under the clock, up on it, the hand forward (+5 minutes) – and the chair back
   if (tchair.on) return { clock: 'push', txt: ck.early ? 'Mozgás – leszállás a székről' : 'E – a mutató előre (+5 perc) · mozgás – leszállás', kick: '' };
   if (Math.hypot(P.x - CLOCK.x, P.z - CLOCK.z) < 1.0) {
@@ -919,7 +941,9 @@ export function schoolAction() {
 }
 // E and Space on what schoolAction found (the gate and the seat: ep2.js)
 export function schoolUse(act) {
-  if (act.sponge) spongeUse(act.sponge);
+  if (act.frog) frogUse(act.frog);
+  else if (act.glasses) glassesUse(act.glasses);
+  else if (act.sponge) spongeUse(act.sponge);
   else if (act.clock === 'push') { if (!ck.early && ck.climbT <= 0) clockPush(); }
   else if (act.clock === 'drag') chairDrag();
   else if (act.clock === 'climb') chairClimb(true);
@@ -1018,6 +1042,8 @@ function spongeUse(what) {
 const _hp = new V3();
 function spongeTick(dt, min) {
   const m = sponge.mesh, P = G.petike;
+  if (gl.where === 'hand' && gl.mesh) { if (gl.mesh.parent !== scene) scene.add(gl.mesh); handPos(_hp); gl.mesh.position.set(_hp.x, _hp.y, _hp.z); gl.mesh.rotation.set(0, P.heading, 0); }
+  frogTick(dt);
   if (!m) return;
   if (sponge.where === 'hand') {   // in his right hand (it drips when wet)
     P.rig.handBones?.[0] ? P.rig.handBones[0].getWorldPosition(_hp) : _hp.set(P.pos.x, 0.8, P.pos.z);
@@ -1025,24 +1051,34 @@ function spongeTick(dt, min) {
     if (sponge.wet && (sponge.dripT -= dt) <= 0) { sponge.dripT = 0.25; spawnFx(new V3(_hp.x, _hp.y - 0.07, _hp.z), new V3(0, -0.5, 0), 0x6fb7e0, 0.025, 0.6, -6); }
     // the teacher in the corridor sees him with it
     const T = school.teacher;
-    if (!sponge.seen && !lesson(min) && Math.hypot(T.pos.x - P.pos.x, T.pos.z - P.pos.z) < 2.4) { sponge.seen = true; say(T, 'Petyus, mit csinálsz azzal a szivaccsal?', 2.4); setTimeout(() => say(P, 'Semmit… letörlöm a táblát!', 2), 2200); }
+    if (!sponge.seen && !lesson(min) && Math.hypot(T.pos.x - P.pos.x, T.pos.z - P.pos.z) < 2.4 && Math.hypot(sponge.mesh.position.x - P.pos.x, sponge.mesh.position.z - P.pos.z) < 0.6) { sponge.seen = true; say(T, 'Petyus, mit csinálsz azzal a szivaccsal?', 2.4); setTimeout(() => say(P, 'Semmit… letörlöm a táblát!', 2), 2200); }
   }
 }
-// the teacher of the 6. b: in a break out in the corridor (by the door); at the start of a lesson back to her desk, she sits down
-// for a moment („Na, nézzük a naplót…”) – onto whatever is on her chair
+// the teachers: in a break out in the corridor (by their door); at the start of a lesson back to the desk, they sit down for a
+// moment („Na, nézzük a naplót…”) – the 6. b's onto whatever is on her chair (and she puts her glasses on – if they are still
+// there), the 6. a's opens his drawer for the register (and whatever is in it jumps out)
 function teacherBreak(p, dt, min) {
-  const a = p.a, brk = !lesson(min);
-  if (brk && !p.brk && !p.out && min >= 8 * 60) { p.brk = true; p.back = false; a.walkTo([[p.home.x + 0.8, -3.6], [5.1, -3.4], [5.1, -1.6], [BREAK_SPOT.x, BREAK_SPOT.z]], 1.1); }
-  if (!brk && p.brk && !p.back) { p.back = true; ck.writing = false; a.walkTo([[5.1, -1.6], [5.1, -3.4], [1.9, -3.8], [1.9, -9.0], [TCHAIR.x + 0.1, TCHAIR.z + 0.5]], 1.4); }
-  if (p.back && !a.path && sponge.sitT < 0) {   // at her chair: sit down
-    a.place(TCHAIR.x, TCHAIR.z, Math.PI / 2); a.seatH = 0.45; a.sitTarget = 1; sponge.sitT = 0;
-    say(a, pick(['Na, nézzük a naplót…', 'Üljetek le, gyerekek!', 'Csendet kérek!']), 2);
+  const a = p.a, brk = !lesson(min), r = p.room, ours = r === ROOMS3[0], ch = { x: r.x0 + 1.32, z: -9.6 }, spot = { x: r.door + 1.5, z: -1.3 };
+  if (ours && gl.search) return glassesSearch(p, dt, min);
+  if (brk && !p.brk && !p.out && min >= 8 * 60) {
+    p.brk = true; p.back = false;
+    if (ours && gl.where === 'head') { gl.where = 'desk'; scene.add(gl.mesh); gl.mesh.position.set(GDESK.x, 0.8, GDESK.z); gl.mesh.rotation.set(0, Math.PI / 2, 0); say(a, 'Hű, de fáradt a szemem… leteszem a szemüvegem.', 2.2); }
+    a.walkTo([[p.home.x + 0.8, -3.6], [r.door, -3.4], [r.door, -1.6], [spot.x, spot.z]], 1.1);
   }
-  if (sponge.sitT >= 0) {
-    sponge.sitT += dt;
-    if (sponge.where === 'chair' && a.sit > 0.7 && !sponge.hit) spongeHit(a);
-    if (sponge.sitT > (sponge.hit ? 1.0 : 4.5)) { a.sitTarget = 0; }
-    if (sponge.sitT > (sponge.hit ? 2.0 : 5.5)) { sponge.sitT = -1; p.brk = false; p.back = false; sponge.hit = false; a.walkTo([[p.home.x, p.home.z]], 0.9); }
+  if (!brk && p.brk && !p.back) { p.back = true; if (ours) ck.writing = false; a.walkTo([[r.door, -1.6], [r.door, -3.4], [r.x0 + 1.9, -3.8], [r.x0 + 1.9, -9.0], [ch.x + 0.1, ch.z + 0.5]], 1.4); }
+  if (p.back && !a.path && p.sitT < 0) {   // at the chair: sit down
+    a.place(ch.x, ch.z, Math.PI / 2); a.seatH = 0.45; a.sitTarget = 1; p.sitT = 0;
+    say(a, ours ? pick(['Na, nézzük a naplót…', 'Üljetek le, gyerekek!', 'Csendet kérek!']) : pick(['Na, hol is a napló…', 'Csend legyen!']), 2);
+  }
+  if (p.sitT >= 0) {
+    p.sitT += dt;
+    if (ours && sponge.where === 'chair' && a.sit > 0.7 && !sponge.hit) spongeHit(a);
+    if (ours && p.sitT > 0.8 && !p.glDone) { p.glDone = true; glassesOn(a); }
+    if (!ours && frog.where === 'drawer' && p.sitT > 1.2 && !frog.out) frogOut(p);
+    if (frog.out && !ours) return frogTeacher(p, dt);
+    const busy = ours && sponge.hit;
+    if (p.sitT > (busy ? 1.0 : 4.5)) a.sitTarget = 0;
+    if (p.sitT > (busy ? 2.0 : 5.5)) { p.sitT = -1; p.brk = false; p.back = false; p.glDone = false; if (ours) sponge.hit = false; if (!(ours && gl.search)) a.walkTo([[p.home.x, p.home.z]], 0.9); }
     a.update(dt); return true;
   }
   if (p.brk) { if (!a.path && !p.back) a.targetHeading = Math.PI; a.update(dt); return true; }
@@ -1069,6 +1105,432 @@ function spongeHit(T) {
   sponge.seen = false;
 }
 
+// ---------------------------------------------------------------- „Béka a fiókban” (r2-beka) and „Hol a szemüvegem?” (r2-szemuveg)
+// carry: what Petyus has in his hand of these two ('frog' | 'glasses' | null – the sponge has its own)
+export const carry = { what: null };
+export const frog = { mesh: null, where: 'yard', home: new V3(-9.0, 0, 3.3), hopT: 1, hop: null, path: null, out: false, peeked: false, caught: false, done: false };
+export const gl = { mesh: null, face: null, where: 'head', at: new V3(), search: false, t: 0, stage: 0, step: 0, returned: false };
+const GDESK = { x: 1.9, z: -9.25 };   // where she leaves her glasses (her desk)
+const FDESK = { x: 14.55, z: -9.6 };  // in front of the 6. a's teacher's desk (its drawer)
+function buildFrog() {
+  const g = new THREE.Group(), grn = new THREE.MeshLambertMaterial({ color: 0x4caf50 }), dk = new THREE.MeshLambertMaterial({ color: 0x2e7d32 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.07, 0.15), grn); body.position.y = 0.05; g.add(body);
+  for (const sx of [-0.04, 0.04]) { const e = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.035, 0.035), grn); e.position.set(sx, 0.1, 0.05); g.add(e); const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.01), new THREE.MeshBasicMaterial({ color: 0x111111 })); p2.position.set(sx, 0.105, 0.068); g.add(p2); }
+  for (const sx of [-0.08, 0.08]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.03, 0.1), dk); l.position.set(sx, 0.02, -0.04); g.add(l); }
+  g.position.copy(frog.home); g.traverse((o) => { if (o.isMesh) o.castShadow = true; }); scene.add(g); frog.mesh = g;
+}
+const handPos = (out) => { const P = G.petike; P.rig.handBones?.[0] ? P.rig.handBones[0].getWorldPosition(out) : out.set(P.pos.x, 0.8, P.pos.z); return out; };
+const sees = (a, p, far, cone) => { const dx = p.x - a.pos.x, dz = p.z - a.pos.z, d = Math.hypot(dx, dz); if (d > far) return false; let da = Math.atan2(dx, dz) - a.heading; da = Math.atan2(Math.sin(da), Math.cos(da)); return Math.abs(da) < cone; };
+function frogHopTo(x, z) { frog.hop = { x0: frog.mesh.position.x, z0: frog.mesh.position.z, x1: x, z1: z, t: 0 }; frog.mesh.rotation.y = Math.atan2(x - frog.mesh.position.x, z - frog.mesh.position.z); }
+function frogTick(dt) {
+  const m = frog.mesh, P = G.petike; if (!m) return;
+  if (frog.where === 'hand') { handPos(_hp); m.position.set(_hp.x, _hp.y - 0.05, _hp.z); m.rotation.y = P.heading; return; }
+  if (frog.hop) {   // a hop: an arc
+    const h = frog.hop; h.t = Math.min(1, h.t + dt * 2.6);
+    m.position.set(h.x0 + (h.x1 - h.x0) * h.t, (frog.hopY || 0) + Math.sin(h.t * Math.PI) * 0.18, h.z0 + (h.z1 - h.z0) * h.t);
+    if (h.t >= 1) { frog.hop = null; m.position.y = frog.hopY || 0; if (Math.random() < 0.3) say({ headWorld: (o) => o.set(m.position.x, 0.45, m.position.z) }, 'BREKK!', 0.9); }
+    return;
+  }
+  if (frog.path && frog.path.length) { const [x, z] = frog.path.shift(); frog.hopY = 0; frogHopTo(x, z); if (!frog.path.length) frog.path = null; return; }
+  if (frog.where === 'yard') {   // now and then a hop near its bush; it hops off if Petyus comes close
+    const d = Math.hypot(P.pos.x - m.position.x, P.pos.z - m.position.z);
+    if ((frog.hopT -= dt) <= 0 || (d < 1.0 && Math.random() < dt * 0.8)) {
+      frog.hopT = R(2, 4);
+      const a = Math.random() * Math.PI * 2, r = Math.random() * 1.4;
+      frogHopTo(frog.home.x + Math.cos(a) * r, frog.home.z + Math.sin(a) * r);
+    }
+  }
+}
+function frogUse(what) {
+  const P = G.petike;
+  if (what === 'catch') {
+    if (Math.random() < 0.5) { frog.where = 'hand'; carry.what = 'frog'; frog.hop = null; say(P, 'Megvagy, brekike!', 1.4); tone('sine', 520, 780, 0.1, 0.05); }
+    else { const a = Math.atan2(frog.mesh.position.x - P.pos.x, frog.mesh.position.z - P.pos.z); frogHopTo(frog.mesh.position.x + Math.sin(a) * 1.1, frog.mesh.position.z + Math.cos(a) * 1.1); say(P, pick(['Elugrott!', 'Hé, gyere vissza!']), 1.2); }
+  } else if (what === 'drawer') {
+    const T2 = ROOMS3[1].teacher;
+    if (T2.pos.z < CORR && T2.pos.x > 12 && T2.pos.x < 24 && sees(T2, P.pos, 6, 1.3)) {   // he is in the room and sees it
+      frog.caught = true; say(T2, 'Hát te mit keresel az asztalomnál, fiam?', 2.4);
+      frog.where = 'yard'; carry.what = null; frog.mesh.position.set(P.pos.x, 0, P.pos.z); frog.path = [[P.pos.x + 0.8, P.pos.z + 1], [14, -3.4], [17.1, -3.3], [17.1, -1.4], [2.6, -1.2], [2.6, 1.2], [2.6, 4.4], [frog.home.x, frog.home.z]];
+      setTimeout(() => say(P, 'Csak… egy béka volt nálam. Már nincs.', 2), 2000);
+      return;
+    }
+    frog.where = 'drawer'; carry.what = null; frog.mesh.visible = false; soundAt(FDESK.x, FDESK.z, () => { noise(0.15, 800, 1, 0.12); noise(0.12, 600, 1, 0.12, 0.35); }, 1);   // the drawer out and in
+    say(P, 'Hihi… jó lesz neki ott.', 1.4);
+  } else if (what === 'free') { frog.where = 'yard'; carry.what = null; frog.mesh.position.set(P.pos.x, 0, P.pos.z); frog.path = [[P.pos.x + 0.5, P.pos.z + 0.4]]; }
+}
+// the 6. a's teacher opens his drawer: the frog jumps out, he is up on his desk, the frog hops off to the corridor, past the 6. b
+function frogOut(p) {
+  const T2 = p.a; frog.out = true; frog.tt = 0; frog.where = 'loose'; frog.peeked = false;
+  frog.mesh.visible = true; frog.mesh.position.set(p.room.x0 + 1.9, 0.78, -9.45); frog.hopY = 0.78;
+  say({ headWorld: (o) => o.set(p.room.x0 + 1.9, 1.3, -9.45) }, 'BREKK!', 1.2); soundAt(p.room.x0 + 1.9, -9.5, () => { tone('square', 140, 90, 0.18, 0.12); tone('square', 120, 80, 0.18, 0.1, 0.25); }, 1);
+  setTimeout(() => { say(T2, 'ÁÁÁ!! Egy BÉKA!!', 1.8); T2.sitTarget = 0; }, 400);
+  setTimeout(() => { T2.place(p.room.x0 + 1.9, -9.6, Math.PI / 2); T2.pos.y = 0.78; T2.cheer = 6; }, 900);   // up on the desk
+  const kids = pupils.filter((k) => k.room === ROOMS3[1] && k.a.rig.root.visible);
+  kids.slice(0, 5).forEach((k, i) => setTimeout(() => say(k.a, pick(['IIIIIII!', 'Egy béka!!', 'Hahaha!', 'Fúúúj!', 'Brekk-brekk!']), 1.4), 900 + i * 280));
+  // its way: down, through the room, out of the door, along the corridor to the 6. b's door, then out to the yard
+  setTimeout(() => { frog.hopY = 0; frog.path = [[p.room.x0 + 2.6, -8.6], [p.room.x0 + 4, -6.5], [p.room.x0 + 5.1, -4.2], [p.room.door, -3.4], [p.room.door, -2.2], [p.room.door - 3, -1.6], [8, -1.6], [5.1, -1.8], [5.1, -2.7]]; }, 1500);
+}
+function frogTeacher(p, dt) {   // on the desk until the frog is gone; then down
+  const T2 = p.a; frog.tt += dt;
+  T2.update(dt); if (T2.pos.y > 0.1) { T2.pos.y = 0.78; T2.sync(); }
+  if (!frog.peeked && !frog.path && !frog.hop && frog.mesh.position.x < 6) {   // at the 6. b's door
+    frog.peeked = true; const d = doors.find((q) => q.name === '6. b'), open = d && d.open;
+    if (open) { say(school.teacher, 'Egy BÉKA?! Gyerekek, maradjatok a helyeteken!', 2.6); pupils.filter((k) => k.room === ROOMS3[0]).slice(0, 3).forEach((k, i) => setTimeout(() => say(k.a, pick(['Egy béka!', 'Hahaha!', 'Brekk!']), 1.2), 600 + i * 300)); }
+    frog.sixB = open;
+    setTimeout(() => { frog.path = [[5.1, -1.4], [2.6, -1.1], [2.6, 1.2], [2.6, 4.4], [frog.home.x, frog.home.z]]; }, 1600);
+  }
+  if (frog.tt > 9 && T2.pos.y > 0.1) { T2.pos.y = 0; T2.cheer = 0; T2.place(p.room.x0 + 2.6, -9.0, Math.PI / 2); say(T2, 'Ki volt ez?! Na megállj, ha megtudom!', 2.4); }
+  if (frog.tt > 9 && frog.peeked && !frog.done) { frog.done = true; const v = frog.caught ? 2 : 2 + (frog.sixB ? 1 : 0); setTimeout(() => award('r2-beka', v, { sixB: frog.sixB, caught: frog.caught }), 1500); }
+  if (frog.tt > 11 && !frog.path && !frog.hop) { frog.out = false; frog.where = 'yard'; frog.done = false; frog.caught = false; p.sitT = -1; p.brk = false; p.back = false; T2.walkTo([[p.home.x, p.home.z]], 0.9); }
+  return true;
+}
+// ---- the glasses
+function glassesUse(what) {
+  const P = G.petike;
+  if (what === 'take') { gl.where = 'hand'; carry.what = 'glasses'; tone('sine', 520, 780, 0.1, 0.05); }
+  else if (what === 'drop') { gl.where = 'floor'; carry.what = null; gl.at.set(P.pos.x + Math.sin(P.heading) * 0.3, 0, P.pos.z + Math.cos(P.heading) * 0.3); gl.mesh.position.set(gl.at.x, 0.03, gl.at.z); tone('sine', 600, 420, 0.1, 0.05); }
+  else if (what === 'give') {   // back to her: a red point (but no ★★★)
+    gl.returned = true; carry.what = null; glassesBack(school.teacher, true);
+  }
+}
+function glassesOn(T) {   // at her desk: on with them – or they are gone
+  if (gl.where === 'desk') { gl.where = 'head'; gl.face.add(gl.mesh); gl.mesh.position.set(0, 1.55, 0.165); gl.mesh.rotation.set(0, 0, 0); return; }
+  gl.search = true; gl.t = 0; gl.stage = 1; gl.step = 0; gl.returned = false;
+  say(T, 'Hol a szemüvegem? Itt hagytam az asztalon…', 2.6);
+}
+const scramble = (l) => l.split('').map((c) => (c === ' ' || Math.random() < 0.55 ? c : pick('abcdefgijklmnoprstuvz?/1234'.split('')))).join('');
+function glassesSearch(p, dt, min) {
+  const T = p.a, P = G.petike; gl.t += dt;
+  const found = gl.where === 'floor' && Math.hypot(T.pos.x - gl.at.x, T.pos.z - gl.at.z) < 1.1;
+  if (found || !lesson(min)) { glassesBack(T, false); p.sitT = -1; p.brk = false; p.back = false; T.update(dt); return true; }
+  const go = (pts) => T.walkTo(pts, 0.9);
+  // the steps: the desk → blind at the board (wrong names) → the shelves → the 6. a's teacher
+  if (gl.step === 0 && gl.t > 2.6) { gl.step = 1; T.sitTarget = 0; go([[2.6, -9.0]]); }
+  if (gl.step === 1 && gl.t > 5) { gl.step = 2; say(T, 'Nincs itt… Na mindegy, vakon is megy.', 2.4); ROOMS3[0].txt.material.map = boardText(ROOMS3[0].board.map(scramble)); go([[0.6, -7.3]]); }
+  if (gl.step === 2 && gl.t > 9) {
+    gl.step = 3; gl.stage = 2; T.targetHeading = Math.PI / 2;
+    say(T, 'Botond, gyere ki a táblához!', 2.2);
+    setTimeout(() => { const k = pick(pupils.filter((q) => q.room === ROOMS3[0] && q.a.rig.root.visible)); if (k) say(k.a, 'Botond a 6. a-ba jár, tanító néni!', 2.2); }, 2300);
+    if (P.pos.z < CORR && P.pos.x < 12) setTimeout(() => say(T, 'Akkor te, kislány, ott elöl!', 2), 5000), setTimeout(() => say(P, 'Tanító néni… én Petyus vagyok.', 2), 7000);
+  }
+  if (gl.step === 2 && T.path === null && gl.t > 6) { T.targetHeading = -Math.PI / 2; const r = T.rig; r.sh[0].rotation.x = -2.1 + Math.sin(G.clockT * 7) * 0.2; }
+  if (gl.step === 3 && gl.t > 15) { gl.step = 4; say(T, 'Hátha a polcon hagytam…', 2); go([[3.5, -6.5], [10.8, -9.6]]); }
+  if (gl.step === 4 && gl.t > 22 && !T.path) {   // not found: next door – it must be him
+    gl.step = 5; say(T, 'Nincs sehol. Ez csak a kolléga lehetett!', 2.4);
+    go([[10, -4], [5.1, -3.4], [5.1, -1.6], [17.1, -1.6], [17.1, -2.3]]);
+  }
+  if (gl.step === 5 && !T.path && gl.t > 24) {
+    gl.step = 6; gl.stage = 3;
+    say(T, 'Kolléga! Nem látta a szemüvegemet? Biztos maga tette el!', 3);
+    setTimeout(() => say(ROOMS3[1].teacher, 'Én? Ugyan, kolléganő! Nálam nincs!', 2.6), 3200);
+    setTimeout(() => say(T, 'Hmpf. Szerencsére van egy tartalék a táskámban.', 2.6), 6200);
+  }
+  if (gl.step === 6 && gl.t > 34) { glassesBack(T, false); p.sitT = -1; p.brk = false; p.back = false; T.walkTo([[17.1, -1.6], [5.1, -1.6], [5.1, -3.4], [p.home.x, p.home.z]], 1.1); }
+  T.update(dt);
+  if (gl.step === 2 && !T.path) { const r = T.rig; r.sh[0].rotation.x = -2.1 + Math.sin(G.clockT * 7) * 0.2; r.sh[0].rotation.z = 0.2; T.sync(); }
+  return true;
+}
+function glassesBack(T, given) {   // the search is over: the glasses on her nose, the board right again; the stars
+  const stage = gl.stage, returned = given || gl.returned;
+  gl.search = false; gl.where = 'head'; carry.what = null; gl.face.add(gl.mesh); gl.mesh.position.set(0, 1.55, 0.165); gl.mesh.rotation.set(0, 0, 0);
+  ROOMS3[0].txt.material.map = boardText(ROOMS3[0].board);
+  if (given) say(T, 'Ó, köszönöm, Petyus! Ezért jár egy piros pont!', 2.6);
+  else if (stage < 3) say(T, 'Na végre! Itt van!', 2);
+  if (stage >= 1) setTimeout(() => award('r2-szemuveg', returned ? Math.min(stage, 2) : stage, { returned, blamed: stage >= 3 && !returned }), 2500);
+  gl.stage = 0;
+}
+
+// ---------------------------------------------------------------- the playground east of the field (swings, slide, seesaw, sandbox,
+// climbing frame), two concrete ping-pong tables and a basketball hoop on the red pavers; children play on them in the breaks
+const PLAY = { swing: { x: 52, z: 25 }, slide: { x: 58.5, z: 31 }, seesaw: { x: 50, z: 34 }, sand: { x: 58.5, z: 24 }, climb: { x: 55, z: 38 } };
+const PONG = [{ x: 35.5, z: 5.5 }, { x: 35.5, z: 11 }], HOOP = { x: 38.4, z: 15.8 };
+const play = { swings: [], seesaw: null, balls: [] };
+// the slide's chute (relative to PLAY.slide): from the platform's edge (z0, y0) down to z1 (y1), then flat to z2
+const SL = { z0: 0.5, y0: 1.48, z1: 3.0, y1: 0.34, z2: 3.6 };
+const slideY = (z) => z <= SL.z0 ? SL.y0 : z >= SL.z1 ? SL.y1 : SL.y0 - (z - SL.z0) / (SL.z1 - SL.z0) * (SL.y0 - SL.y1);
+// a playground child posed by hand: the actor's own animation first, then the pose, then the root lifted to y
+function lift(a, y) { a.sync(); a.rig.root.position.y = y; }
+// the legs of a child sitting with its hips at height H above the ground (the voxel people: thigh = shin = 0.4 x scale):
+// low - the knees come up, the soles on the ground; high - the thighs flat, the shins hanging
+function seatLegs(a, H, fwd = 0.15) {
+  const r = a.rig, l = 0.4 * r.S.scale.x, c = H / l - Math.cos(fwd);
+  const al = c <= 0 ? Math.min(2.4, Math.acos(Math.max(-1, c))) : Math.PI / 2;
+  for (let i = 0; i < 2; i++) { r.hip[i].rotation.x = -al; r.knee[i].rotation.x = al - fwd; r.hip[i].rotation.z = (i ? 1 : -1) * 0.12; }
+}
+
+function buildPlayground() {
+  const steel = 0x3a86ff, red = 0xe63946, yel = 0xffca3a, wood = 0x9c6b3e, conc = 0x9aa0a6;
+  scene.add(partMesh((b) => {
+    // the safety ground: a rubber area under the playground
+    b.bx(55, 0, 31, 16, 0.03, 18, 0xc0563f, 0, 0.03);
+    // the swing frame: two A-legs and a top bar (3 swings)
+    const S = PLAY.swing;
+    b.bx(S.x, 2.3, S.z, 4.96, 0.12, 0.12, steel, 0, 0);
+    for (const dx of [-2.4, 2.4]) for (const dz of [-1, 1]) b.bx(S.x + dx, 0, S.z + dz * 1.0, 0.24, 0.06, 0.24, 0x7d8590, 0, 0);   // the A-legs' concrete feet
+    // the slide: a ladder up to a platform with a roof, the chute down southwards
+    const L = PLAY.slide;
+    for (const dx of [-0.45, 0.45]) for (const dz of [-0.45, 0.45]) b.bx(L.x + dx, 0, L.z + dz, 0.1, 3.0, 0.1, yel, 0, 0);
+    b.bx(L.x, 1.4, L.z, 1.0, 0.08, 1.0, wood, 0, 0.02); b.bx(L.x, 3.0, L.z, 1.2, 0.08, 1.2, red, 0, 0);   // the roof high enough for the bigger ones
+    for (let k = 0; k < 6; k++) b.bx(L.x, 0.2 + k * 0.24, L.z - 1.0 + (0.2 + k * 0.24) / 1.48 * 0.45, 0.62, 0.05, 0.08, wood, 0, 0);   // the ladder's rungs (north side, leaning in)
+    for (const dx of [-0.3, 0.3]) b.bx(L.x + dx, 0, L.z + SL.z1 - 0.1, 0.06, SL.y1 - 0.03, 0.06, yel, 0, 0);   // the run-out's legs
+    // the seesaw's middle block
+    b.bx(PLAY.seesaw.x, 0, PLAY.seesaw.z, 0.4, 0.45, 0.3, steel, 0, 0);
+    // the sandbox: a wooden frame, sand, a bucket and a spade
+    const D = PLAY.sand;
+    b.bx(D.x, 0, D.z, 3.2, 0.12, 3.2, 0xe9d8a6, 0, 0.05);
+    for (const [dx, dz, w, d] of [[0, -1.6, 3.4, 0.2], [0, 1.6, 3.4, 0.2], [-1.6, 0, 0.2, 3.2], [1.6, 0, 0.2, 3.2]]) b.bx(D.x + dx, 0, D.z + dz, w, 0.3, d, wood, 0, 0.03);
+    b.bx(D.x + 0.6, 0.12, D.z - 0.5, 0.2, 0.2, 0.2, red, 0, 0); b.bx(D.x - 0.5, 0.12, D.z + 0.6, 0.06, 0.04, 0.35, yel, 0, 0);
+    // the climbing frame: a cube of bars, 3 × 3 × 2 m
+    const C2 = PLAY.climb;
+    for (const dx of [-1.5, 0, 1.5]) for (const dz of [-1, 1]) b.bx(C2.x + dx, 0, C2.z + dz, 0.08, 2.0, 0.08, red, 0, 0);
+    for (const y of [0.7, 1.35, 2.0]) { for (const dz of [-1, 1]) b.bx(C2.x, y, C2.z + dz, 3.08, 0.06, 0.06, steel, 0, 0); for (const dx of [-1.5, 0, 1.5]) b.bx(C2.x + dx, y, C2.z, 0.06, 0.06, 2.08, steel, 0, 0); }
+    // the ping-pong tables (concrete, a steel net) and the basketball hoop
+    for (const T of PONG) { b.bx(T.x, 0, T.z, 1.2, 0.72, 0.4, conc, 0, 0.02); b.bx(T.x, 0.72, T.z, 1.52, 0.06, 2.74, 0x2e7d5b, 0, 0.02); b.bx(T.x, 0.78, T.z, 1.52, 0.003, 0.03, 0xffffff, 0, 0); b.bx(T.x, 0.78, T.z, 1.6, 0.15, 0.04, 0x9aa0a6, 0, 0); }
+    b.bx(HOOP.x, 0, HOOP.z, 0.14, 3.0, 0.14, 0x555b62, 0, 0); b.bx(HOOP.x - 0.4, 2.7, HOOP.z, 0.06, 1.0, 1.6, 0xffffff, 0, 0); b.bx(HOOP.x - 0.45, 2.9, HOOP.z, 0.02, 0.4, 0.5, red, 0, 0);
+    for (let a = 0; a < 12; a++) { const an = a / 12 * Math.PI * 2; b.bx(HOOP.x - 0.7 + Math.cos(an) * 0.22, 3.05, HOOP.z + Math.sin(an) * 0.22, 0.06, 0.02, 0.06, 0xf77f00, 0, 0); }
+  }));
+  // colliders (Petyus and the children walk round them)
+  const S = PLAY.swing, L = PLAY.slide, D = PLAY.sand, C2 = PLAY.climb;
+  for (const dx of [-2.4, 2.4]) addBoxCol(S.x + dx - 0.1, S.z - 1.05, S.x + dx + 0.1, S.z + 1.05, 2.3);
+  addBoxCol(L.x - 0.5, L.z - 1.05, L.x + 0.5, L.z + 0.5, 3.0); addBoxCol(L.x - 0.35, L.z + 0.5, L.x + 0.35, L.z + 3.0, 1.0);
+  addBoxCol(C2.x - 1.55, C2.z - 1.05, C2.x + 1.55, C2.z + 1.05, 2.0);
+  for (const T of PONG) addBoxCol(T.x - 0.76, T.z - 1.37, T.x + 0.76, T.z + 1.37, 0.78);
+  addBoxCol(HOOP.x - 0.1, HOOP.z - 0.1, HOOP.x + 0.1, HOOP.z + 0.1, 3);
+  // the moving parts: the swings' seats (on chains), the seesaw's plank, the ping-pong balls
+  const chain = new THREE.MeshLambertMaterial({ color: 0x9aa0a6 }), seatM = new THREE.MeshLambertMaterial({ color: 0x2b2d42 });
+  for (const dx of [-1.5, 0, 1.5]) {
+    const pv = new THREE.Group(); pv.position.set(S.x + dx, 2.3, S.z); scene.add(pv);
+    for (const sx of [-0.2, 0.2]) { const c = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.85, 0.02), chain); c.position.set(sx, -0.92, 0); pv.add(c); }
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.05, 0.2), seatM); seat.position.y = -1.85; pv.add(seat);
+    play.swings.push({ pv, ph: Math.random() * 6, kid: null });
+  }
+  { // the swing frame's A-legs: from the feet on the ground (1 m to either side) up to the top bar
+    const sm = new THREE.MeshLambertMaterial({ color: steel }), ln = Math.hypot(1.0, 2.36);
+    for (const dx of [-2.4, 2.4]) for (const dz of [-1, 1]) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.1, ln, 0.1), sm); m.position.set(S.x + dx, 2.36 / 2 + 0.03, S.z + dz * 0.5); m.rotation.x = -dz * Math.atan2(1.0, 2.36); m.castShadow = true; scene.add(m);
+    }
+  }
+  const sw = new THREE.Group(); sw.position.set(PLAY.seesaw.x, 0.45, PLAY.seesaw.z); scene.add(sw);
+  const plank = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 0.3), new THREE.MeshLambertMaterial({ color: yel })); sw.add(plank);
+  for (const sx of [-1, 1]) { const h = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.34, 0.3), new THREE.MeshLambertMaterial({ color: steel })); h.position.set(sx * 1.12, 0.2, 0); sw.add(h); }
+  play.seesaw = sw;
+  { // the slide's chute: one smooth sloping piece from the platform down, with side rails, then a short flat run-out
+    const red2 = new THREE.MeshLambertMaterial({ color: 0xe63946 });
+    const part = (z0, z1, y0, y1) => {
+      const g = new THREE.Group(), ln = Math.hypot(z1 - z0, y0 - y1); g.position.set(L.x, (y0 + y1) / 2, L.z + (z0 + z1) / 2); g.rotation.x = Math.atan2(y0 - y1, z1 - z0); scene.add(g);
+      const bed = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.05, ln + 0.02), red2); bed.position.y = -0.025; g.add(bed);
+      for (const sx of [-0.33, 0.33]) { const rl = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, ln + 0.02), red2); rl.position.set(sx, 0.03, 0); g.add(rl); }
+      g.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+    };
+    part(SL.z0, SL.z1, SL.y0, SL.y1); part(SL.z1, SL.z2, SL.y1, SL.y1);
+    // the ladder's two rails: from the ground 1 m out to the platform's edge (and a little above it, a handhold)
+    const ym = new THREE.MeshLambertMaterial({ color: 0xffca3a }), rl = Math.hypot(0.6, 1.95);
+    for (const dx of [-0.34, 0.34]) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.06, rl, 0.06), ym); m.position.set(L.x + dx, 1.95 / 2, L.z - 1.02 + 0.3); m.rotation.x = Math.atan2(0.6, 1.95); m.castShadow = true; scene.add(m); }
+  }
+  for (const T of PONG) { const ball = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), new THREE.MeshLambertMaterial({ color: 0xffffff })); ball.visible = false; scene.add(ball); play.balls.push({ ball, T, t: Math.random() }); }
+}
+// the children on the playground (their places and what they do): swings, the seesaw, the slide (round and round), the
+// sandbox, on top of the climbing frame, ping-pong, shooting hoops
+const PLAYERS = [
+  ...[0, 1, 2].map((i) => ({ role: 'swing', i })), { role: 'seesaw', i: 0 }, { role: 'seesaw', i: 1 },
+  { role: 'slide', i: 0 }, { role: 'slide', i: 1 }, { role: 'sand', i: 0 }, { role: 'sand', i: 1 }, { role: 'climb', i: 0 },
+  { role: 'pong', i: 0, T: 0 }, { role: 'pong', i: 1, T: 0 }, { role: 'pong', i: 0, T: 1 }, { role: 'pong', i: 1, T: 1 }, { role: 'hoop', i: 0 },
+];
+function playSpot(k) {   // where a playing child stands / sits
+  const S = PLAY.swing, L = PLAY.slide, D = PLAY.sand, C2 = PLAY.climb, W = PLAY.seesaw;
+  switch (k.role) {
+    case 'swing': return [S.x - 1.5 + k.i * 1.5, S.z + 0.6];
+    case 'seesaw': return [W.x + (k.i ? 1.62 : -1.62), W.z + 0.5];
+    case 'slide': return [L.x + (k.i ? 0.6 : 0), L.z - 1.4 - k.i * 0.6];
+    case 'sand': return [D.x + (k.i ? 0.6 : -0.6), D.z + (k.i ? 0.4 : -0.3)];
+    case 'climb': return [C2.x - 1.5, C2.z - 1.4];
+    case 'pong': { const T = PONG[k.T]; return [T.x, T.z + (k.i ? 1.75 : -1.75)]; }
+    default: return [HOOP.x - 2.5, HOOP.z];
+  }
+}
+function playTick(dt, k) {   // a child arrived at its toy: playing
+  const a = k.a, t = (k.pt = (k.pt || 0) + dt);
+  switch (k.role) {
+    case 'swing': {
+      const sw = play.swings[k.i], th = Math.sin(t * 2.1 + sw.ph) * 0.55; sw.pv.rotation.x = th;
+      a.place(sw.pv.position.x, sw.pv.position.z - Math.sin(th) * 1.85, 0); a.seatH = 0.45; a.seatBase = 2.3 - Math.cos(th) * 1.85 + 0.025 - a.seatH; a.sitTarget = a.sit = 1; a.heading = a.targetHeading = 0; a.update(0.0001);
+      a.rig.inner.rotation.x = th * 0.5;   // th > 0: the seat swings back (−z) – leaning forward; forward – leaning back for (let i = 0; i < 2; i++) { a.rig.sh[i].rotation.x = -2.6; a.rig.knee[i].rotation.x = 1.45 + th * 0.8; } a.rig.apply && a.rig.apply();   // hands up on the chains, legs pumping
+      return true;
+    }
+    case 'seesaw': {   // astride the plank, facing the middle, holding the handle; the low one pushes off with its feet
+      const ts = G.clockT, ang = Math.sin(ts * 1.5) * 0.24; play.seesaw.rotation.z = ang;
+      const sg = k.i ? 1 : -1, W = PLAY.seesaw, x = W.x + sg * 1.62 * Math.cos(ang), y = 0.45 + sg * 1.62 * Math.sin(ang) + 0.04;
+      a.path = null; a.place(x, W.z, sg > 0 ? -Math.PI / 2 : Math.PI / 2); a.sit = a.sitTarget = 0; a.update(dt);
+      const r = a.rig, hipUp = 0.1 * r.S.scale.x;   // the hip joint half a thigh above the plank
+      r.inner.position.y = y + hipUp - r.hipH; r.inner.rotation.x = 0.12;   // leaning in a little
+      seatLegs(a, y + hipUp, 0.35);
+      for (let i = 0; i < 2; i++) { r.sh[i].rotation.x = -1.05; r.sh[i].rotation.z = (i ? -1 : 1) * 0.12; }   // both hands on the handle
+      lift(a, 0);
+      const up = sg * Math.cos(ts * 1.5) > 0;   // going up
+      if (up !== k.up) { k.up = up; if (up && Math.random() < 0.25) say(a, pick(['Hopp!', 'Fel!', 'Juhú!']), 0.9); }
+      return true;
+    }
+    case 'slide': {   // up the ladder, sit down at the top, slide down, stand up, walk round to the ladder again
+      const L = PLAY.slide, r = a.rig;
+      if (!k.ph || k.ph === 'walk') {   // (first time, or arrived back at the ladder): waiting while the other one is on the ladder
+        if (extras.some((o) => o !== k && o.role === 'slide' && (o.ph === 'climb' || o.ph === 'top'))) { k.ph = 'wait'; a.targetHeading = 0; a.update(dt); return true; }
+        k.ph = 'climb'; k.u = 0;
+      }
+      if (k.ph === 'wait') { if (extras.some((o) => o !== k && o.role === 'slide' && (o.ph === 'climb' || o.ph === 'top'))) { a.update(dt); return true; } k.ph = 'step'; a.walkTo([[L.x, L.z - 1.05]], 2); return false; }
+      if (k.ph === 'step') { k.ph = 'climb'; k.u = 0; }
+      a.path = null; a.sit = a.sitTarget = 0;
+      if (k.ph === 'climb') {   // hand over hand up the rungs
+        k.u += dt / 1.8; const u = Math.min(1, k.u), cyc = u * 6 * Math.PI;
+        a.place(L.x, L.z - 1.14 + u * 0.45, 0); a.update(dt);   // following the leaning ladder
+        for (let i = 0; i < 2; i++) { const ph = Math.sin(cyc + i * Math.PI); r.sh[i].rotation.x = -2.5 + ph * 0.35; r.hip[i].rotation.x = -0.5 - ph * 0.35; r.knee[i].rotation.x = 0.7 + ph * 0.3; }
+        lift(a, u * (SL.y0 - 0.06)); if (k.u >= 1) { k.ph = 'top'; k.u = 0; }
+      } else if (k.ph === 'top') {   // onto the platform, a step forward, then sit down at the chute's edge
+        k.u += dt; const u = Math.min(1, k.u / 1.2);
+        a.place(L.x, L.z - 0.55 + u * 0.75, 0); a.update(dt);
+        if (k.u > 0.7) { const q = Math.min(1, (k.u - 0.7) / 0.5); r.inner.position.y = -q * (r.hipH - 0.1 * r.S.scale.x); for (let i = 0; i < 2; i++) { r.hip[i].rotation.x = -1.35 * q; r.knee[i].rotation.x = 0.2 * q; } }
+        lift(a, SL.y0); if (k.u >= 1.4) { k.ph = 'slide'; k.zz = 0; k.v = 0.4; if (Math.random() < 0.6) say(a, pick(['Juhééé!', 'Wiii!', 'Nézzétek!']), 1); }
+      } else if (k.ph === 'slide') {   // speeding up down the slope, slowing down on the flat run-out
+        const zr0 = 0.2 + k.zz;
+        k.v = Math.max(0, k.v + (zr0 < SL.z1 ? 4.2 : -7.5) * dt); k.zz += k.v * dt;
+        const zr = Math.min(0.2 + k.zz, SL.z2 - 0.2);
+        a.place(L.x, L.z + zr, 0); a.update(dt);
+        const slope = zr < SL.z1 ? Math.atan2(SL.y0 - SL.y1, SL.z1 - SL.z0) : 0;
+        r.inner.position.y = -(r.hipH - 0.1 * r.S.scale.x); r.inner.rotation.x = -0.15;   // sitting, leaning back
+        for (let i = 0; i < 2; i++) { r.hip[i].rotation.x = -(Math.PI / 2 - slope) + 0.1; r.knee[i].rotation.x = 0.05; r.sh[i].rotation.x = -0.25; r.sh[i].rotation.z = (i ? -1 : 1) * 0.45; }
+        lift(a, slideY(zr));
+        if ((k.v <= 0 && zr > SL.z1) || zr >= SL.z2 - 0.2) { k.ph = 'off'; k.u = 0; k.z0 = zr; }
+      } else if (k.ph === 'off') {   // standing up off the end
+        k.u += dt; const q = Math.max(0, 1 - k.u / 0.6);
+        a.place(L.x, L.z + k.z0 + (1 - q) * 0.5, 0); a.update(dt);
+        r.inner.position.y = -q * (r.hipH - 0.1 * r.S.scale.x); for (let i = 0; i < 2; i++) { r.hip[i].rotation.x = -1.4 * q; r.knee[i].rotation.x = 0.4 * q; }
+        lift(a, SL.y1 * q);
+        if (k.u >= 0.9) { k.ph = 'walk'; a.walkTo([[L.x + 0.95, L.z + 3.4], [L.x + 0.95, L.z - 1.3], [L.x, L.z - 1.4]], R(2.4, 3.0)); return false; }
+      }
+      return true;
+    }
+    case 'sand': a.seatH = 0.1; a.sitTarget = 1; a.targetHeading = k.i ? Math.PI : 0; return false;
+    case 'climb': { const C2 = PLAY.climb; a.place(C2.x - 1.5 + ((t * 0.4) % 3), C2.z, Math.PI / 2); a.pos.y = 2.06; a.sitTarget = a.sit = 0; a.update(dt); return true; }
+    case 'pong': { const T = PONG[k.T]; a.targetHeading = k.i ? Math.PI : 0; if (k.i === 0) { const pb = play.balls[k.T]; pb.ball.visible = true; pb.t += dt * 0.9; const u = Math.abs(((pb.t % 2) + 2) % 2 - 1); pb.ball.position.set(T.x + Math.sin(pb.t * 3) * 0.3, 0.8 + Math.abs(Math.sin(pb.t * Math.PI * 2)) * 0.3, T.z - 1.3 + u * 2.6); if (Math.floor(pb.t * 2) !== Math.floor((pb.t - dt * 0.9) * 2)) soundAt(T.x, T.z, () => tone('square', 1800, 1700, 0.03, 0.03), 1); } const r = a.rig; r.sh[0].rotation.x = -0.9 + Math.sin(t * 6) * 0.3; return false; }
+    default: {   // shooting hoops: now and then the ball flies (a pose only)
+      a.targetHeading = Math.PI / 2; if (Math.sin(t * 1.3) > 0.9) a.cheer = 0.3; return false;
+    }
+  }
+}
+function buildPlayers() {
+  for (const [n, pl] of PLAYERS.entries()) {
+    const girl = n % 3 !== 0, a = new Actor(makePerson({ scale: R(0.58, 0.74), hat: false, glasses: n % 6 === 4, dress: girl && n % 2 === 0, longHair: girl }), 'Gyerek');
+    a.rig.root.visible = false; a.place(DOOR_OUT.x, DOOR_OUT.z, 0); a.stride = 7;
+    const [hx, hz] = playSpot(pl);
+    extras.push({ a, girl, role: pl.role, i: pl.i, T: pl.T, home: new V3(hx, 0, hz), state: 'in', out: false, wait: 0, t: R(0.5, 2), toy: true });
+  }
+}
+
+// ---------------------------------------------------------------- the streets: cars on Kossuth Lajos utca (west), Iskola utca
+// (south) and Aradi utca (east), both ways, on the right; they drive along the street and come round again
+const traffic = [];
+const STREETS = [
+  { along: 'z', c: -24.5, lo: -88, hi: 88 },   // Kossuth Lajos utca
+  { along: 'x', c: 46.5, lo: -64, hi: 104 },   // Iskola utca
+  { along: 'z', c: 70.5, lo: -88, hi: 88 },    // Aradi utca
+];
+function buildTraffic() {
+  traffic.length = 0;
+  STREETS.forEach((st, si) => {
+    for (const dir of [1, -1]) for (let k = 0; k < 2; k++) {
+      // driving on the right: facing +z the right is −x; facing −z it is +x (and so on)
+      const fx = st.along === 'x' ? dir : 0, fz = st.along === 'z' ? dir : 0, rx = -fz, rz = fx;
+      const m = new THREE.Mesh(getGeometry('car', (si * 4 + k * 2 + (dir > 0 ? 0 : 1)) % 6, true), vcMat); m.castShadow = true; m.receiveShadow = true;
+      m.rotation.y = Math.atan2(fx, fz); scene.add(m);
+      traffic.push({ m, st, dir, fx, fz, off: 1.6, rx, rz, t: st.lo + (st.hi - st.lo) * ((k * 0.5 + (dir > 0 ? 0 : 0.25) + si * 0.13) % 1), v: R(7, 10) });
+    }
+  });
+}
+function trafficTick(dt) {
+  for (const c of traffic) {
+    c.t += c.dir * c.v * dt;
+    if (c.t > c.st.hi) c.t = c.st.lo; if (c.t < c.st.lo) c.t = c.st.hi;
+    const x = c.st.along === 'x' ? c.t : c.st.c, z = c.st.along === 'z' ? c.t : c.st.c;
+    c.m.position.set(x + c.rx * c.off, 0, z + c.rz * c.off);
+  }
+}
+// more children in the yard: the other classes come out too in the breaks – more boys in the football, more girls by the
+// hopscotch, and on the grass a group playing tag and a few sitting in a ring
+const extras = [];
+const kid = (girl, k) => new Actor(makePerson({ scale: R(0.62, 0.78), hat: false, glasses: k % 7 === 3, dress: girl && k % 2 === 0, longHair: girl }), 'Gyerek');
+function buildExtras() {
+  extras.length = 0;
+  for (let k = 0; k < 10; k++) {   // more footballers (the two teams)
+    const a = kid(false, k); a.rig.root.visible = false; a.place(DOOR_OUT.x, DOOR_OUT.z, 0); a.stride = 7;
+    const e = { a, girl: false, pupil: false, state: 'in', out: false, t: R(1, 4), team: (crowd.boys.length + k) % 2, home: new V3(R(8, 38), 0, R(FIELD.z0 + 2, FIELD.z1 - 2)) };
+    crowd.boys.push(e);
+  }
+  for (let k = 0; k < 6; k++) {    // more girls round the hopscotch
+    const a = kid(true, k); a.rig.root.visible = false; a.place(DOOR_OUT.x, DOOR_OUT.z, 0); a.stride = 7;
+    const an = ((crowd.girls.length + k) / 18) * Math.PI * 2;
+    crowd.girls.push({ a, girl: true, pupil: false, state: 'in', out: false, t: R(1, 4), home: new V3(HOP.x + Math.cos(an) * 2.9, 0, HOP.z0 + 2.2 + Math.sin(an) * 2.4) });
+  }
+  for (let k = 0; k < 14; k++) {   // on the grass: tag (running about) and a ring sitting and chatting
+    const girl = k % 2 === 1, a = kid(girl, k + 20); a.rig.root.visible = false; a.place(DOOR_OUT.x, DOOR_OUT.z, 0); a.stride = 7;
+    const role = k < 8 ? 'tag' : 'ring', an = (k - 8) / 6 * Math.PI * 2;
+    const home = role === 'ring' ? new V3(40 + Math.cos(an) * 1.3, 0, 36.5 + Math.sin(an) * 1.3) : new V3(R(4, 16), 0, R(FIELD.z0 + 2, FIELD.z1 - 2));
+    extras.push({ a, girl, role, an, home, state: 'in', out: false, wait: 0, t: R(0.5, 2) });
+  }
+}
+function extrasTick(dt, on) {
+  const P = G.petike.pos;
+  for (const k of extras) {
+    if (on && k.state === 'in') { k.state = 'going'; k.wait = R(2, 6); }
+    if (!on && (k.state === 'going' || k.state === 'out')) { if (k.toy) { k.a.pos.y = 0; k.a.sit = 0; if (k.role === 'pong' && k.i === 0) play.balls[k.T].ball.visible = false; } k.state = 'back'; k.a.sitTarget = 0; k.a.walkTo([[k.a.pos.x > 12 ? 11.5 : k.a.pos.x, Math.max(Math.min(k.a.pos.z, 19), 5)], [DOOR_OUT.x, DOOR_OUT.z - 0.4]], R(2.6, 3.2)); }
+    if (k.state === 'going' && (k.wait -= dt) <= 0) { k.state = 'out'; k.a.place(DOOR_OUT.x, DOOR_OUT.z, 0); k.a.rig.root.visible = true; k.a.walkTo(k.toy && k.home.x < 42 ? [[DOOR_OUT.x + R(-1, 1), 6], [k.home.x, k.home.z]] : [[DOOR_OUT.x + R(-1, 1), 6], AROUND, ...(k.home.x > 44 ? [[46, 19.5]] : []), [k.home.x, k.home.z]], R(2.2, 3.0)); }
+    if (k.state === 'back' && !k.a.path) { k.state = 'in'; k.a.rig.root.visible = false; }
+    if (k.toy && k.state === 'back' && k.a.pos.y > 0) { k.a.pos.y = 0; k.a.sitTarget = 0; }
+    if (k.toy && k.state === 'out' && !k.a.path) { if (playTick(dt, k)) continue; k.a.update(dt); continue; }
+    if (k.state === 'in' || k.state === 'going') continue;
+    if (k.state === 'out' && !k.a.path) {
+      if (k.role === 'ring') { k.a.seatH = 0.05; k.a.sitTarget = 1; k.a.targetHeading = Math.atan2(40 - k.a.pos.x, 36.5 - k.a.pos.z); if ((k.t -= dt) <= 0) { k.t = R(4, 9); if (Math.random() < 0.3) say(k.a, pick(['És akkor azt mondta…', 'Hahaha!', 'Komolyan?!', 'Láttad tegnap?']), 1.6); } }
+      else if ((k.t -= dt) <= 0) {   // tag: run to a new spot (now and then a shout)
+        k.t = R(0.6, 1.8); k.a.walkTo([[THREE.MathUtils.clamp(k.a.pos.x + R(-6, 6), FIELD.x0 + 1, 22), THREE.MathUtils.clamp(k.a.pos.z + R(-5, 5), FIELD.z0 + 1, FIELD.z1 - 1)]], R(3.0, 4.2));
+        if (Math.random() < 0.15) say(k.a, pick(['Fogó vagy!', 'Nem kapsz el!', 'Hé, várj!', 'Ki a fogó?']), 1.2);
+      }
+    }
+    k.a.update(dt);
+    const dx = P.x - k.a.pos.x, dz = P.z - k.a.pos.z, d = Math.hypot(dx, dz);   // nobody walks through Petyus
+    if (d < 0.5 && d > 1e-4 && k.a.sit < 0.5) { P.x = k.a.pos.x + dx / d * 0.5; P.z = k.a.pos.z + dz / d * 0.5; }
+  }
+}
+// a PE lesson on the field while the others are in class: a dozen children jog round the field, the PE teacher in the middle
+// with a whistle; at the bell they go in (they come out with the rest in the break)
+const pe = { kids: [], coach: null, on: false, whT: 3 };
+function buildPE() {
+  const loop = [[FIELD.x0 + 2, FIELD.z0 + 2], [FIELD.x1 - 2, FIELD.z0 + 2], [FIELD.x1 - 2, FIELD.z1 - 2], [FIELD.x0 + 2, FIELD.z1 - 2]];
+  pe.loop = loop;
+  for (let k = 0; k < 12; k++) {
+    const a = new Actor(makePerson({ scale: R(0.64, 0.74), shirt: 0xffffff, pants: k % 2 ? 0x1d3557 : 0x2b2d42, hat: false, glasses: false, dress: false, longHair: k % 2 === 1 }), 'Tornaórás');
+    a.stride = 7; a.rig.root.visible = false; pe.kids.push({ a, i: k % 4, lag: k * 2.2 });
+  }
+  pe.coach = new Actor(makePerson({ scale: 0.95, shirt: 0xe63946, pants: 0x1d3557, hat: true, hatColor: 0xffffff, glasses: false, dress: false }), 'Tornatanár');
+  pe.coach.rig.root.visible = false;
+}
+function peTick(dt, lessonNow) {
+  const want = lessonNow && school.min < AFTERNOON;
+  if (want !== pe.on) {
+    pe.on = want;
+    const L = pe.loop, perim = 2 * ((FIELD.x1 - FIELD.x0 - 4) + (FIELD.z1 - FIELD.z0 - 4));
+    for (const k of pe.kids) {   // spread round the loop
+      k.a.rig.root.visible = want; k.a.path = null;
+      if (want) { let d = (k.lag / 26) * perim, i = 0; for (; i < 4; i++) { const a = L[i], b = L[(i + 1) % 4], len = Math.hypot(b[0] - a[0], b[1] - a[1]); if (d < len) { k.a.place(a[0] + (b[0] - a[0]) * d / len, a[1] + (b[1] - a[1]) * d / len, 0); k.i = (i + 1) % 4; break; } d -= len; } }
+    }
+    pe.coach.rig.root.visible = want; if (want) pe.coach.place((FIELD.x0 + FIELD.x1) / 2, (FIELD.z0 + FIELD.z1) / 2, 0);
+  }
+  if (!pe.on) return;
+  for (const k of pe.kids) { if (!k.a.path) { const t = pe.loop[k.i]; k.i = (k.i + 1) % 4; k.a.walkTo([t], 2.6); } k.a.update(dt); }
+  const c = pe.coach; const near = pe.kids[0].a.pos; c.targetHeading = Math.atan2(near.x - c.pos.x, near.z - c.pos.z); c.update(dt);
+  if ((pe.whT -= dt) <= 0) { pe.whT = R(6, 12); soundAt(c.pos.x, c.pos.z, () => tone('square', 2900, 2700, 0.35, 0.05), 1); if (Math.random() < 0.5) say(c, pick(['Gyorsabban, gyerekek!', 'Még két kör!', 'Ne gyalogoljatok!', 'Szép volt!']), 1.8); }
+}
+
+// (testing: everybody walking in the yard)
+export const yardActors = () => [...new Set([...people, ...pupils, ...crowd.boys, ...crowd.girls, ...extras, ...pe.kids].map((p) => p.a)), pe.coach];
+
 // ---------------------------------------------------------------- build / tick
 export function buildSchool() {
   walls.length = 0; desks.length = 0; people.length = 0; clocks.length = 0; doors.length = 0; toilets.length = 0;
@@ -1081,7 +1543,11 @@ export function buildSchool() {
   makeDoor(26.1, CORR - 0.06, 1.0, { color: 0xf4f4f4, sign: { kind: 'boy', text: 'FIÚ' }, name: 'fiú WC' });
   makeDoor(33.1, CORR - 0.06, 1.0, { color: 0xf4f4f4, sign: { kind: 'girl', text: 'LÁNY' }, name: 'lány WC' });
   buildFurniture();
-  buildPeople(); buildCrowd();   // (the crowd is made of the classes' children: after them)
+  buildPeople(); buildCrowd(); buildExtras(); buildPlayground(); buildPlayers(); buildPE(); buildFrog(); buildTraffic();
+  // nobody runs through the buildings: the yard people's walks go round them (yardnav.js)
+  initYard(CAMPUS, [SCHOOL, WING, LOW, HALL]);
+  buildClouds({ x0: BOUNDS.x0 - 20, z0: BOUNDS.z0 - 10, x1: BOUNDS.x1 + 20, z1: BOUNDS.z1 + 10 }, 14);   // clouds over the school
+  for (const p of [...people, ...pupils, ...crowd.boys, ...crowd.girls, ...extras, ...pe.kids]) wrapYard(p.a); wrapYard(pe.coach);   // (the crowd is made of the classes' children: after them)
 }
 export function schoolRoom(x, z) {
   if (x > SCHOOL.x0 && x < SCHOOL.x1 && z > SCHOOL.z0 && z < SCHOOL.z1) return z > CORR ? 'Iskola – folyosó' : x >= 30 ? 'Iskola – lány WC' : x >= 24 ? 'Iskola – fiú WC' : 'Iskola – a ' + ROOMS3[Math.floor(x / 12)].cls + ' osztályterme';
@@ -1105,7 +1571,7 @@ function teachersOut(min) {
 export function updateSchool(dt, min, solid) {
   school.min = min;
   teachersOut(min);
-  updateWalls(dt, solid); updatePeople(dt); updateSounds(dt, min); updateDoors(dt); updateToilets(dt); indoorLight(dt); clockTick(dt, min); spongeTick(dt, min); crowdTick(dt, !lesson(min), ck.early);
+  updateWalls(dt, solid); updatePeople(dt); updateSounds(dt, min); updateDoors(dt); updateToilets(dt); indoorLight(dt); clockTick(dt, min); spongeTick(dt, min); crowdTick(dt, !lesson(min), ck.early); extrasTick(dt, crowd.on); peTick(dt, lesson(min)); trafficTick(dt);
   if (Math.floor(min) !== school.lastMin) { school.lastMin = Math.floor(min); clocks.forEach((c, i) => c.draw(min + (i === 0 ? ck.off : 0))); }   // (the 6. b's: maybe put forward)
   if (school.seated && !G.petike.sitTarget && G.petike.sit < 0.05) school.seated = false;   // stood up with a movement key
   const P = G.petike.pos, inRoom = P.z < CORR && P.z > SCHOOL.z0 && P.x < 24 ? (P.x < 12 ? 0 : 1) : -1;

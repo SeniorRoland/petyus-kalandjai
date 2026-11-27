@@ -2,7 +2,7 @@
 // The builders work in metres (bx: an axis-aligned box from (x0,y0,z0) to (x1,y1,z1), centred on the origin, y from the floor);
 // every piece faces +z (the side people use: the front of a cupboard, the screen of a TV, the sitter of a chair looks that way).
 // voxels.js adds HOME_CATALOG to CATALOG, so the catalogue page (designterv.html) shows them under „Lakás”.
-import { VoxelGrid } from './voxels.js';
+import { CATALOG, VoxelGrid } from './voxels.js';
 
 const S = 0.05;   // voxel size: 5 cm, like the street furniture
 const vi = (m) => Math.round(m / S);
@@ -592,3 +592,6 @@ export const HOME_CATALOG = [
   { id: 'bougainvillea', name: 'Bougainvillea', cat: 'Lakás', variants: 5, build: bougainvillea, collider: { r: 0.22, h: 1.0 }, noShadow: true, desc: 'Cserepes bougainvillea (2,5 cm-es voxelek): díszcsíkos cserép alátéttel, a földön kéregdarabok; csavarodó, elágazó fás szárak, kétszínű apró levelek, az ágak végén fürtökben hármas murvalevél-csoportok krémszínű apró virággal; a cserép peremén ívesen átlógó, virágos ágak. Színek: bíbor, rózsaszín, lila, narancs, fehér-rózsaszín.', use: 'Petyus erkélye' },
   { id: 'potted_plant', name: 'Cserepes növény', cat: 'Lakás', variants: 1, build: pottedPlant, collider: { r: 0.18, h: 0.9 }, desc: 'Terrakotta cserép dús lombbal.', use: 'Szobák, erkély' },
 ];
+
+// into the object catalogue (getGeometry, the catalogue page) – once this file is loaded (part 2 / designterv.html)
+if (!CATALOG.some((d) => d.id === HOME_CATALOG[0].id)) CATALOG.push(...HOME_CATALOG);
