@@ -313,9 +313,11 @@ function buildGround() {
     b.bx(F.x0 + 0.6, 0, GATE.z - 1.6 + 0.02, 1.2, 1.5, 0.05, C.fence, 0, 0);   // one wing open
     // the houses round the block: along Kossuth Lajos utca (west), Iskola utca (south), Aradi utca (east)
     const roofs = [0xd9662f, 0xc9552a, 0xe0743a, 0xb84f2c], walls2 = [0xf1ece2, 0xe9e1cf, 0xf4efe6];
-    for (let z = -70, n = 0; z < 70; z += 13, n++) familyHouse(b, -38, z, 9, 10, roofs[n % 4], walls2[n % 3], false);
+    // (not on Iskola utca: the west and east rows stop at its crossing – z 43 … 50, with its sidewalks)
+    const offRoad = (z) => Math.abs(z - 46.5) > 4.5 + 5 + 0.5;
+    for (let z = -70, n = 0; z < 70; z += 13, n++) if (offRoad(z)) familyHouse(b, -38, z, 9, 10, roofs[n % 4], walls2[n % 3], false);
     for (let x = -10, n = 0; x < 90; x += 14, n++) familyHouse(b, x, 58, 10, 9, roofs[(n + 1) % 4], walls2[(n + 2) % 3], true);
-    for (let z = -70, n = 0; z < 70; z += 13, n++) familyHouse(b, 80, z, 9, 10, roofs[(n + 2) % 4], walls2[n % 3], false);
+    for (let z = -70, n = 0; z < 70; z += 13, n++) if (offRoad(z)) familyHouse(b, 80, z, 9, 10, roofs[(n + 2) % 4], walls2[n % 3], false);
   }));
   const F = CAMPUS;
   addBoxCol(F.x0 - 0.05, F.z0, F.x0 + 0.05, GATE.z - 1.6, 1.6); addBoxCol(F.x0 - 0.05, GATE.z + 1.6, F.x0 + 0.05, F.z1, 1.6);
@@ -511,10 +513,10 @@ function updatePeople(dt) {
       if (ck.writing) {
         a.targetHeading = -Math.PI / 2; a.update(dt);
         const r = a.rig, w = Math.sin(G.clockT * 7) * 0.15; r.sh[0].rotation.x = -2.1 + w; r.sh[0].rotation.z = 0.2; if (r.elbow) r.elbow[0] = 0.5; a.sync();   // the chalk hand up
-        if ((ck.wDur -= dt) <= 0) { ck.writing = false; ck.wT = R(9, 15); }
+        if ((ck.wDur -= dt) <= 0) { ck.writing = false; ck.wT = R(8, 13); }
       } else {
         ck.wT -= dt;
-        if (ck.wT <= 0 && !a.path) { ck.writing = true; ck.wDur = R(6, 9); school.chalkT = 0.2; a.walkTo([[0.6, -7.3 + R(-1.2, 1.2)]], 0.9); }
+        if (ck.wT <= 0 && !a.path) { ck.writing = true; ck.wDur = R(13, 19); school.chalkT = 0.2; a.walkTo([[0.6, -7.3 + R(-1.2, 1.2)]], 0.9); }
         p.t -= dt; if (p.t <= 0 && !a.path && !ck.writing) { p.t = R(3, 7); a.walkTo([[p.home.x + R(0, 0.5), p.home.z + R(-1.8, 1.8)]], 0.8); }
         if (!a.path) a.targetHeading = Math.PI / 2;
         a.update(dt);
@@ -905,7 +907,7 @@ export function schoolAction() {
   let bd = null, bdist = 1.1;
   for (const d of doors) { const r = Math.hypot(P.x - d.x, P.z - d.z); if (r < bdist) { bdist = r; bd = d; } }
   if (bd) return { door: bd, txt: (bd.open ? 'E – ajtó becsukása' : 'E – ajtó kinyitása') + ` (${bd.name})` };
-  if (nearGate()) return { txt: 'E – hazaindulás', gate: true };
+  if (nearGate()) return school.min >= AFTERNOON ? { txt: 'E – hazaindulás', gate: true } : { txt: 'Hazamenni csak 14:00-tól lehet – még tanítás van!' };
   // „Vizes szivacs”: the sponge – from the board, soaked at a sink, onto the teacher's chair (or back)
   if (!carry.what && sponge.where === 'board' && Math.hypot(P.x - sponge.home.x - 0.45, P.z - sponge.home.z) < 0.8) return { sponge: 'take', txt: 'E – a táblatörlő szivacs elvétele' };
   if (!carry.what && sponge.where === 'chair' && Math.hypot(P.x - TCHAIR.x, P.z - (TCHAIR.z + 0.6)) < 0.75) return { sponge: 'take', txt: 'E – a szivacs elvétele a székről' };
@@ -1231,6 +1233,107 @@ function glassesBack(T, given) {   // the search is over: the glasses on her nos
   gl.stage = 0;
 }
 
+// ---------------------------------------------------------------- the streets: cars on Kossuth Lajos utca (west), Iskola utca
+// (south) and Aradi utca (east), both ways, on the right; they drive along the street and come round again
+const traffic = [];
+const STREETS = [
+  { along: 'z', c: -24.5, lo: -88, hi: 88 },   // Kossuth Lajos utca
+  { along: 'x', c: 46.5, lo: -64, hi: 104 },   // Iskola utca
+  { along: 'z', c: 70.5, lo: -88, hi: 88 },    // Aradi utca
+];
+function buildTraffic() {
+  traffic.length = 0;
+  STREETS.forEach((st, si) => {
+    for (const dir of [1, -1]) for (let k = 0; k < 2; k++) {
+      // driving on the right: facing +z the right is −x; facing −z it is +x (and so on)
+      const fx = st.along === 'x' ? dir : 0, fz = st.along === 'z' ? dir : 0, rx = -fz, rz = fx;
+      const m = new THREE.Mesh(getGeometry('car', (si * 4 + k * 2 + (dir > 0 ? 0 : 1)) % 6, true), vcMat); m.castShadow = true; m.receiveShadow = true;
+      m.rotation.y = Math.atan2(fx, fz); scene.add(m);
+      traffic.push({ m, st, dir, fx, fz, off: 1.6, rx, rz, t: st.lo + (st.hi - st.lo) * ((k * 0.5 + (dir > 0 ? 0 : 0.25) + si * 0.13) % 1), v: R(7, 10) });
+    }
+  });
+}
+function trafficTick(dt) {
+  for (const c of traffic) {
+    c.t += c.dir * c.v * dt;
+    if (c.t > c.st.hi) c.t = c.st.lo; if (c.t < c.st.lo) c.t = c.st.hi;
+    const x = c.st.along === 'x' ? c.t : c.st.c, z = c.st.along === 'z' ? c.t : c.st.c;
+    c.m.position.set(x + c.rx * c.off, 0, z + c.rz * c.off);
+  }
+}
+// more children in the yard: the other classes come out too in the breaks – more boys in the football, more girls by the
+// hopscotch, and on the grass a group playing tag and a few sitting in a ring
+const extras = [];
+const kid = (girl, k) => new Actor(makePerson({ scale: R(0.62, 0.78), hat: false, glasses: k % 7 === 3, dress: girl && k % 2 === 0, longHair: girl }), 'Gyerek');
+function buildExtras() {
+  extras.length = 0;
+  for (let k = 0; k < 10; k++) {   // more footballers (the two teams)
+    const a = kid(false, k); a.rig.root.visible = false; a.place(DOOR_OUT.x, DOOR_OUT.z, 0); a.stride = 7;
+    const e = { a, girl: false, pupil: false, state: 'in', out: false, t: R(1, 4), team: (crowd.boys.length + k) % 2, home: new V3(R(8, 38), 0, R(FIELD.z0 + 2, FIELD.z1 - 2)) };
+    crowd.boys.push(e);
+  }
+  for (let k = 0; k < 6; k++) {    // more girls round the hopscotch
+    const a = kid(true, k); a.rig.root.visible = false; a.place(DOOR_OUT.x, DOOR_OUT.z, 0); a.stride = 7;
+    const an = ((crowd.girls.length + k) / 18) * Math.PI * 2;
+    crowd.girls.push({ a, girl: true, pupil: false, state: 'in', out: false, t: R(1, 4), home: new V3(HOP.x + Math.cos(an) * 2.9, 0, HOP.z0 + 2.2 + Math.sin(an) * 2.4) });
+  }
+  for (let k = 0; k < 14; k++) {   // on the grass: tag (running about) and a ring sitting and chatting
+    const girl = k % 2 === 1, a = kid(girl, k + 20); a.rig.root.visible = false; a.place(DOOR_OUT.x, DOOR_OUT.z, 0); a.stride = 7;
+    const role = k < 8 ? 'tag' : 'ring', an = (k - 8) / 6 * Math.PI * 2;
+    const home = role === 'ring' ? new V3(40 + Math.cos(an) * 1.3, 0, 36.5 + Math.sin(an) * 1.3) : new V3(R(4, 16), 0, R(FIELD.z0 + 2, FIELD.z1 - 2));
+    extras.push({ a, girl, role, an, home, state: 'in', out: false, wait: 0, t: R(0.5, 2) });
+  }
+}
+function extrasTick(dt, on) {
+  const P = G.petike.pos;
+  for (const k of extras) {
+    if (on && k.state === 'in') { k.state = 'going'; k.wait = R(2, 6); }
+    if (!on && (k.state === 'going' || k.state === 'out')) { k.state = 'back'; k.a.sitTarget = 0; k.a.walkTo([[k.a.pos.x > 12 ? 11.5 : k.a.pos.x, Math.max(Math.min(k.a.pos.z, 19), 5)], [DOOR_OUT.x, DOOR_OUT.z - 0.4]], R(2.6, 3.2)); }
+    if (k.state === 'going' && (k.wait -= dt) <= 0) { k.state = 'out'; k.a.place(DOOR_OUT.x, DOOR_OUT.z, 0); k.a.rig.root.visible = true; k.a.walkTo([[DOOR_OUT.x + R(-1, 1), 6], AROUND, [k.home.x, k.home.z]], R(2.2, 3.0)); }
+    if (k.state === 'back' && !k.a.path) { k.state = 'in'; k.a.rig.root.visible = false; }
+    if (k.state === 'in' || k.state === 'going') continue;
+    if (k.state === 'out' && !k.a.path) {
+      if (k.role === 'ring') { k.a.seatH = 0.05; k.a.sitTarget = 1; k.a.targetHeading = Math.atan2(40 - k.a.pos.x, 36.5 - k.a.pos.z); if ((k.t -= dt) <= 0) { k.t = R(4, 9); if (Math.random() < 0.3) say(k.a, pick(['És akkor azt mondta…', 'Hahaha!', 'Komolyan?!', 'Láttad tegnap?']), 1.6); } }
+      else if ((k.t -= dt) <= 0) {   // tag: run to a new spot (now and then a shout)
+        k.t = R(0.6, 1.8); k.a.walkTo([[THREE.MathUtils.clamp(k.a.pos.x + R(-6, 6), FIELD.x0 + 1, 22), THREE.MathUtils.clamp(k.a.pos.z + R(-5, 5), FIELD.z0 + 1, FIELD.z1 - 1)]], R(3.0, 4.2));
+        if (Math.random() < 0.15) say(k.a, pick(['Fogó vagy!', 'Nem kapsz el!', 'Hé, várj!', 'Ki a fogó?']), 1.2);
+      }
+    }
+    k.a.update(dt);
+    const dx = P.x - k.a.pos.x, dz = P.z - k.a.pos.z, d = Math.hypot(dx, dz);   // nobody walks through Petyus
+    if (d < 0.5 && d > 1e-4 && k.a.sit < 0.5) { P.x = k.a.pos.x + dx / d * 0.5; P.z = k.a.pos.z + dz / d * 0.5; }
+  }
+}
+// a PE lesson on the field while the others are in class: a dozen children jog round the field, the PE teacher in the middle
+// with a whistle; at the bell they go in (they come out with the rest in the break)
+const pe = { kids: [], coach: null, on: false, whT: 3 };
+function buildPE() {
+  const loop = [[FIELD.x0 + 2, FIELD.z0 + 2], [FIELD.x1 - 2, FIELD.z0 + 2], [FIELD.x1 - 2, FIELD.z1 - 2], [FIELD.x0 + 2, FIELD.z1 - 2]];
+  pe.loop = loop;
+  for (let k = 0; k < 12; k++) {
+    const a = new Actor(makePerson({ scale: R(0.64, 0.74), shirt: 0xffffff, pants: k % 2 ? 0x1d3557 : 0x2b2d42, hat: false, glasses: false, dress: false, longHair: k % 2 === 1 }), 'Tornaórás');
+    a.stride = 7; a.rig.root.visible = false; pe.kids.push({ a, i: k % 4, lag: k * 2.2 });
+  }
+  pe.coach = new Actor(makePerson({ scale: 0.95, shirt: 0xe63946, pants: 0x1d3557, hat: true, hatColor: 0xffffff, glasses: false, dress: false }), 'Tornatanár');
+  pe.coach.rig.root.visible = false;
+}
+function peTick(dt, lessonNow) {
+  const want = lessonNow && school.min < AFTERNOON;
+  if (want !== pe.on) {
+    pe.on = want;
+    const L = pe.loop, perim = 2 * ((FIELD.x1 - FIELD.x0 - 4) + (FIELD.z1 - FIELD.z0 - 4));
+    for (const k of pe.kids) {   // spread round the loop
+      k.a.rig.root.visible = want; k.a.path = null;
+      if (want) { let d = (k.lag / 26) * perim, i = 0; for (; i < 4; i++) { const a = L[i], b = L[(i + 1) % 4], len = Math.hypot(b[0] - a[0], b[1] - a[1]); if (d < len) { k.a.place(a[0] + (b[0] - a[0]) * d / len, a[1] + (b[1] - a[1]) * d / len, 0); k.i = (i + 1) % 4; break; } d -= len; } }
+    }
+    pe.coach.rig.root.visible = want; if (want) pe.coach.place((FIELD.x0 + FIELD.x1) / 2, (FIELD.z0 + FIELD.z1) / 2, 0);
+  }
+  if (!pe.on) return;
+  for (const k of pe.kids) { if (!k.a.path) { const t = pe.loop[k.i]; k.i = (k.i + 1) % 4; k.a.walkTo([t], 2.6); } k.a.update(dt); }
+  const c = pe.coach; const near = pe.kids[0].a.pos; c.targetHeading = Math.atan2(near.x - c.pos.x, near.z - c.pos.z); c.update(dt);
+  if ((pe.whT -= dt) <= 0) { pe.whT = R(6, 12); soundAt(c.pos.x, c.pos.z, () => tone('square', 2900, 2700, 0.35, 0.05), 1); if (Math.random() < 0.5) say(c, pick(['Gyorsabban, gyerekek!', 'Még két kör!', 'Ne gyalogoljatok!', 'Szép volt!']), 1.8); }
+}
+
 // ---------------------------------------------------------------- build / tick
 export function buildSchool() {
   walls.length = 0; desks.length = 0; people.length = 0; clocks.length = 0; doors.length = 0; toilets.length = 0;
@@ -1243,7 +1346,7 @@ export function buildSchool() {
   makeDoor(26.1, CORR - 0.06, 1.0, { color: 0xf4f4f4, sign: { kind: 'boy', text: 'FIÚ' }, name: 'fiú WC' });
   makeDoor(33.1, CORR - 0.06, 1.0, { color: 0xf4f4f4, sign: { kind: 'girl', text: 'LÁNY' }, name: 'lány WC' });
   buildFurniture();
-  buildPeople(); buildCrowd(); buildFrog();   // (the crowd is made of the classes' children: after them)
+  buildPeople(); buildCrowd(); buildExtras(); buildPE(); buildFrog(); buildTraffic();   // (the crowd is made of the classes' children: after them)
 }
 export function schoolRoom(x, z) {
   if (x > SCHOOL.x0 && x < SCHOOL.x1 && z > SCHOOL.z0 && z < SCHOOL.z1) return z > CORR ? 'Iskola – folyosó' : x >= 30 ? 'Iskola – lány WC' : x >= 24 ? 'Iskola – fiú WC' : 'Iskola – a ' + ROOMS3[Math.floor(x / 12)].cls + ' osztályterme';
@@ -1267,7 +1370,7 @@ function teachersOut(min) {
 export function updateSchool(dt, min, solid) {
   school.min = min;
   teachersOut(min);
-  updateWalls(dt, solid); updatePeople(dt); updateSounds(dt, min); updateDoors(dt); updateToilets(dt); indoorLight(dt); clockTick(dt, min); spongeTick(dt, min); crowdTick(dt, !lesson(min), ck.early);
+  updateWalls(dt, solid); updatePeople(dt); updateSounds(dt, min); updateDoors(dt); updateToilets(dt); indoorLight(dt); clockTick(dt, min); spongeTick(dt, min); crowdTick(dt, !lesson(min), ck.early); extrasTick(dt, crowd.on); peTick(dt, lesson(min)); trafficTick(dt);
   if (Math.floor(min) !== school.lastMin) { school.lastMin = Math.floor(min); clocks.forEach((c, i) => c.draw(min + (i === 0 ? ck.off : 0))); }   // (the 6. b's: maybe put forward)
   if (school.seated && !G.petike.sitTarget && G.petike.sit < 0.05) school.seated = false;   // stood up with a movement key
   const P = G.petike.pos, inRoom = P.z < CORR && P.z > SCHOOL.z0 && P.x < 24 ? (P.x < 12 ? 0 : 1) : -1;
