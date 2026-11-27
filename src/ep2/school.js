@@ -313,9 +313,11 @@ function buildGround() {
     b.bx(F.x0 + 0.6, 0, GATE.z - 1.6 + 0.02, 1.2, 1.5, 0.05, C.fence, 0, 0);   // one wing open
     // the houses round the block: along Kossuth Lajos utca (west), Iskola utca (south), Aradi utca (east)
     const roofs = [0xd9662f, 0xc9552a, 0xe0743a, 0xb84f2c], walls2 = [0xf1ece2, 0xe9e1cf, 0xf4efe6];
-    for (let z = -70, n = 0; z < 70; z += 13, n++) familyHouse(b, -38, z, 9, 10, roofs[n % 4], walls2[n % 3], false);
+    // (not on Iskola utca: the west and east rows stop at its crossing – z 43 … 50, with its sidewalks)
+    const offRoad = (z) => Math.abs(z - 46.5) > 4.5 + 5 + 0.5;
+    for (let z = -70, n = 0; z < 70; z += 13, n++) if (offRoad(z)) familyHouse(b, -38, z, 9, 10, roofs[n % 4], walls2[n % 3], false);
     for (let x = -10, n = 0; x < 90; x += 14, n++) familyHouse(b, x, 58, 10, 9, roofs[(n + 1) % 4], walls2[(n + 2) % 3], true);
-    for (let z = -70, n = 0; z < 70; z += 13, n++) familyHouse(b, 80, z, 9, 10, roofs[(n + 2) % 4], walls2[n % 3], false);
+    for (let z = -70, n = 0; z < 70; z += 13, n++) if (offRoad(z)) familyHouse(b, 80, z, 9, 10, roofs[(n + 2) % 4], walls2[n % 3], false);
   }));
   const F = CAMPUS;
   addBoxCol(F.x0 - 0.05, F.z0, F.x0 + 0.05, GATE.z - 1.6, 1.6); addBoxCol(F.x0 - 0.05, GATE.z + 1.6, F.x0 + 0.05, F.z1, 1.6);

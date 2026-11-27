@@ -488,3 +488,4 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 - [x] **A tanár hosszabb ideig forduljon a tábla felé.** ✅ A tanító néni 6–9 mp helyett 13–19 mp-ig ír háttal a táblára (8–13 mp-enként).
 - [x] **Közlekedjenek autók az iskola körül.** ✅ 12 autó a három utcán, mindkét irányban, a jobb oldalon.
 - [x] **Az udvaron több élet, főleg a füves területen.** ✅ Szünetben 30 gyerek a többi osztályból is (10 focista, 6 ugróiskolázó, 8 fogócskázó, 6 körben ülő); tanórák alatt tornaóra a pályán (12 futó gyerek, tornatanár síppal).
+- [x] **Egy ház az úton állt (az iskola körül).** ✅ A Kossuth Lajos és az Aradi utca menti házsor egy-egy háza az Iskola utcára esett; a két sor most megáll az Iskola utca kereszteződésénél (járdával együtt szabad).
