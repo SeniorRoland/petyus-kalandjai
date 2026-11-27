@@ -15,6 +15,7 @@ A játék érintőképernyőn is végigjátszható: minden pálya minden funkci�
 | **⟲ ⟳** | jobb fent | , . (Q / R) | a nézet forgatása 90°-onként |
 | **🧱** | 2. rész | T | a falak: átlátszó / lesüllyedő |
 | **👁** | 2. rész | V | belső nézet; húzással körülnézel |
+| **📖** | jobb fent | L | a pálya leírása (ez a leírás, a játékban; a kezdőképernyőn: „📖 Pályaleírások”) |
 | **🏠 · 📒 · 🔊** | jobb fent | – · N · M | vissza a főmenübe (mentéssel) · csibészség-napló · hang |
 | **Kihagyás ⏭** | filmes jeleneteknél | Enter | a nyitány átugrása |
 | két ujjas csippentés | mindig | görgő / + − | zoom |
