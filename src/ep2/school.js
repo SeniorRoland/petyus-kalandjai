@@ -288,9 +288,14 @@ function buildGround() {
     for (let x = 32; x < 40; x += 1) for (let z = 0.4; z < 18; z += 1) b.bx(x + 0.5, 0, z + 0.5, 1, 0.03, 1, pick(C.red), 0, 0.03);
     for (let z = -22; z < 0; z += 1) for (let x = 36.4; x < 40; x += 1) b.bx(x + 0.5, 0, z + 0.5, 1, 0.03, 1, pick(C.paver), 0, 0.03);   // a walk to the hall
     for (let x = -17; x < 6; x += 1) for (let z = -23; z < -14; z += 1) b.bx(x + 0.5, 0, z + 0.5, 1, 0.03, 1, pick(C.paver), 0, 0.03);
-    // the grass field (worn patches, two goals) and the gravel car park behind the hall
-    const { x0, x1, z0, z1 } = FIELD;
-    for (let n = 0; n < 40; n++) b.bx(R(x0 + 2, x1 - 2), 0, R(z0 + 2, z1 - 2), R(1, 3), 0.01, R(1, 2.5), 0xb8a57c, 0, 0.05);
+    // the football field: artificial turf (bright green stripes, white lines), two goals; the gravel car park behind the hall
+    const { x0, x1, z0, z1 } = FIELD, cz0 = (z0 + z1) / 2;
+    for (let k = 0, x = x0; x < x1 - 0.01; x += 3, k++) b.bx(x + 1.5, 0, cz0, 3, 0.025, z1 - z0, k % 2 ? 0x3fa34d : 0x369443, 0, 0);
+    const line = (cx, cz, w, d) => b.bx(cx, 0.026, cz, w, 0.004, d, 0xf4f4f0, 0, 0);
+    line((x0 + x1) / 2, z0 + 1, x1 - x0 - 2, 0.1); line((x0 + x1) / 2, z1 - 1, x1 - x0 - 2, 0.1); line(x0 + 1, cz0, 0.1, z1 - z0 - 2); line(x1 - 1, cz0, 0.1, z1 - z0 - 2);
+    line((x0 + x1) / 2, cz0, 0.1, z1 - z0 - 2);
+    for (let a = 0; a < 32; a++) { const an = a / 32 * Math.PI * 2; line((x0 + x1) / 2 + Math.cos(an) * 3, cz0 + Math.sin(an) * 3, 0.25, 0.25); }   // the centre circle
+    for (const [px, sgn] of [[x0 + 1, 1], [x1 - 1, -1]]) { line(px + sgn * 3, cz0, 0.1, 8); line(px + sgn * 1.5, cz0 - 4, 3, 0.1); line(px + sgn * 1.5, cz0 + 4, 3, 0.1); }   // the penalty areas
     for (const x of [x0 + 2, x1 - 2]) { for (const dz of [-1.6, 1.6]) b.bx(x, 0, (z0 + z1) / 2 + dz, 0.1, 2, 0.1, 0xffffff, 0, 0); b.bx(x, 2, (z0 + z1) / 2, 0.1, 0.1, 3.3, 0xffffff, 0, 0); }
     b.bx(20, 0, -52, 34, 0.02, 10, 0xc8bfae, 0, 0.04);
     // the streets: Kossuth Lajos utca (west), Iskola utca (south), Aradi utca (east), with sidewalks
@@ -1233,6 +1238,185 @@ function glassesBack(T, given) {   // the search is over: the glasses on her nos
   gl.stage = 0;
 }
 
+// ---------------------------------------------------------------- the playground east of the field (swings, slide, seesaw, sandbox,
+// climbing frame), two concrete ping-pong tables and a basketball hoop on the red pavers; children play on them in the breaks
+const PLAY = { swing: { x: 52, z: 25 }, slide: { x: 58.5, z: 31 }, seesaw: { x: 50, z: 34 }, sand: { x: 58.5, z: 24 }, climb: { x: 55, z: 38 } };
+const PONG = [{ x: 35.5, z: 5.5 }, { x: 35.5, z: 11 }], HOOP = { x: 38.4, z: 15.8 };
+const play = { swings: [], seesaw: null, balls: [] };
+// the slide's chute (relative to PLAY.slide): from the platform's edge (z0, y0) down to z1 (y1), then flat to z2
+const SL = { z0: 0.5, y0: 1.48, z1: 3.0, y1: 0.34, z2: 3.6 };
+const slideY = (z) => z <= SL.z0 ? SL.y0 : z >= SL.z1 ? SL.y1 : SL.y0 - (z - SL.z0) / (SL.z1 - SL.z0) * (SL.y0 - SL.y1);
+// a playground child posed by hand: the actor's own animation first, then the pose, then the root lifted to y
+function lift(a, y) { a.sync(); a.rig.root.position.y = y; }
+// the legs of a child sitting with its hips at height H above the ground (the voxel people: thigh = shin = 0.4 x scale):
+// low - the knees come up, the soles on the ground; high - the thighs flat, the shins hanging
+function seatLegs(a, H, fwd = 0.15) {
+  const r = a.rig, l = 0.4 * r.S.scale.x, c = H / l - Math.cos(fwd);
+  const al = c <= 0 ? Math.min(2.4, Math.acos(Math.max(-1, c))) : Math.PI / 2;
+  for (let i = 0; i < 2; i++) { r.hip[i].rotation.x = -al; r.knee[i].rotation.x = al - fwd; r.hip[i].rotation.z = (i ? 1 : -1) * 0.12; }
+}
+
+function buildPlayground() {
+  const steel = 0x3a86ff, red = 0xe63946, yel = 0xffca3a, wood = 0x9c6b3e, conc = 0x9aa0a6;
+  scene.add(partMesh((b) => {
+    // the safety ground: a rubber area under the playground
+    b.bx(55, 0, 31, 16, 0.03, 18, 0xc0563f, 0, 0.03);
+    // the swing frame: two A-legs and a top bar (3 swings)
+    const S = PLAY.swing;
+    for (const dx of [-2.4, 2.4]) for (const dz of [-0.8, 0.8]) { b.bx(S.x + dx, 0, S.z + dz * 0.5, 0.1, 2.35, 0.1, steel, 0, 0); }
+    b.bx(S.x, 2.3, S.z, 4.9, 0.12, 0.12, steel, 0, 0);
+    // the slide: a ladder up to a platform with a roof, the chute down southwards
+    const L = PLAY.slide;
+    for (const dx of [-0.45, 0.45]) for (const dz of [-0.45, 0.45]) b.bx(L.x + dx, 0, L.z + dz, 0.1, 3.0, 0.1, yel, 0, 0);
+    b.bx(L.x, 1.4, L.z, 1.0, 0.08, 1.0, wood, 0, 0.02); b.bx(L.x, 3.0, L.z, 1.2, 0.08, 1.2, red, 0, 0);   // the roof high enough for the bigger ones
+    for (let k = 0; k < 6; k++) b.bx(L.x, 0.2 + k * 0.24, L.z - 1.0 + (0.2 + k * 0.24) / 1.48 * 0.45, 0.62, 0.05, 0.08, wood, 0, 0);   // the ladder's rungs (north side, leaning in)
+    for (const dx of [-0.3, 0.3]) b.bx(L.x + dx, 0, L.z + SL.z1 - 0.1, 0.06, SL.y1 - 0.03, 0.06, yel, 0, 0);   // the run-out's legs
+    // the seesaw's middle block
+    b.bx(PLAY.seesaw.x, 0, PLAY.seesaw.z, 0.4, 0.45, 0.3, steel, 0, 0);
+    // the sandbox: a wooden frame, sand, a bucket and a spade
+    const D = PLAY.sand;
+    b.bx(D.x, 0, D.z, 3.2, 0.12, 3.2, 0xe9d8a6, 0, 0.05);
+    for (const [dx, dz, w, d] of [[0, -1.6, 3.4, 0.2], [0, 1.6, 3.4, 0.2], [-1.6, 0, 0.2, 3.2], [1.6, 0, 0.2, 3.2]]) b.bx(D.x + dx, 0, D.z + dz, w, 0.3, d, wood, 0, 0.03);
+    b.bx(D.x + 0.6, 0.12, D.z - 0.5, 0.2, 0.2, 0.2, red, 0, 0); b.bx(D.x - 0.5, 0.12, D.z + 0.6, 0.06, 0.04, 0.35, yel, 0, 0);
+    // the climbing frame: a cube of bars, 3 × 3 × 2 m
+    const C2 = PLAY.climb;
+    for (const dx of [-1.5, 0, 1.5]) for (const dz of [-1, 1]) b.bx(C2.x + dx, 0, C2.z + dz, 0.08, 2.0, 0.08, red, 0, 0);
+    for (const y of [0.7, 1.35, 2.0]) { for (const dz of [-1, 1]) b.bx(C2.x, y, C2.z + dz, 3.08, 0.06, 0.06, steel, 0, 0); for (const dx of [-1.5, 0, 1.5]) b.bx(C2.x + dx, y, C2.z, 0.06, 0.06, 2.08, steel, 0, 0); }
+    // the ping-pong tables (concrete, a steel net) and the basketball hoop
+    for (const T of PONG) { b.bx(T.x, 0, T.z, 1.2, 0.72, 0.4, conc, 0, 0.02); b.bx(T.x, 0.72, T.z, 1.52, 0.06, 2.74, 0x2e7d5b, 0, 0.02); b.bx(T.x, 0.78, T.z, 1.52, 0.003, 0.03, 0xffffff, 0, 0); b.bx(T.x, 0.78, T.z, 1.6, 0.15, 0.04, 0x9aa0a6, 0, 0); }
+    b.bx(HOOP.x, 0, HOOP.z, 0.14, 3.0, 0.14, 0x555b62, 0, 0); b.bx(HOOP.x - 0.4, 2.7, HOOP.z, 0.06, 1.0, 1.6, 0xffffff, 0, 0); b.bx(HOOP.x - 0.45, 2.9, HOOP.z, 0.02, 0.4, 0.5, red, 0, 0);
+    for (let a = 0; a < 12; a++) { const an = a / 12 * Math.PI * 2; b.bx(HOOP.x - 0.7 + Math.cos(an) * 0.22, 3.05, HOOP.z + Math.sin(an) * 0.22, 0.06, 0.02, 0.06, 0xf77f00, 0, 0); }
+  }));
+  // colliders (Petyus and the children walk round them)
+  const S = PLAY.swing, L = PLAY.slide, D = PLAY.sand, C2 = PLAY.climb;
+  for (const dx of [-2.4, 2.4]) addBoxCol(S.x + dx - 0.1, S.z - 0.5, S.x + dx + 0.1, S.z + 0.5, 2.3);
+  addBoxCol(L.x - 0.5, L.z - 1.05, L.x + 0.5, L.z + 0.5, 3.0); addBoxCol(L.x - 0.35, L.z + 0.5, L.x + 0.35, L.z + 3.0, 1.0);
+  addBoxCol(C2.x - 1.55, C2.z - 1.05, C2.x + 1.55, C2.z + 1.05, 2.0);
+  for (const T of PONG) addBoxCol(T.x - 0.76, T.z - 1.37, T.x + 0.76, T.z + 1.37, 0.78);
+  addBoxCol(HOOP.x - 0.1, HOOP.z - 0.1, HOOP.x + 0.1, HOOP.z + 0.1, 3);
+  // the moving parts: the swings' seats (on chains), the seesaw's plank, the ping-pong balls
+  const chain = new THREE.MeshLambertMaterial({ color: 0x9aa0a6 }), seatM = new THREE.MeshLambertMaterial({ color: 0x2b2d42 });
+  for (const dx of [-1.5, 0, 1.5]) {
+    const pv = new THREE.Group(); pv.position.set(S.x + dx, 2.3, S.z); scene.add(pv);
+    for (const sx of [-0.2, 0.2]) { const c = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.85, 0.02), chain); c.position.set(sx, -0.92, 0); pv.add(c); }
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.05, 0.2), seatM); seat.position.y = -1.85; pv.add(seat);
+    play.swings.push({ pv, ph: Math.random() * 6, kid: null });
+  }
+  const sw = new THREE.Group(); sw.position.set(PLAY.seesaw.x, 0.45, PLAY.seesaw.z); scene.add(sw);
+  const plank = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 0.3), new THREE.MeshLambertMaterial({ color: yel })); sw.add(plank);
+  for (const sx of [-1, 1]) { const h = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.34, 0.3), new THREE.MeshLambertMaterial({ color: steel })); h.position.set(sx * 1.12, 0.2, 0); sw.add(h); }
+  play.seesaw = sw;
+  { // the slide's chute: one smooth sloping piece from the platform down, with side rails, then a short flat run-out
+    const red2 = new THREE.MeshLambertMaterial({ color: 0xe63946 });
+    const part = (z0, z1, y0, y1) => {
+      const g = new THREE.Group(), ln = Math.hypot(z1 - z0, y0 - y1); g.position.set(L.x, (y0 + y1) / 2, L.z + (z0 + z1) / 2); g.rotation.x = Math.atan2(y0 - y1, z1 - z0); scene.add(g);
+      const bed = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.05, ln + 0.02), red2); bed.position.y = -0.025; g.add(bed);
+      for (const sx of [-0.33, 0.33]) { const rl = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, ln + 0.02), red2); rl.position.set(sx, 0.03, 0); g.add(rl); }
+      g.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+    };
+    part(SL.z0, SL.z1, SL.y0, SL.y1); part(SL.z1, SL.z2, SL.y1, SL.y1);
+    // the ladder's two rails: from the ground 1 m out to the platform's edge (and a little above it, a handhold)
+    const ym = new THREE.MeshLambertMaterial({ color: 0xffca3a }), rl = Math.hypot(0.6, 1.95);
+    for (const dx of [-0.34, 0.34]) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.06, rl, 0.06), ym); m.position.set(L.x + dx, 1.95 / 2, L.z - 1.02 + 0.3); m.rotation.x = Math.atan2(0.6, 1.95); m.castShadow = true; scene.add(m); }
+  }
+  for (const T of PONG) { const ball = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), new THREE.MeshLambertMaterial({ color: 0xffffff })); ball.visible = false; scene.add(ball); play.balls.push({ ball, T, t: Math.random() }); }
+}
+// the children on the playground (their places and what they do): swings, the seesaw, the slide (round and round), the
+// sandbox, on top of the climbing frame, ping-pong, shooting hoops
+const PLAYERS = [
+  ...[0, 1, 2].map((i) => ({ role: 'swing', i })), { role: 'seesaw', i: 0 }, { role: 'seesaw', i: 1 },
+  { role: 'slide', i: 0 }, { role: 'slide', i: 1 }, { role: 'sand', i: 0 }, { role: 'sand', i: 1 }, { role: 'climb', i: 0 },
+  { role: 'pong', i: 0, T: 0 }, { role: 'pong', i: 1, T: 0 }, { role: 'pong', i: 0, T: 1 }, { role: 'pong', i: 1, T: 1 }, { role: 'hoop', i: 0 },
+];
+function playSpot(k) {   // where a playing child stands / sits
+  const S = PLAY.swing, L = PLAY.slide, D = PLAY.sand, C2 = PLAY.climb, W = PLAY.seesaw;
+  switch (k.role) {
+    case 'swing': return [S.x - 1.5 + k.i * 1.5, S.z + 0.6];
+    case 'seesaw': return [W.x + (k.i ? 1.62 : -1.62), W.z + 0.5];
+    case 'slide': return [L.x + (k.i ? 0.6 : 0), L.z - 1.4 - k.i * 0.6];
+    case 'sand': return [D.x + (k.i ? 0.6 : -0.6), D.z + (k.i ? 0.4 : -0.3)];
+    case 'climb': return [C2.x - 1.5, C2.z - 1.4];
+    case 'pong': { const T = PONG[k.T]; return [T.x, T.z + (k.i ? 1.75 : -1.75)]; }
+    default: return [HOOP.x - 2.5, HOOP.z];
+  }
+}
+function playTick(dt, k) {   // a child arrived at its toy: playing
+  const a = k.a, t = (k.pt = (k.pt || 0) + dt);
+  switch (k.role) {
+    case 'swing': {
+      const sw = play.swings[k.i], th = Math.sin(t * 2.1 + sw.ph) * 0.55; sw.pv.rotation.x = th;
+      a.place(sw.pv.position.x, sw.pv.position.z - Math.sin(th) * 1.85, 0); a.seatH = 0.45; a.seatBase = 2.3 - Math.cos(th) * 1.85 + 0.025 - a.seatH; a.sitTarget = a.sit = 1; a.heading = a.targetHeading = 0; a.update(0.0001);
+      a.rig.inner.rotation.x = -th * 0.5; for (let i = 0; i < 2; i++) { a.rig.sh[i].rotation.x = -2.6; a.rig.knee[i].rotation.x = 1.45 + th * 0.8; } a.rig.apply && a.rig.apply();   // hands up on the chains, legs pumping
+      return true;
+    }
+    case 'seesaw': {   // astride the plank, facing the middle, holding the handle; the low one pushes off with its feet
+      const ts = G.clockT, ang = Math.sin(ts * 1.5) * 0.24; play.seesaw.rotation.z = ang;
+      const sg = k.i ? 1 : -1, W = PLAY.seesaw, x = W.x + sg * 1.62 * Math.cos(ang), y = 0.45 + sg * 1.62 * Math.sin(ang) + 0.04;
+      a.path = null; a.place(x, W.z, sg > 0 ? -Math.PI / 2 : Math.PI / 2); a.sit = a.sitTarget = 0; a.update(dt);
+      const r = a.rig, hipUp = 0.1 * r.S.scale.x;   // the hip joint half a thigh above the plank
+      r.inner.position.y = y + hipUp - r.hipH; r.inner.rotation.x = 0.12;   // leaning in a little
+      seatLegs(a, y + hipUp, 0.35);
+      for (let i = 0; i < 2; i++) { r.sh[i].rotation.x = -1.05; r.sh[i].rotation.z = (i ? -1 : 1) * 0.12; }   // both hands on the handle
+      lift(a, 0);
+      const up = sg * Math.cos(ts * 1.5) > 0;   // going up
+      if (up !== k.up) { k.up = up; if (up && Math.random() < 0.25) say(a, pick(['Hopp!', 'Fel!', 'Juhú!']), 0.9); }
+      return true;
+    }
+    case 'slide': {   // up the ladder, sit down at the top, slide down, stand up, walk round to the ladder again
+      const L = PLAY.slide, r = a.rig;
+      if (!k.ph || k.ph === 'walk') {   // (first time, or arrived back at the ladder): waiting while the other one is on the ladder
+        if (extras.some((o) => o !== k && o.role === 'slide' && (o.ph === 'climb' || o.ph === 'top'))) { k.ph = 'wait'; a.targetHeading = 0; a.update(dt); return true; }
+        k.ph = 'climb'; k.u = 0;
+      }
+      if (k.ph === 'wait') { if (extras.some((o) => o !== k && o.role === 'slide' && (o.ph === 'climb' || o.ph === 'top'))) { a.update(dt); return true; } k.ph = 'step'; a.walkTo([[L.x, L.z - 1.05]], 2); return false; }
+      if (k.ph === 'step') { k.ph = 'climb'; k.u = 0; }
+      a.path = null; a.sit = a.sitTarget = 0;
+      if (k.ph === 'climb') {   // hand over hand up the rungs
+        k.u += dt / 1.8; const u = Math.min(1, k.u), cyc = u * 6 * Math.PI;
+        a.place(L.x, L.z - 1.14 + u * 0.45, 0); a.update(dt);   // following the leaning ladder
+        for (let i = 0; i < 2; i++) { const ph = Math.sin(cyc + i * Math.PI); r.sh[i].rotation.x = -2.5 + ph * 0.35; r.hip[i].rotation.x = -0.5 - ph * 0.35; r.knee[i].rotation.x = 0.7 + ph * 0.3; }
+        lift(a, u * (SL.y0 - 0.06)); if (k.u >= 1) { k.ph = 'top'; k.u = 0; }
+      } else if (k.ph === 'top') {   // onto the platform, a step forward, then sit down at the chute's edge
+        k.u += dt; const u = Math.min(1, k.u / 1.2);
+        a.place(L.x, L.z - 0.55 + u * 0.75, 0); a.update(dt);
+        if (k.u > 0.7) { const q = Math.min(1, (k.u - 0.7) / 0.5); r.inner.position.y = -q * (r.hipH - 0.1 * r.S.scale.x); for (let i = 0; i < 2; i++) { r.hip[i].rotation.x = -1.35 * q; r.knee[i].rotation.x = 0.2 * q; } }
+        lift(a, SL.y0); if (k.u >= 1.4) { k.ph = 'slide'; k.zz = 0; k.v = 0.4; if (Math.random() < 0.6) say(a, pick(['Juhééé!', 'Wiii!', 'Nézzétek!']), 1); }
+      } else if (k.ph === 'slide') {   // speeding up down the slope, slowing down on the flat run-out
+        const zr0 = 0.2 + k.zz;
+        k.v = Math.max(0, k.v + (zr0 < SL.z1 ? 4.2 : -7.5) * dt); k.zz += k.v * dt;
+        const zr = Math.min(0.2 + k.zz, SL.z2 - 0.2);
+        a.place(L.x, L.z + zr, 0); a.update(dt);
+        const slope = zr < SL.z1 ? Math.atan2(SL.y0 - SL.y1, SL.z1 - SL.z0) : 0;
+        r.inner.position.y = -(r.hipH - 0.1 * r.S.scale.x); r.inner.rotation.x = -0.15;   // sitting, leaning back
+        for (let i = 0; i < 2; i++) { r.hip[i].rotation.x = -(Math.PI / 2 - slope) + 0.1; r.knee[i].rotation.x = 0.05; r.sh[i].rotation.x = -0.25; r.sh[i].rotation.z = (i ? -1 : 1) * 0.45; }
+        lift(a, slideY(zr));
+        if ((k.v <= 0 && zr > SL.z1) || zr >= SL.z2 - 0.2) { k.ph = 'off'; k.u = 0; k.z0 = zr; }
+      } else if (k.ph === 'off') {   // standing up off the end
+        k.u += dt; const q = Math.max(0, 1 - k.u / 0.6);
+        a.place(L.x, L.z + k.z0 + (1 - q) * 0.5, 0); a.update(dt);
+        r.inner.position.y = -q * (r.hipH - 0.1 * r.S.scale.x); for (let i = 0; i < 2; i++) { r.hip[i].rotation.x = -1.4 * q; r.knee[i].rotation.x = 0.4 * q; }
+        lift(a, SL.y1 * q);
+        if (k.u >= 0.9) { k.ph = 'walk'; a.walkTo([[L.x + 0.95, L.z + 3.4], [L.x + 0.95, L.z - 1.3], [L.x, L.z - 1.4]], R(2.4, 3.0)); return false; }
+      }
+      return true;
+    }
+    case 'sand': a.seatH = 0.1; a.sitTarget = 1; a.targetHeading = k.i ? Math.PI : 0; return false;
+    case 'climb': { const C2 = PLAY.climb; a.place(C2.x - 1.5 + ((t * 0.4) % 3), C2.z, Math.PI / 2); a.pos.y = 2.06; a.sitTarget = a.sit = 0; a.update(dt); return true; }
+    case 'pong': { const T = PONG[k.T]; a.targetHeading = k.i ? Math.PI : 0; if (k.i === 0) { const pb = play.balls[k.T]; pb.ball.visible = true; pb.t += dt * 0.9; const u = Math.abs(((pb.t % 2) + 2) % 2 - 1); pb.ball.position.set(T.x + Math.sin(pb.t * 3) * 0.3, 0.8 + Math.abs(Math.sin(pb.t * Math.PI * 2)) * 0.3, T.z - 1.3 + u * 2.6); if (Math.floor(pb.t * 2) !== Math.floor((pb.t - dt * 0.9) * 2)) soundAt(T.x, T.z, () => tone('square', 1800, 1700, 0.03, 0.03), 1); } const r = a.rig; r.sh[0].rotation.x = -0.9 + Math.sin(t * 6) * 0.3; return false; }
+    default: {   // shooting hoops: now and then the ball flies (a pose only)
+      a.targetHeading = Math.PI / 2; if (Math.sin(t * 1.3) > 0.9) a.cheer = 0.3; return false;
+    }
+  }
+}
+function buildPlayers() {
+  for (const [n, pl] of PLAYERS.entries()) {
+    const girl = n % 3 !== 0, a = new Actor(makePerson({ scale: R(0.58, 0.74), hat: false, glasses: n % 6 === 4, dress: girl && n % 2 === 0, longHair: girl }), 'Gyerek');
+    a.rig.root.visible = false; a.place(DOOR_OUT.x, DOOR_OUT.z, 0); a.stride = 7;
+    const [hx, hz] = playSpot(pl);
+    extras.push({ a, girl, role: pl.role, i: pl.i, T: pl.T, home: new V3(hx, 0, hz), state: 'in', out: false, wait: 0, t: R(0.5, 2), toy: true });
+  }
+}
+
 // ---------------------------------------------------------------- the streets: cars on Kossuth Lajos utca (west), Iskola utca
 // (south) and Aradi utca (east), both ways, on the right; they drive along the street and come round again
 const traffic = [];
@@ -1288,9 +1472,11 @@ function extrasTick(dt, on) {
   const P = G.petike.pos;
   for (const k of extras) {
     if (on && k.state === 'in') { k.state = 'going'; k.wait = R(2, 6); }
-    if (!on && (k.state === 'going' || k.state === 'out')) { k.state = 'back'; k.a.sitTarget = 0; k.a.walkTo([[k.a.pos.x > 12 ? 11.5 : k.a.pos.x, Math.max(Math.min(k.a.pos.z, 19), 5)], [DOOR_OUT.x, DOOR_OUT.z - 0.4]], R(2.6, 3.2)); }
-    if (k.state === 'going' && (k.wait -= dt) <= 0) { k.state = 'out'; k.a.place(DOOR_OUT.x, DOOR_OUT.z, 0); k.a.rig.root.visible = true; k.a.walkTo([[DOOR_OUT.x + R(-1, 1), 6], AROUND, [k.home.x, k.home.z]], R(2.2, 3.0)); }
+    if (!on && (k.state === 'going' || k.state === 'out')) { if (k.toy) { k.a.pos.y = 0; k.a.sit = 0; if (k.role === 'pong' && k.i === 0) play.balls[k.T].ball.visible = false; } k.state = 'back'; k.a.sitTarget = 0; k.a.walkTo([[k.a.pos.x > 12 ? 11.5 : k.a.pos.x, Math.max(Math.min(k.a.pos.z, 19), 5)], [DOOR_OUT.x, DOOR_OUT.z - 0.4]], R(2.6, 3.2)); }
+    if (k.state === 'going' && (k.wait -= dt) <= 0) { k.state = 'out'; k.a.place(DOOR_OUT.x, DOOR_OUT.z, 0); k.a.rig.root.visible = true; k.a.walkTo(k.toy && k.home.x < 42 ? [[DOOR_OUT.x + R(-1, 1), 6], [k.home.x, k.home.z]] : [[DOOR_OUT.x + R(-1, 1), 6], AROUND, ...(k.home.x > 44 ? [[46, 19.5]] : []), [k.home.x, k.home.z]], R(2.2, 3.0)); }
     if (k.state === 'back' && !k.a.path) { k.state = 'in'; k.a.rig.root.visible = false; }
+    if (k.toy && k.state === 'back' && k.a.pos.y > 0) { k.a.pos.y = 0; k.a.sitTarget = 0; }
+    if (k.toy && k.state === 'out' && !k.a.path) { if (playTick(dt, k)) continue; k.a.update(dt); continue; }
     if (k.state === 'in' || k.state === 'going') continue;
     if (k.state === 'out' && !k.a.path) {
       if (k.role === 'ring') { k.a.seatH = 0.05; k.a.sitTarget = 1; k.a.targetHeading = Math.atan2(40 - k.a.pos.x, 36.5 - k.a.pos.z); if ((k.t -= dt) <= 0) { k.t = R(4, 9); if (Math.random() < 0.3) say(k.a, pick(['És akkor azt mondta…', 'Hahaha!', 'Komolyan?!', 'Láttad tegnap?']), 1.6); } }
@@ -1346,7 +1532,7 @@ export function buildSchool() {
   makeDoor(26.1, CORR - 0.06, 1.0, { color: 0xf4f4f4, sign: { kind: 'boy', text: 'FIÚ' }, name: 'fiú WC' });
   makeDoor(33.1, CORR - 0.06, 1.0, { color: 0xf4f4f4, sign: { kind: 'girl', text: 'LÁNY' }, name: 'lány WC' });
   buildFurniture();
-  buildPeople(); buildCrowd(); buildExtras(); buildPE(); buildFrog(); buildTraffic();   // (the crowd is made of the classes' children: after them)
+  buildPeople(); buildCrowd(); buildExtras(); buildPlayground(); buildPlayers(); buildPE(); buildFrog(); buildTraffic();   // (the crowd is made of the classes' children: after them)
 }
 export function schoolRoom(x, z) {
   if (x > SCHOOL.x0 && x < SCHOOL.x1 && z > SCHOOL.z0 && z < SCHOOL.z1) return z > CORR ? 'Iskola – folyosó' : x >= 30 ? 'Iskola – lány WC' : x >= 24 ? 'Iskola – fiú WC' : 'Iskola – a ' + ROOMS3[Math.floor(x / 12)].cls + ' osztályterme';
