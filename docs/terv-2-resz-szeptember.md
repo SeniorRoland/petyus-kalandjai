@@ -1,7 +1,7 @@
 # 2. rész (Szeptember – Otthon és iskola): terv
 
 Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, mire épül a kódban.
-**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ✅ A napok köre is kész: indulás (7:30 vagy mindhárom reggeli csibészség után) → iskola (helyszín, csibészségek nélkül) → otthon délután–este (sötét, lámpák) → lefekvés → másnap reggel; hétvége és hónap vége átvezetővel. ✅ Az este 3 csibészsége is kész. ◐ Az iskola csibészségei: ✅ 4. Előre a mutatót!, ✅ 5. Vizes szivacs a széken, ⬜ a többi 2 (terv kész). ⬜ Hátravan még: tesztelés telefonon.
+**Állapot:** ✅ a megnyitás, a 2. rész saját csibészség-rendszere (napló-fül) és az otthoni reggel kész: a filmes nyitány (ébresztés), a lakás, a ház és környéke, az eszközök, a leltár, Karcsi, a nővér, a hangok és mind a 3 reggeli csibészség. ✅ A napok köre is kész: indulás (7:30 vagy mindhárom reggeli csibészség után) → iskola (helyszín, csibészségek nélkül) → otthon délután–este (sötét, lámpák) → lefekvés → másnap reggel; hétvége és hónap vége átvezetővel. ✅ Az este 3 csibészsége is kész. ✅ Az iskola 4 csibészsége is kész – mind a 10 csibészség megvan. ⬜ Hátravan még: tesztelés telefonon.
 
 ## Röviden
 
@@ -26,8 +26,8 @@ Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, 
 | 3 | Hol a kulcs, Angi? | otthon, reggel | anya keresni kezd | 2 percnél tovább keres | fura helyen volt, és Petyus nem árulta el | „Anya kulcsa mindig a cipősszekrényen van.” | **kész** |
 | 4 | Előre a mutatót! | iskola, 6. b (óra) | a tanító néni korábban kienged | ≥ 10 perccel korábban | és nem látta, ki volt | „A tanító néni mindig a falióráról olvassa le, mikor van vége az órának.” | **kész** |
 | 5 | Vizes szivacs a széken | iskola, 6. b (szünet → óra) | a tanító néni beleül | a táblatörlő szivacs csuromvizes volt (a WC-ben áztatva) | és az osztály nevet, de senki nem árulja el | „A táblatörlő szivacs a tábla alatt van. A WC-ben van csap…” | **kész** |
-| 6 | Béka a fiókban | iskola, udvar → 6. a | a tanár bácsi kinyitja a fiókot | felugrik az asztalra | és a béka kiugrik a folyosóra (a 6. b-sek is látják) | „Az udvari bokrok alatt béka lakik. A tanár bácsi fiókjában meg a napló…” | ⬜ terv kész |
-| 7 | Hol a szemüvegem? | iskola, 6. b | a tanító néni keresni kezdi | vakon ír a táblára (krix-krax), rossz nevet szólít | és végül a tanár bácsit gyanúsítja | „A tanító néni szemüvege szünetben a tanári asztalon pihen.” | ⬜ terv kész |
+| 6 | Béka a fiókban | iskola, udvar → 6. a | a tanár bácsi kinyitja a fiókot | felugrik az asztalra | és a béka kiugrik a folyosóra (a 6. b-sek is látják) | „Az udvari bokrok alatt béka lakik. A tanár bácsi fiókjában meg a napló…” | **kész** |
+| 7 | Hol a szemüvegem? | iskola, 6. b | a tanító néni keresni kezdi | vakon ír a táblára (krix-krax), rossz nevet szólít | és végül a tanár bácsit gyanúsítja | „A tanító néni szemüvege szünetben a tanári asztalon pihen.” | **kész** |
 | 8 | A fogkrémcsere | otthon, este (fürdő) | anya a sarokkrémmel **vagy** apa a chilikrémmel mos fogat | ugyanazon az estén mindketten | és Petyust senki nem kapta rajta | „A fürdőben minden tubus egyforma… majdnem.” | **kész** |
 | 9 | Meccs vagy sorozat? | otthon, este (nappali) | átkapcsolsz a meccs alatt | a tizenegyesnél | és apa anyát hibáztatja | „Este apa meccset néz, anya a sorozatát várja.” | **kész** |
 | 10 | A lepedős kísértet | otthon, este (előtér) | apa megijed | sötétben: „MEGADOM MAGAM!” | és mire felkapcsolják a villanyt, Petyus már az ágyánál van, a lepedő az ágyon | „Este, sötétben minden lepedő gyanús.” | **kész** |
@@ -100,7 +100,7 @@ Helyszínek, napok és csibészségek. Mindegyiknél: mi a játék, mi a poén, 
 
 - **Technika:** a kulcs új leltártárgy (minden lerakóhely elfogadja, plusz új rejtekhelyek: kanapé, fotel, fiók, mosógép); Angi keresési útvonala és „kotorászás” mozdulatai (lehajolás, fiók- és szekrényajtó nyitása – az ajtók már nyithatók); a keresés ideje rejtekhelyenként.
 
-## 4–7. Iskolai csibészségek  ◐ részben (4–5. kész)
+## 4–7. Iskolai csibészségek  ✅ kész
 
 Mindegyik az iskola meglévő rendszereire épül: órarend és csengő (`schoolStatus`, `lesson()`), a 6. b és a 6. a terme a tanárral és a gyerekekkel, a szünet (a gyerekek kimennek, az udvaron fociznak / ugróiskoláznak – `crowdTick`), a tábla (`boardText`), a falióra (`makeClock`), a WC-k (csap, mosdó), a leltár (felvehető tárgyak, lerakóhelyek). A tanító néni szemüveges (`glasses: true`). Az iskolában nincs késés-pont; a csillagok a naplóba kerülnek, mint otthon.
 
@@ -140,7 +140,9 @@ Mindegyik az iskola meglévő rendszereire épül: órarend és csengő (`school
 
 ---
 
-## 6. Béka a fiókban  ⬜ terv kész
+## 6. Béka a fiókban  ✅ kész
+
+- **Megvalósítás** (`src/ep2/school.js`: `frog`, `frogTick`, `frogUse`, `frogOut`, `frogTeacher`; a tanárok szünete: `teacherBreak`): a tér melletti bokornál béka ugrál (néha brekeg, ha Petyus közel jön, elugorhat). **E – a béka elkapása** (kb. minden második próbálkozás sikerül), a kezében viszi; a 6. a tanári asztalánál **E – a béka a tanári asztal fiókjába**, máshol **E – a béka elengedése**. Szünetben mindkét tanár kint áll a folyosón a saját ajtaja mellett; ha a tanár bácsi a teremben van és látja: „Hát te mit keresel az asztalomnál?” – a béka elugrál (rajtakapás). Óra elején a tanár bácsi leül, kinyitja a fiókot: „BREKK!”, „ÁÁÁ!! Egy BÉKA!!”, felugrik az asztalra (karjai fent), a 6. a-sok sikítoznak / nevetnek; a béka leugrik, kiugrál az ajtón, végig a folyosón a 6. b ajtajáig – ha az nyitva van, a tanító néni: „Egy BÉKA?! Gyerekek, maradjatok a helyeteken!” –, aztán ki az udvarra, vissza a bokrához. A tanár bácsi lemászik: „Ki volt ez?!” Mentés: `r2-beka`.
 
 - **Alaphelyzet:** az udvaron, a pálya melletti bokrok alatt egy béka ugrál (néha brekeg). A 6. a tanár bácsijának asztalán / fiókjában van a napló.
 - **Menet:**
@@ -155,7 +157,9 @@ Mindegyik az iskola meglévő rendszereire épül: órarend és csengő (`school
 
 ---
 
-## 7. Hol a szemüvegem?  ⬜ terv kész
+## 7. Hol a szemüvegem?  ✅ kész
+
+- **Megvalósítás** (`src/ep2/school.js`: `gl`, `glassesUse`, `glassesOn`, `glassesSearch`, `glassesBack`): a tanító néni szemüvege külön kis tárgy az arcán. Szünetben leveszi („Hű, de fáradt a szemem…”), és az asztalán hagyja. **E – a tanító néni szemüvegének elvétele**, bárhol **E – a szemüveg letétele ide (elrejtés)** (újra felvehető). Óra elején leül, és ha nincs ott: keresés – az asztal („Itt hagytam…”) → **vakon a táblához** (a tábla szövege összekuszálódik), „Botond, gyere ki a táblához!” (egy osztálytárs: „Botond a 6. a-ba jár!”), Petyust kislánynak szólítja → a polc → végül átmegy a 6. a-hoz: „Kolléga! Biztos maga tette el!” – „Én? Ugyan, kolléganő!” –, és előveszi a tartalék szemüvegét. Ha a keresés közben a szemüveg közelébe ér, megtalálja („Na végre!”); Petyus vissza is adhatja (**E – „Tanító néni, itt a szemüvege!”** – „Ezért jár egy piros pont!”, de a ★★★ elvész). Mentés: `r2-szemuveg` (érték: meddig jutott a keresés).
 
 - **Alaphelyzet:** a tanító néni szünetben leveszi a szemüvegét, és a tanári asztalra teszi (dörzsöli a szemét: „Fáradt vagyok…”), óra elején visszaveszi.
 - **Menet:**
@@ -395,7 +399,7 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
   - **Hangok:** csengő minden óra elején és végén (45 perc óra, 10 perc szünet), gyerekzsivaj (órán halk, szünetben hangos; szünetben kiabálás az udvaron), a kréta csikorgása, ha a tanító néni ír.
 - **Szereplők:** a 6. b-ben a tanító néni és 12 osztálytárs, a 6. a-ban a tanár bácsi és 14 gyerek – mindkét teremben folyik az óra (a 6. a-ban a tanár bácsi rászól Petyusra, hogy nem oda jár); a gyerekek a padban Petyus felé fordulnak, ha elmegy mellettük, és megszólítják.
 - **Óra:** 8:00 → 15:30; **E – hazaindulás** a kapunál (egyelőre bármikor).
-- ⬜ Később: a 4 iskolai csibészség (terv kész: Előre a mutatót!, Vizes szivacs a széken, Béka a fiókban, Hol a szemüvegem?), a tornaterem / ebédlő belseje, az emeletek.
+- ✅ A 4 iskolai csibészség (Előre a mutatót!, Vizes szivacs a széken, Béka a fiókban, Hol a szemüvegem?). ⬜ Később: a tornaterem / ebédlő belseje, az emeletek.
 
 ## Fejlesztési lépések
 
@@ -406,7 +410,7 @@ A 2. rész **otthon, reggeli időszakkal** induljon: a fejlesztői eléréssel (
 5. ✅ **Otthon – reggel:** a lakás voxelből az alaprajz alapján (falak, ajtók, ablakok, padló, bútorok), babaház-nézet, reggeli fények, Petyus/Petya/Angi elhelyezése, mozgás, ütközés.
 6. ◐ Iskola (✅ helyszín), délutáni otthon (✅ helyszín), csibészségek (✅ a reggeliek, ✅ az estiek, ⬜ az iskolaiak – terv kész).
 7. ✅ **Esti csibészségek:** esti ütemező → 8. A fogkrémcsere → 9. Meccs vagy sorozat? → 10. A lepedős kísértet.
-8. ◐ **Iskolai csibészségek:** ✅ 4. Előre a mutatót! → ✅ 5. Vizes szivacs a széken → ⬜ 6. Béka a fiókban → ⬜ 7. Hol a szemüvegem?
+8. ✅ **Iskolai csibészségek:** 4. Előre a mutatót! → 5. Vizes szivacs a széken → 6. Béka a fiókban → 7. Hol a szemüvegem?
 
 ## Döntések
 

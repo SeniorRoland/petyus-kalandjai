@@ -366,7 +366,7 @@ function buildClassroom(r) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.05, 0.08), new THREE.MeshLambertMaterial({ color: 0x8a6a4a }));
     sponge.home.set(wx + 0.12, 0.985, bz + 1.4); m.position.copy(sponge.home); m.castShadow = true; scene.add(m); sponge.mesh = m;
   }
-  const txt = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 1.16), new THREE.MeshBasicMaterial({ map: boardText(r.board), transparent: true })); txt.position.set(wx + 0.085, 1.6, bz); txt.rotation.y = E;
+  const txt = new THREE.Mesh(new THREE.PlaneGeometry(4.3, 1.16), new THREE.MeshBasicMaterial({ map: boardText(r.board), transparent: true })); txt.position.set(wx + 0.085, 1.6, bz); txt.rotation.y = E; r.txt = txt;
   // the clock on the back (east) wall, between the bookcases and the cupboards: the teacher sees it facing the class, the
   // pupils have it behind them
   const ck = makeClock(); clocks.push(ck);
@@ -453,9 +453,15 @@ const CHAIR_TOP = 0.46;
 function chairTo(clock) { tchair.at = clock; tchair.mesh.position.set(clock ? CLOCK.x + 0.2 : tchair.home.x, 0, clock ? CLOCK.z : tchair.home.z); soundAt(tchair.mesh.position.x, tchair.mesh.position.z, () => noise(0.35, 500, 0.8, 0.12), 1); }
 const lessonEnd = (min) => { const t = min - 8 * 60, n = Math.floor(t / 55); return 8 * 60 + n * 55 + 45; };
 function buildPeople() {
-  const T = new Actor(makePerson({ scale: 0.92, shirt: 0x6a4c93, pants: 0x3d405b, hair: 0x8a5a2b, dress: true, glasses: true, hat: false }), 'Tanító néni');
+  const T = new Actor(makePerson({ scale: 0.92, shirt: 0x6a4c93, pants: 0x3d405b, hair: 0x8a5a2b, dress: true, glasses: false, hat: false }), 'Tanító néni');
+  // her glasses: their own little mesh on her face („Hol a szemüvegem?” – in a break she leaves them on her desk)
+  { const g = new THREE.Group(), blk = new THREE.MeshLambertMaterial({ color: 0x222222 }), lens = new THREE.MeshLambertMaterial({ color: 0xbfe3f5, transparent: true, opacity: 0.55 });
+    for (const sx of [-0.07, 0.07]) { const f = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.07, 0.015), blk); f.position.x = sx; g.add(f); const l = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.048, 0.02), lens); l.position.x = sx; g.add(l); }
+    const br = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.015, 0.015), blk); g.add(br);
+    for (const sx of [-0.125, 0.125]) { const arm = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, 0.16), blk); arm.position.set(sx, 0.01, -0.08); g.add(arm); }
+    gl.mesh = g; gl.face = T.rig.S; g.position.set(0, 1.55, 0.165); T.rig.S.add(g); }
   const home = new V3(0.9, 0, -7.3);
-  T.place(home.x, home.z, Math.PI / 2); T.stride = 4.4; school.teacher = T; people.push({ a: T, kind: 'teacher', home, t: R(2, 5) });
+  T.place(home.x, home.z, Math.PI / 2); T.stride = 4.4; school.teacher = T; people.push({ a: T, kind: 'teacher', home, t: R(2, 5), room: ROOMS3[0], sitT: -1 });
   const looks = [[0xe63946, 0x1d3557, 0x5a3825], [0xffca3a, 0x3d405b, 0xd8b45c], [0x8ac926, 0x264653, 0x2b1d14], [0xff70a6, 0x6b705c, 0x8a5a2b], [0x3a86ff, 0x22223b, 0x1b1b1b], [0xf4a261, 0x3d405b, 0x6f4e37],
     [0x2a9d8f, 0x1d3557, 0xc9a66b], [0xb5179e, 0x3d405b, 0x2b1d14], [0x90be6d, 0x264653, 0x5a3825], [0xffd166, 0x1d3557, 0x3b2b20], [0x118ab2, 0x2b2d42, 0x8a5a2b], [0xef476f, 0x264653, 0x1b1b1b]];
   const names = ['Bence', 'Lili', 'Marci', 'Zsófi', 'Ádám', 'Dóri', 'Gergő', 'Panni', 'Levi', 'Bori', 'Máté', 'Kata'], GIRLS = new Set(['Lili', 'Zsófi', 'Dóri', 'Panni', 'Bori', 'Kata']);
@@ -475,7 +481,7 @@ function buildPeople() {
   const r2 = ROOMS3[1];
   const T2 = new Actor(makePerson({ scale: 0.95, shirt: 0x2a6f97, pants: 0x2b2d42, hair: 0x3b2b20, dress: false, glasses: false, hat: false }), 'Tanár bácsi');
   const home2 = new V3(r2.x0 + 0.9, 0, -7.3);
-  T2.place(home2.x, home2.z, Math.PI / 2); T2.stride = 4.4; r2.teacher = T2; ROOMS3[0].teacher = T; people.push({ a: T2, kind: 'teacher', home: home2, t: R(2, 5) });
+  T2.place(home2.x, home2.z, Math.PI / 2); T2.stride = 4.4; r2.teacher = T2; ROOMS3[0].teacher = T; people.push({ a: T2, kind: 'teacher', home: home2, t: R(2, 5), room: r2, sitT: -1 });
   const names2 = ['Kristóf', 'Emma', 'Botond', 'Hanna', 'Zalán', 'Luca', 'Áron', 'Zoé', 'Milán', 'Anna', 'Noel', 'Nóra', 'Dani', 'Olivér'];
   const GIRLS2 = new Set(['Emma', 'Hanna', 'Luca', 'Zoé', 'Anna', 'Nóra']), free2 = new Set([1, 6, 11, 16]);
   let k2 = 0;
@@ -500,7 +506,7 @@ function updatePeople(dt) {
     } else if (p.kind === 'teacher' && p.out) {   // after 14:00 out on the square, watching the children
       if (!a.path) a.targetHeading = Math.atan2(-2 - a.pos.x, 9 - a.pos.z) + Math.sin(G.clockT * 0.3 + p.home.x) * 0.8;
       a.update(dt);
-    } else if (p.kind === 'teacher' && a === school.teacher && !p.out && teacherBreak(p, dt, school.min)) {   // the 6. b's teacher: the break, sitting down
+    } else if (p.kind === 'teacher' && !p.out && teacherBreak(p, dt, school.min)) {   // the teachers: the break in the corridor, sitting down (the mischiefs)
     } else if (p.kind === 'teacher' && a === school.teacher && lesson(school.min)) {   // the 6. b: now and then she writes on the board
       if (ck.writing) {
         a.targetHeading = -Math.PI / 2; a.update(dt);
@@ -901,13 +907,20 @@ export function schoolAction() {
   if (bd) return { door: bd, txt: (bd.open ? 'E – ajtó becsukása' : 'E – ajtó kinyitása') + ` (${bd.name})` };
   if (nearGate()) return { txt: 'E – hazaindulás', gate: true };
   // „Vizes szivacs”: the sponge – from the board, soaked at a sink, onto the teacher's chair (or back)
-  if (sponge.where === 'board' && Math.hypot(P.x - sponge.home.x - 0.45, P.z - sponge.home.z) < 0.8) return { sponge: 'take', txt: 'E – a táblatörlő szivacs elvétele' };
-  if (sponge.where === 'chair' && Math.hypot(P.x - TCHAIR.x, P.z - (TCHAIR.z + 0.6)) < 0.75) return { sponge: 'take', txt: 'E – a szivacs elvétele a székről' };
+  if (!carry.what && sponge.where === 'board' && Math.hypot(P.x - sponge.home.x - 0.45, P.z - sponge.home.z) < 0.8) return { sponge: 'take', txt: 'E – a táblatörlő szivacs elvétele' };
+  if (!carry.what && sponge.where === 'chair' && Math.hypot(P.x - TCHAIR.x, P.z - (TCHAIR.z + 0.6)) < 0.75) return { sponge: 'take', txt: 'E – a szivacs elvétele a székről' };
   if (sponge.where === 'hand') {
     if (SINKS.some((x) => Math.hypot(P.x - x, P.z - (CORR - 0.75)) < 0.55)) return { sponge: 'soak', txt: sponge.wet ? 'E – még jobban beáztatni (már csuromvizes)' : 'E – a szivacs beáztatása a csap alatt' };
     if (Math.hypot(P.x - TCHAIR.x, P.z - (TCHAIR.z + 0.6)) < 0.75) return { sponge: 'chair', txt: 'E – a szivacs a tanári székre' };
     if (Math.hypot(P.x - sponge.home.x - 0.45, P.z - sponge.home.z) < 0.8) return { sponge: 'board', txt: 'E – a szivacs vissza a táblához' };
   }
+  // „Béka a fiókban”: catch the frog by its bush, into the 6. a's teacher's drawer (or let it go)
+  if (!carry.what && sponge.where !== 'hand' && frog.where === 'yard' && !frog.path && Math.hypot(P.x - frog.mesh.position.x, P.z - frog.mesh.position.z) < 0.75) return { frog: 'catch', txt: 'E – a béka elkapása' };
+  if (carry.what === 'frog') return Math.hypot(P.x - FDESK.x, P.z - FDESK.z) < 0.8 ? { frog: 'drawer', txt: 'E – a béka a tanári asztal fiókjába' } : { frog: 'free', txt: 'E – a béka elengedése' };
+  // „Hol a szemüvegem?”: her glasses from her desk (in a break), put down anywhere – or given back to her
+  if (!carry.what && sponge.where !== 'hand' && gl.where === 'desk' && Math.hypot(P.x - (GDESK.x + 0.6), P.z - GDESK.z) < 0.8) return { glasses: 'take', txt: 'E – a tanító néni szemüvegének elvétele' };
+  if (!carry.what && gl.where === 'floor' && Math.hypot(P.x - gl.at.x, P.z - gl.at.z) < 0.7) return { glasses: 'take', txt: 'E – a szemüveg felvétele' };
+  if (carry.what === 'glasses') return gl.search && Math.hypot(P.x - school.teacher.pos.x, P.z - school.teacher.pos.z) < 1.4 ? { glasses: 'give', txt: 'E – „Tanító néni, itt a szemüvege!”' } : { glasses: 'drop', txt: 'E – a szemüveg letétele ide (elrejtés)' };
   // „Előre a mutatót!”: the teacher's chair under the clock, up on it, the hand forward (+5 minutes) – and the chair back
   if (tchair.on) return { clock: 'push', txt: ck.early ? 'Mozgás – leszállás a székről' : 'E – a mutató előre (+5 perc) · mozgás – leszállás', kick: '' };
   if (Math.hypot(P.x - CLOCK.x, P.z - CLOCK.z) < 1.0) {
@@ -919,7 +932,9 @@ export function schoolAction() {
 }
 // E and Space on what schoolAction found (the gate and the seat: ep2.js)
 export function schoolUse(act) {
-  if (act.sponge) spongeUse(act.sponge);
+  if (act.frog) frogUse(act.frog);
+  else if (act.glasses) glassesUse(act.glasses);
+  else if (act.sponge) spongeUse(act.sponge);
   else if (act.clock === 'push') { if (!ck.early && ck.climbT <= 0) clockPush(); }
   else if (act.clock === 'drag') chairDrag();
   else if (act.clock === 'climb') chairClimb(true);
@@ -1018,6 +1033,8 @@ function spongeUse(what) {
 const _hp = new V3();
 function spongeTick(dt, min) {
   const m = sponge.mesh, P = G.petike;
+  if (gl.where === 'hand' && gl.mesh) { if (gl.mesh.parent !== scene) scene.add(gl.mesh); handPos(_hp); gl.mesh.position.set(_hp.x, _hp.y, _hp.z); gl.mesh.rotation.set(0, P.heading, 0); }
+  frogTick(dt);
   if (!m) return;
   if (sponge.where === 'hand') {   // in his right hand (it drips when wet)
     P.rig.handBones?.[0] ? P.rig.handBones[0].getWorldPosition(_hp) : _hp.set(P.pos.x, 0.8, P.pos.z);
@@ -1025,24 +1042,34 @@ function spongeTick(dt, min) {
     if (sponge.wet && (sponge.dripT -= dt) <= 0) { sponge.dripT = 0.25; spawnFx(new V3(_hp.x, _hp.y - 0.07, _hp.z), new V3(0, -0.5, 0), 0x6fb7e0, 0.025, 0.6, -6); }
     // the teacher in the corridor sees him with it
     const T = school.teacher;
-    if (!sponge.seen && !lesson(min) && Math.hypot(T.pos.x - P.pos.x, T.pos.z - P.pos.z) < 2.4) { sponge.seen = true; say(T, 'Petyus, mit csinálsz azzal a szivaccsal?', 2.4); setTimeout(() => say(P, 'Semmit… letörlöm a táblát!', 2), 2200); }
+    if (!sponge.seen && !lesson(min) && Math.hypot(T.pos.x - P.pos.x, T.pos.z - P.pos.z) < 2.4 && Math.hypot(sponge.mesh.position.x - P.pos.x, sponge.mesh.position.z - P.pos.z) < 0.6) { sponge.seen = true; say(T, 'Petyus, mit csinálsz azzal a szivaccsal?', 2.4); setTimeout(() => say(P, 'Semmit… letörlöm a táblát!', 2), 2200); }
   }
 }
-// the teacher of the 6. b: in a break out in the corridor (by the door); at the start of a lesson back to her desk, she sits down
-// for a moment („Na, nézzük a naplót…”) – onto whatever is on her chair
+// the teachers: in a break out in the corridor (by their door); at the start of a lesson back to the desk, they sit down for a
+// moment („Na, nézzük a naplót…”) – the 6. b's onto whatever is on her chair (and she puts her glasses on – if they are still
+// there), the 6. a's opens his drawer for the register (and whatever is in it jumps out)
 function teacherBreak(p, dt, min) {
-  const a = p.a, brk = !lesson(min);
-  if (brk && !p.brk && !p.out && min >= 8 * 60) { p.brk = true; p.back = false; a.walkTo([[p.home.x + 0.8, -3.6], [5.1, -3.4], [5.1, -1.6], [BREAK_SPOT.x, BREAK_SPOT.z]], 1.1); }
-  if (!brk && p.brk && !p.back) { p.back = true; ck.writing = false; a.walkTo([[5.1, -1.6], [5.1, -3.4], [1.9, -3.8], [1.9, -9.0], [TCHAIR.x + 0.1, TCHAIR.z + 0.5]], 1.4); }
-  if (p.back && !a.path && sponge.sitT < 0) {   // at her chair: sit down
-    a.place(TCHAIR.x, TCHAIR.z, Math.PI / 2); a.seatH = 0.45; a.sitTarget = 1; sponge.sitT = 0;
-    say(a, pick(['Na, nézzük a naplót…', 'Üljetek le, gyerekek!', 'Csendet kérek!']), 2);
+  const a = p.a, brk = !lesson(min), r = p.room, ours = r === ROOMS3[0], ch = { x: r.x0 + 1.32, z: -9.6 }, spot = { x: r.door + 1.5, z: -1.3 };
+  if (ours && gl.search) return glassesSearch(p, dt, min);
+  if (brk && !p.brk && !p.out && min >= 8 * 60) {
+    p.brk = true; p.back = false;
+    if (ours && gl.where === 'head') { gl.where = 'desk'; scene.add(gl.mesh); gl.mesh.position.set(GDESK.x, 0.8, GDESK.z); gl.mesh.rotation.set(0, Math.PI / 2, 0); say(a, 'Hű, de fáradt a szemem… leteszem a szemüvegem.', 2.2); }
+    a.walkTo([[p.home.x + 0.8, -3.6], [r.door, -3.4], [r.door, -1.6], [spot.x, spot.z]], 1.1);
   }
-  if (sponge.sitT >= 0) {
-    sponge.sitT += dt;
-    if (sponge.where === 'chair' && a.sit > 0.7 && !sponge.hit) spongeHit(a);
-    if (sponge.sitT > (sponge.hit ? 1.0 : 4.5)) { a.sitTarget = 0; }
-    if (sponge.sitT > (sponge.hit ? 2.0 : 5.5)) { sponge.sitT = -1; p.brk = false; p.back = false; sponge.hit = false; a.walkTo([[p.home.x, p.home.z]], 0.9); }
+  if (!brk && p.brk && !p.back) { p.back = true; if (ours) ck.writing = false; a.walkTo([[r.door, -1.6], [r.door, -3.4], [r.x0 + 1.9, -3.8], [r.x0 + 1.9, -9.0], [ch.x + 0.1, ch.z + 0.5]], 1.4); }
+  if (p.back && !a.path && p.sitT < 0) {   // at the chair: sit down
+    a.place(ch.x, ch.z, Math.PI / 2); a.seatH = 0.45; a.sitTarget = 1; p.sitT = 0;
+    say(a, ours ? pick(['Na, nézzük a naplót…', 'Üljetek le, gyerekek!', 'Csendet kérek!']) : pick(['Na, hol is a napló…', 'Csend legyen!']), 2);
+  }
+  if (p.sitT >= 0) {
+    p.sitT += dt;
+    if (ours && sponge.where === 'chair' && a.sit > 0.7 && !sponge.hit) spongeHit(a);
+    if (ours && p.sitT > 0.8 && !p.glDone) { p.glDone = true; glassesOn(a); }
+    if (!ours && frog.where === 'drawer' && p.sitT > 1.2 && !frog.out) frogOut(p);
+    if (frog.out && !ours) return frogTeacher(p, dt);
+    const busy = ours && sponge.hit;
+    if (p.sitT > (busy ? 1.0 : 4.5)) a.sitTarget = 0;
+    if (p.sitT > (busy ? 2.0 : 5.5)) { p.sitT = -1; p.brk = false; p.back = false; p.glDone = false; if (ours) sponge.hit = false; if (!(ours && gl.search)) a.walkTo([[p.home.x, p.home.z]], 0.9); }
     a.update(dt); return true;
   }
   if (p.brk) { if (!a.path && !p.back) a.targetHeading = Math.PI; a.update(dt); return true; }
@@ -1069,6 +1096,141 @@ function spongeHit(T) {
   sponge.seen = false;
 }
 
+// ---------------------------------------------------------------- „Béka a fiókban” (r2-beka) and „Hol a szemüvegem?” (r2-szemuveg)
+// carry: what Petyus has in his hand of these two ('frog' | 'glasses' | null – the sponge has its own)
+export const carry = { what: null };
+export const frog = { mesh: null, where: 'yard', home: new V3(-9.0, 0, 3.3), hopT: 1, hop: null, path: null, out: false, peeked: false, caught: false, done: false };
+export const gl = { mesh: null, face: null, where: 'head', at: new V3(), search: false, t: 0, stage: 0, step: 0, returned: false };
+const GDESK = { x: 1.9, z: -9.25 };   // where she leaves her glasses (her desk)
+const FDESK = { x: 14.55, z: -9.6 };  // in front of the 6. a's teacher's desk (its drawer)
+function buildFrog() {
+  const g = new THREE.Group(), grn = new THREE.MeshLambertMaterial({ color: 0x4caf50 }), dk = new THREE.MeshLambertMaterial({ color: 0x2e7d32 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.07, 0.15), grn); body.position.y = 0.05; g.add(body);
+  for (const sx of [-0.04, 0.04]) { const e = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.035, 0.035), grn); e.position.set(sx, 0.1, 0.05); g.add(e); const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.01), new THREE.MeshBasicMaterial({ color: 0x111111 })); p2.position.set(sx, 0.105, 0.068); g.add(p2); }
+  for (const sx of [-0.08, 0.08]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.03, 0.1), dk); l.position.set(sx, 0.02, -0.04); g.add(l); }
+  g.position.copy(frog.home); g.traverse((o) => { if (o.isMesh) o.castShadow = true; }); scene.add(g); frog.mesh = g;
+}
+const handPos = (out) => { const P = G.petike; P.rig.handBones?.[0] ? P.rig.handBones[0].getWorldPosition(out) : out.set(P.pos.x, 0.8, P.pos.z); return out; };
+const sees = (a, p, far, cone) => { const dx = p.x - a.pos.x, dz = p.z - a.pos.z, d = Math.hypot(dx, dz); if (d > far) return false; let da = Math.atan2(dx, dz) - a.heading; da = Math.atan2(Math.sin(da), Math.cos(da)); return Math.abs(da) < cone; };
+function frogHopTo(x, z) { frog.hop = { x0: frog.mesh.position.x, z0: frog.mesh.position.z, x1: x, z1: z, t: 0 }; frog.mesh.rotation.y = Math.atan2(x - frog.mesh.position.x, z - frog.mesh.position.z); }
+function frogTick(dt) {
+  const m = frog.mesh, P = G.petike; if (!m) return;
+  if (frog.where === 'hand') { handPos(_hp); m.position.set(_hp.x, _hp.y - 0.05, _hp.z); m.rotation.y = P.heading; return; }
+  if (frog.hop) {   // a hop: an arc
+    const h = frog.hop; h.t = Math.min(1, h.t + dt * 2.6);
+    m.position.set(h.x0 + (h.x1 - h.x0) * h.t, (frog.hopY || 0) + Math.sin(h.t * Math.PI) * 0.18, h.z0 + (h.z1 - h.z0) * h.t);
+    if (h.t >= 1) { frog.hop = null; m.position.y = frog.hopY || 0; if (Math.random() < 0.3) say({ headWorld: (o) => o.set(m.position.x, 0.45, m.position.z) }, 'BREKK!', 0.9); }
+    return;
+  }
+  if (frog.path && frog.path.length) { const [x, z] = frog.path.shift(); frog.hopY = 0; frogHopTo(x, z); if (!frog.path.length) frog.path = null; return; }
+  if (frog.where === 'yard') {   // now and then a hop near its bush; it hops off if Petyus comes close
+    const d = Math.hypot(P.pos.x - m.position.x, P.pos.z - m.position.z);
+    if ((frog.hopT -= dt) <= 0 || (d < 1.0 && Math.random() < dt * 0.8)) {
+      frog.hopT = R(2, 4);
+      const a = Math.random() * Math.PI * 2, r = Math.random() * 1.4;
+      frogHopTo(frog.home.x + Math.cos(a) * r, frog.home.z + Math.sin(a) * r);
+    }
+  }
+}
+function frogUse(what) {
+  const P = G.petike;
+  if (what === 'catch') {
+    if (Math.random() < 0.5) { frog.where = 'hand'; carry.what = 'frog'; frog.hop = null; say(P, 'Megvagy, brekike!', 1.4); tone('sine', 520, 780, 0.1, 0.05); }
+    else { const a = Math.atan2(frog.mesh.position.x - P.pos.x, frog.mesh.position.z - P.pos.z); frogHopTo(frog.mesh.position.x + Math.sin(a) * 1.1, frog.mesh.position.z + Math.cos(a) * 1.1); say(P, pick(['Elugrott!', 'Hé, gyere vissza!']), 1.2); }
+  } else if (what === 'drawer') {
+    const T2 = ROOMS3[1].teacher;
+    if (T2.pos.z < CORR && T2.pos.x > 12 && T2.pos.x < 24 && sees(T2, P.pos, 6, 1.3)) {   // he is in the room and sees it
+      frog.caught = true; say(T2, 'Hát te mit keresel az asztalomnál, fiam?', 2.4);
+      frog.where = 'yard'; carry.what = null; frog.mesh.position.set(P.pos.x, 0, P.pos.z); frog.path = [[P.pos.x + 0.8, P.pos.z + 1], [14, -3.4], [17.1, -3.3], [17.1, -1.4], [2.6, -1.2], [2.6, 1.2], [2.6, 4.4], [frog.home.x, frog.home.z]];
+      setTimeout(() => say(P, 'Csak… egy béka volt nálam. Már nincs.', 2), 2000);
+      return;
+    }
+    frog.where = 'drawer'; carry.what = null; frog.mesh.visible = false; soundAt(FDESK.x, FDESK.z, () => { noise(0.15, 800, 1, 0.12); noise(0.12, 600, 1, 0.12, 0.35); }, 1);   // the drawer out and in
+    say(P, 'Hihi… jó lesz neki ott.', 1.4);
+  } else if (what === 'free') { frog.where = 'yard'; carry.what = null; frog.mesh.position.set(P.pos.x, 0, P.pos.z); frog.path = [[P.pos.x + 0.5, P.pos.z + 0.4]]; }
+}
+// the 6. a's teacher opens his drawer: the frog jumps out, he is up on his desk, the frog hops off to the corridor, past the 6. b
+function frogOut(p) {
+  const T2 = p.a; frog.out = true; frog.tt = 0; frog.where = 'loose'; frog.peeked = false;
+  frog.mesh.visible = true; frog.mesh.position.set(p.room.x0 + 1.9, 0.78, -9.45); frog.hopY = 0.78;
+  say({ headWorld: (o) => o.set(p.room.x0 + 1.9, 1.3, -9.45) }, 'BREKK!', 1.2); soundAt(p.room.x0 + 1.9, -9.5, () => { tone('square', 140, 90, 0.18, 0.12); tone('square', 120, 80, 0.18, 0.1, 0.25); }, 1);
+  setTimeout(() => { say(T2, 'ÁÁÁ!! Egy BÉKA!!', 1.8); T2.sitTarget = 0; }, 400);
+  setTimeout(() => { T2.place(p.room.x0 + 1.9, -9.6, Math.PI / 2); T2.pos.y = 0.78; T2.cheer = 6; }, 900);   // up on the desk
+  const kids = pupils.filter((k) => k.room === ROOMS3[1] && k.a.rig.root.visible);
+  kids.slice(0, 5).forEach((k, i) => setTimeout(() => say(k.a, pick(['IIIIIII!', 'Egy béka!!', 'Hahaha!', 'Fúúúj!', 'Brekk-brekk!']), 1.4), 900 + i * 280));
+  // its way: down, through the room, out of the door, along the corridor to the 6. b's door, then out to the yard
+  setTimeout(() => { frog.hopY = 0; frog.path = [[p.room.x0 + 2.6, -8.6], [p.room.x0 + 4, -6.5], [p.room.x0 + 5.1, -4.2], [p.room.door, -3.4], [p.room.door, -2.2], [p.room.door - 3, -1.6], [8, -1.6], [5.1, -1.8], [5.1, -2.7]]; }, 1500);
+}
+function frogTeacher(p, dt) {   // on the desk until the frog is gone; then down
+  const T2 = p.a; frog.tt += dt;
+  T2.update(dt); if (T2.pos.y > 0.1) { T2.pos.y = 0.78; T2.sync(); }
+  if (!frog.peeked && !frog.path && !frog.hop && frog.mesh.position.x < 6) {   // at the 6. b's door
+    frog.peeked = true; const d = doors.find((q) => q.name === '6. b'), open = d && d.open;
+    if (open) { say(school.teacher, 'Egy BÉKA?! Gyerekek, maradjatok a helyeteken!', 2.6); pupils.filter((k) => k.room === ROOMS3[0]).slice(0, 3).forEach((k, i) => setTimeout(() => say(k.a, pick(['Egy béka!', 'Hahaha!', 'Brekk!']), 1.2), 600 + i * 300)); }
+    frog.sixB = open;
+    setTimeout(() => { frog.path = [[5.1, -1.4], [2.6, -1.1], [2.6, 1.2], [2.6, 4.4], [frog.home.x, frog.home.z]]; }, 1600);
+  }
+  if (frog.tt > 9 && T2.pos.y > 0.1) { T2.pos.y = 0; T2.cheer = 0; T2.place(p.room.x0 + 2.6, -9.0, Math.PI / 2); say(T2, 'Ki volt ez?! Na megállj, ha megtudom!', 2.4); }
+  if (frog.tt > 9 && frog.peeked && !frog.done) { frog.done = true; const v = frog.caught ? 2 : 2 + (frog.sixB ? 1 : 0); setTimeout(() => award('r2-beka', v, { sixB: frog.sixB, caught: frog.caught }), 1500); }
+  if (frog.tt > 11 && !frog.path && !frog.hop) { frog.out = false; frog.where = 'yard'; frog.done = false; frog.caught = false; p.sitT = -1; p.brk = false; p.back = false; T2.walkTo([[p.home.x, p.home.z]], 0.9); }
+  return true;
+}
+// ---- the glasses
+function glassesUse(what) {
+  const P = G.petike;
+  if (what === 'take') { gl.where = 'hand'; carry.what = 'glasses'; tone('sine', 520, 780, 0.1, 0.05); }
+  else if (what === 'drop') { gl.where = 'floor'; carry.what = null; gl.at.set(P.pos.x + Math.sin(P.heading) * 0.3, 0, P.pos.z + Math.cos(P.heading) * 0.3); gl.mesh.position.set(gl.at.x, 0.03, gl.at.z); tone('sine', 600, 420, 0.1, 0.05); }
+  else if (what === 'give') {   // back to her: a red point (but no ★★★)
+    gl.returned = true; carry.what = null; glassesBack(school.teacher, true);
+  }
+}
+function glassesOn(T) {   // at her desk: on with them – or they are gone
+  if (gl.where === 'desk') { gl.where = 'head'; gl.face.add(gl.mesh); gl.mesh.position.set(0, 1.55, 0.165); gl.mesh.rotation.set(0, 0, 0); return; }
+  gl.search = true; gl.t = 0; gl.stage = 1; gl.step = 0; gl.returned = false;
+  say(T, 'Hol a szemüvegem? Itt hagytam az asztalon…', 2.6);
+}
+const scramble = (l) => l.split('').map((c) => (c === ' ' || Math.random() < 0.55 ? c : pick('abcdefgijklmnoprstuvz?/1234'.split('')))).join('');
+function glassesSearch(p, dt, min) {
+  const T = p.a, P = G.petike; gl.t += dt;
+  const found = gl.where === 'floor' && Math.hypot(T.pos.x - gl.at.x, T.pos.z - gl.at.z) < 1.1;
+  if (found || !lesson(min)) { glassesBack(T, false); p.sitT = -1; p.brk = false; p.back = false; T.update(dt); return true; }
+  const go = (pts) => T.walkTo(pts, 0.9);
+  // the steps: the desk → blind at the board (wrong names) → the shelves → the 6. a's teacher
+  if (gl.step === 0 && gl.t > 2.6) { gl.step = 1; T.sitTarget = 0; go([[2.6, -9.0]]); }
+  if (gl.step === 1 && gl.t > 5) { gl.step = 2; say(T, 'Nincs itt… Na mindegy, vakon is megy.', 2.4); ROOMS3[0].txt.material.map = boardText(ROOMS3[0].board.map(scramble)); go([[0.6, -7.3]]); }
+  if (gl.step === 2 && gl.t > 9) {
+    gl.step = 3; gl.stage = 2; T.targetHeading = Math.PI / 2;
+    say(T, 'Botond, gyere ki a táblához!', 2.2);
+    setTimeout(() => { const k = pick(pupils.filter((q) => q.room === ROOMS3[0] && q.a.rig.root.visible)); if (k) say(k.a, 'Botond a 6. a-ba jár, tanító néni!', 2.2); }, 2300);
+    if (P.pos.z < CORR && P.pos.x < 12) setTimeout(() => say(T, 'Akkor te, kislány, ott elöl!', 2), 5000), setTimeout(() => say(P, 'Tanító néni… én Petyus vagyok.', 2), 7000);
+  }
+  if (gl.step === 2 && T.path === null && gl.t > 6) { T.targetHeading = -Math.PI / 2; const r = T.rig; r.sh[0].rotation.x = -2.1 + Math.sin(G.clockT * 7) * 0.2; }
+  if (gl.step === 3 && gl.t > 15) { gl.step = 4; say(T, 'Hátha a polcon hagytam…', 2); go([[3.5, -6.5], [10.8, -9.6]]); }
+  if (gl.step === 4 && gl.t > 22 && !T.path) {   // not found: next door – it must be him
+    gl.step = 5; say(T, 'Nincs sehol. Ez csak a kolléga lehetett!', 2.4);
+    go([[10, -4], [5.1, -3.4], [5.1, -1.6], [17.1, -1.6], [17.1, -2.3]]);
+  }
+  if (gl.step === 5 && !T.path && gl.t > 24) {
+    gl.step = 6; gl.stage = 3;
+    say(T, 'Kolléga! Nem látta a szemüvegemet? Biztos maga tette el!', 3);
+    setTimeout(() => say(ROOMS3[1].teacher, 'Én? Ugyan, kolléganő! Nálam nincs!', 2.6), 3200);
+    setTimeout(() => say(T, 'Hmpf. Szerencsére van egy tartalék a táskámban.', 2.6), 6200);
+  }
+  if (gl.step === 6 && gl.t > 34) { glassesBack(T, false); p.sitT = -1; p.brk = false; p.back = false; T.walkTo([[17.1, -1.6], [5.1, -1.6], [5.1, -3.4], [p.home.x, p.home.z]], 1.1); }
+  T.update(dt);
+  if (gl.step === 2 && !T.path) { const r = T.rig; r.sh[0].rotation.x = -2.1 + Math.sin(G.clockT * 7) * 0.2; r.sh[0].rotation.z = 0.2; T.sync(); }
+  return true;
+}
+function glassesBack(T, given) {   // the search is over: the glasses on her nose, the board right again; the stars
+  const stage = gl.stage, returned = given || gl.returned;
+  gl.search = false; gl.where = 'head'; carry.what = null; gl.face.add(gl.mesh); gl.mesh.position.set(0, 1.55, 0.165); gl.mesh.rotation.set(0, 0, 0);
+  ROOMS3[0].txt.material.map = boardText(ROOMS3[0].board);
+  if (given) say(T, 'Ó, köszönöm, Petyus! Ezért jár egy piros pont!', 2.6);
+  else if (stage < 3) say(T, 'Na végre! Itt van!', 2);
+  if (stage >= 1) setTimeout(() => award('r2-szemuveg', returned ? Math.min(stage, 2) : stage, { returned, blamed: stage >= 3 && !returned }), 2500);
+  gl.stage = 0;
+}
+
 // ---------------------------------------------------------------- build / tick
 export function buildSchool() {
   walls.length = 0; desks.length = 0; people.length = 0; clocks.length = 0; doors.length = 0; toilets.length = 0;
@@ -1081,7 +1243,7 @@ export function buildSchool() {
   makeDoor(26.1, CORR - 0.06, 1.0, { color: 0xf4f4f4, sign: { kind: 'boy', text: 'FIÚ' }, name: 'fiú WC' });
   makeDoor(33.1, CORR - 0.06, 1.0, { color: 0xf4f4f4, sign: { kind: 'girl', text: 'LÁNY' }, name: 'lány WC' });
   buildFurniture();
-  buildPeople(); buildCrowd();   // (the crowd is made of the classes' children: after them)
+  buildPeople(); buildCrowd(); buildFrog();   // (the crowd is made of the classes' children: after them)
 }
 export function schoolRoom(x, z) {
   if (x > SCHOOL.x0 && x < SCHOOL.x1 && z > SCHOOL.z0 && z < SCHOOL.z1) return z > CORR ? 'Iskola – folyosó' : x >= 30 ? 'Iskola – lány WC' : x >= 24 ? 'Iskola – fiú WC' : 'Iskola – a ' + ROOMS3[Math.floor(x / 12)].cls + ' osztályterme';
