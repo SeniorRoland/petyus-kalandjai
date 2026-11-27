@@ -54,6 +54,13 @@
 - Telefonon a kezdőképernyő felajánlja a telepítést (`install.js`).
 - Ami Petyust kitakarja (fa, lámpa …), áttetsző lesz (`occlude.js`).
 
+## A 2. rész átvizsgálása (felvéve: 2026. 11. 27.)  ✅ kész
+
+- [x] **Minden pályán minden funkció elérhető-e a gombokkal?** ✅ A park csibészségei (2. lépés) és a 2. rész (otthon reggel / este, iskola) is: a HASZNÁL = E, a RÚGÁS = F és a Szóköz (a felirata mindig a helyzet szerinti), 🧱 = T, 👁 = V, ⟲ ⟳ = Q / R, a leltár tárgyaira koppintva = 1–9 / Tab, a ruhaválasztó gombjai koppinthatók, a pisilésnél a joystick céloz.
+- [x] **Hiányzó gomb: „A lepedős kísértet” BÚÚÚ-ja.** ✅ Csak a Szóköz indította, érintőn a RÚGÁS gomb ilyenkor rejtve volt. Most ha a lepedős Petyus apa mellett van az előszobában, a RÚGÁS gomb felirata „BÚÚÚ!” (`booReady` a `ghost.js`-ben). Kipróbálva fekvő telefonos nézetben (érintéses emuláció): a gomb megjelenik, és megnyomva apa megadja magát.
+- [x] **Elférnek-e a gombok?** ✅ 740×360-as fekvő képen a jobb felső sor (⟲ ⟳ 🧱 👁 🏠 📒 🔊), a joystick és a FUTÁS / HASZNÁL / RÚGÁS gombok nem takarják egymást.
+- A játékosoknak szóló telefonos leírás: `docs/palyak/mobil.md`.
+
 ## Telepített app javítása
 
 - Android/Chrome: a telepített app fekete képernyővel indult („Internetes alkalmazás”). Javítva: robusztusabb service worker (`petyus-v2`: a gyorsítótárba írás hibája nem dobja el a jó választ, 6 mp-es hálózati időkorlát, `ignoreVary` – enélkül az első látogatás után elmentett JS-t nem találta meg), az első látogatás fájljai is elmentődnek, a manifest `display: standalone` (a teljes képernyőt az Indítás gomb kéri), külön `any`/`maskable` ikonok, `id`. A kezdőképernyő kiírja a nem kezelt hibákat (`#err`), mert telefonon nincs konzol.

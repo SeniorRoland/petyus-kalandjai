@@ -2,7 +2,7 @@
 import { EPISODES } from './state.js';
 import { $ } from './util.js';
 import { totalStars } from './mischief.js';
-import { ep2Unlocked } from './ep2/ep2.js';
+import { ep2Unlocked } from './ep2/meta.js';
 
 // builds the tiles; returns the playable tile (it is the start button: id="startBtn", disabled until the models are loaded)
 export function buildEpisodeMenu() {

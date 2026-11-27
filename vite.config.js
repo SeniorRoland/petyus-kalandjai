@@ -16,6 +16,8 @@ export default defineConfig({
         main: resolve(import.meta.dirname, 'index.html'),
         designterv: resolve(import.meta.dirname, 'designterv.html'),
       },
+      // three.js in a file of its own: it does not change between our releases, so the browser keeps it cached
+      output: { manualChunks: (id) => (id.includes('node_modules/three') ? 'three' : undefined) },
     },
   },
 });

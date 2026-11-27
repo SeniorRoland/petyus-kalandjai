@@ -61,7 +61,11 @@ import { IS_TOUCH } from './util.js';
 import { setupInstall } from './install.js';
 import { updateOcclusion } from './occlude.js';
 import { buildClouds, updateClouds } from './clouds.js';
-import { ep2DevStart, ep2HasSave, ep2Unlocked, showPhaseCard, startEp2, stepEp2, takeEp2Next } from './ep2/ep2.js';
+import { ep2DevStart, ep2HasSave, ep2Unlocked, takeEp2Next } from './ep2/meta.js';
+// part 2 is downloaded only when it starts (its code is a separate file: the park never needs it)
+let EP2 = null;
+const loadEp2 = () => (EP2 ? Promise.resolve(EP2) : import('./ep2/ep2.js').then((m) => (EP2 = m)));
+const startEp2 = () => loadEp2().then((m) => m.startEp2()).catch((e) => { console.error(e); toast('Nem sikerült betölteni a 2. részt – ellenőrizd az internetkapcsolatot!', 5); });
 import { setupBackToMenu, updateBackButton } from './backmenu.js';
 import { setupTurnButtons, updateViewTurn } from './viewturn.js';
 
@@ -76,7 +80,7 @@ function frame(now) {
   watchFrame(Math.min(raw, 0.25), !upright && !document.hidden && (G.mode === 'intro' || G.mode === 'play'), () => toast('Egyszerűbb grafika – hogy gördülékenyebb legyen a játék.', 3));
   if (!G.paused && !upright) {   // paused while the mischief journal is open (still rendered)
     tickCine(dt0);
-    for (let i = 0; i < TIME_SCALE; i++) (G.episode === 2 ? stepEp2 : step)(dt0 * cine.slow);
+    for (let i = 0; i < TIME_SCALE; i++) (G.episode === 2 ? EP2.stepEp2 : step)(dt0 * cine.slow);
     updateClouds(dt0 * TIME_SCALE);   // the clouds drift (the park; part 2: the school)
   }
   updateBackButton();
@@ -110,7 +114,7 @@ async function boot() {
   buildClouds({ x0: GX0, z0: GZ0, x1: GX1, z1: GZ1 });   // clouds over the park (part 2 swaps them: startEp2, buildSchool)
   makeBall();
   const loader = new GLTFLoader();
-  const files = ['petya.glb', 'angi.glb', 'petike_roller.glb', 'petike_foci.glb', 'roller_kicsi.glb', 'nover.glb'];
+  const files = ['petya.glb', 'angi.glb', 'petike_roller.glb', 'petike_foci.glb', 'roller_kicsi.glb'];   // (Petyus's sister, part 2: ep2.js loads her)
   let done = 0; const bar = $('loadbar').firstElementChild;
   let res;
   try {
@@ -119,12 +123,11 @@ async function boot() {
     $('err').innerHTML = 'Nem sikerült betölteni a modelleket (' + (e.message || e) + ').<br>Ellenőrizd, hogy a <code>public/</code> mappában valódi .glb fájlok vannak.';
     setStartLabel('Hiba'); console.error(e); return;
   }
-  const [gPetya, gAngi, gRoller, gFoci, gScooter, gNover] = res;
+  const [gPetya, gAngi, gRoller, gFoci, gScooter] = res;
   rigs.petya = rigFromGLTF(gPetya, CFG.petya);
   rigs.angi = rigFromGLTF(gAngi, CFG.angi);
   rigs.roller = rigFromGLTF(gRoller, CFG.roller);
   rigs.foci = rigFromGLTF(gFoci, CFG.foci);
-  rigs.nover = rigFromGLTF(gNover, CFG.nover);   // Petyus's big sister (part 2)
   // scooter
   G.rollerModel = gScooter.scene; G.rollerModel.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   const sc = new THREE.Group(); sc.add(G.rollerModel); G.rollerModel.scale.setScalar(ROLLER_SCALE); G.rollerModel.rotation.y = Math.PI / 2; G.rollerModel.position.x = 0.07 * ROLLER_SCALE;
@@ -147,7 +150,7 @@ async function boot() {
   const b2 = $('ep2Btn');
   if (b2 && ep2Unlocked()) { b2.disabled = false; setStartLabel(ep2HasSave() ? 'Folytatás ▶' : 'Indítás ▶', b2); b2.onclick = () => { initAudio(); if (MOBILE) goFullscreen(); $('overlay').classList.add('hide'); startEp2(); }; }
   const next2 = takeEp2Next();   // part 2 moved on to its next place (ep2.js goPhase): its card, then that place
-  if (next2 && ep2Unlocked()) { $('overlay').classList.add('hide'); showPhaseCard(next2, () => { initAudio(); if (MOBILE) goFullscreen(); startEp2(); }); }
+  if (next2 && ep2Unlocked()) { $('overlay').classList.add('hide'); loadEp2().then((m) => m.showPhaseCard(next2, () => { initAudio(); if (MOBILE) goFullscreen(); startEp2(); })); }
   else if (ep2DevStart()) {   // dev only: ?resz=2 – no click before it, so the sound starts with the first click / key
     initAudio(); $('overlay').classList.add('hide'); startEp2();
     if (audioWaiting()) toast('🔊 A hanghoz kattints vagy nyomj meg egy billentyűt!', 4);
@@ -155,7 +158,7 @@ async function boot() {
   requestAnimationFrame(frame);
   window.__game = { THREE, scene, camera, renderer, petike: () => G.petike, petya: () => G.petya, angi: () => G.angi, ball, roller, keys, skipIntro, get mode() { return G.mode; }, get pstate() { return G.pstate; }, get petyaMode() { return G.petyaMode; }, use: () => { G.usePressed = true; }, roller, setZoom: (z) => { G.zoomOverride = z; G.viewSizeTarget = z; G.viewSize = z; updateProjection(); }, camTarget, setKick: (p) => { G.kickPressed = true; setTimeout(() => { G.kickReleased = true; }, p); },
     // manual stepping (works even when the tab is hidden and rAF is paused): __game.tick(seconds)
-    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); (G.episode === 2 ? stepEp2 : step)(dt * cine.slow); } updateBackButton(); renderer.render(scene, view.cam); }, cine, ftn, cev, TREES, jug, jugPress, juggle: () => { G.qPressed = true; }, say };
+    tick: (sec, dt = 1 / 60) => { for (let i = 0; i < Math.round(sec / dt); i++) { tickCine(dt); (G.episode === 2 ? EP2.stepEp2 : step)(dt * cine.slow); } updateBackButton(); renderer.render(scene, view.cam); }, cine, ftn, cev, TREES, jug, jugPress, juggle: () => { G.qPressed = true; }, say };
 }
 boot();
 
