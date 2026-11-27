@@ -79,7 +79,8 @@ function showAward(m, stars, value, first, better, extra, saved) {
 export function refreshTotals() {
   const t = totalStars();
   if ($('mStars')) $('mStars').textContent = t;
-  for (const el of document.querySelectorAll('.ep.ready .stars')) el.textContent = `⭐ ${t}/${MAX_STARS}`;
+  // the start screen: every playable episode's tile shows its own stars (⭐ got / can be got)
+  for (const el of document.querySelectorAll('.ep .stars[data-ep]')) { const bk = BOOKS[el.dataset.ep]; if (bk) el.textContent = `⭐ ${starsOf(bk)}/${bk.list.length * 3}`; }
 }
 
 // ---------- the journal

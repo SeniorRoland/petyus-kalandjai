@@ -16,6 +16,7 @@ import { makePerson } from '../rigs.js';
 import { CAM_OFF, scene, sun } from '../scene.js';
 import { G } from '../state.js';
 import { initYard, wrapYard } from './yardnav.js';
+import { buildClouds } from '../clouds.js';
 import { isTouch } from '../input.js';
 import { bigText, say } from '../ui.js';
 import { award } from '../mischief.js';
@@ -1545,6 +1546,7 @@ export function buildSchool() {
   buildPeople(); buildCrowd(); buildExtras(); buildPlayground(); buildPlayers(); buildPE(); buildFrog(); buildTraffic();
   // nobody runs through the buildings: the yard people's walks go round them (yardnav.js)
   initYard(CAMPUS, [SCHOOL, WING, LOW, HALL]);
+  buildClouds({ x0: BOUNDS.x0 - 20, z0: BOUNDS.z0 - 10, x1: BOUNDS.x1 + 20, z1: BOUNDS.z1 + 10 }, 14);   // clouds over the school
   for (const p of [...people, ...pupils, ...crowd.boys, ...crowd.girls, ...extras, ...pe.kids]) wrapYard(p.a); wrapYard(pe.coach);   // (the crowd is made of the classes' children: after them)
 }
 export function schoolRoom(x, z) {
