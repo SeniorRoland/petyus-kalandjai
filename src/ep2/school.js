@@ -15,6 +15,7 @@ import { Actor, spawnFx } from '../actors.js';
 import { makePerson } from '../rigs.js';
 import { CAM_OFF, scene, sun } from '../scene.js';
 import { G } from '../state.js';
+import { initYard, wrapYard } from './yardnav.js';
 import { isTouch } from '../input.js';
 import { bigText, say } from '../ui.js';
 import { award } from '../mischief.js';
@@ -31,9 +32,9 @@ const FLOOR = 3.3, TW = 0.25;
 // the main building (only its ground floor is inside the game): x 0 … 36, z −12 … 0; the corridor along its south side
 export const SCHOOL = { x0: 0, x1: 36, z0: -12, z1: 0 };
 const CORR = -2.6;                                     // the corridor's north wall (the classrooms behind it)
-const WING = { x0: -9, x1: 0, z0: -15, z1: 4 };        // the orange block at the west end
-const LOW = { x0: 14, x1: 32, z0: 1.5, z1: 16 };       // the two-storey square building (gym / dining hall) south of it
-const HALL = { x0: 6, x1: 34, z0: -46, z1: -24 };      // the town's sports hall
+export const WING = { x0: -9, x1: 0, z0: -15, z1: 4 };        // the orange block at the west end
+export const LOW = { x0: 14, x1: 32, z0: 1.5, z1: 16 };       // the two-storey square building (gym / dining hall) south of it
+export const HALL = { x0: 6, x1: 34, z0: -46, z1: -24 };      // the town's sports hall
 const COURT = { x0: 38, x1: 60, z0: -42, z1: -27 };    // the blue court
 const FIELD = { x0: 2, x1: 44, z0: 21, z1: 40 };       // the grass field
 const CAMPUS = { x0: -18, x1: 64, z0: -58, z1: 42 };   // the school's fence
@@ -1526,6 +1527,9 @@ function peTick(dt, lessonNow) {
   if ((pe.whT -= dt) <= 0) { pe.whT = R(6, 12); soundAt(c.pos.x, c.pos.z, () => tone('square', 2900, 2700, 0.35, 0.05), 1); if (Math.random() < 0.5) say(c, pick(['Gyorsabban, gyerekek!', 'Még két kör!', 'Ne gyalogoljatok!', 'Szép volt!']), 1.8); }
 }
 
+// (testing: everybody walking in the yard)
+export const yardActors = () => [...new Set([...people, ...pupils, ...crowd.boys, ...crowd.girls, ...extras, ...pe.kids].map((p) => p.a)), pe.coach];
+
 // ---------------------------------------------------------------- build / tick
 export function buildSchool() {
   walls.length = 0; desks.length = 0; people.length = 0; clocks.length = 0; doors.length = 0; toilets.length = 0;
@@ -1538,7 +1542,10 @@ export function buildSchool() {
   makeDoor(26.1, CORR - 0.06, 1.0, { color: 0xf4f4f4, sign: { kind: 'boy', text: 'FIÚ' }, name: 'fiú WC' });
   makeDoor(33.1, CORR - 0.06, 1.0, { color: 0xf4f4f4, sign: { kind: 'girl', text: 'LÁNY' }, name: 'lány WC' });
   buildFurniture();
-  buildPeople(); buildCrowd(); buildExtras(); buildPlayground(); buildPlayers(); buildPE(); buildFrog(); buildTraffic();   // (the crowd is made of the classes' children: after them)
+  buildPeople(); buildCrowd(); buildExtras(); buildPlayground(); buildPlayers(); buildPE(); buildFrog(); buildTraffic();
+  // nobody runs through the buildings: the yard people's walks go round them (yardnav.js)
+  initYard(CAMPUS, [SCHOOL, WING, LOW, HALL]);
+  for (const p of [...people, ...pupils, ...crowd.boys, ...crowd.girls, ...extras, ...pe.kids]) wrapYard(p.a); wrapYard(pe.coach);   // (the crowd is made of the classes' children: after them)
 }
 export function schoolRoom(x, z) {
   if (x > SCHOOL.x0 && x < SCHOOL.x1 && z > SCHOOL.z0 && z < SCHOOL.z1) return z > CORR ? 'Iskola – folyosó' : x >= 30 ? 'Iskola – lány WC' : x >= 24 ? 'Iskola – fiú WC' : 'Iskola – a ' + ROOMS3[Math.floor(x / 12)].cls + ' osztályterme';
