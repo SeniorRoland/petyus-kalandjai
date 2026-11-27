@@ -26,9 +26,9 @@
 | T | a falak: átlátszó / lesüllyedő |
 | V | belső nézet (FPS) – kattintás után egérrel nézel, Esc: egér vissza |
 | görgő / + − / 0 · egérrel húzva | zoom · körülnézés |
-| N · M · H | napló · hang · súgó |
+| N · L · M · H | napló · a pálya leírása (ez) · hang · súgó |
 
-Telefonon: lásd [mobil.md](mobil.md).
+Telefonon: lásd [Játék telefonon](mobil.md).
 
 ## A csibészségek
 

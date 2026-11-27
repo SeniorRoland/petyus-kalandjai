@@ -58,6 +58,7 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 | `occlude.js` | ami a kamera és Petyus közé kerül (fa, lámpa …, a `world.js` `INSTANCES` példánylistájából), áttetsző lesz: a példány elrejtve, helyette áttetsző másolat (`updateOcclusion`) |
 | `install.js` | telefonon a kezdőképernyőn „Telepítsd alkalmazásként!” (Android: `beforeinstallprompt` → Telepítés; iPhone: útmutató); „Most nem” után nem kérdez újra (`localStorage`) |
 | `touchui.js` | érintős eszközön a RÚGÁS / HASZNÁL / FUTÁS gombok felirata és láthatósága állapotonként (`updateTouchUI`); a szövegek gombnevei: `touchText()` a `util.js`-ben (a `setPrompt`, `toast` és a napló tippjei használják) |
+| `guide.js` | a pályák leírása a játékban: 📖 gomb jobb fent / **L** / a kezdőképernyőn „📖 Pályaleírások” (`#guide`); a `docs/palyak/*.md` fájlokat jeleníti meg (`import.meta.glob(…, ?raw)` – mindegyik külön fájl, csak megnyitáskor töltődik le; kis md → HTML; a „A csibészségek” alatti `###` szakaszok összecsukva, a megszerzett csillagokkal – `bestStarsByTitle` a `mischief.js`-ben); fülek: Park · Reggel · Iskola · Este · Telefon · Mind; az aktuális pálya: `G.guidePage` (a 2. részben az `ep2.js` állítja); nyitva a játék áll (`G.paused`) |
 | `clouds.js` | felhők a szabadtéri pályákon (park, iskola): voxelfelhők 17–23 m magasan, sodródnak (`buildClouds(terület, db)`, `updateClouds` a képkocka-ciklusban, `clearClouds` – a 2. rész indításakor); felülnézetben a kép közepe felé elhalványulnak, belső nézetben teljesek |
 | `lightmask.js` | a lakás mennyezeti lámpái (spotfények) csak a saját helyiségükben világítanak: a shaderben a fényük a szoba határán megáll (`setSpotRoom(i, doboz)`, a `main.js` elsőként tölti be; a Lambert anyagok közös uniformot kapnak, saját `onBeforeCompile` esetén `lightMaskUniforms` – pizsama); így a vékony falakon, ajtókon nem szivárog át a fény |
 | `quality.js` | grafikai minőség: `Q.level` 2 asztal / 1 mobil / 0 minimális, `MOBILE`, `fxAllowed()` (részecske-ritkítás), `watchFrame()` (lassú eszközön automatikus visszaváltás), `?quality=high|mobile|low` |
@@ -143,7 +144,7 @@ A GitHub Pagesre **csak verzió-tag** tesz ki új változatot (`.github/workflow
 
 ## Pályaleírások (`docs/palyak/`)
 
-Játékosoknak szóló leírás pályánként (park · otthon reggel · iskola · otthon este) és a telefonos irányítás (`mobil.md`): mi történik, a csibészségek menete, feltételei, az 1–3 ★ pontosan (a `MISCHIEFS` / `MISCHIEFS2` `stars` függvényei szerint). Ha egy csibészség menete vagy csillagfeltétele változik, ezt is frissíteni kell.
+Játékosoknak szóló leírás pályánként (park · otthon reggel · iskola · otthon este) és a telefonos irányítás (`mobil.md`) – **a játék is ezeket mutatja** (`guide.js`, 📖 / L), ezért játékosnak szóló nyelven írjuk; a `>`-rel kezdődő sorok (fejlesztői megjegyzés) a játékban nem jelennek meg: mi történik, a csibészségek menete, feltételei, az 1–3 ★ pontosan (a `MISCHIEFS` / `MISCHIEFS2` `stars` függvényei szerint). Ha egy csibészség menete vagy csillagfeltétele változik, ezt is frissíteni kell.
 
 ## Tervdokumentumok (`docs/terv-*.md`)
 

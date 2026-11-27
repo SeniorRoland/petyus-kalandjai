@@ -6,6 +6,7 @@ import { skipIntro } from './intro.js';
 import { G } from './state.js';
 import { $, clamp } from './util.js';
 import { journalOpen, toggleJournal } from './mischief.js';
+import { guideOpen, toggleGuide } from './guide.js';
 import { CAM_FWD, CAM_RIGHT } from './player.js';
 
 // ---------------------------------------------------------------- input
@@ -17,6 +18,8 @@ window.addEventListener('keydown', (e) => {
   if (e.repeat) return;
   if (e.code === 'KeyN') { toggleJournal(); return; }
   if (journalOpen()) { if (e.code === 'Escape') toggleJournal(false); return; }   // the journal is open: keys don't reach the game
+  if (e.code === 'KeyL') { toggleGuide(); return; }   // the level's description (guide.js)
+  if (guideOpen()) { if (e.code === 'Escape') toggleGuide(false); return; }
   keys[e.code] = true;
   if (G.pstate === 'juggle') { for (const k in JUG) if (JUG[k].codes.includes(e.code)) jugPress(k); }
   if (e.code === 'KeyQ') G.qPressed = true;
@@ -36,7 +39,7 @@ window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; }
 export const ZOOM_MIN = 0.3, ZOOM_MAX = 2.6;
 // G.zoomMax: a scene may forbid zooming out past its own framing (part 2: 1 = the overview is the furthest)
 export function zoomBy(f) { G.zoom = clamp(G.zoom * f, ZOOM_MIN, G.zoomMax || ZOOM_MAX); }
-window.addEventListener('wheel', (e) => { if (journalOpen()) return; zoomBy(Math.pow(1.0015, clamp(e.deltaY, -240, 240))); }, { passive: true });
+window.addEventListener('wheel', (e) => { if (journalOpen() || guideOpen()) return; zoomBy(Math.pow(1.0015, clamp(e.deltaY, -240, 240))); }, { passive: true });
 function toggleMute() { G.muted = !G.muted; $('muteBtn').textContent = G.muted ? '🔇' : '🔊'; if (ambBed) ambBed.gain.value = G.muted ? 0 : 1; }
 $('muteBtn').onclick = toggleMute;
 $('skipBtn').onclick = () => skipIntro();

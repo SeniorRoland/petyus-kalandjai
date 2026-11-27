@@ -25,12 +25,13 @@
 | ← → ↑ | dekázáskor a láb / fej, amikor a kör ráér a gombra |
 | R | a labda ide |
 | N | csibészség-napló |
+| L | a pálya leírása (ez) |
 | , . | nézet forgatása |
 | görgő / + − / 0 | zoom |
 | egérrel húzva | körülnézés |
 | M · H | hang · súgó |
 
-Telefonon: lásd [mobil.md](mobil.md).
+Telefonon: lásd [Játék telefonon](mobil.md).
 
 ## A csibészségek
 

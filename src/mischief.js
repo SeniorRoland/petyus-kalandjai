@@ -83,6 +83,11 @@ export function refreshTotals() {
   for (const el of document.querySelectorAll('.ep .stars[data-ep]')) { const bk = BOOKS[el.dataset.ep]; if (bk) el.textContent = `⭐ ${starsOf(bk)}/${bk.list.length * 3}`; }
 }
 
+// the guide (guide.js): a mischief's stars by its title (null: not a mischief)
+export function bestStarsByTitle(title) {
+  for (const b of Object.values(BOOKS)) { const m = b.list.find((x) => x.title === title); if (m) return (b.saved[m.id] && b.saved[m.id].stars) || 0; }
+  return null;
+}
 // ---------- the journal
 export function journalOpen() { return $('journal').classList.contains('open'); }
 export function toggleJournal(open = !journalOpen()) {

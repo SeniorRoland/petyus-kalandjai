@@ -55,6 +55,7 @@ import './cine.js';
 import './camera.js';
 import './ambience.js';
 import { initMischief } from './mischief.js';
+import { initGuide } from './guide.js';
 import { MOBILE, watchFrame } from './quality.js';
 import { updateTouchUI } from './touchui.js';
 import { IS_TOUCH } from './util.js';
@@ -110,6 +111,7 @@ async function boot() {
   if (MOBILE) document.body.classList.add('mobile');   // quality.js: phone / tablet
   buildEpisodeMenu(); showVersion(); setupInstall(); setupBackToMenu(); setupTurnButtons();   // the 12 monthly episodes on the start screen (August playable once loaded) + the version
   initMischief();       // stars, ⭐ totals, the mischief journal
+  initGuide();          // the levels' descriptions (📖, L)
   buildWorld();
   buildClouds({ x0: GX0, z0: GZ0, x1: GX1, z1: GZ1 });   // clouds over the park (part 2 swaps them: startEp2, buildSchool)
   makeBall();

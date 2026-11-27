@@ -17,7 +17,7 @@
 
 ## Irányítás
 
-Mint reggel (lásd [2-otthon-reggel.md](2-otthon-reggel.md)); este fontos még:
+Mint reggel (lásd [Otthon, reggel](2-otthon-reggel.md)); este fontos még:
 
 | Gomb | Mit csinál |
 |---|---|
@@ -25,7 +25,7 @@ Mint reggel (lásd [2-otthon-reggel.md](2-otthon-reggel.md)); este fontos még:
 | Szóköz | Petyus ágyánál: **lepedő** magadra / vissza; lepedővel: **„BÚÚÚ!”** |
 | E | villany kapcsolása (a sötét előszoba!), Angi szekrénye a fürdőben, lefekvés |
 
-Telefonon: lásd [mobil.md](mobil.md).
+Telefonon: lásd [Játék telefonon](mobil.md).
 
 ## A csibészségek
 
