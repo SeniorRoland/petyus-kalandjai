@@ -28,7 +28,7 @@ import { EPISODE, G, ROLLER_SCALE, SERIES, ball, rigs, roller } from './state.js
 import { buildEpisodeMenu, setStartLabel, showVersion } from './menu.js';
 import { say, toast, updateBubbles } from './ui.js';
 import { $, V3 } from './util.js';
-import { TREES, buildWorld, collide } from './world.js';
+import { GX0, GX1, GZ0, GZ1, TREES, buildWorld, collide } from './world.js';
 
 // every module once, in the original order (some only register listeners / build DOM state)
 import './util.js';
@@ -60,6 +60,7 @@ import { updateTouchUI } from './touchui.js';
 import { IS_TOUCH } from './util.js';
 import { setupInstall } from './install.js';
 import { updateOcclusion } from './occlude.js';
+import { buildClouds, updateClouds } from './clouds.js';
 import { ep2DevStart, ep2HasSave, ep2Unlocked, showPhaseCard, startEp2, stepEp2, takeEp2Next } from './ep2/ep2.js';
 import { setupBackToMenu, updateBackButton } from './backmenu.js';
 import { setupTurnButtons, updateViewTurn } from './viewturn.js';
@@ -76,6 +77,7 @@ function frame(now) {
   if (!G.paused && !upright) {   // paused while the mischief journal is open (still rendered)
     tickCine(dt0);
     for (let i = 0; i < TIME_SCALE; i++) (G.episode === 2 ? stepEp2 : step)(dt0 * cine.slow);
+    updateClouds(dt0 * TIME_SCALE);   // the clouds drift (the park; part 2: the school)
   }
   updateBackButton();
   renderer.render(scene, view.cam);
@@ -105,6 +107,7 @@ async function boot() {
   buildEpisodeMenu(); showVersion(); setupInstall(); setupBackToMenu(); setupTurnButtons();   // the 12 monthly episodes on the start screen (August playable once loaded) + the version
   initMischief();       // stars, ⭐ totals, the mischief journal
   buildWorld();
+  buildClouds({ x0: GX0, z0: GZ0, x1: GX1, z1: GZ1 });   // clouds over the park (part 2 swaps them: startEp2, buildSchool)
   makeBall();
   const loader = new GLTFLoader();
   const files = ['petya.glb', 'angi.glb', 'petike_roller.glb', 'petike_foci.glb', 'roller_kicsi.glb', 'nover.glb'];

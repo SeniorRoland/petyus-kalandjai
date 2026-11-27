@@ -36,12 +36,13 @@ export function buildEpisodeMenu() {
     cap.append(num, month);
     if (ep.ready) {
       if (ep.sub) { const sub = document.createElement('span'); sub.className = 'sub'; sub.textContent = ep.sub; cap.appendChild(sub); }
-      const st = document.createElement('span'); st.className = 'stars'; photo.appendChild(st);   // ⭐ x/30 (refreshTotals)
+      const st = document.createElement('span'); st.className = 'stars'; st.dataset.ep = ep.n; photo.appendChild(st);   // ⭐ x/30 (refreshTotals)
       const go = document.createElement('span'); go.className = 'go'; go.textContent = 'Betöltés…'; photo.appendChild(go);
       tile.id = 'startBtn'; tile.disabled = true; tile.setAttribute('aria-label', `${ep.n}. rész: ${ep.month} – ${ep.sub || ''}`);
       start = tile;
     } else if (open) {   // main.js wires it up once the models are loaded
       if (ep.sub) { const sub = document.createElement('span'); sub.className = 'sub'; sub.textContent = ep.sub; cap.appendChild(sub); }
+      const st = document.createElement('span'); st.className = 'stars'; st.dataset.ep = ep.n; photo.appendChild(st);   // its own ⭐ x/y (refreshTotals)
       if (import.meta.env.DEV && totalStars() < ep.need) { const dv = document.createElement('span'); dv.className = 'lock'; dv.textContent = 'DEV: nyitva'; photo.appendChild(dv); }
       const go = document.createElement('span'); go.className = 'go'; go.textContent = 'Betöltés…'; photo.appendChild(go);
       tile.id = `ep${ep.n}Btn`; tile.disabled = true; tile.setAttribute('aria-label', `${ep.n}. rész: ${ep.month} – ${ep.sub || ''}`);

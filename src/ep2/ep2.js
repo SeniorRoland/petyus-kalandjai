@@ -5,6 +5,7 @@ import { updateFx } from '../actors.js';
 import { updateCamera } from '../camera.js';
 import { isTouch, keys, touch } from '../input.js';
 import { totalStars } from '../mischief.js';
+import { clearClouds } from '../clouds.js';
 import { updateOcclusion } from '../occlude.js';
 import { CAM_FWD, CAM_RIGHT } from '../player.js';
 import { turnView, updateViewTurn, viewTurn } from '../viewturn.js';
@@ -154,6 +155,7 @@ const clockText = (m) => `${Math.floor(m / 60)}:${String(Math.floor(m % 60)).pad
 // ---------------------------------------------------------------- start: the park goes, the flat comes
 export function startEp2() {
   G.episode = 2;
+  clearClouds();   // the park's clouds: not over the flat (the school makes its own)
   // which part of the day: the saved one (dev: ?nyitany=1 – a new game's morning with the opening film)
   const forceNew = import.meta.env.DEV && new URLSearchParams(location.search).has('nyitany');
   ep2.phase = forceNew ? 'morning' : savedPhase(); ep2.min = PHASES[ep2.phase].start;
