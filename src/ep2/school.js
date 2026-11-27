@@ -1267,10 +1267,9 @@ function buildPlayground() {
     b.bx(S.x, 2.3, S.z, 4.9, 0.12, 0.12, steel, 0, 0);
     // the slide: a ladder up to a platform with a roof, the chute down southwards
     const L = PLAY.slide;
-    for (const dx of [-0.45, 0.45]) for (const dz of [-0.45, 0.45]) b.bx(L.x + dx, 0, L.z + dz, 0.1, 2.4, 0.1, yel, 0, 0);
-    b.bx(L.x, 1.4, L.z, 1.0, 0.08, 1.0, wood, 0, 0.02); b.bx(L.x, 2.4, L.z, 1.2, 0.08, 1.2, red, 0, 0);
-    for (let k = 0; k < 6; k++) b.bx(L.x, 0.2 + k * 0.24, L.z - 0.75 - k * 0.04, 0.7, 0.05, 0.08, wood, 0, 0);   // the ladder's rungs (north side)
-    for (const dx of [-0.35, 0.35]) b.bx(L.x + dx, 0, L.z - 0.85, 0.06, 1.5, 0.06, yel, 0, 0);
+    for (const dx of [-0.45, 0.45]) for (const dz of [-0.45, 0.45]) b.bx(L.x + dx, 0, L.z + dz, 0.1, 3.0, 0.1, yel, 0, 0);
+    b.bx(L.x, 1.4, L.z, 1.0, 0.08, 1.0, wood, 0, 0.02); b.bx(L.x, 3.0, L.z, 1.2, 0.08, 1.2, red, 0, 0);   // the roof high enough for the bigger ones
+    for (let k = 0; k < 6; k++) b.bx(L.x, 0.2 + k * 0.24, L.z - 1.0 + (0.2 + k * 0.24) / 1.48 * 0.45, 0.62, 0.05, 0.08, wood, 0, 0);   // the ladder's rungs (north side, leaning in)
     for (const dx of [-0.3, 0.3]) b.bx(L.x + dx, 0, L.z + SL.z1 - 0.1, 0.06, SL.y1 - 0.03, 0.06, yel, 0, 0);   // the run-out's legs
     // the seesaw's middle block
     b.bx(PLAY.seesaw.x, 0, PLAY.seesaw.z, 0.4, 0.45, 0.3, steel, 0, 0);
@@ -1291,7 +1290,7 @@ function buildPlayground() {
   // colliders (Petyus and the children walk round them)
   const S = PLAY.swing, L = PLAY.slide, D = PLAY.sand, C2 = PLAY.climb;
   for (const dx of [-2.4, 2.4]) addBoxCol(S.x + dx - 0.1, S.z - 0.5, S.x + dx + 0.1, S.z + 0.5, 2.3);
-  addBoxCol(L.x - 0.5, L.z - 0.9, L.x + 0.5, L.z + 0.5, 2.4); addBoxCol(L.x - 0.35, L.z + 0.5, L.x + 0.35, L.z + 3.0, 1.0);
+  addBoxCol(L.x - 0.5, L.z - 1.05, L.x + 0.5, L.z + 0.5, 3.0); addBoxCol(L.x - 0.35, L.z + 0.5, L.x + 0.35, L.z + 3.0, 1.0);
   addBoxCol(C2.x - 1.55, C2.z - 1.05, C2.x + 1.55, C2.z + 1.05, 2.0);
   for (const T of PONG) addBoxCol(T.x - 0.76, T.z - 1.37, T.x + 0.76, T.z + 1.37, 0.78);
   addBoxCol(HOOP.x - 0.1, HOOP.z - 0.1, HOOP.x + 0.1, HOOP.z + 0.1, 3);
@@ -1305,7 +1304,7 @@ function buildPlayground() {
   }
   const sw = new THREE.Group(); sw.position.set(PLAY.seesaw.x, 0.45, PLAY.seesaw.z); scene.add(sw);
   const plank = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 0.3), new THREE.MeshLambertMaterial({ color: yel })); sw.add(plank);
-  for (const sx of [-1.55, 1.55]) { const h = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.3, 0.3), new THREE.MeshLambertMaterial({ color: steel })); h.position.set(sx * 0.85, 0.18, 0); sw.add(h); }
+  for (const sx of [-1, 1]) { const h = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.34, 0.3), new THREE.MeshLambertMaterial({ color: steel })); h.position.set(sx * 1.12, 0.2, 0); sw.add(h); }
   play.seesaw = sw;
   { // the slide's chute: one smooth sloping piece from the platform down, with side rails, then a short flat run-out
     const red2 = new THREE.MeshLambertMaterial({ color: 0xe63946 });
@@ -1316,6 +1315,9 @@ function buildPlayground() {
       g.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
     };
     part(SL.z0, SL.z1, SL.y0, SL.y1); part(SL.z1, SL.z2, SL.y1, SL.y1);
+    // the ladder's two rails: from the ground 1 m out to the platform's edge (and a little above it, a handhold)
+    const ym = new THREE.MeshLambertMaterial({ color: 0xffca3a }), rl = Math.hypot(0.6, 1.95);
+    for (const dx of [-0.34, 0.34]) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.06, rl, 0.06), ym); m.position.set(L.x + dx, 1.95 / 2, L.z - 1.02 + 0.3); m.rotation.x = Math.atan2(0.6, 1.95); m.castShadow = true; scene.add(m); }
   }
   for (const T of PONG) { const ball = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), new THREE.MeshLambertMaterial({ color: 0xffffff })); ball.visible = false; scene.add(ball); play.balls.push({ ball, T, t: Math.random() }); }
 }
@@ -1330,7 +1332,7 @@ function playSpot(k) {   // where a playing child stands / sits
   const S = PLAY.swing, L = PLAY.slide, D = PLAY.sand, C2 = PLAY.climb, W = PLAY.seesaw;
   switch (k.role) {
     case 'swing': return [S.x - 1.5 + k.i * 1.5, S.z + 0.6];
-    case 'seesaw': return [W.x + (k.i ? 1.45 : -1.45), W.z + 0.5];
+    case 'seesaw': return [W.x + (k.i ? 1.62 : -1.62), W.z + 0.5];
     case 'slide': return [L.x + (k.i ? 0.6 : 0), L.z - 1.4 - k.i * 0.6];
     case 'sand': return [D.x + (k.i ? 0.6 : -0.6), D.z + (k.i ? 0.4 : -0.3)];
     case 'climb': return [C2.x - 1.5, C2.z - 1.4];
@@ -1343,19 +1345,20 @@ function playTick(dt, k) {   // a child arrived at its toy: playing
   switch (k.role) {
     case 'swing': {
       const sw = play.swings[k.i], th = Math.sin(t * 2.1 + sw.ph) * 0.55; sw.pv.rotation.x = th;
-      a.place(sw.pv.position.x, sw.pv.position.z + Math.sin(th) * 1.85, 0); a.pos.y = 2.3 - Math.cos(th) * 1.85 - 0.47; a.seatH = 0.45; a.sitTarget = a.sit = 1; a.heading = a.targetHeading = 0; a.update(0.0001);
+      a.place(sw.pv.position.x, sw.pv.position.z - Math.sin(th) * 1.85, 0); a.seatH = 0.45; a.seatBase = 2.3 - Math.cos(th) * 1.85 + 0.025 - a.seatH; a.sitTarget = a.sit = 1; a.heading = a.targetHeading = 0; a.update(0.0001);
+      a.rig.inner.rotation.x = -th * 0.5; for (let i = 0; i < 2; i++) { a.rig.sh[i].rotation.x = -2.6; a.rig.knee[i].rotation.x = 1.45 + th * 0.8; } a.rig.apply && a.rig.apply();   // hands up on the chains, legs pumping
       return true;
     }
     case 'seesaw': {   // astride the plank, facing the middle, holding the handle; the low one pushes off with its feet
-      const ang = Math.sin(t * 1.5) * 0.24; play.seesaw.rotation.z = ang;
-      const sg = k.i ? 1 : -1, W = PLAY.seesaw, x = W.x + sg * 1.45 * Math.cos(ang), y = 0.45 + sg * 1.45 * Math.sin(ang) + 0.04;
+      const ts = G.clockT, ang = Math.sin(ts * 1.5) * 0.24; play.seesaw.rotation.z = ang;
+      const sg = k.i ? 1 : -1, W = PLAY.seesaw, x = W.x + sg * 1.62 * Math.cos(ang), y = 0.45 + sg * 1.62 * Math.sin(ang) + 0.04;
       a.path = null; a.place(x, W.z, sg > 0 ? -Math.PI / 2 : Math.PI / 2); a.sit = a.sitTarget = 0; a.update(dt);
       const r = a.rig, hipUp = 0.1 * r.S.scale.x;   // the hip joint half a thigh above the plank
       r.inner.position.y = y + hipUp - r.hipH; r.inner.rotation.x = 0.12;   // leaning in a little
       seatLegs(a, y + hipUp, 0.35);
       for (let i = 0; i < 2; i++) { r.sh[i].rotation.x = -1.05; r.sh[i].rotation.z = (i ? -1 : 1) * 0.12; }   // both hands on the handle
       lift(a, 0);
-      const up = sg * Math.cos(t * 1.5) > 0;   // going up
+      const up = sg * Math.cos(ts * 1.5) > 0;   // going up
       if (up !== k.up) { k.up = up; if (up && Math.random() < 0.25) say(a, pick(['Hopp!', 'Fel!', 'Juhú!']), 0.9); }
       return true;
     }
@@ -1370,7 +1373,7 @@ function playTick(dt, k) {   // a child arrived at its toy: playing
       a.path = null; a.sit = a.sitTarget = 0;
       if (k.ph === 'climb') {   // hand over hand up the rungs
         k.u += dt / 1.8; const u = Math.min(1, k.u), cyc = u * 6 * Math.PI;
-        a.place(L.x, L.z - 1.05 + u * 0.35, 0); a.update(dt);
+        a.place(L.x, L.z - 1.14 + u * 0.45, 0); a.update(dt);   // following the leaning ladder
         for (let i = 0; i < 2; i++) { const ph = Math.sin(cyc + i * Math.PI); r.sh[i].rotation.x = -2.5 + ph * 0.35; r.hip[i].rotation.x = -0.5 - ph * 0.35; r.knee[i].rotation.x = 0.7 + ph * 0.3; }
         lift(a, u * (SL.y0 - 0.06)); if (k.u >= 1) { k.ph = 'top'; k.u = 0; }
       } else if (k.ph === 'top') {   // onto the platform, a step forward, then sit down at the chute's edge
