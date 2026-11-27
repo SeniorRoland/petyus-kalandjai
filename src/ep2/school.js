@@ -1352,7 +1352,7 @@ function playTick(dt, k) {   // a child arrived at its toy: playing
     case 'swing': {
       const sw = play.swings[k.i], th = Math.sin(t * 2.1 + sw.ph) * 0.55; sw.pv.rotation.x = th;
       a.place(sw.pv.position.x, sw.pv.position.z - Math.sin(th) * 1.85, 0); a.seatH = 0.45; a.seatBase = 2.3 - Math.cos(th) * 1.85 + 0.025 - a.seatH; a.sitTarget = a.sit = 1; a.heading = a.targetHeading = 0; a.update(0.0001);
-      a.rig.inner.rotation.x = -th * 0.5; for (let i = 0; i < 2; i++) { a.rig.sh[i].rotation.x = -2.6; a.rig.knee[i].rotation.x = 1.45 + th * 0.8; } a.rig.apply && a.rig.apply();   // hands up on the chains, legs pumping
+      a.rig.inner.rotation.x = th * 0.5;   // th > 0: the seat swings back (−z) – leaning forward; forward – leaning back for (let i = 0; i < 2; i++) { a.rig.sh[i].rotation.x = -2.6; a.rig.knee[i].rotation.x = 1.45 + th * 0.8; } a.rig.apply && a.rig.apply();   // hands up on the chains, legs pumping
       return true;
     }
     case 'seesaw': {   // astride the plank, facing the middle, holding the handle; the low one pushes off with its feet
