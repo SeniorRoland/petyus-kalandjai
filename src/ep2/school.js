@@ -1263,8 +1263,8 @@ function buildPlayground() {
     b.bx(55, 0, 31, 16, 0.03, 18, 0xc0563f, 0, 0.03);
     // the swing frame: two A-legs and a top bar (3 swings)
     const S = PLAY.swing;
-    for (const dx of [-2.4, 2.4]) for (const dz of [-0.8, 0.8]) { b.bx(S.x + dx, 0, S.z + dz * 0.5, 0.1, 2.35, 0.1, steel, 0, 0); }
-    b.bx(S.x, 2.3, S.z, 4.9, 0.12, 0.12, steel, 0, 0);
+    b.bx(S.x, 2.3, S.z, 4.96, 0.12, 0.12, steel, 0, 0);
+    for (const dx of [-2.4, 2.4]) for (const dz of [-1, 1]) b.bx(S.x + dx, 0, S.z + dz * 1.0, 0.24, 0.06, 0.24, 0x7d8590, 0, 0);   // the A-legs' concrete feet
     // the slide: a ladder up to a platform with a roof, the chute down southwards
     const L = PLAY.slide;
     for (const dx of [-0.45, 0.45]) for (const dz of [-0.45, 0.45]) b.bx(L.x + dx, 0, L.z + dz, 0.1, 3.0, 0.1, yel, 0, 0);
@@ -1289,7 +1289,7 @@ function buildPlayground() {
   }));
   // colliders (Petyus and the children walk round them)
   const S = PLAY.swing, L = PLAY.slide, D = PLAY.sand, C2 = PLAY.climb;
-  for (const dx of [-2.4, 2.4]) addBoxCol(S.x + dx - 0.1, S.z - 0.5, S.x + dx + 0.1, S.z + 0.5, 2.3);
+  for (const dx of [-2.4, 2.4]) addBoxCol(S.x + dx - 0.1, S.z - 1.05, S.x + dx + 0.1, S.z + 1.05, 2.3);
   addBoxCol(L.x - 0.5, L.z - 1.05, L.x + 0.5, L.z + 0.5, 3.0); addBoxCol(L.x - 0.35, L.z + 0.5, L.x + 0.35, L.z + 3.0, 1.0);
   addBoxCol(C2.x - 1.55, C2.z - 1.05, C2.x + 1.55, C2.z + 1.05, 2.0);
   for (const T of PONG) addBoxCol(T.x - 0.76, T.z - 1.37, T.x + 0.76, T.z + 1.37, 0.78);
@@ -1301,6 +1301,12 @@ function buildPlayground() {
     for (const sx of [-0.2, 0.2]) { const c = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.85, 0.02), chain); c.position.set(sx, -0.92, 0); pv.add(c); }
     const seat = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.05, 0.2), seatM); seat.position.y = -1.85; pv.add(seat);
     play.swings.push({ pv, ph: Math.random() * 6, kid: null });
+  }
+  { // the swing frame's A-legs: from the feet on the ground (1 m to either side) up to the top bar
+    const sm = new THREE.MeshLambertMaterial({ color: steel }), ln = Math.hypot(1.0, 2.36);
+    for (const dx of [-2.4, 2.4]) for (const dz of [-1, 1]) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.1, ln, 0.1), sm); m.position.set(S.x + dx, 2.36 / 2 + 0.03, S.z + dz * 0.5); m.rotation.x = -dz * Math.atan2(1.0, 2.36); m.castShadow = true; scene.add(m);
+    }
   }
   const sw = new THREE.Group(); sw.position.set(PLAY.seesaw.x, 0.45, PLAY.seesaw.z); scene.add(sw);
   const plank = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 0.3), new THREE.MeshLambertMaterial({ color: yel })); sw.add(plank);
@@ -1346,7 +1352,7 @@ function playTick(dt, k) {   // a child arrived at its toy: playing
     case 'swing': {
       const sw = play.swings[k.i], th = Math.sin(t * 2.1 + sw.ph) * 0.55; sw.pv.rotation.x = th;
       a.place(sw.pv.position.x, sw.pv.position.z - Math.sin(th) * 1.85, 0); a.seatH = 0.45; a.seatBase = 2.3 - Math.cos(th) * 1.85 + 0.025 - a.seatH; a.sitTarget = a.sit = 1; a.heading = a.targetHeading = 0; a.update(0.0001);
-      a.rig.inner.rotation.x = -th * 0.5; for (let i = 0; i < 2; i++) { a.rig.sh[i].rotation.x = -2.6; a.rig.knee[i].rotation.x = 1.45 + th * 0.8; } a.rig.apply && a.rig.apply();   // hands up on the chains, legs pumping
+      a.rig.inner.rotation.x = th * 0.5;   // th > 0: the seat swings back (−z) – leaning forward; forward – leaning back for (let i = 0; i < 2; i++) { a.rig.sh[i].rotation.x = -2.6; a.rig.knee[i].rotation.x = 1.45 + th * 0.8; } a.rig.apply && a.rig.apply();   // hands up on the chains, legs pumping
       return true;
     }
     case 'seesaw': {   // astride the plank, facing the middle, holding the handle; the low one pushes off with its feet
